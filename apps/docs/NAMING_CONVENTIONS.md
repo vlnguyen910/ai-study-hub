@@ -17,6 +17,7 @@ Examples:
 - `chore/update-deps`
 
 Reference:
+
 - [apps/docs/NAMING_CONVENTIONS.md](apps/docs/NAMING_CONVENTIONS.md)
 
 ## File and Folder Names

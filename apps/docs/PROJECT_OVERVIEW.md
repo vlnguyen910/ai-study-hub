@@ -1,9 +1,11 @@
 # AI Study Hub - Project Overview
 
 ## Summary
+
 AI Study Hub is a web platform that centralizes students' learning documents and enables fast retrieval and AI-assisted Q&A. It addresses fragmented storage, poor organization, and the difficulty of quickly finding or asking about previous materials.
 
 ## Motivation and Problems
+
 Students typically store learning documents across multiple channels (e.g., cloud drives, messaging apps, social groups, email, and personal devices). This creates several issues:
 
 - Documents are scattered across sources.
@@ -14,6 +16,7 @@ Students typically store learning documents across multiple channels (e.g., clou
 - It is hard to ask quick questions about stored content.
 
 ## Goals
+
 The system is built to:
 
 - Centralize document management for students.

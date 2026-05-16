@@ -25,7 +25,6 @@ Examples:
 - `feat/document-search`
 - `fix/upload-timeout`
 
-
 ## 3. Implement the Change
 
 - Focus on one feature or bug per branch.

@@ -1,6 +1,7 @@
 # Hệ thống Quản lý Tài liệu Học tập AI (AI Study Hub)
 
 ## Project Overview
+
 AI Study Hub is a web platform that centralizes students' learning documents and enables fast retrieval and AI-assisted Q&A. It addresses scattered storage, poor organization, and the difficulty of quickly finding or asking about previous materials. The system targets both students and development teams building a real-world fullstack workflow.
 
 Core scope:
@@ -12,6 +13,7 @@ Core scope:
 - AI chatbot: ask questions about documents, receive AI answers, view chat history
 
 ## Tech Stack
+
 - NestJS (API)
 - Next.js (Web and Docs)
 - TypeScript
@@ -20,11 +22,13 @@ Core scope:
 - Node.js >= 18
 
 ## Installation
+
 ```sh
 pnpm install
 ```
 
 ## Run Project
+
 ```sh
 pnpm dev
 
@@ -41,16 +45,20 @@ Common scripts:
 - `pnpm format`
 
 ## Environment Variables
+
 To be added. Environment files will be documented per app when finalized.
 
 ## API Docs
+
 To be added.
 
 ## Team Docs
+
 - Contributting Guide: [CONTRIBUTING.md](apps/docs/CONTRIBUTING.md)
 - Development Workflow: [DEVELOPMENT_WORKFLOW.md](apps/docs/DEVELOPMENT_WORKFLOW.md)
 - Naming Conventions: [NAMING_CONVENTIONS.md](apps/docs/NAMING_CONVENTIONS.md)
 - Testing: [TESTING.md](apps/docs/TESTING.md)
 
 ## Team Members
+
 To be added.
