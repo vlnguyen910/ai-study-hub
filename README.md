@@ -27,6 +27,9 @@ pnpm install
 ## Run Project
 ```sh
 pnpm dev
+
+pnpm dev --filter web  # for only web
+pnpm dev --filter api  # for only api
 ```
 
 Common scripts:
@@ -44,10 +47,10 @@ To be added. Environment files will be documented per app when finalized.
 To be added.
 
 ## Team Docs
-- Contributting Guide: [apps/docs/CONTRIBUTING.md](apps/docs/CONTRIBUTING.md)
-- Development Workflow: [apps/docs/DEVELOPMENT_WORKFLOW.md](apps/docs/DEVELOPMENT_WORKFLOW.md)
-- Naming Conventions: [apps/docs/NAMING_CONVENTIONS.md](apps/docs/NAMING_CONVENTIONS.md)
-- Testing: [apps/docs/TESTING.md](apps/docs/TESTING.md)
+- Contributting Guide: [CONTRIBUTING.md](apps/docs/CONTRIBUTING.md)
+- Development Workflow: [DEVELOPMENT_WORKFLOW.md](apps/docs/DEVELOPMENT_WORKFLOW.md)
+- Naming Conventions: [NAMING_CONVENTIONS.md](apps/docs/NAMING_CONVENTIONS.md)
+- Testing: [TESTING.md](apps/docs/TESTING.md)
 
 ## Team Members
 To be added.
