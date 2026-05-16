@@ -48,6 +48,7 @@ To be added.
 - [apps/docs/DEVELOPMENT_WORKFLOW.md](apps/docs/DEVELOPMENT_WORKFLOW.md)
 - [apps/docs/NAMING_CONVENTIONS.md](apps/docs/NAMING_CONVENTIONS.md)
 - [apps/docs/PRE_COMMIT_CHECKLIST.md](apps/docs/PRE_COMMIT_CHECKLIST.md)
+- [apps/docs/TESTING.md](apps/docs/TESTING.md)
 
 ## Team Members
 To be added.
