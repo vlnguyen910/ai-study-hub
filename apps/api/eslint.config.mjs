@@ -40,8 +40,9 @@ export default tseslint.config(
         ...globals.node,
       },
       parserOptions: {
-        project: ["./tsconfig.test.json"],
+        projectService: true,
         tsconfigRootDir: import.meta.dirname,
+        allowDefaultProject: true,
       },
     },
     rules: {
