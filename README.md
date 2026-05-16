@@ -44,11 +44,10 @@ To be added. Environment files will be documented per app when finalized.
 To be added.
 
 ## Team Docs
-- [apps/docs/CONTRIBUTING.md](apps/docs/CONTRIBUTING.md)
-- [apps/docs/DEVELOPMENT_WORKFLOW.md](apps/docs/DEVELOPMENT_WORKFLOW.md)
-- [apps/docs/NAMING_CONVENTIONS.md](apps/docs/NAMING_CONVENTIONS.md)
-- [apps/docs/PRE_COMMIT_CHECKLIST.md](apps/docs/PRE_COMMIT_CHECKLIST.md)
-- [apps/docs/TESTING.md](apps/docs/TESTING.md)
+- Contributting Guide: [apps/docs/CONTRIBUTING.md](apps/docs/CONTRIBUTING.md)
+- Development Workflow: [apps/docs/DEVELOPMENT_WORKFLOW.md](apps/docs/DEVELOPMENT_WORKFLOW.md)
+- Naming Conventions: [apps/docs/NAMING_CONVENTIONS.md](apps/docs/NAMING_CONVENTIONS.md)
+- Testing: [apps/docs/TESTING.md](apps/docs/TESTING.md)
 
 ## Team Members
 To be added.
