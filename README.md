@@ -14,39 +14,112 @@ Core scope:
 
 ## Tech Stack
 
-- NestJS (API)
-- Next.js (Web and Docs)
-- TypeScript
-- Turborepo
-- pnpm
-- Node.js >= 18
+| Category             | Technology              | Purpose                                                         |
+| -------------------- | ----------------------- | --------------------------------------------------------------- |
+| Backend framework    | NestJS                  | API server, modular backend and business logic                  |
+| Frontend framework   | Next.js                 | Web app and documentation site (SSR/SSG)                        |
+| Language             | TypeScript              | Typesafe JavaScript development across stack                    |
+| Monorepo tooling     | Turborepo               | Manage builds, caching and task orchestration in the monorepo   |
+| Package manager      | pnpm                    | Fast, disk-efficient workspace installs                         |
+| Runtime              | Node.js >= 18           | JavaScript runtime for servers and tooling                      |
+| Database             | MongoDB                 | Document database used by the app (local via Docker Compose)    |
+| Containerization     | Docker & Docker Compose | Run local services and isolate environments                     |
+| Linting & formatting | ESLint, Prettier        | Enforce code quality and consistent formatting                  |
+| Testing              | Vitest & Jest           | Unit and integration testing for frontend, backend and packages |
 
-## Installation
+## Local Development
 
 ```sh
+# 1. Clone repository
+git clone <repository-url>
+cd ai-study-hub
+
+# 2. Install dependencies
 pnpm install
+
+# 3. Setup environment (required)
+# Copy the example env and edit values locally. Do NOT commit your .env.
+cp .env.example .env
+
+# 4. Start the database and services
+# This repo includes a `docker-compose.yaml` with a `mongodb` service that reads credentials
+# from the local `.env`. Start everything with:
+docker compose up -d
+
+# 5. Verify MongoDB is running
+docker compose logs -f mongodb
+docker compose ps
+
+# 6. Start the app
+pnpm dev
 ```
 
-## Run Project
+## Commands
 
-```sh
+| Command            | Description                                                                                       |
+| ------------------ | ------------------------------------------------------------------------------------------------- |
+| `pnpm dev`         | Start development mode for the workspace (runs app servers and watchers defined by the monorepo). |
+| `pnpm test`        | Run unit and integration tests across the workspace.                                              |
+| `pnpm build`       | Build production artifacts for all apps (Next.js, NestJS, packages).                              |
+| `pnpm lint`        | Run ESLint across packages and apps to catch style and correctness issues.                        |
+| `pnpm check-types` | Run TypeScript type checks (`tsc --build` or equivalent) across the repo.                         |
+| `pnpm format`      | Format codebase with Prettier.                                                                    |
+
+Usage examples
+
+```bash
+# start local services and app in dev mode
+cp .env.example .env
+docker compose up -d
 pnpm dev
 
-pnpm dev --filter web  # for only web
-pnpm dev --filter api  # for only api
+# run tests
+pnpm test
+
+# build for production
+pnpm build
 ```
 
-Common scripts:
+## Project Structure
 
-- `pnpm test`
-- `pnpm build`
-- `pnpm lint`
-- `pnpm check-types`
-- `pnpm format`
+The repository follows a monorepo layout with apps and shared packages.
 
-## Environment Variables
+```
+ai-study-hub/
+├─ apps/
+│  ├─ api/                # NestJS backend
+│  │  ├─ src/
+│  │  │  ├─ main.ts
+│  │  │  ├─ app.module.ts
+│  │  │  ├─ app.controller.ts
+│  │  │  └─ app.service.ts
+	│  │
+│  │  └─ (package.json, tsconfig, tests)
+│  ├─ web/                # Next.js frontend
+│  │  ├─ app/
+│  │  │  ├─ layout.tsx
+│  │  │  ├─ page.tsx
+│  │  │  └─ globals.css
+│  │  └─ (package.json, tsconfig)
+│  └─ docs/               # Documentation site / markdown
+├─ packages/              # Shared packages and config
+│  ├─ ui/                 # Shared React UI components
+│  │  ├─ src/
+│  │  │  ├─ button.tsx
+│  │  │  └─ card.tsx
+│  ├─ eslint-config/      # ESLint shareable configs
+│  └─ typescript-config/  # TSConfig presets for packages/apps
+├─ docker-compose.yaml    # Local services (MongoDB)
+├─ .env.example           # Example environment variables
+├─ package.json           # Workspace scripts and tooling
+├─ pnpm-workspace.yaml    # pnpm workspace configuration
+└─ turbo.json             # Turborepo configuration
+```
 
-To be added. Environment files will be documented per app when finalized.
+Notes
+
+- Each `apps/*` folder is an independently runnable application. Use `pnpm dev` at workspace root to run the dev flow defined in this monorepo.
+- Put local secrets in `.env` (copy from `.env.example`) and do not commit `.env`.
 
 ## API Docs
 
