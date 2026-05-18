@@ -69,7 +69,7 @@ src/
 
 - Only route screens and layouts go in src/app.
 - Keep route components thin; move logic into src/features or src/services.
-- Use _layout.tsx for shared layout; use group folders for feature grouping.
+- Use \_layout.tsx for shared layout; use group folders for feature grouping.
 
 ## Data and API
 
@@ -87,7 +87,7 @@ pnpm -F mobile test
 
 ## Testing
 
-Unit tests use Jest + React Native Testing Library. Test files live under src/**/__tests__.
+Unit tests use Jest + React Native Testing Library. Test files live under src/\*\*/**tests**.
 
 Run in watch mode:
 
