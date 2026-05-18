@@ -1,56 +1,59 @@
-# Welcome to your Expo app 👋
+# Mobile App (Expo)
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+This app runs with Expo + Expo Router and is managed as part of the pnpm + Turborepo workspace.
 
-## Get started
+## Prerequisites
 
-1. Install dependencies
+- Node.js >= 18
+- pnpm (use corepack)
+- Android Studio or Xcode if you need emulators/simulators
 
-   ```bash
-   npm install
-   ```
-
-2. Start the app
-
-   ```bash
-   npx expo start
-   ```
-
-In the output, you'll find options to open the app in a
-
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
-
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
-
-## Get a fresh project
-
-When you're ready, run:
+## Install
 
 ```bash
-npm run reset-project
+pnpm install
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+## Run (local)
 
-### Other setup steps
+```bash
+pnpm -F mobile dev
+```
 
-- To set up ESLint for linting, run `npx expo lint`, or follow our guide on ["Using ESLint and Prettier"](https://docs.expo.dev/guides/using-eslint/)
-- If you'd like to set up unit testing, follow our guide on ["Unit Testing with Jest"](https://docs.expo.dev/develop/unit-testing/)
-- Learn more about the TypeScript setup in this template in our guide on ["Using TypeScript"](https://docs.expo.dev/guides/typescript/)
+Other run options:
 
-## Learn more
+```bash
+pnpm -F mobile android
+pnpm -F mobile ios
+pnpm -F mobile web
+```
 
-To learn more about developing your project with Expo, look at the following resources:
+## Quality checks
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+```bash
+pnpm -F mobile lint
+pnpm -F mobile check-types
+pnpm -F mobile test
+```
 
-## Join the community
+## Testing
 
-Join our community of developers creating universal apps.
+Unit tests use Jest + React Native Testing Library. Test files live under `src/**/__tests__`.
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+Run in watch mode:
+
+```bash
+pnpm -F mobile test:watch
+```
+
+## Reset starter code
+
+```bash
+pnpm -F mobile reset-project
+```
+
+## Notes for teammates
+
+- Use pnpm only. Do not use npm or yarn in this workspace.
+- Expo Go is fine for quick checks, but use emulators for native behavior.
+- Run `pnpm lint` and `pnpm check-types` at the repo root before pushing.
