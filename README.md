@@ -102,6 +102,11 @@ ai-study-hub/
 │  │  │  └─ globals.css
 │  │  └─ (package.json, tsconfig)
 │  └─ docs/               # Documentation site / markdown
+├─ mobile/                # Expo React Native app (mobile)
+│  ├─ src/                # app source code (screens, components, hooks)
+│  ├─ assets/             # images, icons and other static assets
+│  ├─ package.json
+  │  └─ README.md
 ├─ packages/              # Shared packages and config
 │  ├─ tokens/             # Shared design tokens and semantic aliases
 │  ├─ ui/                 # Shared React UI components
