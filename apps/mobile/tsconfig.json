@@ -6,6 +6,12 @@
       "@/*": [
         "./src/*"
       ],
+      "@repo/tokens": [
+        "../../packages/tokens/src/index.ts"
+      ],
+      "@repo/tokens/web": [
+        "../../packages/tokens/src/web.ts"
+      ],
       "@/assets/*": [
         "./assets/*"
       ]

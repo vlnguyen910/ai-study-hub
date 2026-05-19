@@ -1,4 +1,24 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/create-next-app).
+# Web App Guide
+
+This app uses Next.js and consumes shared design tokens from `@repo/tokens`.
+
+## Shared design tokens
+
+- Use `@repo/tokens` for colors, spacing, radius, typography, and other shared values.
+- Keep web-only theme bootstrapping in `apps/web/app/layout.tsx`.
+- Use CSS variables exposed by `createWebThemeStyles()` in `apps/web/app/globals.css` and component styles.
+
+Example:
+
+```ts
+import { createWebThemeStyles } from "@repo/tokens/web";
+```
+
+## Related docs
+
+- [Shared tokens](../docs/SHARED_TOKENS.md)
+- [Design system](../docs/DESIGN.md)
+- [Project overview](../docs/PROJECT_OVERVIEW.md)This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/create-next-app).
 
 ## Getting Started
 

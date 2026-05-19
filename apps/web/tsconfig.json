@@ -6,6 +6,10 @@
         "name": "next"
       }
     ],
+    "paths": {
+      "@repo/tokens": ["../../packages/tokens/src/index.ts"],
+      "@repo/tokens/web": ["../../packages/tokens/src/web.ts"]
+    },
     "strictNullChecks": true
   },
   "include": [

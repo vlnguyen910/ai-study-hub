@@ -1,13 +1,9 @@
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --surface: var(--background);
+  --surface-elevated: var(--background);
+  --outline: color-mix(in srgb, var(--foreground) 25%, transparent);
+  --primary: var(--foreground);
+  --primary-contrast: var(--background);
 }
 
 html,
@@ -18,7 +14,9 @@ body {
 
 body {
   color: var(--foreground);
-  background: var(--background);
+  background:
+    radial-gradient(circle at top, color-mix(in srgb, var(--primary) 12%, transparent), transparent 38%),
+    linear-gradient(180deg, var(--background), var(--surface));
 }
 
 * {
