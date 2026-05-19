@@ -51,7 +51,7 @@ Keep Expo Router routes inside src/app. App logic, data access, and UI live outs
 src/
 	app/                 # Expo Router routes and layouts
 	components/          # Shared UI components
-	constants/           # Design tokens and constants
+	constants/           # App-specific adapters over shared tokens
 	features/            # Domain modules
 		auth/
 		documents/
@@ -76,6 +76,12 @@ src/
 - Use EXPO_PUBLIC_API_URL for the API base URL.
 - Put API clients in src/services and feature-specific adapters in src/features/<domain>.
 - Keep state modules inside src/store and avoid cross-feature coupling.
+
+## Shared design tokens
+
+- Import primitives and semantic aliases from `@repo/tokens`.
+- Keep platform-only values in `src/constants/theme.ts`.
+- Use [../docs/SHARED_TOKENS.md](../docs/SHARED_TOKENS.md) for the shared token contract and import examples.
 
 ## Quality checks
 

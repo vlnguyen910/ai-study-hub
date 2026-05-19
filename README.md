@@ -103,6 +103,7 @@ ai-study-hub/
 │  │  └─ (package.json, tsconfig)
 │  └─ docs/               # Documentation site / markdown
 ├─ packages/              # Shared packages and config
+│  ├─ tokens/             # Shared design tokens and semantic aliases
 │  ├─ ui/                 # Shared React UI components
 │  │  ├─ src/
 │  │  │  ├─ button.tsx
@@ -130,6 +131,7 @@ To be added.
 - Contributting Guide: [CONTRIBUTING.md](apps/docs/CONTRIBUTING.md)
 - Development Workflow: [DEVELOPMENT_WORKFLOW.md](apps/docs/DEVELOPMENT_WORKFLOW.md)
 - Naming Conventions: [NAMING_CONVENTIONS.md](apps/docs/NAMING_CONVENTIONS.md)
+- Shared Tokens: [SHARED_TOKENS.md](apps/docs/SHARED_TOKENS.md)
 - Testing: [TESTING.md](apps/docs/TESTING.md)
 
 ## Team Members

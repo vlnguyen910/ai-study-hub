@@ -18,7 +18,7 @@ const ThemeImage = (props: Props) => {
   );
 };
 
-export default function Home() : any {
+export default function Home(): any {
   return (
     <div className={styles.page}>
       <main className={styles.main}>

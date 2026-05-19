@@ -3,6 +3,8 @@ import type { ReactNode } from "react";
 import localFont from "next/font/local";
 import "./globals.css";
 
+import { createWebThemeStyles } from "@repo/tokens/web";
+
 const geistSans = localFont({
   src: "./fonts/GeistVF.woff",
   variable: "--font-geist-sans",
@@ -21,9 +23,12 @@ export default function RootLayout({
   children,
 }: Readonly<{
   children: ReactNode;
-}>) : any {
+}>): any {
   return (
     <html lang="en">
+      <head>
+        <style dangerouslySetInnerHTML={{ __html: createWebThemeStyles() }} />
+      </head>
       <body className={`${geistSans.variable} ${geistMono.variable}`}>
         {children}
       </body>
