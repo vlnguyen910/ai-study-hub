@@ -19,7 +19,7 @@ jobs:
         uses: Codium-ai/pr-agent@main
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          RE_REF.MODEL_PROVIDER: "google"
+          CONFIG.MODEL_PROVIDER: "google"
           GOOGLE_API_KEY: ${{ secrets.GEMINI_API_KEY }}
 
           PR_DESCRIPTION.PUBLISH_DESCRIPTION_AS_COMMENT: false
