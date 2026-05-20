@@ -109,7 +109,7 @@ pnpm -F mobile reset-project
 
 ## Team workflow
 
-- Follow apps/docs/DEVELOPMENT_WORKFLOW.md for branching and PR flow.
+- Follow apps/docs/CONTRIBUTING.md for branching, PR flow, and checks.
 - Follow apps/docs/NAMING_CONVENTIONS.md for naming.
 - Keep changes scoped and update docs when behavior changes.
 - Use pnpm only. Do not use npm or yarn in this workspace.

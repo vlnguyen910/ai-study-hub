@@ -133,11 +133,10 @@ To be added.
 
 ## Team Docs
 
-- Contributting Guide: [CONTRIBUTING.md](apps/docs/CONTRIBUTING.md)
-- Development Workflow: [DEVELOPMENT_WORKFLOW.md](apps/docs/DEVELOPMENT_WORKFLOW.md)
-- Naming Conventions: [NAMING_CONVENTIONS.md](apps/docs/NAMING_CONVENTIONS.md)
-- Shared Tokens: [SHARED_TOKENS.md](apps/docs/SHARED_TOKENS.md)
-- Testing: [TESTING.md](apps/docs/TESTING.md)
+- Contributing Guide: [apps/docs/CONTRIBUTING.md](apps/docs/CONTRIBUTING.md)
+- Naming Conventions: [apps/docs/NAMING_CONVENTIONS.md](apps/docs/NAMING_CONVENTIONS.md)
+- Shared Tokens: [apps/docs/SHARED_TOKENS.md](apps/docs/SHARED_TOKENS.md)
+- Testing: [apps/docs/TESTING.md](apps/docs/TESTING.md)
 
 ## Team Members
 
