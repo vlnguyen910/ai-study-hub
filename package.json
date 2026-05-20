@@ -7,9 +7,26 @@
     "lint": "turbo run lint",
     "format": "prettier --write \"**/*.{ts,tsx,md}\"",
     "check-types": "turbo run check-types",
-    "test": "turbo run test"
+    "test": "turbo run test",
+    "prepare": "husky"
+  },
+  "lint-staged": {
+    "apps/web/**/*.{js,jsx,ts,tsx}": [
+      "pnpm --filter web exec eslint --fix"
+    ],
+    "apps/mobile/**/*.{js,jsx,ts,tsx}": [
+      "pnpm --filter mobile exec eslint --fix"
+    ],
+    "apps/api/**/*.{js,ts}": [
+      "pnpm --filter api exec eslint --fix"
+    ],
+    "**/*.{js,jsx,ts,tsx,json,md,css,scss,yml,yaml,mjs,cjs}": [
+      "prettier --write"
+    ]
   },
   "devDependencies": {
+    "husky": "^9.1.7",
+    "lint-staged": "^17.0.5",
     "prettier": "^3.8.3",
     "turbo": "^2.9.14",
     "typescript": "5.9.2"

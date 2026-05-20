@@ -1,14 +1,65 @@
 # Contribution Guide
 
-This guide defines how team members contribute to AI Study Hub. Follow these steps for consistent, reviewable changes.
+This guide defines how team members contribute to AI Study Hub. It combines the branch, review, and verification flow in one place so there is a single source of truth for day-to-day contribution work.
 
-## Workflow
+## Development Workflow
 
-1. Create a branch from `dev` using the naming convention in the naming guide.
-2. Keep changes small and focused; avoid unrelated edits in one PR.
-3. Write clear commit messages and include tests or notes when needed.
-4. Run required tests and quality checks before pushing.
-5. Open a pull request and request review before merging.
+1. Start from the latest `dev` branch.
+
+```sh
+git fetch origin
+git checkout dev
+git pull origin dev
+```
+
+2. Create a new branch using the naming convention in the [naming guide](NAMING_CONVENTIONS.md).
+
+```sh
+git checkout -b feat/<short-description>
+```
+
+Examples:
+
+- `feat/document-search`
+- `fix/upload-timeout`
+
+3. Keep the change focused on one feature or bug.
+
+- Avoid unrelated edits in the same pull request.
+- Keep commits small and meaningful.
+
+4. Add or update tests when the change introduces new behavior.
+
+- Write unit tests for new logic.
+- Make sure existing tests still pass.
+
+5. Run the required checks before pushing.
+
+```sh
+pnpm test
+pnpm format
+pnpm lint
+pnpm check-types
+pnpm build
+```
+
+6. Rebase on the latest `dev` before pushing.
+
+```sh
+git fetch origin
+git rebase origin/dev
+```
+
+7. Push the branch and request review.
+
+```sh
+git push -u origin feat/<short-description>
+```
+
+8. Merge only after approval and passing checks.
+
+- Open a pull request into `dev`.
+- Delete the branch after merge.
 
 ## Pull Request Checklist
 
@@ -21,7 +72,7 @@ This guide defines how team members contribute to AI Study Hub. Follow these ste
 
 Use short, consistent messages. Recommended format:
 
-```
+```text
 <type>: <short summary>
 ```
 
@@ -39,8 +90,7 @@ Suggested types: `feat`, `fix`, `docs`, `chore`, `refactor`, `test`.
 - Authors address comments and re-request review.
 - Merge only after approvals and passing checks.
 
-## Testing
+## Related Guides
 
-Use the testing guide for commands and coverage expectations:
-
-- [apps/docs/TESTING.md](apps/docs/TESTING.md)
+- [Naming Conventions](NAMING_CONVENTIONS.md)
+- [Testing Guide](TESTING.md)
