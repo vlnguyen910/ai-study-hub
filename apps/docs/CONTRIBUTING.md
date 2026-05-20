@@ -12,26 +12,55 @@ git checkout dev
 git pull origin dev
 ```
 
-2. Create a new branch using the naming convention in the [naming guide](NAMING_CONVENTIONS.md).
+2. Create a new branch using the naming convention.
+
+**Branch naming format:**
+
+```text
+<type>/<short-description>
+```
+
+Where `<type>` is one of:
+
+- `feat` — new feature
+- `fix` — bug fix
+- `chore` — maintenance, dependency updates
+- `refactor` — code restructuring without behavior change
+- `docs` — documentation updates
+- `test` — test additions or improvements
+
+**Examples:**
+
+- `feat/document-search`
+- `fix/upload-timeout`
+- `chore/update-dependencies`
+- `docs/add-api-guide`
+
+**Rules:**
+
+- Use `kebab-case` for the description part
+- Keep it short and descriptive (3–5 words)
+- One feature or fix per branch
 
 ```sh
 git checkout -b feat/<short-description>
 ```
-
-Examples:
-
-- `feat/document-search`
-- `fix/upload-timeout`
 
 3. Keep the change focused on one feature or bug.
 
 - Avoid unrelated edits in the same pull request.
 - Keep commits small and meaningful.
 
-4. Add or update tests when the change introduces new behavior.
+4. Write tests before or alongside your implementation.
 
-- Write unit tests for new logic.
-- Make sure existing tests still pass.
+See [Testing Guide](TESTING.md) for setup and examples:
+
+- API tests use NestJS + Jest in `apps/api/src/**/*.spec.ts`
+- Web tests use Vitest + React Testing Library in `apps/web/tests/**/*.test.tsx`
+- Coverage threshold is 80% — maintain or improve it
+- Run tests locally: `pnpm test`
+
+Write unit tests for all new logic. Make sure existing tests still pass.
 
 5. Run the required checks before pushing.
 
@@ -67,22 +96,59 @@ git push -u origin feat/<short-description>
 - Code compiles and checks pass locally.
 - Affected docs are updated when behavior changes.
 - Screenshots or logs are included for UI or API changes when relevant.
+- Tests are included or updated for new logic.
+- Coverage is maintained or improved.
 
-## Commit Message Format
+## Writing Commits
 
-Use short, consistent messages. Recommended format:
+### Commit Message Format
 
-```text
-<type>: <short summary>
+Commit messages should be clear and follow a consistent structure:
+
+```
+<type>(<scope>): <short summary>
+
+[optional body explaining the change]
+[optional footer with issue/PR references]
 ```
 
-Examples:
+**Format breakdown:**
 
-- `feat: add document preview endpoint`
-- `fix: handle empty search query`
+- `<type>` — required; indicates the kind of change (see type guidelines below)
+- `(<scope>)` — optional; indicates which package/app was affected: `api`, `web`, `mobile`, or general area name
+- `<short summary>` — required; concise description (imperative mood, lowercase)
+
+**Examples:**
+
+- `feat(api): add document preview endpoint`
+- `fix(web): handle empty search query in form`
 - `docs: update contribution guide`
+- `test(mobile): add validation tests for upload form`
+- `chore(api): upgrade nestjs to v11`
+- `refactor(web): simplify component structure` — no scope for monorepo-wide changes
 
-Suggested types: `feat`, `fix`, `docs`, `chore`, `refactor`, `test`.
+**Scope guidelines:**
+
+- `api` — changes in `apps/api`
+- `web` — changes in `apps/web`
+- `mobile` — changes in `apps/mobile`
+- `packages` — changes in `packages/*` (eslint-config, tokens, ui, theme, etc.)
+- Omit scope if the change affects multiple apps or is purely docs/tooling
+
+**Type guidelines:**
+
+- `feat` — new feature or capability
+- `fix` — bug fix
+- `docs` — documentation-only changes
+- `chore` — tooling, deps, configs (no feature/logic change)
+- `refactor` — code restructuring (no behavior change)
+- `test` — tests only, no source code change
+
+**Keep commits small:**
+
+- One logical change per commit
+- Each commit should compile and pass tests
+- Avoid mixing unrelated changes
 
 ## Code Review Expectations
 
@@ -90,7 +156,8 @@ Suggested types: `feat`, `fix`, `docs`, `chore`, `refactor`, `test`.
 - Authors address comments and re-request review.
 - Merge only after approvals and passing checks.
 
-## Related Guides
+## Additional Resources
 
-- [Naming Conventions](NAMING_CONVENTIONS.md)
-- [Testing Guide](TESTING.md)
+- [Naming Conventions](NAMING_CONVENTIONS.md) — code style and naming rules
+- [Testing Guide](TESTING.md) — test setup, commands, and coverage
+- [Project Overview](PROJECT_OVERVIEW.md) — architecture and project structure
