@@ -21,6 +21,8 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           CONFIG.MODEL_PROVIDER: "google"
           GOOGLE_API_KEY: ${{ secrets.GOOGLE_API_KEY }}
+          PR_DESCRIPTION.MODEL: "google/gemini-2.5-flash"
+          PR_REVIEWER.MODEL: "google/gemini-2.5-pro"
 
           GITHUB_ACTION_CONFIG.AUTO_DESCRIBE: true
           GITHUB_ACTION_CONFIG.AUTO_REVIEW: true
