@@ -12,7 +12,7 @@ export class AccountsService {
   }
 
   findAll() {
-    return `This action returns all accounts`;
+    return this.prismaService.accounts.findMany();
   }
 
   findOne(id: number) {

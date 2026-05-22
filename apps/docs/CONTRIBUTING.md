@@ -72,20 +72,59 @@ pnpm check-types
 pnpm build
 ```
 
-6. Rebase on the latest `dev` before pushing.
+6. Sync the local database when Prisma schema changes.
+
+The API uses Prisma with MongoDB. Prisma Migrate does not create migration files for MongoDB, so database changes are applied by syncing `apps/api/prisma/schema.prisma` to the local database.
+
+When you pull a branch that changes `apps/api/prisma/schema.prisma`, run:
+
+```sh
+docker compose up -d mongodb
+test -f apps/api/.env || cp apps/api/.env.example apps/api/.env
+pnpm db:sync
+pnpm db:seed
+```
+
+When you change the Prisma schema yourself:
+
+```sh
+pnpm db:sync
+```
+
+Then commit the schema and any code changes that depend on the new Prisma Client types. Do not run `prisma migrate dev` for MongoDB in this project.
+
+Use seed and clean scripts for local development data:
+
+```sh
+# Seed deterministic local accounts with Faker.
+pnpm db:seed
+
+# Change the amount of generated student accounts.
+SEED_ACCOUNT_COUNT=50 pnpm db:seed
+
+# Remove local API data, then seed it again.
+pnpm db:reseed
+
+# Remove local API data only.
+pnpm db:clean
+```
+
+The cleaner refuses to run when `NODE_ENV=production` or when `DATABASE_URL` looks production-like. Treat it as a local development tool only.
+
+7. Rebase on the latest `dev` before pushing.
 
 ```sh
 git fetch origin
 git rebase origin/dev
 ```
 
-7. Push the branch and request review.
+8. Push the branch and request review.
 
 ```sh
 git push -u origin feat/<short-description>
 ```
 
-8. Merge only after approval and passing checks.
+9. Merge only after approval and passing checks.
 
 - Open a pull request into `dev`.
 - Delete the branch after merge.
