@@ -1,0 +1,17 @@
+.headerSearch {
+  display: flex;
+  align-items: center;
+  background: #f4f6f9;
+  border-radius: 8px;
+  padding: 8px 12px;
+  width: 320px;
+}
+
+.headerSearch input {
+  border: none;
+  background: transparent;
+  outline: none;
+  margin-left: 8px;
+  width: 100%;
+  color: #333;
+}
