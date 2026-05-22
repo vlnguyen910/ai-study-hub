@@ -1,4 +1,4 @@
-import { semanticColors, type ThemeName } from "./index";
+import { semanticColors, type ThemeName } from "@repo/tokens";
 
 function toCssVars(theme: ThemeName) {
   const colors = semanticColors[theme];
