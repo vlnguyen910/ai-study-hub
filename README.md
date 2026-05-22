@@ -50,7 +50,12 @@ docker compose up -d
 docker compose logs -f mongodb
 docker compose ps
 
-# 6. Start the app
+# 6. Sync the Prisma schema and generate Prisma Client
+test -f apps/api/.env || cp apps/api/.env.example apps/api/.env
+pnpm db:sync
+pnpm db:seed
+
+# 7. Start the app
 pnpm dev
 ```
 
@@ -64,6 +69,10 @@ pnpm dev
 | `pnpm lint`        | Run ESLint across packages and apps to catch style and correctness issues.                        |
 | `pnpm check-types` | Run TypeScript type checks (`tsc --build` or equivalent) across the repo.                         |
 | `pnpm format`      | Format codebase with Prettier.                                                                    |
+| `pnpm db:sync`     | Sync the Prisma schema to local MongoDB and generate Prisma Client.                               |
+| `pnpm db:seed`     | Seed local MongoDB with deterministic development data.                                           |
+| `pnpm db:clean`    | Delete local API database records.                                                                |
+| `pnpm db:reseed`   | Clean the local database and seed it again.                                                       |
 
 Usage examples
 
@@ -71,6 +80,9 @@ Usage examples
 # start local services and app in dev mode
 cp .env.example .env
 docker compose up -d
+test -f apps/api/.env || cp apps/api/.env.example apps/api/.env
+pnpm db:sync
+pnpm db:seed
 pnpm dev
 
 # run tests
