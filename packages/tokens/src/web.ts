@@ -1,4 +1,4 @@
-import { semanticColors, type ThemeName } from "./index";
+import { semanticColors, type ThemeName } from "./index.js";
 
 function toCssVars(theme: ThemeName) {
   const colors = semanticColors[theme];
