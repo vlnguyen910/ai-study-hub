@@ -5,7 +5,7 @@ import "./globals.css";
 
 import { createWebThemeStyles } from "@repo/tokens/web";
 
-const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
+const inter = Inter({ subsets: ["latin", "latin-ext"], variable: "--font-inter" });
 
 export const metadata: Metadata = {
   title: "AI Study Hub",
