@@ -1,9 +1,10 @@
 import Image from "next/image";
 import Link from "next/link";
+import type { ReactElement } from "react";
 import styles from "./page.module.css";
 import { Button } from "@repo/ui/button";
 
-export default function Home() {
+export default function Home(): ReactElement {
   return (
     <div className={styles.container}>
       {/* Header */}

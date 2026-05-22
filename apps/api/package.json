@@ -6,8 +6,10 @@
   "private": true,
   "license": "UNLICENSED",
   "scripts": {
+    "prebuild": "pnpm run db:generate",
     "build": "nest build",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
+    "precheck-types": "pnpm run db:generate",
     "start": "nest start",
     "dev": "nest start --watch",
     "start:debug": "nest start --debug --watch",
@@ -21,6 +23,7 @@
     "db:clean": "ts-node prisma/clean.ts",
     "db:reseed": "pnpm run db:clean && pnpm run db:seed",
     "db:studio": "prisma studio --schema prisma/schema.prisma",
+    "pretest": "pnpm run db:generate",
     "test": "jest",
     "test:watch": "jest --watch",
     "test:cov": "jest --coverage",
