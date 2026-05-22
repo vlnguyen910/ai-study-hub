@@ -2,7 +2,10 @@
 
 import { ButtonHTMLAttributes, ReactNode } from "react";
 
-interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
+interface ButtonProps extends Omit<
+  ButtonHTMLAttributes<HTMLButtonElement>,
+  "style"
+> {
   children: ReactNode;
   className?: string;
   appName?: string;
