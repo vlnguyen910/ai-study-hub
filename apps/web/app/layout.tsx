@@ -22,9 +22,7 @@ export default function RootLayout({
       <head>
         <style dangerouslySetInnerHTML={{ __html: createWebThemeStyles() }} />
       </head>
-      <body className={inter.className}>
-        {children}
-      </body>
+      <body className={inter.className}>{children}</body>
     </html>
   );
 }
