@@ -1,4 +1,5 @@
-import { Prisma, PrismaClient, userRole, userStatus } from '@prisma/client';
+import { PrismaClient } from '@prisma/client';
+import type { InputJsonObject } from '@prisma/client/runtime/library';
 import { faker } from '@faker-js/faker';
 
 const prisma = new PrismaClient();
@@ -9,14 +10,16 @@ const SEED_ACCOUNT_COUNT = Number.parseInt(
 );
 const SEED_EMAIL_DOMAIN = 'seed.ai-study-hub.local';
 const SEED_PASSWORD = 'Password123!';
+type UserRole = 'USER' | 'ADMIN' | 'MODERATOR';
+type UserStatus = 'ACTIVE' | 'INACTIVE' | 'BANNED';
 
 type SeedAccount = {
   email: string;
   name: string;
   password: string;
   avatarUrl: string;
-  role: userRole;
-  status: userStatus;
+  role: UserRole;
+  status: UserStatus;
   isVerified: boolean;
 };
 
@@ -29,8 +32,8 @@ function buildSeedAccounts(): SeedAccount[] {
       name: 'Seed Admin',
       password: SEED_PASSWORD,
       avatarUrl: faker.image.avatar(),
-      role: userRole.ADMIN,
-      status: userStatus.ACTIVE,
+      role: 'ADMIN',
+      status: 'ACTIVE',
       isVerified: true,
     },
   ];
@@ -44,11 +47,8 @@ function buildSeedAccounts(): SeedAccount[] {
       name: `${firstName} ${lastName}`,
       password: SEED_PASSWORD,
       avatarUrl: faker.image.avatar(),
-      role: faker.helpers.arrayElement([userRole.USER, userRole.MODERATOR]),
-      status: faker.helpers.arrayElement([
-        userStatus.ACTIVE,
-        userStatus.INACTIVE,
-      ]),
+      role: faker.helpers.arrayElement(['USER', 'MODERATOR'] as const),
+      status: faker.helpers.arrayElement(['ACTIVE', 'INACTIVE'] as const),
       isVerified: faker.datatype.boolean({ probability: 0.75 }),
     });
   }
@@ -82,7 +82,7 @@ async function main() {
       createdAt: { $date: now },
       updatedAt: { $date: now },
     })),
-  } as unknown as Prisma.InputJsonObject);
+  } as unknown as InputJsonObject);
 
   console.log(`Seeded ${accounts.length} accounts.`);
   console.log(`Admin account: admin@${SEED_EMAIL_DOMAIN}`);
