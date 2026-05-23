@@ -9,6 +9,7 @@ export const ROUTE_PATHS = {
   LIBRARY: "/library",
   LIBRARY_DETAIL: "/library/:id",
   ABOUT: "/about",
+  STYLE_GUIDE: "/style-guide",
   TERMS: "/terms",
   PRIVACY: "/privacy",
 

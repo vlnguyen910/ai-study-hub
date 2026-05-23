@@ -8,6 +8,7 @@ import { ROUTE_PATHS } from "../router.const";
 export const PUBLIC_ROUTES = [
   ROUTE_PATHS.HOME,
   ROUTE_PATHS.LIBRARY,
+  ROUTE_PATHS.STYLE_GUIDE,
   ROUTE_PATHS.ABOUT,
   ROUTE_PATHS.TERMS,
   ROUTE_PATHS.PRIVACY,
@@ -23,6 +24,12 @@ export const publicRouterConfig = {
   LIBRARY: {
     path: ROUTE_PATHS.LIBRARY,
     title: "Thư viện",
+    public: true,
+    requiresAuth: false,
+  },
+  STYLE_GUIDE: {
+    path: ROUTE_PATHS.STYLE_GUIDE,
+    title: "Style Guide",
     public: true,
     requiresAuth: false,
   },
@@ -51,6 +58,7 @@ export const publicRouterConfig = {
  */
 export const isPublicRoute = (pathname: string): boolean => {
   return PUBLIC_ROUTES.some(
-    (route) => pathname === route || pathname.startsWith(route),
+    (route) =>
+      pathname === route || (route !== "/" && pathname.startsWith(route)),
   );
 };
