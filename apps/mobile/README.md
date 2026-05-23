@@ -55,8 +55,6 @@ src/
 	features/            # Domain modules
 		auth/
 		documents/
-		chat/
-		profile/
 	hooks/               # Shared hooks
 	services/            # API clients and integrations
 	store/               # State management
@@ -70,6 +68,33 @@ src/
 - Only route screens and layouts go in src/app.
 - Keep route components thin; move logic into src/features or src/services.
 - Use \_layout.tsx for shared layout; use group folders for feature grouping.
+
+## Boilerplate cho dev mới
+
+Bộ boilerplate mẫu đã được thêm sẵn để dev mới có thể tạo feature theo đúng cấu trúc.
+
+### Đường dẫn mẫu
+
+- Route demo: `src/app/(templates)/feature-template.tsx`
+- Screen demo: `src/features/template-feature/screens/TemplateFeatureScreen.tsx`
+- Hook demo: `src/features/template-feature/hooks/useTemplateFeature.ts`
+- Service demo: `src/features/template-feature/services/template-feature.service.ts`
+- Store demo: `src/store/template-feature.store.ts`
+- Test demo: `src/__tests__/template-feature`
+
+### Quy trình tạo feature mới (6 bước)
+
+1. Copy folder `src/features/template-feature` thành `src/features/<ten-feature>` theo kebab-case.
+2. Đổi tên symbol `TemplateFeature*` thành tên feature mới.
+3. Tạo service tương ứng trong feature và cập nhật endpoint/API contract.
+4. Tạo route mới trong `src/app` và render screen từ folder feature (giữ route file thật mỏng).
+5. Thêm state chia sẻ ở `src/store` nếu cần, nếu không thì giữ local state trong hook.
+6. Thêm test cho service + hook, sau đó chạy lint/type/test trước khi mở PR.
+
+### Tài liệu chi tiết
+
+- Xem hướng dẫn đầy đủ tại `apps/mobile/BOILERPLATE_GUIDE.md`.
+- Xem workflow phát triển feature tại `apps/docs/MOBILE_FEATURE_WORKFLOW.md`.
 
 ## Data and API
 
