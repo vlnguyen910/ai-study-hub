@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useState, useEffect } from "react";
 import {
   ActivityIndicator,
   FlatList,
@@ -12,6 +12,7 @@ import {
   setTemplateFeatureSelectedItemId,
   useTemplateFeatureStore,
 } from "@/store/template-feature.store";
+import { Button, Card, PageShell, SearchBar } from "@/components";
 
 const TemplateFeatureListItem = ({
   item,
@@ -25,15 +26,19 @@ const TemplateFeatureListItem = ({
   return (
     <Pressable
       onPress={onPress}
-      className={`mb-3 rounded-xl border p-4 ${
-        isSelected ? "border-blue-500 bg-blue-50" : "border-slate-200 bg-white"
+      className={`mb-3 rounded-2xl border p-4 ${
+        isSelected
+          ? "border-primary bg-secondary-container"
+          : "border-outline-variant bg-surface-container-lowest"
       }`}
     >
-      <Text className="text-base font-semibold text-slate-900">
+      <Text className="text-base font-semibold text-on-surface">
         {item.title}
       </Text>
-      <Text className="mt-1 text-sm text-slate-600">{item.description}</Text>
-      <Text className="mt-2 text-xs text-slate-500">
+      <Text className="mt-1 text-sm text-on-surface-variant">
+        {item.description}
+      </Text>
+      <Text className="mt-2 text-xs text-on-surface-variant">
         Updated: {item.updatedAt}
       </Text>
     </Pressable>
@@ -44,57 +49,82 @@ export const TemplateFeatureScreen = () => {
   const { items, isLoading, errorMessage, hasData, loadItems } =
     useTemplateFeature();
   const { selectedItemId } = useTemplateFeatureStore();
+  const [searchTerm, setSearchTerm] = useState("");
 
   useEffect(() => {
     void loadItems();
   }, [loadItems]);
 
   return (
-    <View className="flex-1 bg-white px-6 py-6">
-      <Text className="text-2xl font-bold text-slate-900">
-        Template Feature
-      </Text>
-      <Text className="mt-2 text-sm leading-6 text-slate-600">
-        Screen này chỉ chịu trách nhiệm render UI. Logic lấy dữ liệu nằm ở hook,
-        API nằm ở services, và shared selection nằm ở store.
-      </Text>
+    <PageShell>
+      <View className="flex-1 gap-4">
+        <Text className="text-2xl font-bold text-on-surface">
+          Template Feature
+        </Text>
+        <Text className="text-sm leading-6 text-on-surface-variant">
+          Screen này chỉ chịu trách nhiệm render UI. Logic lấy dữ liệu nằm ở
+          hook, API nằm ở services, và shared selection nằm ở store.
+        </Text>
 
-      {isLoading ? (
-        <View className="mt-8 items-center justify-center">
-          <ActivityIndicator size="large" color="#2563eb" />
-          <Text className="mt-3 text-sm text-slate-500">
-            Đang tải dữ liệu...
-          </Text>
-        </View>
-      ) : null}
+        <SearchBar
+          label="Filter items"
+          placeholder="Lọc theo tiêu đề hoặc mô tả..."
+          value={searchTerm}
+          onChangeText={setSearchTerm}
+          onClear={() => setSearchTerm("")}
+        />
 
-      {errorMessage ? (
-        <View className="mt-6 rounded-xl border border-rose-200 bg-rose-50 p-3">
-          <Text className="text-sm text-rose-700">{errorMessage}</Text>
-        </View>
-      ) : null}
+        <Card
+          title="Actions"
+          subtitle="Ví dụ dùng lại Button trong feature screen."
+        >
+          <View className="flex-row flex-wrap gap-3">
+            <Button onPress={() => void loadItems()}>Reload</Button>
+            <Button variant="outline" onPress={() => setSearchTerm("")}>
+              Clear search
+            </Button>
+          </View>
+        </Card>
 
-      {!isLoading && !hasData ? (
-        <View className="mt-6 rounded-xl border border-dashed border-slate-300 p-4">
-          <Text className="text-sm text-slate-600">
-            Chưa có dữ liệu. Có thể bắt đầu với mock service hoặc kết nối API
-            thật.
-          </Text>
-        </View>
-      ) : null}
+        {isLoading ? (
+          <View className="items-center justify-center rounded-2xl border border-outline-variant bg-surface-container-lowest p-6">
+            <ActivityIndicator size="large" color="#004ac6" />
+            <Text className="mt-3 text-sm text-on-surface-variant">
+              Đang tải dữ liệu...
+            </Text>
+          </View>
+        ) : null}
 
-      <FlatList
-        className="mt-6"
-        data={items}
-        keyExtractor={(item) => item.id}
-        renderItem={({ item }) => (
-          <TemplateFeatureListItem
-            item={item}
-            isSelected={selectedItemId === item.id}
-            onPress={() => setTemplateFeatureSelectedItemId(item.id)}
-          />
-        )}
-      />
-    </View>
+        {errorMessage ? (
+          <View className="rounded-2xl border border-error-container bg-error-container p-4">
+            <Text className="text-sm text-on-error-container">
+              {errorMessage}
+            </Text>
+          </View>
+        ) : null}
+
+        {!isLoading && !hasData ? (
+          <View className="rounded-2xl border border-dashed border-outline-variant p-4">
+            <Text className="text-sm text-on-surface-variant">
+              Chưa có dữ liệu. Có thể bắt đầu với mock service hoặc kết nối API
+              thật.
+            </Text>
+          </View>
+        ) : null}
+
+        <FlatList
+          className="flex-1 mt-2"
+          data={items}
+          keyExtractor={(item) => item.id}
+          renderItem={({ item }) => (
+            <TemplateFeatureListItem
+              item={item}
+              isSelected={selectedItemId === item.id}
+              onPress={() => setTemplateFeatureSelectedItemId(item.id)}
+            />
+          )}
+        />
+      </View>
+    </PageShell>
   );
 };

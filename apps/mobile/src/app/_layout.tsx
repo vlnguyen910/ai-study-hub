@@ -6,12 +6,13 @@ export default function RootLayout() {
     <Stack
       screenOptions={{
         headerTitleAlign: "center",
+        headerShadowVisible: false,
       }}
     >
       <Stack.Screen
-        name="index"
+        name="(tabs)"
         options={{
-          title: "Mobile Boilerplate",
+          headerShown: false,
         }}
       />
       <Stack.Screen
