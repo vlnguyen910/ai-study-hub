@@ -8,7 +8,19 @@
     ],
     "paths": {
       "@repo/tokens": ["../../packages/tokens/src/index.ts"],
-      "@repo/tokens/web": ["../../packages/tokens/src/web.ts"]
+      "@repo/tokens/web": ["../../packages/tokens/src/web.ts"],
+      "@/types": ["./app/types/index.ts"],
+      "@/consts": ["./app/consts/index.ts"],
+      "@/config/*": ["./app/config/*"],
+      "@/config": ["./app/config/index.ts"],
+      "@/utils": ["./app/utils/index.ts"],
+      "@/hooks": ["./app/hooks/index.ts"],
+      "@/stores": ["./app/stores/index.ts"],
+      "@/lib": ["./app/lib/index.ts"],
+      "@/apis": ["./app/apis/index.ts"],
+      "@/mockdata": ["./app/mockdata/index.ts"],
+      "@/components": ["./app/components"],
+      "@/modules": ["./app/modules"]
     },
     "strictNullChecks": true
   },
@@ -19,5 +31,12 @@
     "next.config.js",
     ".next/types/**/*.ts"
   ],
-  "exclude": ["node_modules", "tests/**", "**/*.test.ts", "**/*.test.tsx", "**/*.spec.ts", "**/*.spec.tsx"]
+  "exclude": [
+    "node_modules",
+    "tests/**",
+    "**/*.test.ts",
+    "**/*.test.tsx",
+    "**/*.spec.ts",
+    "**/*.spec.tsx"
+  ]
 }
