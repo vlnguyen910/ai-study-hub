@@ -1,14 +1,14 @@
-import React from "react";
+import type { FC } from "react";
 
-interface SearchBarProps {
+export interface SearchBarProps extends Readonly<{
   placeholder?: string;
   defaultValue?: string;
-}
+}> {}
 
-export default function SearchBar({
+export const SearchBar: FC<SearchBarProps> = ({
   placeholder = "Search...",
   defaultValue = "",
-}: SearchBarProps) {
+}) => {
   return (
     <div className="flex items-center bg-gray-100 rounded-lg px-3 py-2 w-80">
       <svg
@@ -30,4 +30,6 @@ export default function SearchBar({
       />
     </div>
   );
-}
+};
+
+export default SearchBar;

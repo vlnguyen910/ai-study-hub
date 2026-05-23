@@ -3,9 +3,10 @@ import type { ReactNode } from "react";
 import { Inter } from "next/font/google";
 import "./globals.css";
 
-import { createWebThemeStyles } from "@repo/tokens/web";
-
-const inter = Inter({ subsets: ["latin", "latin-ext"], variable: "--font-inter" });
+const inter = Inter({
+  subsets: ["latin", "latin-ext"],
+  variable: "--font-inter",
+});
 
 export const metadata: Metadata = {
   title: "AI Study Hub",
@@ -20,7 +21,10 @@ export default function RootLayout({
   return (
     <html lang="en">
       <head>
-        <style dangerouslySetInnerHTML={{ __html: createWebThemeStyles() }} />
+        <link
+          rel="stylesheet"
+          href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1"
+        />
       </head>
       <body className={inter.className}>{children}</body>
     </html>

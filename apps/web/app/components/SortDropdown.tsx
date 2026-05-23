@@ -1,10 +1,13 @@
 "use client";
 
-import React, { useState } from "react";
+import type { FC } from "react";
+import { useState } from "react";
 
 const SORT_OPTIONS = ["Mới nhất", "Tải xuống nhiều nhất", "Đánh giá cao nhất"];
 
-export default function SortDropdown() {
+export interface SortDropdownProps extends Readonly<Record<string, never>> {}
+
+export const SortDropdown: FC<SortDropdownProps> = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [selected, setSelected] = useState(SORT_OPTIONS[0]);
 
@@ -49,4 +52,6 @@ export default function SortDropdown() {
       </div>
     </div>
   );
-}
+};
+
+export default SortDropdown;

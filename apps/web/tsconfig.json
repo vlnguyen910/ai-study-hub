@@ -19,8 +19,11 @@
       "@/lib": ["./app/lib/index.ts"],
       "@/apis": ["./app/apis/index.ts"],
       "@/mockdata": ["./app/mockdata/index.ts"],
+      "@/data/*": ["./app/data/*"],
       "@/components": ["./app/components"],
-      "@/modules": ["./app/modules"]
+      "@/components/*": ["./app/components/*"],
+      "@/modules": ["./app/modules"],
+      "@/modules/*": ["./app/modules/*"]
     },
     "strictNullChecks": true
   },
