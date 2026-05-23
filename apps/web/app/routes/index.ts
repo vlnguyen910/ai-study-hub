@@ -24,4 +24,4 @@ export * from "./guards/role.guard";
 export { ProtectedRoute, type ProtectedRouteProps } from "./ProtectedRoute";
 
 // Main route config
-export { ROUTE_PATHS, getRoutePath } from "./routes.const";
+export { ROUTE_PATHS, getRoutePath } from "./router.const";

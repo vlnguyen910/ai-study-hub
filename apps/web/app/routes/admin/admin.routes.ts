@@ -4,7 +4,7 @@
  * Requires admin role access
  */
 
-import { ROUTE_PATHS } from "../routes.const";
+import { ROUTE_PATHS } from "../router.const";
 
 export const ADMIN_ROUTES = [
   ROUTE_PATHS.ADMIN,

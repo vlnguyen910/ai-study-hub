@@ -6,21 +6,15 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useEffect, ReactNode } from "react";
-import {
-  canAccessRoute,
-  getAuthRedirect,
-  getAuthToken,
-  getAuthUser,
-} from "./auth.guard";
+import { useEffect, type FC, type ReactNode } from "react";
+import { getAuthToken, getAuthUser } from "./guards/auth.guard";
 import {
   hasRoleAccess,
-  getRequiredRoleForRoute,
   getRoleRedirect,
   type UserRole,
-} from "./role.guard";
+} from "./guards/role.guard";
 
-interface ProtectedRouteProps {
+export interface ProtectedRouteProps {
   children: ReactNode;
   requiredRole?: UserRole;
 }
@@ -32,10 +26,10 @@ interface ProtectedRouteProps {
  *   <AdminDashboard />
  * </ProtectedRoute>
  */
-export function ProtectedRoute({
+export const ProtectedRoute: FC<ProtectedRouteProps> = ({
   children,
   requiredRole,
-}: ProtectedRouteProps) {
+}) => {
   const router = useRouter();
   const token = getAuthToken();
   const user = getAuthUser();
@@ -81,6 +75,6 @@ export function ProtectedRoute({
   }
 
   return <>{children}</>;
-}
+};
 
 export default ProtectedRoute;
