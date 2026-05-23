@@ -1,0 +1,100 @@
+/**
+ * Routes Configuration
+ * Centralized route management for the application
+ */
+
+export type RouteKey = keyof typeof ROUTE_PATHS;
+
+/**
+ * All application routes
+ * This single source of truth prevents typos and makes route changes easier
+ */
+export const ROUTE_PATHS = {
+  // Public Routes
+  HOME: "/",
+
+  // Auth Routes
+  USER_LOGIN: "/user/login",
+  USER_REGISTER: "/user/register",
+
+  // Library Routes
+  LIBRARY: "/library",
+  LIBRARY_DETAIL: "/library/:id",
+
+  // Protected Routes (Placeholder for future)
+  PROFILE: "/profile",
+  SETTINGS: "/settings",
+  FAVORITES: "/favorites",
+  MY_DOCUMENTS: "/my-documents",
+} as const;
+
+/**
+ * Route metadata for navigation, permissions, etc.
+ */
+export const ROUTE_METADATA = {
+  [ROUTE_PATHS.HOME]: {
+    title: "Trang chủ",
+    public: true,
+    requiresAuth: false,
+  },
+  [ROUTE_PATHS.USER_LOGIN]: {
+    title: "Đăng nhập",
+    public: true,
+    requiresAuth: false,
+  },
+  [ROUTE_PATHS.USER_REGISTER]: {
+    title: "Đăng ký",
+    public: true,
+    requiresAuth: false,
+  },
+  [ROUTE_PATHS.LIBRARY]: {
+    title: "Thư viện",
+    public: true,
+    requiresAuth: false,
+  },
+  [ROUTE_PATHS.PROFILE]: {
+    title: "Hồ sơ cá nhân",
+    public: false,
+    requiresAuth: true,
+  },
+  [ROUTE_PATHS.SETTINGS]: {
+    title: "Cài đặt",
+    public: false,
+    requiresAuth: true,
+  },
+} as const;
+
+/**
+ * Get a route by key with optional parameters
+ * Usage: getRoute(ROUTE_PATHS.LIBRARY_DETAIL, { id: '123' })
+ */
+export const getRoute = (
+  path: string,
+  params?: Record<string, string | number>,
+): string => {
+  let result = path;
+
+  if (params) {
+    Object.entries(params).forEach(([key, value]) => {
+      result = result.replace(`:${key}`, String(value));
+    });
+  }
+
+  return result;
+};
+
+/**
+ * Check if a route requires authentication
+ */
+export const requiresAuth = (path: string): boolean => {
+  const metadata = ROUTE_METADATA[path as keyof typeof ROUTE_METADATA];
+  return metadata?.requiresAuth ?? false;
+};
+
+/**
+ * Get route title
+ */
+export const getRouteTitle = (path: string): string => {
+  const metadata = ROUTE_METADATA[path as keyof typeof ROUTE_METADATA];
+  return metadata?.title ?? "AI Study Hub";
+};

@@ -1,5 +1,4 @@
 import React from "react";
-import styles from "./SearchBar.module.css";
 
 interface SearchBarProps {
   placeholder?: string;
@@ -11,7 +10,7 @@ export default function SearchBar({
   defaultValue = "",
 }: SearchBarProps) {
   return (
-    <div className={styles.headerSearch}>
+    <div className="flex items-center bg-gray-100 rounded-lg px-3 py-2 w-80">
       <svg
         width="18"
         height="18"
@@ -27,6 +26,7 @@ export default function SearchBar({
         type="text"
         placeholder={placeholder}
         defaultValue={defaultValue}
+        className="border-none bg-transparent outline-none ml-2 w-full text-gray-900 placeholder-gray-500"
       />
     </div>
   );

@@ -2,7 +2,6 @@
 
 import { useMemo, useState, type ReactElement } from "react";
 import Link from "next/link";
-import styles from "./library.module.css";
 
 type DocumentItem = {
   id: number;
@@ -169,16 +168,18 @@ function FilterDropdown({
   );
 
   return (
-    <div className={styles.dropdownSection}>
+    <div className="relative pb-4 border-b border-gray-200">
       <button
         type="button"
-        className={styles.dropdownButton}
+        className="w-full flex items-center justify-between py-3 px-0 cursor-pointer hover:bg-gray-50 rounded transition-colors"
         onClick={onToggleOpen}
         aria-expanded={isOpen}
       >
-        <span>
-          <span className={styles.dropdownTitle}>{title}</span>
-          <strong className={styles.dropdownSummary}>{summaryLabel}</strong>
+        <span className="flex flex-col items-start gap-1">
+          <span className="text-xs font-semibold text-gray-600 uppercase">
+            {title}
+          </span>
+          <strong className="text-sm text-gray-900">{summaryLabel}</strong>
         </span>
         <svg
           width="16"
@@ -187,14 +188,15 @@ function FilterDropdown({
           fill="none"
           stroke="currentColor"
           strokeWidth="2"
+          className={`transition-transform ${isOpen ? "rotate-180" : ""}`}
         >
           <polyline points="6 9 12 15 18 9" />
         </svg>
       </button>
 
-      {isOpen ? (
-        <div className={styles.dropdownMenu}>
-          <div className={styles.dropdownSearchRow}>
+      {isOpen && (
+        <div className="absolute top-full left-0 right-0 bg-white border border-gray-200 rounded-lg shadow-lg z-50 mt-2">
+          <div className="flex items-center gap-2 px-3 py-2 border-b border-gray-200 bg-gray-50">
             <svg
               width="16"
               height="16"
@@ -208,14 +210,14 @@ function FilterDropdown({
             </svg>
             <input
               type="text"
-              className={styles.dropdownSearch}
+              className="flex-1 bg-transparent border-none outline-none text-sm text-gray-900 placeholder-gray-500"
               placeholder={placeholder}
               value={searchValue}
               onChange={(event) => onSearchChange(event.target.value)}
             />
           </div>
 
-          <div className={styles.dropdownList}>
+          <div className="max-h-64 overflow-y-auto">
             {filteredOptions.length > 0 ? (
               filteredOptions.map((option) => {
                 const isSelected = selectedValues.includes(option.value);
@@ -224,10 +226,12 @@ function FilterDropdown({
                   <button
                     key={option.value}
                     type="button"
-                    className={`${styles.dropdownOption} ${isSelected ? styles.dropdownOptionActive : ""}`}
+                    className={`w-full flex items-center gap-3 px-3 py-2 text-sm hover:bg-blue-50 transition-colors text-left ${
+                      isSelected ? "bg-blue-50 text-blue-600" : "text-gray-900"
+                    }`}
                     onClick={() => onToggleValue(option.value)}
                   >
-                    <span className={styles.optionMark}>
+                    <span className="w-4 flex items-center justify-center font-bold text-sm">
                       {multiSelect
                         ? isSelected
                           ? "✓"
@@ -241,13 +245,13 @@ function FilterDropdown({
                 );
               })
             ) : (
-              <div className={styles.dropdownEmpty}>
+              <div className="px-3 py-4 text-sm text-gray-500 text-center">
                 Không tìm thấy kết quả phù hợp
               </div>
             )}
           </div>
         </div>
-      ) : null}
+      )}
     </div>
   );
 }
@@ -312,10 +316,13 @@ export default function LibraryPage(): ReactElement {
   };
 
   return (
-    <div className={styles.container}>
-      <header className={styles.header}>
-        <div className={styles.headerLeft}>
-          <Link href="/" className={styles.logo}>
+    <div className="min-h-screen bg-white flex flex-col">
+      <header className="flex items-center justify-between px-10 py-4 border-b border-gray-200 bg-white">
+        <div className="flex items-center gap-8">
+          <Link
+            href="/"
+            className="flex items-center gap-2 hover:opacity-80 transition-opacity"
+          >
             <svg
               width="24"
               height="24"
@@ -329,30 +336,41 @@ export default function LibraryPage(): ReactElement {
               />
               <path d="M4 14V18H10V14" stroke="#004ecc" strokeWidth="2" />
             </svg>
-            <span className={styles.logoText}>AcademiShare</span>
+            <span className="font-bold text-lg text-blue-600">
+              AcademiShare
+            </span>
           </Link>
 
-          <nav className={styles.nav}>
-            <Link href="/" className={styles.navLink}>
+          <nav className="flex gap-8">
+            <Link
+              href="/"
+              className="text-gray-900 font-medium hover:text-blue-600 transition-colors"
+            >
               Home
             </Link>
             <Link
               href="/library"
-              className={`${styles.navLink} ${styles.active}`}
+              className="text-blue-600 font-medium border-b-2 border-blue-600 pb-1"
             >
               Library
             </Link>
-            <Link href="/community" className={styles.navLink}>
+            <Link
+              href="/community"
+              className="text-gray-900 font-medium hover:text-blue-600 transition-colors"
+            >
               Community
             </Link>
-            <Link href="/upload" className={styles.navLink}>
+            <Link
+              href="/upload"
+              className="text-gray-900 font-medium hover:text-blue-600 transition-colors"
+            >
               Upload
             </Link>
           </nav>
         </div>
 
-        <div className={styles.headerActions}>
-          <div className={styles.headerSearch}>
+        <div className="flex items-center gap-4">
+          <div className="flex items-center bg-gray-100 rounded-lg px-3 py-2 w-80">
             <svg
               width="18"
               height="18"
@@ -366,41 +384,48 @@ export default function LibraryPage(): ReactElement {
             </svg>
             <input
               type="text"
+              className="border-none bg-transparent outline-none ml-2 w-full text-gray-900 placeholder-gray-500"
               placeholder="Search library..."
               value={searchQuery}
               onChange={(event) => setSearchQuery(event.target.value)}
             />
           </div>
 
-          <Link href="/login" className={styles.authBtn}>
+          <Link
+            href="/user/login"
+            className="px-6 py-2 text-gray-900 font-medium hover:bg-gray-100 rounded transition-colors"
+          >
             Đăng nhập
           </Link>
         </div>
       </header>
 
-      <div className={styles.layout}>
-        <aside className={styles.sidebar}>
-          <div className={styles.sidebarHeader}>
-            <h2 className={styles.universityName}>Thư viện</h2>
-            <p className={styles.departmentName}>
+      <div className="flex flex-1 overflow-hidden bg-white">
+        <aside className="w-64 border-r border-gray-200 overflow-y-auto">
+          <div className="p-6 border-b border-gray-200">
+            <h2 className="text-xl font-bold text-gray-900 mb-1">Thư viện</h2>
+            <p className="text-sm text-gray-600">
               Chế độ khách - chưa đăng nhập
             </p>
           </div>
 
-          <div className={styles.guestCard}>
-            <p className={styles.guestTitle}>
+          <div className="mx-4 my-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+            <p className="text-sm font-semibold text-gray-900 mb-2">
               Bạn đang xem thư viện ở chế độ khách.
             </p>
-            <p className={styles.guestText}>
+            <p className="text-sm text-gray-600 mb-4">
               Đăng nhập để lưu tài liệu, theo dõi khóa học và đóng góp nội dung.
             </p>
-            <Link href="/login" className={styles.guestBtn}>
+            <Link
+              href="/user/login"
+              className="block text-center w-full py-2 bg-blue-600 text-white text-sm font-semibold rounded hover:bg-blue-700 transition-colors"
+            >
               Đăng nhập ngay
             </Link>
           </div>
 
-          <div className={styles.filterSection}>
-            <div className={styles.filterHeader}>Bộ lọc</div>
+          <div className="px-6 py-4">
+            <div className="text-sm font-bold text-gray-900 mb-4">Bộ lọc</div>
 
             <FilterDropdown
               title="Môn học"
@@ -465,31 +490,38 @@ export default function LibraryPage(): ReactElement {
 
             <button
               type="button"
-              className={styles.resetBtn}
+              className="w-full mt-4 py-2 px-3 text-sm text-gray-600 hover:bg-gray-100 rounded transition-colors font-medium"
               onClick={resetFilters}
             >
               Làm mới bộ lọc
             </button>
           </div>
 
-          <button type="button" className={styles.uploadBtn}>
-            Upload Document
-          </button>
+          <div className="px-6 py-4">
+            <button
+              type="button"
+              className="w-full py-3 px-4 bg-blue-600 text-white font-semibold rounded hover:bg-blue-700 transition-colors"
+            >
+              Upload Document
+            </button>
+          </div>
         </aside>
 
-        <main className={styles.mainContent}>
-          <div className={styles.pageHeader}>
+        <main className="flex-1 flex flex-col overflow-hidden">
+          <div className="px-8 py-6 border-b border-gray-200 flex items-center justify-between">
             <div>
-              <h1 className={styles.pageTitle}>{pageTitle}</h1>
-              <p className={styles.pageSubtitle}>{pageSubtitle}</p>
+              <h1 className="text-3xl font-bold text-gray-900 mb-2">
+                {pageTitle}
+              </h1>
+              <p className="text-gray-600">{pageSubtitle}</p>
             </div>
-            <div className={styles.viewControls}>
-              <span className={styles.sortLabel}>
+            <div className="flex items-center gap-4">
+              <span className="text-sm text-gray-600">
                 Sắp xếp: <strong>Mới nhất</strong>
               </span>
               <button
                 type="button"
-                className={`${styles.viewBtn} ${styles.active}`}
+                className="p-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
               >
                 <svg
                   width="18"
@@ -505,7 +537,10 @@ export default function LibraryPage(): ReactElement {
                   <rect x="3" y="14" width="7" height="7" />
                 </svg>
               </button>
-              <button type="button" className={styles.viewBtn}>
+              <button
+                type="button"
+                className="p-2 text-gray-600 hover:bg-gray-100 rounded transition-colors"
+              >
                 <svg
                   width="18"
                   height="18"
@@ -525,103 +560,129 @@ export default function LibraryPage(): ReactElement {
             </div>
           </div>
 
-          <div className={styles.documentGrid}>
-            {filteredDocuments.map((doc) => (
-              <div key={doc.id} className={styles.docCard}>
+          <div className="flex-1 overflow-y-auto p-8">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+              {filteredDocuments.map((doc) => (
                 <div
-                  className={styles.docImage}
-                  style={{ backgroundImage: `url(${doc.image})` }}
+                  key={doc.id}
+                  className="bg-white border border-gray-200 rounded-lg overflow-hidden hover:shadow-lg transition-shadow"
                 >
-                  <span
-                    className={`${styles.docTag} ${doc.type === "PDF" ? styles.tagPdf : styles.tagDocx}`}
+                  <div
+                    className="w-full h-40 bg-cover bg-center relative"
+                    style={{ backgroundImage: `url(${doc.image})` }}
                   >
-                    {doc.type}
-                  </span>
-                </div>
-                <div className={styles.docInfo}>
-                  <h3 className={styles.docTitle}>{doc.title}</h3>
-                  <div className={styles.docAuthor}>
-                    <div className={styles.authorAvatar} />
-                    <span className={styles.authorText}>{doc.author}</span>
+                    <span
+                      className={`absolute top-2 right-2 px-3 py-1 rounded text-xs font-bold text-white ${
+                        doc.type === "PDF" ? "bg-red-600" : "bg-blue-600"
+                      }`}
+                    >
+                      {doc.type}
+                    </span>
                   </div>
-                  <div className={styles.docMeta}>
-                    <div className={styles.metaStats}>
-                      <span className={styles.metaItem}>
-                        <svg
-                          width="14"
-                          height="14"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="2"
-                        >
-                          <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
-                        </svg>
-                        {doc.pages}
-                      </span>
-                      <span className={styles.metaItem}>
-                        <svg
-                          width="14"
-                          height="14"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="2"
-                        >
-                          <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
-                          <circle cx="12" cy="12" r="3" />
-                        </svg>
-                        {doc.views}
-                      </span>
-                      <span
-                        className={styles.metaItem}
-                        style={{ color: "#2b6bf3" }}
-                      >
-                        <svg
-                          width="14"
-                          height="14"
-                          viewBox="0 0 24 24"
-                          fill="currentColor"
-                          stroke="currentColor"
-                          strokeWidth="2"
-                        >
-                          <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
-                        </svg>
-                        {doc.rating}
+                  <div className="p-4 flex flex-col gap-3">
+                    <h3 className="font-bold text-gray-900 line-clamp-2">
+                      {doc.title}
+                    </h3>
+                    <div className="flex items-center gap-2">
+                      <div className="w-8 h-8 bg-gray-300 rounded-full flex-shrink-0" />
+                      <span className="text-xs text-gray-600">
+                        {doc.author}
                       </span>
                     </div>
-                    <button type="button" className={styles.bookmarkBtn}>
-                      Chi tiết
-                    </button>
+                    <div className="flex items-center justify-between pt-2 border-t border-gray-200">
+                      <div className="flex gap-4 text-xs text-gray-600">
+                        <span className="flex items-center gap-1">
+                          <svg
+                            width="14"
+                            height="14"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                          >
+                            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+                          </svg>
+                          {doc.pages}
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <svg
+                            width="14"
+                            height="14"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                          >
+                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                            <circle cx="12" cy="12" r="3" />
+                          </svg>
+                          {doc.views}
+                        </span>
+                        <span className="flex items-center gap-1 text-blue-600 font-bold">
+                          <svg
+                            width="14"
+                            height="14"
+                            viewBox="0 0 24 24"
+                            fill="currentColor"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                          >
+                            <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+                          </svg>
+                          {doc.rating}
+                        </span>
+                      </div>
+                      <button
+                        type="button"
+                        className="text-xs font-semibold text-blue-600 hover:underline"
+                      >
+                        Chi tiết
+                      </button>
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
 
-          <div className={styles.pagination}>
-            <button type="button" className={styles.pageBtn}>
-              &lt;
-            </button>
-            <button
-              type="button"
-              className={`${styles.pageBtn} ${styles.active}`}
-            >
-              1
-            </button>
-            <button type="button" className={styles.pageBtn}>
-              2
-            </button>
-            <button type="button" className={styles.pageBtn}>
-              3
-            </button>
-            <span className={styles.paginationEllipsis}>...</span>
-            <button type="button" className={styles.pageBtn}>
-              12
-            </button>
-            <button type="button" className={styles.pageBtn}>
-              &gt;
-            </button>
+            <div className="flex items-center justify-center gap-2">
+              <button
+                type="button"
+                className="px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded transition-colors"
+              >
+                &lt;
+              </button>
+              <button
+                type="button"
+                className="px-3 py-2 text-sm bg-blue-600 text-white rounded font-semibold"
+              >
+                1
+              </button>
+              <button
+                type="button"
+                className="px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded transition-colors"
+              >
+                2
+              </button>
+              <button
+                type="button"
+                className="px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded transition-colors"
+              >
+                3
+              </button>
+              <span className="px-2 text-gray-600">...</span>
+              <button
+                type="button"
+                className="px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded transition-colors"
+              >
+                12
+              </button>
+              <button
+                type="button"
+                className="px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded transition-colors"
+              >
+                &gt;
+              </button>
+            </div>
           </div>
         </main>
       </div>
