@@ -149,6 +149,7 @@ To be added.
 - Naming Conventions: [apps/docs/NAMING_CONVENTIONS.md](apps/docs/NAMING_CONVENTIONS.md)
 - Shared Tokens: [apps/docs/SHARED_TOKENS.md](apps/docs/SHARED_TOKENS.md)
 - Testing: [apps/docs/TESTING.md](apps/docs/TESTING.md)
+- Web app README: [apps/web/README.md](apps/web/README.md)
 
 ## Team Members
 
