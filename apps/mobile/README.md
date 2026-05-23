@@ -26,7 +26,7 @@ cp .env.example .env
 Set the API base URL for the mobile app:
 
 ```
-EXPO_PUBLIC_API_URL=http://localhost:8080
+EXPO_PUBLIC_API_URL=http://localhost:8080 # local development
 ```
 
 ## Run (local)
