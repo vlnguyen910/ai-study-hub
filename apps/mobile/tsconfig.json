@@ -3,18 +3,10 @@
   "compilerOptions": {
     "strict": true,
     "paths": {
-      "@/*": [
-        "./src/*"
-      ],
-      "@repo/tokens": [
-        "../../packages/tokens/src/index.ts"
-      ],
-      "@repo/tokens/web": [
-        "../../packages/tokens/src/web.ts"
-      ],
-      "@/assets/*": [
-        "./assets/*"
-      ]
+      "@/*": ["./src/*"],
+      "@repo/tokens": ["../../packages/tokens/src/index.ts"],
+      "@repo/tokens/web": ["../../packages/tokens/src/web.ts"],
+      "@/assets/*": ["./assets/*"]
     }
   },
   "include": [
@@ -22,6 +14,7 @@
     "**/*.tsx",
     "src/**/*.d.ts",
     ".expo/types/**/*.ts",
-    "expo-env.d.ts"
+    "expo-env.d.ts",
+    "nativewind-env.d.ts"
   ]
 }
