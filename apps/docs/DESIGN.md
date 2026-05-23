@@ -1,99 +1,124 @@
----
-name: Ethereal Study
-colors:
-  surface: "#111318"
-  surface-dim: "#111318"
-  surface-bright: "#37393e"
-  surface-container-lowest: "#0c0e13"
-  surface-container-low: "#191c20"
-  surface-container: "#1d2025"
-  surface-container-high: "#282a2f"
-  surface-container-highest: "#33353a"
-  on-surface: "#e2e2e9"
-  on-surface-variant: "#c9c4d7"
-  inverse-surface: "#e2e2e9"
-  inverse-on-surface: "#2e3036"
-  outline: "#938ea1"
-  outline-variant: "#484555"
-  surface-tint: "#cabeff"
-  primary: "#cabeff"
-  on-primary: "#32009a"
-  primary-container: "#947dff"
-  on-primary-container: "#2b0088"
-  inverse-primary: "#613ede"
-  secondary: "#ccc2db"
-  on-secondary: "#332d41"
-  secondary-container: "#4c465a"
-  on-secondary-container: "#bdb4cd"
-  tertiary: "#c9c4d2"
-  on-tertiary: "#312f39"
-  tertiary-container: "#928f9b"
-  on-tertiary-container: "#2a2833"
-  error: "#ffb4ab"
-  on-error: "#690005"
-  error-container: "#93000a"
-  on-error-container: "#ffdad6"
-  primary-fixed: "#e6deff"
-  primary-fixed-dim: "#cabeff"
-  on-primary-fixed: "#1c0062"
-  on-primary-fixed-variant: "#481bc6"
-  secondary-fixed: "#e8def8"
-  secondary-fixed-dim: "#ccc2db"
-  on-secondary-fixed: "#1e192b"
-  on-secondary-fixed-variant: "#4a4458"
-  tertiary-fixed: "#e5e0ee"
-  tertiary-fixed-dim: "#c9c4d2"
-  on-tertiary-fixed: "#1c1a24"
-  on-tertiary-fixed-variant: "#474550"
-  background: "#111318"
-  on-background: "#e2e2e9"
-  surface-variant: "#33353a"
-typography:
-  headline-lg:
-    fontFamily: Plus Jakarta Sans
-    fontSize: 28px
-    fontWeight: "700"
-    lineHeight: 36px
-  headline-lg-mobile:
-    fontFamily: Plus Jakarta Sans
-    fontSize: 24px
-    fontWeight: "700"
-    lineHeight: 32px
-  headline-md:
-    fontFamily: Plus Jakarta Sans
-    fontSize: 20px
-    fontWeight: "600"
-    lineHeight: 28px
-  body-lg:
-    fontFamily: Plus Jakarta Sans
-    fontSize: 16px
-    fontWeight: "400"
-    lineHeight: 24px
-  body-md:
-    fontFamily: Plus Jakarta Sans
-    fontSize: 14px
-    fontWeight: "400"
-    lineHeight: 20px
-  label-md:
-    fontFamily: Plus Jakarta Sans
-    fontSize: 12px
-    fontWeight: "600"
-    lineHeight: 16px
-    letterSpacing: 0.5px
-rounded:
-  sm: 0.25rem
-  DEFAULT: 0.5rem
-  md: 0.75rem
-  lg: 1rem
-  xl: 1.5rem
-  full: 9999px
-spacing:
-  margin-mobile: 1rem
-  gutter-md: 1rem
-  stack-sm: 0.5rem
-  stack-md: 1rem
-  stack-lg: 1.5rem
----
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap");
+@import "tailwindcss";
+
+@theme {
+--color-surface: #faf8ff;
+--color-surface-container-high: #e7e7f3;
+--color-primary: #004ac6;
+--color-surface-variant: #e1e2ed;
+--color-outline: #737686;
+--color-on-background: #191b23;
+--color-on-tertiary-fixed: #360f00;
+--color-error: #ba1a1a;
+--color-primary-fixed-dim: #b4c5ff;
+--color-on-secondary-fixed: #001d35;
+--color-error-container: #ffdad6;
+--color-on-primary-fixed: #00174b;
+--color-surface-container-lowest: #ffffff;
+--color-on-tertiary: #ffffff;
+--color-background: #faf8ff;
+--color-primary-container: #2563eb;
+--color-outline-variant: #c3c6d7;
+--color-on-primary-fixed-variant: #003ea8;
+--color-inverse-primary: #b4c5ff;
+--color-on-tertiary-container: #ffede6;
+--color-surface-dim: #d9d9e5;
+--color-on-secondary-container: #145283;
+--color-tertiary-fixed: #ffdbcd;
+--color-surface-tint: #0053db;
+--color-surface-container-highest: #e1e2ed;
+--color-secondary-container: #93c5fd;
+--color-on-surface-variant: #434655;
+--color-on-primary-container: #eeefff;
+--color-tertiary: #943700;
+--color-on-error: #ffffff;
+--color-on-tertiary-fixed-variant: #7d2d00;
+--color-surface-container-low: #f3f3fe;
+--color-secondary: #2b6193;
+--color-inverse-on-surface: #f0f0fb;
+--color-primary-fixed: #dbe1ff;
+--color-on-primary: #ffffff;
+--color-surface-bright: #faf8ff;
+--color-on-secondary: #ffffff;
+--color-secondary-fixed-dim: #9ccaff;
+--color-on-surface: #191b23;
+--color-inverse-surface: #2e3039;
+--color-secondary-fixed: #d0e4ff;
+--color-on-error-container: #93000a;
+--color-on-secondary-fixed-variant: #03497a;
+--color-tertiary-container: #bc4800;
+--color-tertiary-fixed-dim: #ffb596;
+--color-surface-container: #ededf9;
+
+--spacing-margin-mobile: 16px;
+--spacing-container-max: 1280px;
+--spacing-base: 8px;
+--spacing-gutter: 24px;
+--spacing-margin-desktop: 40px;
+
+--radius-lg: 0.25rem;
+--radius-xl: 0.5rem;
+--radius-2xl: 1rem;
+--radius-full: 0.75rem;
+
+--font-body-md: "Inter", sans-serif;
+--font-headline-lg: "Inter", sans-serif;
+--font-label-md: "Inter", sans-serif;
+--font-headline-md: "Inter", sans-serif;
+--font-headline-lg-mobile: "Inter", sans-serif;
+--font-label-sm: "Inter", sans-serif;
+--font-display: "Inter", sans-serif;
+--font-body-lg: "Inter", sans-serif;
+
+--text-body-md: 16px;
+--text-body-md--line-height: 1.6;
+--text-body-md--font-weight: 400;
+
+--text-headline-lg: 32px;
+--text-headline-lg--line-height: 1.2;
+--text-headline-lg--letter-spacing: -0.01em;
+--text-headline-lg--font-weight: 700;
+
+--text-label-md: 14px;
+--text-label-md--line-height: 1.4;
+--text-label-md--letter-spacing: 0.01em;
+--text-label-md--font-weight: 600;
+
+--text-headline-md: 24px;
+--text-headline-md--line-height: 1.3;
+--text-headline-md--font-weight: 600;
+
+--text-headline-lg-mobile: 24px;
+--text-headline-lg-mobile--line-height: 1.2;
+--text-headline-lg-mobile--font-weight: 700;
+
+--text-label-sm: 12px;
+--text-label-sm--line-height: 1.4;
+--text-label-sm--font-weight: 500;
+
+--text-display: 48px;
+--text-display--line-height: 1.1;
+--text-display--letter-spacing: -0.02em;
+--text-display--font-weight: 700;
+
+--text-body-lg: 18px;
+--text-body-lg--line-height: 1.6;
+--text-body-lg--font-weight: 400;
+}
+
+body {
+background: var(--color-surface);
+color: var(--color-on-surface);
+font-family: var(--font-body-md);
+}
+
+.material-symbols-outlined {
+font-variation-settings:
+"FILL" 0,
+"wght" 400,
+"GRAD" 0,
+"opsz" 24;
+}
 
 ## Brand & Style
 
