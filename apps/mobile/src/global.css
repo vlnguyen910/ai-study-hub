@@ -3,7 +3,7 @@
 @tailwind components;
 @tailwind utilities;
 
-@theme {
+:root {
   --color-surface: #faf8ff;
   --color-surface-container-high: #e7e7f3;
   --color-primary: #004ac6;
