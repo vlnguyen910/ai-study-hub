@@ -10,7 +10,7 @@ import { AUTH_ROUTES } from "../user/user.auth.routes";
 export interface GuardContext {
   pathname: string;
   isAuthenticated: boolean;
-  userRole?: "guest" | "student" | "teacher" | "admin";
+  userRole?: "guest" | "student" | "teacher" | "moderator" | "admin";
   token?: string;
 }
 
