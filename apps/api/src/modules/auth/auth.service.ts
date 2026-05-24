@@ -44,14 +44,22 @@ export class AuthService {
       },
     });
 
-    const tokens = await this.generateTokens(account.id, account.email);
+    const refreshExpiresIn = this.parseExpiresIn(
+      process.env.JWT_REFRESH_EXPIRES_IN,
+      30 * 24 * 60 * 60,
+    );
+    const tokens = await this.generateTokens(
+      account.id,
+      account.email,
+      refreshExpiresIn,
+    );
 
     await this.prismaService.sessions.create({
       data: {
         userId: account.id,
         refreshToken: tokens.refreshToken,
         deviceInfo: signupDto.deviceInfo ?? 'WEB',
-        expiresAt: this.getRefreshExpiresAt(),
+        expiresAt: this.getRefreshExpiresAt(refreshExpiresIn),
       },
     });
 
@@ -85,14 +93,22 @@ export class AuthService {
       throw new UnauthorizedException('Invalid credentials');
     }
 
-    const tokens = await this.generateTokens(account.id, account.email);
+    const refreshExpiresIn = this.parseExpiresIn(
+      process.env.JWT_REFRESH_EXPIRES_IN,
+      30 * 24 * 60 * 60,
+    );
+    const tokens = await this.generateTokens(
+      account.id,
+      account.email,
+      refreshExpiresIn,
+    );
 
     await this.prismaService.sessions.create({
       data: {
         userId: account.id,
         refreshToken: tokens.refreshToken,
         deviceInfo: signinDto.deviceInfo ?? 'WEB',
-        expiresAt: this.getRefreshExpiresAt(),
+        expiresAt: this.getRefreshExpiresAt(refreshExpiresIn),
       },
     });
 
@@ -115,6 +131,7 @@ export class AuthService {
   private async generateTokens(
     userId: string,
     email: string,
+    refreshExpiresIn: number,
   ): Promise<AuthTokens> {
     const payload = {
       sub: userId,
@@ -131,10 +148,7 @@ export class AuthService {
 
     const refreshToken = await this.jwtService.signAsync(payload, {
       secret: process.env.JWT_REFRESH_SECRET,
-      expiresIn: this.parseExpiresIn(
-        process.env.JWT_REFRESH_EXPIRES_IN,
-        30 * 24 * 60 * 60,
-      ),
+      expiresIn: refreshExpiresIn,
     });
 
     return {
@@ -143,11 +157,8 @@ export class AuthService {
     };
   }
 
-  private getRefreshExpiresAt() {
-    const now = Date.now();
-    const thirtyDaysInMs = 30 * 24 * 60 * 60 * 1000;
-
-    return new Date(now + thirtyDaysInMs);
+  private getRefreshExpiresAt(refreshExpiresIn: number) {
+    return new Date(Date.now() + refreshExpiresIn * 1000);
   }
 
   private parseExpiresIn(
