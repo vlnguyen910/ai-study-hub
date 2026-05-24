@@ -5,7 +5,7 @@
 
 import { ROUTE_PATHS } from "../router.const";
 
-export type UserRole = "guest" | "student" | "teacher" | "admin";
+export type UserRole = "guest" | "student" | "teacher" | "moderator" | "admin";
 
 export interface RoleGuardContext {
   pathname: string;
@@ -25,6 +25,12 @@ export const ROLE_BASED_ROUTES = {
     ROUTE_PATHS.ADMIN_ROUTES.CATEGORIES,
     ROUTE_PATHS.ADMIN_ROUTES.REPORTS,
     ROUTE_PATHS.ADMIN_ROUTES.SETTINGS,
+  ],
+  MODERATOR: [
+    ROUTE_PATHS.MODERATOR,
+    ROUTE_PATHS.MODERATOR_ROUTES.DASHBOARD,
+    ROUTE_PATHS.MODERATOR_ROUTES.DOCUMENTS,
+    ROUTE_PATHS.MODERATOR_ROUTES.POSTS,
   ],
   STUDENT: [
     ROUTE_PATHS.PROTECTED_ROUTES.PROFILE,
@@ -64,6 +70,11 @@ export const getRequiredRoleForRoute = (pathname: string): UserRole | null => {
     return "admin";
   }
 
+  // Check moderator routes
+  if (ROLE_BASED_ROUTES.MODERATOR.some((route) => pathname.startsWith(route))) {
+    return "moderator";
+  }
+
   // Check teacher-specific routes
   if (ROLE_BASED_ROUTES.TEACHER.some((route) => pathname.startsWith(route))) {
     return "teacher";
@@ -84,6 +95,8 @@ export const getRoleRedirect = (userRole: UserRole): string => {
   switch (userRole) {
     case "admin":
       return ROUTE_PATHS.ADMIN_ROUTES.DASHBOARD;
+    case "moderator":
+      return ROUTE_PATHS.MODERATOR_ROUTES.DASHBOARD;
     case "student":
     case "teacher":
       return ROUTE_PATHS.PROTECTED_ROUTES.DASHBOARD;

@@ -45,6 +45,15 @@ export const ROUTE_PATHS = {
     REPORTS: "/admin/reports",
     SETTINGS: "/admin/settings",
   },
+
+  // ========== MODERATOR ROUTES (Temporary mock dashboard routes) ==========
+  MODERATOR: "/moderator",
+  MODERATOR_ROUTES: {
+    DASHBOARD: "/moderator",
+    DOCUMENTS: "/moderator/documents",
+    DOCUMENT_DETAIL: "/moderator/documents/:id",
+    POSTS: "/moderator/posts",
+  },
 } as const;
 
 /**
