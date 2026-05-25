@@ -12,6 +12,7 @@ const SEED_ACCOUNT_COUNT = Number.parseInt(
 const SEED_EMAIL_DOMAIN = 'seed.ai-study-hub.local';
 const SEED_PASSWORD = 'Password123!';
 const SEED_PASSWORD_SALT_ROUNDS = 10;
+const SEED_REFRESH_TOKEN_SALT_ROUNDS = 10;
 type UserRole = 'USER' | 'ADMIN' | 'MODERATOR';
 type UserStatus = 'ACTIVE' | 'INACTIVE' | 'BANNED';
 type DeviceInfo = 'WEB' | 'MOBILE';
@@ -126,9 +127,19 @@ async function main() {
   });
 
   if (sessions.length > 0) {
+    const hashedSessions = await Promise.all(
+      sessions.map(async (session) => ({
+        ...session,
+        refreshToken: await bcrypt.hash(
+          session.refreshToken,
+          SEED_REFRESH_TOKEN_SALT_ROUNDS,
+        ),
+      })),
+    );
+
     await prisma.$runCommandRaw({
       insert: 'sessions',
-      documents: sessions.map((session) => ({
+      documents: hashedSessions.map((session) => ({
         ...session,
         createdAt: { $date: now },
         expiresAt: { $date: session.expiresAt.toISOString() },

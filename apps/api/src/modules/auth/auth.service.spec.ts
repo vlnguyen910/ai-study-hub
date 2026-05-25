@@ -80,9 +80,14 @@ describe('AuthService', () => {
     );
     expect(passwordMatched).toBe(true);
 
-    expect(prismaMock.sessions.create).toHaveBeenCalled();
-    expect(result.accessToken).toBe('access-token');
-    expect(result.refreshToken).toBe('refresh-token');
+    expect(prismaMock.sessions.create).not.toHaveBeenCalled();
+    expect(result).toEqual({
+      user: {
+        id: 'user-1',
+        email: 'new-user@example.com',
+        name: 'New User',
+      },
+    });
   });
 
   it('should throw conflict exception when email exists on signup', async () => {
@@ -120,6 +125,16 @@ describe('AuthService', () => {
     expect(result.accessToken).toBe('access-token');
     expect(result.refreshToken).toBe('refresh-token');
     expect(prismaMock.sessions.create).toHaveBeenCalled();
+    const sessionCreatePayload = prismaMock.sessions.create.mock
+      .calls[0][0] as {
+      data: { refreshToken: string };
+    };
+    expect(
+      await bcrypt.compare(
+        'refresh-token',
+        sessionCreatePayload.data.refreshToken,
+      ),
+    ).toBe(true);
   });
 
   it('should throw unauthorized exception for invalid signin password', async () => {

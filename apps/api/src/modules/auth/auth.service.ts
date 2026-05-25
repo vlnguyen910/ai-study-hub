@@ -44,32 +44,12 @@ export class AuthService {
       },
     });
 
-    const refreshExpiresIn = this.parseExpiresIn(
-      process.env.JWT_REFRESH_EXPIRES_IN,
-      30 * 24 * 60 * 60,
-    );
-    const tokens = await this.generateTokens(
-      account.id,
-      account.email,
-      refreshExpiresIn,
-    );
-
-    await this.prismaService.sessions.create({
-      data: {
-        userId: account.id,
-        refreshToken: tokens.refreshToken,
-        deviceInfo: signupDto.deviceInfo ?? 'WEB',
-        expiresAt: this.getRefreshExpiresAt(refreshExpiresIn),
-      },
-    });
-
     return {
       user: {
         id: account.id,
         email: account.email,
         name: account.name,
       },
-      ...tokens,
     };
   }
 
@@ -102,11 +82,12 @@ export class AuthService {
       account.email,
       refreshExpiresIn,
     );
+    const hashedRefreshToken = await this.hashRefreshToken(tokens.refreshToken);
 
     await this.prismaService.sessions.create({
       data: {
         userId: account.id,
-        refreshToken: tokens.refreshToken,
+        refreshToken: hashedRefreshToken,
         deviceInfo: signinDto.deviceInfo ?? 'WEB',
         expiresAt: this.getRefreshExpiresAt(refreshExpiresIn),
       },
@@ -159,6 +140,10 @@ export class AuthService {
 
   private getRefreshExpiresAt(refreshExpiresIn: number) {
     return new Date(Date.now() + refreshExpiresIn * 1000);
+  }
+
+  private async hashRefreshToken(refreshToken: string): Promise<string> {
+    return bcrypt.hash(refreshToken, 10);
   }
 
   private parseExpiresIn(
