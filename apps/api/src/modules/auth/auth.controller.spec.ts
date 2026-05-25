@@ -59,7 +59,7 @@ describe('AuthController', () => {
   it('should call logout service', () => {
     authServiceMock.logout.mockReturnValue({ message: 'Logout successful' });
 
-    controller.logout('user-1');
+    controller.logout();
 
     expect(authServiceMock.logout).toHaveBeenCalled();
   });
