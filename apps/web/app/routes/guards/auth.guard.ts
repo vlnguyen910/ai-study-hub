@@ -46,7 +46,7 @@ export const getAuthRedirect = (
     !isAuthenticated &&
     USER_PROTECTED_ROUTES.some((route) => pathname.startsWith(route))
   ) {
-    return `/user/login?redirect=${encodeURIComponent(pathname)}`;
+    return `/login?redirect=${encodeURIComponent(pathname)}`;
   }
 
   // If authenticated and trying to access auth routes, redirect to home
