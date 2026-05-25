@@ -1,6 +1,7 @@
 import { PrismaClient } from '@prisma/client';
 import type { InputJsonObject } from '@prisma/client/runtime/library';
 import { faker } from '@faker-js/faker';
+import * as bcrypt from 'bcrypt';
 
 const prisma = new PrismaClient();
 
@@ -10,6 +11,7 @@ const SEED_ACCOUNT_COUNT = Number.parseInt(
 );
 const SEED_EMAIL_DOMAIN = 'seed.ai-study-hub.local';
 const SEED_PASSWORD = 'Password123!';
+const SEED_PASSWORD_SALT_ROUNDS = 10;
 type UserRole = 'USER' | 'ADMIN' | 'MODERATOR';
 type UserStatus = 'ACTIVE' | 'INACTIVE' | 'BANNED';
 type DeviceInfo = 'WEB' | 'MOBILE';
@@ -69,6 +71,12 @@ async function main() {
   const accounts = buildSeedAccounts();
   const seedEmails = accounts.map((account) => account.email);
   const now = new Date().toISOString();
+  const hashedAccounts = await Promise.all(
+    accounts.map(async (account) => ({
+      ...account,
+      password: await bcrypt.hash(account.password, SEED_PASSWORD_SALT_ROUNDS),
+    })),
+  );
 
   await prisma.$runCommandRaw({
     delete: 'accounts',
@@ -86,7 +94,7 @@ async function main() {
 
   await prisma.$runCommandRaw({
     insert: 'accounts',
-    documents: accounts.map((account) => ({
+    documents: hashedAccounts.map((account) => ({
       ...account,
       createdAt: { $date: now },
       updatedAt: { $date: now },
