@@ -14,11 +14,11 @@ export const ROUTE_PATHS = {
   HOME: "/",
 
   // Auth Routes
-  USER_LOGIN: "/login",
-  USER_REGISTER: "/register",
-  USER_FORGOT_PASSWORD: "/forgot-password",
-  USER_RESET_PASSWORD: "/reset-password/:token",
-  USER_VERIFY_EMAIL: "/verify-email/:token",
+  USER_LOGIN: "/user/login",
+  USER_REGISTER: "/user/register",
+  USER_FORGOT_PASSWORD: "/user/forgot-password",
+  USER_RESET_PASSWORD: "/user/reset-password/:token",
+  USER_VERIFY_EMAIL: "/user/verify-email/:token",
 
   // Library Routes
   LIBRARY: "/library",

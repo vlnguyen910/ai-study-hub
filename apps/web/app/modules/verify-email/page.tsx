@@ -8,6 +8,12 @@ export interface VerifyEmailPageProps {
 export default function VerifyEmailPage({
   token,
 }: VerifyEmailPageProps): ReactElement {
+  const tokenValue = token ?? "";
+  const tokenPreview =
+    tokenValue.length > 12
+      ? `${tokenValue.slice(0, 6)}…${tokenValue.slice(-4)}`
+      : tokenValue || "pending";
+
   return (
     <div className="min-h-screen bg-gray-100 flex flex-col">
       <div className="flex-1 flex items-center justify-center p-8">
@@ -42,7 +48,8 @@ export default function VerifyEmailPage({
             Email verified
           </h1>
           <p className="text-center text-gray-600 text-sm mb-8">
-            Your account is ready.
+            Your account is ready. Token preview:{" "}
+            <span className="font-mono">{tokenPreview}</span>
           </p>
 
           <div className="rounded-lg border border-blue-200 bg-blue-50 p-4 text-sm text-blue-900 mb-6">
@@ -51,17 +58,21 @@ export default function VerifyEmailPage({
 
           <div className="flex flex-col gap-3 sm:flex-row">
             <Link
-              href="/login"
+              href="/user/login"
               className="inline-flex h-12 flex-1 items-center justify-center rounded bg-blue-600 px-4 text-sm font-semibold text-white hover:bg-blue-700"
             >
               Continue to login
             </Link>
             <Link
-              href="/forgot-password"
+              href="/user/forgot-password"
               className="inline-flex h-12 flex-1 items-center justify-center rounded border border-gray-300 px-4 text-sm font-semibold text-gray-700 hover:bg-gray-50"
             >
-              Reset password
+              Resend email
             </Link>
+          </div>
+
+          <div className="mt-6 text-center text-xs text-gray-500">
+            Token: {tokenValue || "pending"}
           </div>
         </div>
       </div>

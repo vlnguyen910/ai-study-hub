@@ -5,7 +5,13 @@ import Link from "next/link";
 import type { ReactElement } from "react";
 import { Button } from "@repo/ui/button";
 
-export default function ResetPasswordPage(): ReactElement {
+export interface ResetPasswordPageProps {
+  token: string;
+}
+
+export default function ResetPasswordPage({
+  token,
+}: ResetPasswordPageProps): ReactElement {
   const [formData, setFormData] = useState({
     password: "",
     confirmPassword: "",
@@ -99,11 +105,12 @@ export default function ResetPasswordPage(): ReactElement {
           {submitted ? (
             <div className="flex flex-col gap-6">
               <div className="rounded-lg border border-green-200 bg-green-50 p-4 text-sm text-green-900">
-                Your password was updated successfully.
+                Your password was updated successfully for token{" "}
+                <span className="font-mono">{token}</span>.
               </div>
 
               <Link
-                href="/login"
+                href="/user/login"
                 className="inline-flex h-12 w-full items-center justify-center rounded bg-blue-600 px-4 text-sm font-semibold text-white hover:bg-blue-700"
               >
                 Continue to login
@@ -176,10 +183,10 @@ export default function ResetPasswordPage(): ReactElement {
               <div className="text-center text-sm text-gray-600">
                 Need a new link?{" "}
                 <Link
-                  href="/forgot-password"
+                  href="/user/forgot-password"
                   className="font-semibold text-blue-600 hover:underline"
                 >
-                  Request new link
+                  Resend email
                 </Link>
               </div>
             </form>
