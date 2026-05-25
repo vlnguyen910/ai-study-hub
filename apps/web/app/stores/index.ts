@@ -1,10 +1,5 @@
 /**
- * State Management (Zustand, Pinia, etc.)
+ * State Management
  */
 
-// This file can export Zustand stores, Pinia stores, or other state management
-// Example structure:
-// export { useAuthStore } from './auth.store';
-// export { useDocumentStore } from './document.store';
-
-export {};
+export { useAuthStore } from "./auth/store";

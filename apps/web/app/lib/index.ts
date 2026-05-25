@@ -2,13 +2,17 @@
  * Library Functions & Helpers
  */
 
-// API Client
+import { APP_CONFIG } from "@/config";
+
+// Axios API Client (với Refresh Token interceptor)
+export { apiClient } from "./axios";
+
+// API Client (legacy fetch wrapper)
 export const fetchAPI = async <T = unknown>(
   endpoint: string,
   options?: RequestInit,
 ): Promise<T> => {
-  const baseUrl =
-    process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001/api";
+  const baseUrl = APP_CONFIG.api.baseUrl;
   const url = `${baseUrl}${endpoint}`;
 
   try {
