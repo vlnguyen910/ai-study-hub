@@ -1,5 +1,4 @@
 import { Body, Controller, Post } from '@nestjs/common';
-import { User } from '../../common/decorators/user.decorator';
 import { AuthService } from './auth.service';
 import { SigninDto } from './dto/signin.dto';
 import { SignupDto } from './dto/signup.dto';
@@ -19,7 +18,7 @@ export class AuthController {
   }
 
   @Post('logout')
-  logout(@User('sub') userId?: string) {
+  logout() {
     return this.authService.logout();
   }
 }
