@@ -180,7 +180,7 @@ apiClient.interceptors.response.use(
         // - Server có issues
         processQueue(refreshError, null); // Reject tất cả requests trong queue
         useAuthStore.getState().logout();
-        window.location.href = "/user/login";
+        window.location.href = "/login";
         return Promise.reject(refreshError);
       } finally {
         // Luôn reset flag cho lần sau

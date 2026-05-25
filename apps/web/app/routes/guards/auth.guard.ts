@@ -5,7 +5,7 @@
  */
 
 import { USER_PROTECTED_ROUTES } from "../user/user.routes";
-import { AUTH_ROUTES } from "../user/user.auth.routes";
+import { AUTH_ROUTES, isAuthRoute } from "../user/user.auth.routes";
 
 export interface GuardContext {
   pathname: string;
@@ -26,7 +26,7 @@ export const canAccessRoute = (context: GuardContext): boolean => {
   }
 
   // Auth routes should only be accessed by unauthenticated users
-  if (AUTH_ROUTES.some((route) => pathname.startsWith(route))) {
+  if (isAuthRoute(pathname)) {
     return !isAuthenticated;
   }
 
@@ -50,10 +50,7 @@ export const getAuthRedirect = (
   }
 
   // If authenticated and trying to access auth routes, redirect to home
-  if (
-    isAuthenticated &&
-    AUTH_ROUTES.some((route) => pathname.startsWith(route))
-  ) {
+  if (isAuthenticated && isAuthRoute(pathname)) {
     return "/";
   }
 
