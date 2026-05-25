@@ -8,8 +8,6 @@ export interface VerifyEmailPageProps {
 export default function VerifyEmailPage({
   token,
 }: VerifyEmailPageProps): ReactElement {
-  const tokenValue = token ?? "";
-
   return (
     <div className="min-h-screen bg-gray-100 flex flex-col">
       <div className="flex-1 flex items-center justify-center p-8">
