@@ -39,3 +39,8 @@ npm-shrinkwrap.json
 # Misc
 .DS_Store
 *.pem
+
+# Custom ignores
+.md/
+stich/
+
