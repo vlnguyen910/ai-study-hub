@@ -42,6 +42,13 @@ export default function HomeTab() {
             >
               Đi tới feature template
             </Link>
+
+            <Link
+              href={"/(templates)/auth-login" as never}
+              className="text-base font-semibold text-primary"
+            >
+              Đi tới auth login
+            </Link>
           </View>
         </Card>
       </View>

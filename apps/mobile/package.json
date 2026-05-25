@@ -6,7 +6,7 @@
     "start": "expo start",
     "dev": "expo start",
     "reset-project": "node ./scripts/reset-project.js",
-    "android": "expo start --android",
+    "android": "expo start --android --port 8086",
     "ios": "expo start --ios",
     "web": "expo start --web",
     "lint": "expo lint",
@@ -15,6 +15,7 @@
     "test:watch": "jest --watch"
   },
   "dependencies": {
+    "@expo/vector-icons": "^15.1.1",
     "@react-navigation/bottom-tabs": "^7.16.1",
     "@react-navigation/elements": "^2.9.18",
     "@react-navigation/native": "^7.2.4",
