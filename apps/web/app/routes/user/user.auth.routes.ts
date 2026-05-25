@@ -53,7 +53,7 @@ export const isAuthRoute = (pathname: string): boolean => {
   const routeToRegex = (routeTemplate: string): RegExp => {
     // escape regex special chars, then convert :params to a segment matcher
     const escaped = routeTemplate.replace(/[-/\\^$*+?.()|[\]{}]/g, "\\$&");
-    const pattern = escaped.replace(/\\:([a-zA-Z0-9_]+)/g, "[^/]+");
+    const pattern = escaped.replace(/:([a-zA-Z0-9_]+)/g, "[^/]+");
     return new RegExp(`^${pattern}$`);
   };
 

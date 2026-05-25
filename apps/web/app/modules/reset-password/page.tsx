@@ -13,10 +13,6 @@ export default function ResetPasswordPage({
   token,
 }: ResetPasswordPageProps): ReactElement {
   const tokenValue = token ?? "";
-  const tokenPreview =
-    tokenValue.length > 12
-      ? `${tokenValue.slice(0, 6)}…${tokenValue.slice(-4)}`
-      : tokenValue || "";
   const [formData, setFormData] = useState({
     password: "",
     confirmPassword: "",
@@ -111,10 +107,6 @@ export default function ResetPasswordPage({
             <div className="flex flex-col gap-6">
               <div className="rounded-lg border border-green-200 bg-green-50 p-4 text-sm text-green-900">
                 Your password was updated successfully.
-                <div className="mt-2 text-xs text-gray-700">
-                  Token preview:{" "}
-                  <span className="font-mono">{tokenPreview}</span>
-                </div>
               </div>
 
               <Link
