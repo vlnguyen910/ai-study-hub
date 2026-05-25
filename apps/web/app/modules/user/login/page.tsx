@@ -129,7 +129,7 @@ export default function LoginPage(): ReactElement {
                   Password
                 </label>
                 <Link
-                  href="/forgot-password"
+                  href="/user/forgot-password"
                   className="text-xs text-blue-600 hover:underline font-medium"
                 >
                   Forgot password?
