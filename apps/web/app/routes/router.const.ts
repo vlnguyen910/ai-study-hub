@@ -18,9 +18,9 @@ export const ROUTE_PATHS = {
   AUTH_ROUTES: {
     LOGIN: "/login",
     REGISTER: "/register",
-    FORGOT_PASSWORD: "/forgot-password",
-    RESET_PASSWORD: "/reset-password/:token",
-    VERIFY_EMAIL: "/verify-email/:token",
+    FORGOT_PASSWORD: "/user/forgot-password",
+    RESET_PASSWORD: "/user/reset-password/:token",
+    VERIFY_EMAIL: "/user/verify-email/:token",
   },
 
   // ========== PROTECTED ROUTES (Require authentication) ==========

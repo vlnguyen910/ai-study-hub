@@ -231,13 +231,12 @@ export default function Home(): ReactElement {
               <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
             </svg>
           </button>
-          <button
-            type="button"
-            onClick={openLogin}
-            className="rounded border border-gray-300 px-5 py-2 font-semibold text-gray-700 hover:border-blue-600 hover:text-blue-600"
+          <Link
+            href="/login"
+            className="bg-blue-600 text-white px-5 py-2 rounded hover:bg-blue-700 font-semibold"
           >
             Log in
-          </button>
+          </Link>
           <button
             type="button"
             onClick={openRegister}
