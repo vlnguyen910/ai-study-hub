@@ -40,7 +40,7 @@ export const ProtectedRoute: FC<ProtectedRouteProps> = ({
     // Check authentication
     if (!isAuthenticated) {
       router.push(
-        `/user/login?redirect=${encodeURIComponent(window.location.pathname)}`,
+        `/login?redirect=${encodeURIComponent(window.location.pathname)}`,
       );
       return;
     }

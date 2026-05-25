@@ -16,8 +16,8 @@ export const ROUTE_PATHS = {
   // ========== AUTH ROUTES (For unauthenticated users) ==========
   AUTH: "/user",
   AUTH_ROUTES: {
-    LOGIN: "/user/login",
-    REGISTER: "/user/register",
+    LOGIN: "/login",
+    REGISTER: "/register",
     FORGOT_PASSWORD: "/user/forgot-password",
     RESET_PASSWORD: "/user/reset-password/:token",
     VERIFY_EMAIL: "/user/verify-email/:token",

@@ -14,8 +14,8 @@ export const ROUTE_PATHS = {
   HOME: "/",
 
   // Auth Routes
-  USER_LOGIN: "/user/login",
-  USER_REGISTER: "/user/register",
+  USER_LOGIN: "/login",
+  USER_REGISTER: "/register",
   USER_FORGOT_PASSWORD: "/user/forgot-password",
   USER_RESET_PASSWORD: "/user/reset-password/:token",
   USER_VERIFY_EMAIL: "/user/verify-email/:token",

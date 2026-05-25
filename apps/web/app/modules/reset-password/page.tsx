@@ -110,7 +110,7 @@ export default function ResetPasswordPage({
               </div>
 
               <Link
-                href="/user/login"
+                href="/login"
                 className="inline-flex h-12 w-full items-center justify-center rounded bg-blue-600 px-4 text-sm font-semibold text-white hover:bg-blue-700"
               >
                 Continue to login
