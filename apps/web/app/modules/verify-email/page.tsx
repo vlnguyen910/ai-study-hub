@@ -67,12 +67,12 @@ export default function VerifyEmailPage({
               href="/user/forgot-password"
               className="inline-flex h-12 flex-1 items-center justify-center rounded border border-gray-300 px-4 text-sm font-semibold text-gray-700 hover:bg-gray-50"
             >
-              Resend email
+              Reset password
             </Link>
           </div>
 
           <div className="mt-6 text-center text-xs text-gray-500">
-            Token: {tokenValue || "pending"}
+            Token preview: <span className="font-mono">{tokenPreview}</span>
           </div>
         </div>
       </div>
