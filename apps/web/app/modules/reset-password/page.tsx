@@ -12,7 +12,6 @@ export interface ResetPasswordPageProps {
 export default function ResetPasswordPage({
   token,
 }: ResetPasswordPageProps): ReactElement {
-  const tokenValue = token ?? "";
   const [formData, setFormData] = useState({
     password: "",
     confirmPassword: "",

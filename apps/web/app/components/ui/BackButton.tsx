@@ -1,9 +1,12 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import type { MouseEvent, ReactNode } from "react";
+import type { MouseEvent, ReactNode, ButtonHTMLAttributes } from "react";
 
-export interface BackButtonProps {
+export interface BackButtonProps extends Omit<
+  ButtonHTMLAttributes<HTMLButtonElement>,
+  "onClick" | "className"
+> {
   readonly label?: string;
   readonly fallbackHref?: string;
   readonly icon?: ReactNode;
@@ -48,7 +51,7 @@ export function BackButton({
       type="button"
       className={`inline-flex items-center gap-2 rounded-full border border-gray-300 bg-white px-4 py-2 text-sm font-semibold text-gray-700 transition-colors hover:bg-gray-50 hover:text-gray-900 ${className}`}
       onClick={handleClick}
-      {...(props as React.ButtonHTMLAttributes<HTMLButtonElement>)}
+      {...props}
     >
       {icon}
       <span>{label}</span>

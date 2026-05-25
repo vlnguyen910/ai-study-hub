@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
 import type { ReactNode } from "react";
 import { moderatorProfile } from "../mockData";
 import type { ModeratorNavSection } from "../types";
@@ -42,8 +41,6 @@ export function ModeratorShell({
   readonly activeSection: ModeratorNavSection;
   readonly searchPlaceholder?: string;
 }): React.JSX.Element {
-  const pathname = usePathname();
-
   return (
     <div className="min-h-screen bg-background text-on-surface">
       <aside className="fixed left-0 top-0 z-50 hidden h-screen w-64 flex-col border-r border-outline-variant bg-surface-container-low py-base lg:flex">
