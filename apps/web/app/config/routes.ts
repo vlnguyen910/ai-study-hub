@@ -16,6 +16,9 @@ export const ROUTE_PATHS = {
   // Auth Routes
   USER_LOGIN: "/user/login",
   USER_REGISTER: "/user/register",
+  USER_FORGOT_PASSWORD: "/user/forgot-password",
+  USER_RESET_PASSWORD: "/user/reset-password/:token",
+  USER_VERIFY_EMAIL: "/user/verify-email/:token",
 
   // Library Routes
   LIBRARY: "/library",
@@ -44,6 +47,21 @@ export const ROUTE_METADATA = {
   },
   [ROUTE_PATHS.USER_REGISTER]: {
     title: "Đăng ký",
+    public: true,
+    requiresAuth: false,
+  },
+  [ROUTE_PATHS.USER_FORGOT_PASSWORD]: {
+    title: "Quên mật khẩu",
+    public: true,
+    requiresAuth: false,
+  },
+  [ROUTE_PATHS.USER_RESET_PASSWORD]: {
+    title: "Đặt lại mật khẩu",
+    public: true,
+    requiresAuth: false,
+  },
+  [ROUTE_PATHS.USER_VERIFY_EMAIL]: {
+    title: "Xác nhận email",
     public: true,
     requiresAuth: false,
   },
