@@ -52,7 +52,6 @@ export class AuthService {
 
     return {
       message: 'Signup successful',
-      data: null,
     };
   }
 
@@ -98,10 +97,7 @@ export class AuthService {
     });
 
     return {
-      message: 'Signin successful',
-      data: {
-        ...tokens,
-      },
+      ...tokens,
     };
   }
 
