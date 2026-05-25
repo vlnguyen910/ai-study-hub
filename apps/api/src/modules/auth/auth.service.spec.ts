@@ -82,11 +82,7 @@ describe('AuthService', () => {
 
     expect(prismaMock.sessions.create).not.toHaveBeenCalled();
     expect(result).toEqual({
-      user: {
-        id: 'user-1',
-        email: 'new-user@example.com',
-        name: 'New User',
-      },
+      message: 'Signup successful',
     });
   });
 
