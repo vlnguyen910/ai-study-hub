@@ -112,7 +112,8 @@ export default function ResetPasswordPage({
               <div className="rounded-lg border border-green-200 bg-green-50 p-4 text-sm text-green-900">
                 Your password was updated successfully.
                 <div className="mt-2 text-xs text-gray-700">
-                  Token preview: <span className="font-mono">{tokenPreview}</span>
+                  Token preview:{" "}
+                  <span className="font-mono">{tokenPreview}</span>
                 </div>
               </div>
 
@@ -190,7 +191,7 @@ export default function ResetPasswordPage({
               <div className="text-center text-sm text-gray-600">
                 Need a new link?{" "}
                 <Link
-                  href="/user/forgot-password"
+                  href="/forgot-password"
                   className="font-semibold text-blue-600 hover:underline"
                 >
                   Request new link

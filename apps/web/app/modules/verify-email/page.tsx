@@ -64,7 +64,7 @@ export default function VerifyEmailPage({
               Continue to login
             </Link>
             <Link
-              href="/user/forgot-password"
+              href="/forgot-password"
               className="inline-flex h-12 flex-1 items-center justify-center rounded border border-gray-300 px-4 text-sm font-semibold text-gray-700 hover:bg-gray-50"
             >
               Reset password
