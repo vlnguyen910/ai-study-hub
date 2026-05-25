@@ -45,11 +45,7 @@ export class AuthService {
     });
 
     return {
-      user: {
-        id: account.id,
-        email: account.email,
-        name: account.name,
-      },
+      message: 'Signup successful',
     };
   }
 
@@ -94,11 +90,6 @@ export class AuthService {
     });
 
     return {
-      user: {
-        id: account.id,
-        email: account.email,
-        name: account.name,
-      },
       ...tokens,
     };
   }
