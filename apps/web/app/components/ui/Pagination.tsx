@@ -14,7 +14,8 @@ export const Pagination: FC<PaginationProps> = ({
   onPageChange,
 }) => {
   const pages = [1, 2, 3, totalPages].filter(
-    (value, index, self) => self.indexOf(value) === index,
+    (value, index, self) =>
+      value <= totalPages && self.indexOf(value) === index,
   );
 
   return (
