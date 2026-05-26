@@ -7,7 +7,6 @@ import { InputField } from "@/components/ui/InputField";
 import { Pagination } from "@/components/ui/Pagination";
 import { SearchInput } from "@/components/ui/SearchInput";
 import { SelectField } from "@/components/ui/SelectField";
-
 import { Table, type TableRow } from "@/components/ui/Table";
 import { useMemo, useState } from "react";
 import { AdminShell } from "../components/AdminShell";
@@ -68,13 +67,23 @@ const emptyDraft: UserDraft = {
 
 const pageSize = 6;
 
-const roleOptions = [
-  { label: "Tất cả vai trò", value: "all" },
-  { label: "Quản trị viên", value: "admin" },
-  { label: "Kiểm duyệt viên", value: "moderator" },
-  { label: "Người dùng", value: "user" },
-  { label: "Khách", value: "guest" },
-] as const;
+const roleLabelsMap: Record<"all" | AdminUserRole, string> = {
+  all: "Tất cả vai trò",
+  admin: "Quản trị viên",
+  moderator: "Kiểm duyệt viên",
+  user: "Người dùng",
+  guest: "Khách",
+};
+
+const roleValuesMap: Record<string, "all" | AdminUserRole> = {
+  "Tất cả vai trò": "all",
+  "Quản trị viên": "admin",
+  "Kiểm duyệt viên": "moderator",
+  "Người dùng": "user",
+  Khách: "guest",
+};
+
+const roleOptionsList = Object.values(roleLabelsMap);
 
 const editableRoleOptions: readonly {
   readonly label: string;
@@ -86,12 +95,21 @@ const editableRoleOptions: readonly {
   { label: "Khách", value: "guest" },
 ];
 
-const statusOptions = [
-  { label: "Tất cả trạng thái", value: "all" },
-  { label: "Đang hoạt động", value: "active" },
-  { label: "Không hoạt động", value: "inactive" },
-  { label: "Tạm khóa", value: "suspended" },
-] as const;
+const statusLabelsMap: Record<"all" | AdminUserStatus, string> = {
+  all: "Tất cả trạng thái",
+  active: "Đang hoạt động",
+  inactive: "Không hoạt động",
+  suspended: "Tạm khóa",
+};
+
+const statusValuesMap: Record<string, "all" | AdminUserStatus> = {
+  "Tất cả trạng thái": "all",
+  "Đang hoạt động": "active",
+  "Không hoạt động": "inactive",
+  "Tạm khóa": "suspended",
+};
+
+const statusOptionsList = Object.values(statusLabelsMap);
 
 const editableStatusOptions: readonly {
   readonly label: string;
@@ -138,6 +156,13 @@ export default function AdminUserManagementPage(): React.JSX.Element {
     (currentPage - 1) * pageSize,
     currentPage * pageSize,
   );
+
+  const handleResetFilters = () => {
+    setQuery("");
+    setRoleFilter("all");
+    setStatusFilter("all");
+    setCurrentPage(1);
+  };
 
   const handleOpenAdd = () => {
     setEditingUser(null);
@@ -307,9 +332,10 @@ export default function AdminUserManagementPage(): React.JSX.Element {
           </Button>
         </div>
 
-        <AdminCard className="mb-6 w-full max-w-[calc(100vw-32px)] p-4 lg:max-w-none">
-          <div className="grid grid-cols-1 gap-4 lg:grid-cols-[1fr_180px_180px] lg:items-end">
+        <Card className="mb-6 p-4">
+          <div className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(320px,1fr)_220px_220px_auto] lg:items-end">
             <SearchInput
+              label="Tìm kiếm"
               onChange={(event) => {
                 setQuery(event.target.value);
                 setCurrentPage(1);
@@ -321,26 +347,26 @@ export default function AdminUserManagementPage(): React.JSX.Element {
               placeholder="Tìm kiếm người dùng..."
               value={query}
             />
-            <AdminSelect
+            <SelectField
               label="Vai trò"
               onChange={(value) => {
-                setRoleFilter(value);
+                setRoleFilter(roleValuesMap[value] ?? "all");
                 setCurrentPage(1);
               }}
-              options={roleOptions}
-              value={roleFilter}
+              options={roleOptionsList}
+              value={roleLabelsMap[roleFilter]}
             />
-            <AdminSelect
+            <SelectField
               label="Trạng thái"
               onChange={(value) => {
-                setStatusFilter(value);
+                setStatusFilter(statusValuesMap[value] ?? "all");
                 setCurrentPage(1);
               }}
-              options={statusOptions}
-              value={statusFilter}
+              options={statusOptionsList}
+              value={statusLabelsMap[statusFilter]}
             />
           </div>
-        </AdminCard>
+        </Card>
 
         <AdminCard className="w-full max-w-[calc(100vw-32px)] overflow-hidden lg:max-w-none">
           <div className="flex flex-col gap-3 border-b border-outline-variant p-4 sm:flex-row sm:items-center sm:justify-between">
