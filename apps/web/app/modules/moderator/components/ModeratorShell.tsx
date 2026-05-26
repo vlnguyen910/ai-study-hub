@@ -14,19 +14,19 @@ const sideNavItems: readonly {
   section: ModeratorNavSection;
 }[] = [
   {
-    label: "Dashboard",
+    label: "Bảng điều khiển",
     href: "/moderator",
     icon: "dashboard",
     section: "dashboard",
   },
   {
-    label: "Document Review",
+    label: "Duyệt tài liệu",
     href: "/moderator/documents",
     icon: "description",
     section: "documents",
   },
   {
-    label: "Post Moderation",
+    label: "Kiểm duyệt bài viết",
     href: "/moderator/posts",
     icon: "gavel",
     section: "posts",
@@ -61,11 +61,11 @@ export function ModeratorShell({
             AcademiShare
           </Link>
           <p className="font-label-sm text-label-sm text-on-surface-variant">
-            Moderator Portal
+            Cổng kiểm duyệt
           </p>
         </div>
 
-        <nav className="mt-6 flex-1 px-3" aria-label="Moderator navigation">
+        <nav className="mt-6 flex-1 px-3" aria-label="Điều hướng kiểm duyệt">
           <div className="space-y-1">
             {sideNavItems.map((item) => {
               const isActive = activeSection === item.section;
@@ -95,7 +95,7 @@ export function ModeratorShell({
             href="/moderator/documents"
           >
             <MaterialIcon name="rate_review" />
-            Upload Review
+            Duyệt tài liệu tải lên
           </Link>
         </div>
 
@@ -105,18 +105,18 @@ export function ModeratorShell({
             type="button"
           >
             <MaterialIcon name="settings" />
-            Settings
+            Cài đặt
           </button>
           <button
             className="flex w-full items-center gap-3 rounded px-4 py-3 font-label-md text-label-md text-on-surface-variant transition-colors hover:bg-surface-container-high"
             type="button"
           >
             <MaterialIcon name="help" />
-            Support
+            Hỗ trợ
           </button>
           <div className="mt-2 flex items-center gap-3 px-4 py-4">
             <img
-              alt={`${moderatorProfile.name} avatar`}
+              alt={`Ảnh đại diện của ${moderatorProfile.name}`}
               className="h-8 w-8 rounded-full border border-outline object-cover"
               height={32}
               src={moderatorProfile.avatarUrl}
@@ -142,7 +142,7 @@ export function ModeratorShell({
               name="search"
             />
             <input
-              aria-label="Tìm kiếm trong moderation portal"
+              aria-label="Tìm kiếm trong cổng kiểm duyệt"
               className="w-full rounded border border-outline-variant bg-surface-container-low py-2 pl-10 pr-4 font-label-md text-label-md outline-none transition-colors focus:border-2 focus:border-primary focus:py-[7px]"
               placeholder={searchPlaceholder}
               type="search"
@@ -179,21 +179,21 @@ export function ModeratorShell({
 
         <div className="flex items-center gap-2 sm:gap-4">
           <button
-            aria-label="Notifications"
+            aria-label="Thông báo"
             className="rounded p-2 text-on-surface-variant transition-colors hover:bg-surface-container-high hover:text-primary"
             type="button"
           >
             <MaterialIcon name="notifications" />
           </button>
           <button
-            aria-label="Language"
+            aria-label="Ngôn ngữ"
             className="rounded p-2 text-on-surface-variant transition-colors hover:bg-surface-container-high hover:text-primary"
             type="button"
           >
             <MaterialIcon name="translate" />
           </button>
           <button
-            aria-label="Theme"
+            aria-label="Giao diện"
             className="rounded p-2 text-on-surface-variant transition-colors hover:bg-surface-container-high hover:text-primary"
             type="button"
           >
@@ -203,7 +203,7 @@ export function ModeratorShell({
             className="hidden rounded bg-primary px-4 py-2 font-label-md text-label-md text-on-primary transition-colors hover:bg-on-primary-fixed-variant sm:inline-flex"
             href="/moderator/documents"
           >
-            Review Queue
+            Hàng đợi duyệt
           </Link>
         </div>
       </header>
