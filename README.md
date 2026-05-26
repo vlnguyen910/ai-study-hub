@@ -41,21 +41,11 @@ pnpm install
 # Copy the example env and edit values locally. Do NOT commit your .env.
 cp .env.example .env
 
-# 4. Start the database and services
-# This repo includes a `docker-compose.yaml` with a `mongodb` service that reads credentials
-# from the local `.env`. Start everything with:
-docker compose up -d
+# 4. Setup MongoDB Replica Set and Prisma (one command!)
+# This initializes the 3-node replica set, syncs the schema, and seeds data
+pnpm db:setup
 
-# 5. Verify MongoDB is running
-docker compose logs -f mongodb
-docker compose ps
-
-# 6. Sync the Prisma schema and generate Prisma Client
-test -f apps/api/.env || cp apps/api/.env.example apps/api/.env
-pnpm db:sync
-pnpm db:seed
-
-# 7. Start the app
+# 5. Start the app
 pnpm dev
 ```
 
@@ -69,7 +59,9 @@ pnpm dev
 | `pnpm lint`        | Run ESLint across packages and apps to catch style and correctness issues.                        |
 | `pnpm check-types` | Run TypeScript type checks (`tsc --build` or equivalent) across the repo.                         |
 | `pnpm format`      | Format codebase with Prettier.                                                                    |
-| `pnpm db:sync`     | Sync the Prisma schema to local MongoDB and generate Prisma Client.                               |
+| `pnpm db:setup`    | **One-command setup:** Start Docker, initialize MongoDB Replica Set, sync schema, seed data.      |
+| `pnpm db:init`     | Initialize MongoDB Replica Set (runs automatically in `db:setup`).                                |
+| `pnpm db:sync`     | Sync the Prisma schema to local MongoDB Replica Set and generate Prisma Client.                   |
 | `pnpm db:seed`     | Seed local MongoDB with deterministic development data.                                           |
 | `pnpm db:clean`    | Delete local API database records.                                                                |
 | `pnpm db:reseed`   | Clean the local database and seed it again.                                                       |
