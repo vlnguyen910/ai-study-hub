@@ -50,12 +50,24 @@ export default function LoginPage(): ReactElement {
   };
 
   const closeLogin = () => {
-    if (typeof window !== "undefined" && window.history.length > 1) {
+    if (typeof window === "undefined") return;
+
+    let canGoBackInApp = false;
+    try {
+      canGoBackInApp =
+        typeof document !== "undefined" &&
+        Boolean(document.referrer) &&
+        new URL(document.referrer).origin === window.location.origin;
+    } catch (e) {
+      canGoBackInApp = false;
+    }
+
+    if (canGoBackInApp && window.history.length > 1) {
       router.back();
       return;
     }
 
-    router.push("/");
+    router.replace("/");
   };
 
   const handleBackdropClick = (e: React.MouseEvent<HTMLDivElement>) => {
