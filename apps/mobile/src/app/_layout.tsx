@@ -22,6 +22,18 @@ export default function RootLayout() {
         }}
       />
       <Stack.Screen
+        name="(templates)/moderator-document-review"
+        options={{
+          title: "Review Queue",
+        }}
+      />
+      <Stack.Screen
+        name="(templates)/moderator-document-detail"
+        options={{
+          title: "Document Detail",
+        }}
+      />
+      <Stack.Screen
         name="(templates)/auth-login"
         options={{
           title: "Login",
