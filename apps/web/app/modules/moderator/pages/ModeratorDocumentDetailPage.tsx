@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { documentReviewItems } from "../mockData";
 import type { DocumentReviewStatus } from "../types";
 import { ModeratorShell } from "../components/ModeratorShell";
@@ -40,9 +40,7 @@ export default function ModeratorDocumentDetailPage({
   readonly documentId: string;
 }): React.JSX.Element {
   const document = useMemo(
-    () =>
-      documentReviewItems.find((item) => item.id === documentId) ??
-      documentReviewItems[0],
+    () => documentReviewItems.find((item) => item.id === documentId),
     [documentId],
   );
   const [status, setStatus] = useState<DocumentReviewStatus>(
@@ -50,6 +48,14 @@ export default function ModeratorDocumentDetailPage({
   );
   const [note, setNote] = useState("");
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (document) {
+      setStatus(document.status);
+      setNote("");
+      setToastMessage(null);
+    }
+  }, [documentId, document]);
 
   if (!document) {
     return (

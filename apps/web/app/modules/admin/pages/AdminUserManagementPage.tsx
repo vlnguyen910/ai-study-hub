@@ -453,32 +453,30 @@ function UserFormDialog({
         </div>
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <InputField
-            label="Tên người dùng"
+            label="Tên"
             onChange={(event) =>
               onChange({ ...draft, name: event.target.value })
             }
-            placeholder="Nhập họ và tên"
             required
             value={draft.name}
           />
           <InputField
-            label="Email đăng nhập"
+            label="Email"
             onChange={(event) =>
               onChange({ ...draft, email: event.target.value })
             }
-            placeholder="Nhập địa chỉ email"
             required
             type="email"
             value={draft.email}
           />
           <AdminSelect
-            label="Vai trò tài khoản"
+            label="Vai trò"
             onChange={(value) => onChange({ ...draft, role: value })}
             options={editableRoleOptions}
             value={draft.role}
           />
           <AdminSelect
-            label="Trạng thái tài khoản"
+            label="Trạng thái"
             onChange={(value) => onChange({ ...draft, status: value })}
             options={editableStatusOptions}
             value={draft.status}

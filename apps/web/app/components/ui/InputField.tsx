@@ -19,6 +19,7 @@ export function InputField({
   leftIcon,
   rightIcon,
   className = "",
+  required,
   ...props
 }: InputFieldProps): React.JSX.Element {
   const hasError = Boolean(errorText);
@@ -38,6 +39,11 @@ export function InputField({
           }`}
         >
           {label}
+          {required ? (
+            <span aria-hidden="true" className="ml-0.5 font-bold text-error">
+              *
+            </span>
+          ) : null}
         </span>
       ) : null}
       <div className="relative">
@@ -52,6 +58,7 @@ export function InputField({
               ? "border-error bg-error-container text-error"
               : "border-outline"
           } ${className}`}
+          required={required}
           {...props}
         />
         {rightIcon ? (

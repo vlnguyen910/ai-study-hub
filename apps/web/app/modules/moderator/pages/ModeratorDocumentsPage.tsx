@@ -1,17 +1,18 @@
 "use client";
 
-import { Badge } from "@/components/ui/Badge";
-import { Card } from "@/components/ui/Card";
-import { IconButton } from "@/components/ui/IconButton";
 import { Pagination } from "@/components/ui/Pagination";
 import { Table, type TableRow } from "@/components/ui/Table";
-import { useMemo, useState, type ComponentProps } from "react";
-import { useRouter } from "next/navigation";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { documentReviewItems } from "../mockData";
 import type { DocumentReviewItem, DocumentReviewStatus } from "../types";
 import { ModeratorShell } from "../components/ModeratorShell";
-import { EmptyState, MaterialIcon } from "../components/ModeratorPrimitives";
-import { ModeratorFilterToolbar } from "../components/ModeratorFilterToolbar";
+import {
+  EmptyState,
+  IconButton,
+  MaterialIcon,
+  ModeratorBadge,
+  ModeratorCard,
+} from "../components/ModeratorPrimitives";
 
 const statusMeta: Record<
   DocumentReviewStatus,
@@ -20,29 +21,21 @@ const statusMeta: Record<
     tone: "primary" | "secondary" | "tertiary" | "error" | "neutral";
   }
 > = {
-  pending: { label: "Chờ duyệt", tone: "tertiary" },
-  priority: { label: "Ưu tiên", tone: "primary" },
-  approved: { label: "Đã duyệt", tone: "secondary" },
-  rejected: { label: "Đã từ chối", tone: "error" },
-  changes_requested: { label: "Cần chỉnh sửa", tone: "neutral" },
-  flagged: { label: "Đã gắn cờ", tone: "error" },
+  pending: { label: "Pending", tone: "tertiary" },
+  priority: { label: "Priority", tone: "primary" },
+  approved: { label: "Approved", tone: "secondary" },
+  rejected: { label: "Rejected", tone: "error" },
+  changes_requested: { label: "Needs changes", tone: "neutral" },
+  flagged: { label: "Flagged", tone: "error" },
 };
 
-const categoryTones = ["secondary", "tertiary", "neutral"] as const;
-const allCategoryLabel = "Tất cả thể loại";
-const pageSize = 4;
-
-const statusToneMap: Record<
-  DocumentReviewStatus,
-  NonNullable<ComponentProps<typeof Badge>["tone"]>
-> = {
-  pending: "warning",
-  priority: "warning",
-  approved: "success",
-  rejected: "error",
-  changes_requested: "neutral",
-  flagged: "error",
+const categoryToneMap: Record<string, "secondary" | "tertiary" | "neutral"> = {
+  "Khoa học Máy tính": "secondary",
+  "Kinh tế học": "tertiary",
+  "Tâm lý học": "neutral",
 };
+
+const pageSize = 3;
 
 const documentColumns = [
   { key: "title", label: "TIÊU ĐỀ TÀI LIỆU" },
@@ -62,20 +55,15 @@ function updateDocumentStatus(
 }
 
 export default function ModeratorDocumentsPage(): React.JSX.Element {
-  const router = useRouter();
   const [documents, setDocuments] = useState(documentReviewItems);
   const [query, setQuery] = useState("");
-  const [category, setCategory] = useState(allCategoryLabel);
+  const [category, setCategory] = useState("all");
   const [currentPage, setCurrentPage] = useState(1);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   const categories = useMemo(
-    () => Array.from(new Set(documentReviewItems.map((item) => item.category))),
-    [],
-  );
-  const categoryOptions = useMemo(
-    () => [allCategoryLabel, ...categories],
-    [categories],
+    () => Array.from(new Set(documents.map((item) => item.category))),
+    [documents],
   );
 
   const filteredDocuments = useMemo(() => {
@@ -83,7 +71,7 @@ export default function ModeratorDocumentsPage(): React.JSX.Element {
 
     return documents.filter((document) => {
       const matchesCategory =
-        category === allCategoryLabel || document.category === category;
+        category === "all" || document.category === category;
       const matchesQuery =
         normalizedQuery.length === 0 ||
         [
@@ -93,7 +81,9 @@ export default function ModeratorDocumentsPage(): React.JSX.Element {
           document.subject,
           document.university,
           document.id,
-        ].some((value) => value.toLowerCase().includes(normalizedQuery));
+        ].some((value) =>
+          (value ?? "").toLowerCase().includes(normalizedQuery),
+        );
 
       return matchesCategory && matchesQuery;
     });
@@ -103,150 +93,149 @@ export default function ModeratorDocumentsPage(): React.JSX.Element {
     1,
     Math.ceil(filteredDocuments.length / pageSize),
   );
-  const visibleDocuments = filteredDocuments.slice(
-    (currentPage - 1) * pageSize,
-    currentPage * pageSize,
+  const visibleDocuments = useMemo(
+    () =>
+      filteredDocuments.slice(
+        (currentPage - 1) * pageSize,
+        currentPage * pageSize,
+      ),
+    [currentPage, filteredDocuments],
   );
+
+  useEffect(() => {
+    if (currentPage > totalPages) {
+      setCurrentPage(totalPages);
+    }
+  }, [currentPage, totalPages]);
 
   const pendingCount = documents.filter((doc) =>
     ["pending", "priority", "changes_requested"].includes(doc.status),
   ).length;
 
-  const handleStatusChange = (
-    id: string,
-    status: DocumentReviewStatus,
-    message: string,
-  ) => {
-    setDocuments((current) => updateDocumentStatus(current, id, status));
-    setToastMessage(message);
-  };
+  const handleStatusChange = useCallback(
+    (id: string, status: DocumentReviewStatus, message: string) => {
+      setDocuments((current) => updateDocumentStatus(current, id, status));
+      setToastMessage(message);
+    },
+    [],
+  );
 
-  const handleResetFilters = () => {
-    setQuery("");
-    setCategory(allCategoryLabel);
-    setCurrentPage(1);
-  };
+  const documentRows: TableRow[] = useMemo(
+    () =>
+      visibleDocuments.map((document) => {
+        const status = statusMeta[document.status];
+        const categoryTone = categoryToneMap[document.category] ?? "neutral";
 
-  const handleClearSearch = () => {
-    setQuery("");
-    setCurrentPage(1);
-  };
-
-  const documentRows: TableRow[] = visibleDocuments.map((document, index) => {
-    const status = statusMeta[document.status];
-    const categoryTone =
-      categoryTones[index % categoryTones.length] ?? "neutral";
-
-    return {
-      id: document.id,
-      cells: [
-        <div className="flex items-center gap-3" key="title">
-          <div className="flex h-12 w-10 items-center justify-center rounded-sm bg-primary-fixed">
-            <MaterialIcon
-              className="text-primary"
-              name={document.fileType === "DOCX" ? "menu_book" : "article"}
-            />
-          </div>
-          <div>
-            <p className="max-w-[280px] truncate font-label-md text-label-md text-on-surface">
-              {document.title}
-            </p>
-            <p className="font-label-sm text-label-sm text-on-surface-variant">
-              {document.fileType} • {document.fileSize} • {document.id}
-            </p>
-          </div>
-        </div>,
-        <div className="flex items-center gap-2" key="author">
-          <img
-            alt={`${document.author} avatar`}
-            className="h-6 w-6 rounded-full object-cover"
-            height={24}
-            src={document.avatarUrl}
-            width={24}
-          />
-          <span className="font-body-md text-body-md text-on-surface">
-            {document.author}
-          </span>
-        </div>,
-        <Badge
-          className={
-            categoryTone === "secondary"
-              ? "bg-secondary-fixed text-on-secondary-fixed-variant"
-              : categoryTone === "tertiary"
-                ? "bg-tertiary-fixed text-on-tertiary-fixed-variant"
-                : ""
-          }
-          key="category"
-          tone="neutral"
-        >
-          {document.category}
-        </Badge>,
-        <span
-          className="font-body-md text-body-md text-on-surface"
-          key="uploadDate"
-        >
-          {document.uploadDate}
-        </span>,
-        <Badge key="status" tone={statusToneMap[document.status]}>
-          {status.label}
-        </Badge>,
-        <div className="flex justify-end gap-2" key="actions">
-          <IconButton
-            ariaLabel={`Xem chi tiết ${document.title}`}
-            icon={<MaterialIcon name="visibility" />}
-            onClick={() => router.push(`/moderator/documents/${document.id}`)}
-          />
-          <IconButton
-            ariaLabel={`Yêu cầu chỉnh sửa ${document.title}`}
-            icon={<MaterialIcon name="rate_review" />}
-            onClick={() =>
-              handleStatusChange(
-                document.id,
-                "changes_requested",
-                `Đã yêu cầu chỉnh sửa ${document.id}`,
-              )
-            }
-          />
-          <IconButton
-            ariaLabel={`Gắn cờ ${document.title}`}
-            className="text-tertiary hover:text-tertiary"
-            icon={<MaterialIcon name="flag" />}
-            onClick={() =>
-              handleStatusChange(
-                document.id,
-                "flagged",
-                `Đã gắn cờ ${document.id}`,
-              )
-            }
-          />
-          <IconButton
-            ariaLabel={`Từ chối ${document.title}`}
-            className="text-error hover:text-error"
-            icon={<MaterialIcon name="close" />}
-            onClick={() =>
-              handleStatusChange(
-                document.id,
-                "rejected",
-                `Đã từ chối ${document.id}`,
-              )
-            }
-          />
-          <IconButton
-            ariaLabel={`Phê duyệt ${document.title}`}
-            className="text-primary hover:text-primary"
-            icon={<MaterialIcon name="check" />}
-            onClick={() =>
-              handleStatusChange(
-                document.id,
-                "approved",
-                `Đã phê duyệt ${document.id}`,
-              )
-            }
-          />
-        </div>,
-      ],
-    };
-  });
+        return {
+          id: document.id,
+          cells: [
+            <div className="flex items-center gap-3" key="title">
+              <div className="flex h-12 w-10 items-center justify-center rounded-sm bg-primary-fixed">
+                <MaterialIcon
+                  className="text-primary"
+                  name={document.fileType === "DOCX" ? "menu_book" : "article"}
+                />
+              </div>
+              <div>
+                <p className="max-w-[280px] truncate font-label-md text-label-md text-on-surface">
+                  {document.title}
+                </p>
+                <p className="font-label-sm text-label-sm text-on-surface-variant">
+                  {document.fileType} • {document.fileSize} • {document.id}
+                </p>
+              </div>
+            </div>,
+            <div className="flex items-center gap-2" key="author">
+              <img
+                alt={`${document.author} avatar`}
+                className="h-6 w-6 rounded-full object-cover"
+                height={24}
+                src={document.avatarUrl}
+                width={24}
+              />
+              <span className="font-body-md text-body-md text-on-surface">
+                {document.author}
+              </span>
+            </div>,
+            <ModeratorBadge key="category" tone={categoryTone}>
+              {document.category}
+            </ModeratorBadge>,
+            <span
+              className="font-body-md text-body-md text-on-surface"
+              key="uploadDate"
+            >
+              {document.uploadDate}
+            </span>,
+            <ModeratorBadge key="status" tone={status.tone}>
+              {status.label}
+            </ModeratorBadge>,
+            <div className="flex justify-end gap-2" key="actions">
+              <IconButton
+                href={`/moderator/documents/${document.id}`}
+                icon="visibility"
+                label={`Xem chi tiết ${document.title}`}
+              />
+              {document.status !== "changes_requested" ? (
+                <IconButton
+                  icon="rate_review"
+                  label={`Yêu cầu chỉnh sửa ${document.title}`}
+                  onClick={() =>
+                    handleStatusChange(
+                      document.id,
+                      "changes_requested",
+                      `Đã yêu cầu chỉnh sửa ${document.id}`,
+                    )
+                  }
+                />
+              ) : null}
+              {document.status !== "flagged" ? (
+                <IconButton
+                  icon="flag"
+                  label={`Gắn cờ ${document.title}`}
+                  onClick={() =>
+                    handleStatusChange(
+                      document.id,
+                      "flagged",
+                      `Đã gắn cờ ${document.id}`,
+                    )
+                  }
+                  tone="tertiary"
+                />
+              ) : null}
+              {document.status !== "rejected" ? (
+                <IconButton
+                  icon="close"
+                  label={`Từ chối ${document.title}`}
+                  onClick={() =>
+                    handleStatusChange(
+                      document.id,
+                      "rejected",
+                      `Đã từ chối ${document.id}`,
+                    )
+                  }
+                  tone="error"
+                />
+              ) : null}
+              {document.status !== "approved" ? (
+                <IconButton
+                  icon="check"
+                  label={`Phê duyệt ${document.title}`}
+                  onClick={() =>
+                    handleStatusChange(
+                      document.id,
+                      "approved",
+                      `Đã phê duyệt ${document.id}`,
+                    )
+                  }
+                  tone="primary"
+                />
+              ) : null}
+            </div>,
+          ],
+        };
+      }),
+    [handleStatusChange, visibleDocuments],
+  );
 
   return (
     <ModeratorShell
@@ -257,30 +246,31 @@ export default function ModeratorDocumentsPage(): React.JSX.Element {
         <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
           <div>
             <h1 className="mb-1 font-headline-lg text-headline-lg text-on-surface">
-              Kiểm duyệt tài liệu
+              Kiểm Duyệt Tài Liệu
             </h1>
-            <p className="max-w-3xl whitespace-normal break-words font-body-md text-body-md text-on-surface-variant">
+            <p className="font-body-md text-body-md text-on-surface-variant">
               Quản lý và phê duyệt các bản thảo học thuật được tải lên hệ thống.
             </p>
           </div>
-          <Card className="grid w-full max-w-sm grid-cols-2 gap-0 overflow-hidden rounded-lg p-0 lg:w-auto">
-            <div className="border-r border-outline-variant px-5 py-3 text-center">
-              <p className="font-label-sm text-label-sm uppercase text-on-surface-variant">
-                Chờ duyệt
+          <div className="flex w-full max-w-sm items-center gap-4 bg-surface-container-high px-4 py-2 lg:w-auto">
+            <div className="text-center">
+              <p className="text-[10px] font-bold uppercase tracking-wider text-on-surface-variant">
+                Chờ Duyệt
               </p>
               <p className="font-headline-md text-headline-md text-primary">
                 {pendingCount}
               </p>
             </div>
-            <div className="px-5 py-3 text-center">
-              <p className="font-label-sm text-label-sm uppercase text-on-surface-variant">
+            <div className="h-8 w-px bg-outline-variant" />
+            <div className="text-center">
+              <p className="text-[10px] font-bold uppercase tracking-wider text-on-surface-variant">
                 Hôm nay
               </p>
               <p className="font-headline-md text-headline-md text-secondary">
                 12
               </p>
             </div>
-          </Card>
+          </div>
         </div>
 
         {toastMessage ? (
@@ -300,25 +290,59 @@ export default function ModeratorDocumentsPage(): React.JSX.Element {
           </div>
         ) : null}
 
-        <ModeratorFilterToolbar
-          filterLabel="Thể loại"
-          filterOptions={categoryOptions}
-          filterValue={category}
-          onFilterChange={(value) => {
-            setCategory(value);
-            setCurrentPage(1);
-          }}
-          onQueryChange={(value) => {
-            setQuery(value);
-            setCurrentPage(1);
-          }}
-          onQueryClear={handleClearSearch}
-          onReset={handleResetFilters}
-          query={query}
-          searchPlaceholder="Tên tài liệu, tác giả, mã ID..."
-        />
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
+          <label className="border border-outline-variant bg-white p-4 transition-colors hover:border-primary">
+            <span className="mb-2 flex items-center gap-3 font-label-md text-label-md text-on-surface">
+              <MaterialIcon className="text-primary" name="filter_list" />
+              Thể loại
+            </span>
+            <select
+              className="w-full border-none bg-transparent p-0 font-label-sm text-label-sm text-on-surface-variant outline-none"
+              onChange={(event) => {
+                setCategory(event.target.value);
+                setCurrentPage(1);
+              }}
+              value={category}
+            >
+              <option value="all">Tất cả thể loại</option>
+              {categories.map((item) => (
+                <option key={item} value={item}>
+                  {item}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="border border-outline-variant bg-white p-4 transition-colors hover:border-primary md:col-span-2">
+            <span className="mb-2 flex items-center gap-3 font-label-md text-label-md text-on-surface">
+              <MaterialIcon className="text-primary" name="search" />
+              Tìm kiếm
+            </span>
+            <input
+              className="w-full border-none bg-transparent p-0 font-label-sm text-label-sm text-on-surface-variant outline-none"
+              onChange={(event) => {
+                setQuery(event.target.value);
+                setCurrentPage(1);
+              }}
+              placeholder="Tên tài liệu, tác giả, mã ID..."
+              type="search"
+              value={query}
+            />
+          </label>
+          <button
+            className="flex items-center justify-center gap-2 bg-surface-container-highest p-4 font-label-md text-label-md text-on-surface transition-colors hover:bg-outline-variant"
+            onClick={() => {
+              setQuery("");
+              setCategory("all");
+              setCurrentPage(1);
+            }}
+            type="button"
+          >
+            <MaterialIcon name="refresh" />
+            Làm mới danh sách
+          </button>
+        </div>
 
-        <Card className="overflow-hidden rounded-lg p-0">
+        <ModeratorCard className="overflow-hidden">
           <Table columns={documentColumns} rows={documentRows} />
           {filteredDocuments.length === 0 ? (
             <EmptyState
@@ -337,7 +361,53 @@ export default function ModeratorDocumentsPage(): React.JSX.Element {
               totalPages={totalPages}
             />
           </div>
-        </Card>
+        </ModeratorCard>
+
+        <div className="grid grid-cols-1 gap-gutter md:grid-cols-3">
+          <section className="relative flex min-h-[160px] flex-col justify-between overflow-hidden bg-primary-container p-6 text-on-primary-container">
+            <MaterialIcon
+              className="absolute -bottom-4 -right-4 text-8xl opacity-10"
+              name="speed"
+            />
+            <div>
+              <p className="font-label-sm text-label-sm font-bold uppercase opacity-80">
+                Tốc độ Phản hồi
+              </p>
+              <h2 className="mt-2 font-display text-display">1.2h</h2>
+            </div>
+            <p className="font-label-md text-label-md">
+              Giảm 15% so với tuần trước
+            </p>
+          </section>
+          <ModeratorCard className="flex min-h-[160px] flex-col justify-between p-6">
+            <div>
+              <p className="font-label-sm text-label-sm font-bold uppercase text-on-surface-variant">
+                Tỷ lệ Phê duyệt
+              </p>
+              <h2 className="mt-2 font-display text-display text-primary">
+                82%
+              </h2>
+            </div>
+            <div className="h-1 w-full overflow-hidden rounded-full bg-surface-container-high">
+              <div className="h-full w-[82%] bg-primary" />
+            </div>
+          </ModeratorCard>
+          <section className="relative flex min-h-[160px] flex-col justify-between overflow-hidden bg-secondary-container p-6 text-on-secondary-container">
+            <MaterialIcon
+              className="absolute -bottom-4 -right-4 text-8xl opacity-10"
+              name="verified"
+            />
+            <div>
+              <p className="font-label-sm text-label-sm font-bold uppercase opacity-80">
+                Tổng số đã duyệt
+              </p>
+              <h2 className="mt-2 font-display text-display">1,402</h2>
+            </div>
+            <p className="font-label-md text-label-md">
+              +48 tài liệu mới tháng này
+            </p>
+          </section>
+        </div>
       </div>
     </ModeratorShell>
   );
