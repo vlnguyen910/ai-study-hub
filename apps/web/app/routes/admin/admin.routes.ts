@@ -61,11 +61,13 @@ export const adminRouterConfig = {
   },
 } as const;
 
+const matchesRouteSegment = (pathname: string, route: string): boolean => {
+  return pathname === route || pathname.startsWith(`${route}/`);
+};
+
 /**
  * Check if a route is admin route
  */
 export const isAdminRoute = (pathname: string): boolean => {
-  return ADMIN_ROUTES.some(
-    (route) => pathname === route || pathname.startsWith(route),
-  );
+  return ADMIN_ROUTES.some((route) => matchesRouteSegment(pathname, route));
 };
