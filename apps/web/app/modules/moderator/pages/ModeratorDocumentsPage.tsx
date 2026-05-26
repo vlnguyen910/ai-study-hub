@@ -1,5 +1,6 @@
 "use client";
 
+import { Table, type TableRow } from "@/components/ui/Table";
 import { useMemo, useState } from "react";
 import { documentReviewItems } from "../mockData";
 import type { DocumentReviewItem, DocumentReviewStatus } from "../types";
@@ -28,6 +29,15 @@ const statusMeta: Record<
 };
 
 const categoryTones = ["secondary", "tertiary", "neutral"] as const;
+
+const documentColumns = [
+  { key: "title", label: "TIÊU ĐỀ TÀI LIỆU" },
+  { key: "author", label: "TÁC GIẢ" },
+  { key: "category", label: "DANH MỤC" },
+  { key: "uploadDate", label: "NGÀY TẢI" },
+  { key: "status", label: "TRẠNG THÁI" },
+  { key: "actions", label: "THAO TÁC", align: "right" as const },
+] as const;
 
 function updateDocumentStatus(
   items: DocumentReviewItem[],
@@ -81,6 +91,112 @@ export default function ModeratorDocumentsPage(): React.JSX.Element {
     setDocuments((current) => updateDocumentStatus(current, id, status));
     setToastMessage(message);
   };
+
+  const documentRows: TableRow[] = filteredDocuments.map((document, index) => {
+    const status = statusMeta[document.status];
+    const categoryTone =
+      categoryTones[index % categoryTones.length] ?? "neutral";
+
+    return {
+      id: document.id,
+      cells: [
+        <div className="flex items-center gap-3" key="title">
+          <div className="flex h-12 w-10 items-center justify-center rounded-sm bg-primary-fixed">
+            <MaterialIcon
+              className="text-primary"
+              name={document.fileType === "DOCX" ? "menu_book" : "article"}
+            />
+          </div>
+          <div>
+            <p className="max-w-[280px] truncate font-label-md text-label-md text-on-surface">
+              {document.title}
+            </p>
+            <p className="font-label-sm text-label-sm text-on-surface-variant">
+              {document.fileType} • {document.fileSize} • {document.id}
+            </p>
+          </div>
+        </div>,
+        <div className="flex items-center gap-2" key="author">
+          <img
+            alt={`${document.author} avatar`}
+            className="h-6 w-6 rounded-full object-cover"
+            height={24}
+            src={document.avatarUrl}
+            width={24}
+          />
+          <span className="font-body-md text-body-md text-on-surface">
+            {document.author}
+          </span>
+        </div>,
+        <ModeratorBadge key="category" tone={categoryTone}>
+          {document.category}
+        </ModeratorBadge>,
+        <span
+          className="font-body-md text-body-md text-on-surface"
+          key="uploadDate"
+        >
+          {document.uploadDate}
+        </span>,
+        <ModeratorBadge key="status" tone={status.tone}>
+          {status.label}
+        </ModeratorBadge>,
+        <div className="flex justify-end gap-2" key="actions">
+          <IconButton
+            href={`/moderator/documents/${document.id}`}
+            icon="visibility"
+            label={`Xem chi tiết ${document.title}`}
+          />
+          <IconButton
+            icon="rate_review"
+            label={`Yêu cầu chỉnh sửa ${document.title}`}
+            onClick={() =>
+              handleStatusChange(
+                document.id,
+                "changes_requested",
+                `Đã yêu cầu chỉnh sửa ${document.id}`,
+              )
+            }
+          />
+          <IconButton
+            icon="flag"
+            label={`Gắn cờ ${document.title}`}
+            onClick={() =>
+              handleStatusChange(
+                document.id,
+                "flagged",
+                `Đã gắn cờ ${document.id}`,
+              )
+            }
+            tone="tertiary"
+          />
+          <IconButton
+            icon="close"
+            label={`Từ chối ${document.title}`}
+            onClick={() =>
+              handleStatusChange(
+                document.id,
+                "rejected",
+                `Đã từ chối ${document.id}`,
+              )
+            }
+            tone="error"
+          />
+          <IconButton
+            icon="check"
+            label={`Phê duyệt ${document.title}`}
+            onClick={() =>
+              handleStatusChange(
+                document.id,
+                "approved",
+                `Đã phê duyệt ${document.id}`,
+              )
+            }
+            tone="primary"
+          />
+        </div>,
+      ],
+    };
+  });
 
   return (
     <ModeratorShell
@@ -181,153 +297,7 @@ export default function ModeratorDocumentsPage(): React.JSX.Element {
         </div>
 
         <ModeratorCard className="overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full border-collapse text-left">
-              <thead>
-                <tr className="border-b border-outline-variant bg-surface-container-low">
-                  <th className="px-6 py-4 font-label-md text-label-md text-on-surface-variant">
-                    TIÊU ĐỀ TÀI LIỆU
-                  </th>
-                  <th className="px-6 py-4 font-label-md text-label-md text-on-surface-variant">
-                    TÁC GIẢ
-                  </th>
-                  <th className="px-6 py-4 font-label-md text-label-md text-on-surface-variant">
-                    DANH MỤC
-                  </th>
-                  <th className="px-6 py-4 font-label-md text-label-md text-on-surface-variant">
-                    NGÀY TẢI
-                  </th>
-                  <th className="px-6 py-4 font-label-md text-label-md text-on-surface-variant">
-                    TRẠNG THÁI
-                  </th>
-                  <th className="px-6 py-4 text-right font-label-md text-label-md text-on-surface-variant">
-                    THAO TÁC
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-outline-variant">
-                {filteredDocuments.map((document, index) => {
-                  const status = statusMeta[document.status];
-                  const categoryTone =
-                    categoryTones[index % categoryTones.length] ?? "neutral";
-
-                  return (
-                    <tr
-                      className="group transition-colors hover:bg-surface-container-lowest"
-                      key={document.id}
-                    >
-                      <td className="px-6 py-5">
-                        <div className="flex items-center gap-3">
-                          <div className="flex h-12 w-10 items-center justify-center rounded-sm bg-primary-fixed">
-                            <MaterialIcon
-                              className="text-primary"
-                              name={
-                                document.fileType === "DOCX"
-                                  ? "menu_book"
-                                  : "article"
-                              }
-                            />
-                          </div>
-                          <div>
-                            <p className="max-w-[280px] truncate font-label-md text-label-md text-on-surface transition-colors group-hover:text-primary">
-                              {document.title}
-                            </p>
-                            <p className="font-label-sm text-label-sm text-on-surface-variant">
-                              {document.fileType} • {document.fileSize} •{" "}
-                              {document.id}
-                            </p>
-                          </div>
-                        </div>
-                      </td>
-                      <td className="px-6 py-5">
-                        <div className="flex items-center gap-2">
-                          <img
-                            alt={`${document.author} avatar`}
-                            className="h-6 w-6 rounded-full object-cover"
-                            height={24}
-                            src={document.avatarUrl}
-                            width={24}
-                          />
-                          <span className="font-body-md text-body-md text-on-surface">
-                            {document.author}
-                          </span>
-                        </div>
-                      </td>
-                      <td className="px-6 py-5">
-                        <ModeratorBadge tone={categoryTone}>
-                          {document.category}
-                        </ModeratorBadge>
-                      </td>
-                      <td className="px-6 py-5 font-body-md text-body-md text-on-surface">
-                        {document.uploadDate}
-                      </td>
-                      <td className="px-6 py-5">
-                        <ModeratorBadge tone={status.tone}>
-                          {status.label}
-                        </ModeratorBadge>
-                      </td>
-                      <td className="px-6 py-5">
-                        <div className="flex justify-end gap-2">
-                          <IconButton
-                            href={`/moderator/documents/${document.id}`}
-                            icon="visibility"
-                            label={`Xem chi tiết ${document.title}`}
-                          />
-                          <IconButton
-                            icon="rate_review"
-                            label={`Yêu cầu chỉnh sửa ${document.title}`}
-                            onClick={() =>
-                              handleStatusChange(
-                                document.id,
-                                "changes_requested",
-                                `Đã yêu cầu chỉnh sửa ${document.id}`,
-                              )
-                            }
-                          />
-                          <IconButton
-                            icon="flag"
-                            label={`Gắn cờ ${document.title}`}
-                            onClick={() =>
-                              handleStatusChange(
-                                document.id,
-                                "flagged",
-                                `Đã gắn cờ ${document.id}`,
-                              )
-                            }
-                            tone="tertiary"
-                          />
-                          <IconButton
-                            icon="close"
-                            label={`Từ chối ${document.title}`}
-                            onClick={() =>
-                              handleStatusChange(
-                                document.id,
-                                "rejected",
-                                `Đã từ chối ${document.id}`,
-                              )
-                            }
-                            tone="error"
-                          />
-                          <IconButton
-                            icon="check"
-                            label={`Phê duyệt ${document.title}`}
-                            onClick={() =>
-                              handleStatusChange(
-                                document.id,
-                                "approved",
-                                `Đã phê duyệt ${document.id}`,
-                              )
-                            }
-                            tone="primary"
-                          />
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
+          <Table columns={documentColumns} rows={documentRows} />
           {filteredDocuments.length === 0 ? (
             <EmptyState
               description="Thử đổi bộ lọc hoặc xóa nội dung tìm kiếm để xem lại hàng đợi."

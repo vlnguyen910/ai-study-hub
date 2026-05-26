@@ -29,6 +29,11 @@ export const ROUTE_PATHS = {
   SETTINGS: "/settings",
   FAVORITES: "/favorites",
   MY_DOCUMENTS: "/my-documents",
+
+  // Admin Routes
+  ADMIN: "/admin",
+  ADMIN_USERS: "/admin/users",
+  ADMIN_SETTINGS: "/admin/settings",
 } as const;
 
 /**
@@ -79,6 +84,24 @@ export const ROUTE_METADATA = {
     title: "Cài đặt",
     public: false,
     requiresAuth: true,
+  },
+  [ROUTE_PATHS.ADMIN]: {
+    title: "Bảng điều khiển quản trị",
+    public: false,
+    requiresAuth: true,
+    requiresRole: "admin",
+  },
+  [ROUTE_PATHS.ADMIN_USERS]: {
+    title: "Quản lý người dùng",
+    public: false,
+    requiresAuth: true,
+    requiresRole: "admin",
+  },
+  [ROUTE_PATHS.ADMIN_SETTINGS]: {
+    title: "Cài đặt hệ thống",
+    public: false,
+    requiresAuth: true,
+    requiresRole: "admin",
   },
 } as const;
 

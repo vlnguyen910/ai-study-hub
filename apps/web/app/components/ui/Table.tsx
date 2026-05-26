@@ -18,6 +18,18 @@ export interface TableProps {
   readonly rows: readonly TableRow[];
 }
 
+const getAlignmentClass = (align: TableColumn["align"]): string => {
+  if (align === "right") {
+    return "text-right";
+  }
+
+  if (align === "center") {
+    return "text-center";
+  }
+
+  return "";
+};
+
 export const Table: FC<TableProps> = ({ columns, rows }) => {
   return (
     <div className="overflow-x-auto">
@@ -27,12 +39,12 @@ export const Table: FC<TableProps> = ({ columns, rows }) => {
             {columns.map((column) => (
               <th
                 key={column.key}
-                className={`px-4 py-3 font-semibold ${
-                  column.align === "right" ? "text-right" : ""
-                } ${column.align === "center" ? "text-center" : ""}`}
+                className={`px-4 py-3 font-semibold ${getAlignmentClass(
+                  column.align,
+                )}`}
               >
                 {column.sortable ? (
-                  <span className="inline-flex cursor-pointer items-center gap-1 hover:text-primary">
+                  <span className="inline-flex cursor-pointer items-center gap-1">
                     {column.label}
                     <span className="material-symbols-outlined text-sm">
                       unfold_more
@@ -49,12 +61,17 @@ export const Table: FC<TableProps> = ({ columns, rows }) => {
           {rows.map((row) => (
             <tr
               key={row.id}
-              className={`border-b border-outline-variant transition-colors hover:bg-surface-variant ${
+              className={`border-b border-outline-variant ${
                 row.highlighted ? "bg-surface-container" : ""
               }`}
             >
               {row.cells.map((cell, index) => (
-                <td key={`${row.id}-${index}`} className="px-4 py-3">
+                <td
+                  key={`${row.id}-${index}`}
+                  className={`px-4 py-3 ${getAlignmentClass(
+                    columns[index]?.align,
+                  )}`}
+                >
                   {cell}
                 </td>
               ))}

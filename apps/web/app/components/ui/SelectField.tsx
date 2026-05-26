@@ -47,18 +47,22 @@ export const SelectField: FC<SelectFieldProps> = ({
         </button>
         {open ? (
           <div className="absolute left-0 top-full z-10 mt-1 w-full overflow-hidden rounded-xl border border-outline-variant bg-surface shadow-md">
-            {options.map((option) => (
-              <button
-                key={option}
-                className={`block w-full px-3 py-2 text-left font-body-md transition-colors hover:bg-surface-variant ${
-                  option === value ? "bg-surface-variant" : ""
-                }`}
-                onClick={() => handleSelect(option)}
-                type="button"
-              >
-                {option}
-              </button>
-            ))}
+            {options.map((option) => {
+              const selected = option === value;
+
+              return (
+                <button
+                  key={option}
+                  className={`block w-full px-3 py-2 text-left font-body-md transition-colors ${
+                    selected ? "bg-surface-variant" : "hover:bg-surface-variant"
+                  }`}
+                  onClick={() => handleSelect(option)}
+                  type="button"
+                >
+                  {option}
+                </button>
+              );
+            })}
           </div>
         ) : null}
       </div>
