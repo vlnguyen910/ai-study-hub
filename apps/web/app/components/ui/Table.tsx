@@ -39,7 +39,7 @@ export const Table: FC<TableProps> = ({ columns, rows }) => {
             {columns.map((column) => (
               <th
                 key={column.key}
-                className={`whitespace-nowrap px-4 py-3 font-semibold ${getAlignmentClass(
+                className={`px-4 py-3 font-semibold ${getAlignmentClass(
                   column.align,
                 )}`}
               >

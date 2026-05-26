@@ -54,9 +54,7 @@ export const SelectField: FC<SelectFieldProps> = ({
                 <button
                   key={option}
                   className={`block w-full px-3 py-2 text-left font-body-md transition-colors ${
-                    selected
-                      ? "bg-primary text-on-primary"
-                      : "text-on-surface hover:bg-surface-variant"
+                    selected ? "bg-surface-variant" : "hover:bg-surface-variant"
                   }`}
                   onClick={() => handleSelect(option)}
                   type="button"
