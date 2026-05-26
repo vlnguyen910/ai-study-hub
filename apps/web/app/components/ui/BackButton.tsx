@@ -51,7 +51,7 @@ export function BackButton({
       type="button"
       className={`inline-flex items-center gap-2 rounded-full border border-gray-300 bg-white px-4 py-2 text-sm font-semibold text-gray-700 transition-colors hover:bg-gray-50 hover:text-gray-900 ${className}`}
       onClick={handleClick}
-      {...props}
+      {...(props as any)}
     >
       {icon}
       <span>{label}</span>

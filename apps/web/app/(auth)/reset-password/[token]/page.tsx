@@ -1,11 +1,7 @@
 import type { ReactElement } from "react";
 import ResetPasswordPage from "../../../modules/reset-password/page";
 
-export default async function Page({
-  params,
-}: Readonly<{
-  params: Promise<{ token: string }>;
-}>): Promise<ReactElement> {
-  const { token } = await params;
-  return <ResetPasswordPage token={token} />;
+export default function Page(): ReactElement {
+  // `token` param is now extracted inside ResetPasswordPage component directly via useParams hook
+  return <ResetPasswordPage />;
 }
