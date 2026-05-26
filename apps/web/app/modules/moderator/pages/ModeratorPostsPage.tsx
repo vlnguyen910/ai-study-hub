@@ -1,5 +1,6 @@
 "use client";
 
+import { Table, type TableRow } from "@/components/ui/Table";
 import { useMemo, useState } from "react";
 import { postModerationItems } from "../mockData";
 import type { PostModerationItem, PostModerationStatus } from "../types";
@@ -13,6 +14,14 @@ import {
 } from "../components/ModeratorPrimitives";
 
 type ModerationTab = "pending" | "reported" | "history";
+
+const postColumns = [
+  { key: "post", label: "BÀI VIẾT" },
+  { key: "author", label: "TÁC GIẢ" },
+  { key: "reason", label: "LÝ DO / TRẠNG THÁI" },
+  { key: "time", label: "THỜI GIAN" },
+  { key: "actions", label: "THAO TÁC", align: "right" as const },
+] as const;
 
 const statusMeta: Record<
   PostModerationStatus,
@@ -65,6 +74,94 @@ export default function ModeratorPostsPage(): React.JSX.Element {
     setPosts((current) => updatePostStatus(current, id, status));
     setToastMessage(message);
   };
+
+  const postRows: TableRow[] = filteredPosts.map((post) => {
+    const status = statusMeta[post.status];
+
+    return {
+      id: post.id,
+      cells: [
+        <div className="flex items-center gap-3" key="post">
+          <div className="flex h-10 w-10 items-center justify-center rounded border border-outline-variant bg-secondary-container/20 text-secondary">
+            <MaterialIcon name="article" />
+          </div>
+          <div>
+            <p className="max-w-[260px] truncate font-label-md text-label-md text-on-surface">
+              {post.title}
+            </p>
+            <p className="max-w-[320px] truncate font-label-sm text-label-sm text-on-surface-variant">
+              {post.id} • {post.community}
+            </p>
+          </div>
+        </div>,
+        <div className="flex items-center gap-2" key="author">
+          <img
+            alt={`${post.author} avatar`}
+            className="h-6 w-6 rounded-full border border-outline-variant object-cover"
+            height={24}
+            src={post.avatarUrl}
+            width={24}
+          />
+          <span className="font-body-md text-body-md text-on-surface">
+            {post.author}
+          </span>
+        </div>,
+        <div className="flex flex-col gap-1" key="reason">
+          <ModeratorBadge tone={status.tone}>{status.label}</ModeratorBadge>
+          <span className="font-label-sm text-label-sm text-on-surface-variant">
+            {post.reason} • {post.reports} báo cáo
+          </span>
+        </div>,
+        <span
+          className="font-body-md text-body-md text-on-surface-variant"
+          key="time"
+        >
+          {post.reportedAt}
+        </span>,
+        <div className="flex justify-end gap-2" key="actions">
+          <IconButton
+            icon="check_circle"
+            label={`Duyệt ${post.title}`}
+            onClick={() =>
+              handleStatusChange(post.id, "approved", `Đã duyệt ${post.id}`)
+            }
+            tone="primary"
+          />
+          <IconButton
+            icon="delete"
+            label={`Ẩn ${post.title}`}
+            onClick={() =>
+              handleStatusChange(post.id, "hidden", `Đã ẩn ${post.id}`)
+            }
+            tone="error"
+          />
+          <IconButton
+            icon="restore"
+            label={`Khôi phục ${post.title}`}
+            onClick={() =>
+              handleStatusChange(post.id, "restored", `Đã khôi phục ${post.id}`)
+            }
+            tone="secondary"
+          />
+          <IconButton
+            icon="flag"
+            label={`Gắn cờ ${post.title}`}
+            onClick={() =>
+              handleStatusChange(post.id, "flagged", `Đã gắn cờ ${post.id}`)
+            }
+            tone="tertiary"
+          />
+          <IconButton
+            icon="edit"
+            label={`Chỉnh sửa ${post.title}`}
+            onClick={() =>
+              setToastMessage(`Mở trạng thái chỉnh sửa cho ${post.id}`)
+            }
+          />
+        </div>,
+      ],
+    };
+  });
 
   return (
     <ModeratorShell
@@ -168,145 +265,7 @@ export default function ModeratorPostsPage(): React.JSX.Element {
 
         <div className="lg:col-span-8">
           <ModeratorCard className="overflow-hidden rounded-xl">
-            <div className="overflow-x-auto">
-              <table className="w-full border-collapse text-left">
-                <thead>
-                  <tr className="border-b border-outline-variant bg-surface-container-low">
-                    <th className="px-6 py-4 font-label-md text-label-md text-on-surface-variant">
-                      BÀI VIẾT
-                    </th>
-                    <th className="px-6 py-4 font-label-md text-label-md text-on-surface-variant">
-                      TÁC GIẢ
-                    </th>
-                    <th className="px-6 py-4 font-label-md text-label-md text-on-surface-variant">
-                      LÝ DO / TRẠNG THÁI
-                    </th>
-                    <th className="px-6 py-4 font-label-md text-label-md text-on-surface-variant">
-                      THỜI GIAN
-                    </th>
-                    <th className="px-6 py-4 text-right font-label-md text-label-md text-on-surface-variant">
-                      THAO TÁC
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-outline-variant">
-                  {filteredPosts.map((post) => {
-                    const status = statusMeta[post.status];
-
-                    return (
-                      <tr
-                        className="group transition-colors hover:bg-surface-container-lowest"
-                        key={post.id}
-                      >
-                        <td className="px-6 py-4">
-                          <div className="flex items-center gap-3">
-                            <div className="flex h-10 w-10 items-center justify-center rounded border border-outline-variant bg-secondary-container/20 text-secondary">
-                              <MaterialIcon name="article" />
-                            </div>
-                            <div>
-                              <p className="max-w-[260px] truncate font-label-md text-label-md text-on-surface">
-                                {post.title}
-                              </p>
-                              <p className="max-w-[320px] truncate font-label-sm text-label-sm text-on-surface-variant">
-                                {post.id} • {post.community}
-                              </p>
-                            </div>
-                          </div>
-                        </td>
-                        <td className="px-6 py-4">
-                          <div className="flex items-center gap-2">
-                            <img
-                              alt={`${post.author} avatar`}
-                              className="h-6 w-6 rounded-full border border-outline-variant object-cover"
-                              height={24}
-                              src={post.avatarUrl}
-                              width={24}
-                            />
-                            <span className="font-body-md text-body-md text-on-surface">
-                              {post.author}
-                            </span>
-                          </div>
-                        </td>
-                        <td className="px-6 py-4">
-                          <div className="flex flex-col gap-1">
-                            <ModeratorBadge tone={status.tone}>
-                              {status.label}
-                            </ModeratorBadge>
-                            <span className="font-label-sm text-label-sm text-on-surface-variant">
-                              {post.reason} • {post.reports} báo cáo
-                            </span>
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 font-body-md text-body-md text-on-surface-variant">
-                          {post.reportedAt}
-                        </td>
-                        <td className="px-6 py-4 text-right">
-                          <div className="flex justify-end gap-2">
-                            <IconButton
-                              icon="check_circle"
-                              label={`Duyệt ${post.title}`}
-                              onClick={() =>
-                                handleStatusChange(
-                                  post.id,
-                                  "approved",
-                                  `Đã duyệt ${post.id}`,
-                                )
-                              }
-                              tone="primary"
-                            />
-                            <IconButton
-                              icon="delete"
-                              label={`Ẩn ${post.title}`}
-                              onClick={() =>
-                                handleStatusChange(
-                                  post.id,
-                                  "hidden",
-                                  `Đã ẩn ${post.id}`,
-                                )
-                              }
-                              tone="error"
-                            />
-                            <IconButton
-                              icon="restore"
-                              label={`Khôi phục ${post.title}`}
-                              onClick={() =>
-                                handleStatusChange(
-                                  post.id,
-                                  "restored",
-                                  `Đã khôi phục ${post.id}`,
-                                )
-                              }
-                              tone="secondary"
-                            />
-                            <IconButton
-                              icon="flag"
-                              label={`Gắn cờ ${post.title}`}
-                              onClick={() =>
-                                handleStatusChange(
-                                  post.id,
-                                  "flagged",
-                                  `Đã gắn cờ ${post.id}`,
-                                )
-                              }
-                              tone="tertiary"
-                            />
-                            <IconButton
-                              icon="edit"
-                              label={`Chỉnh sửa ${post.title}`}
-                              onClick={() =>
-                                setToastMessage(
-                                  `Mở trạng thái chỉnh sửa cho ${post.id}`,
-                                )
-                              }
-                            />
-                          </div>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
+            <Table columns={postColumns} rows={postRows} />
             {filteredPosts.length === 0 ? (
               <EmptyState
                 description="Các hành động demo sẽ chuyển bài viết sang tab Lịch sử để bạn kiểm tra lại."

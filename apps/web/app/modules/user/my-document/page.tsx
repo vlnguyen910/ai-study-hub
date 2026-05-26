@@ -3,10 +3,12 @@
 import { useMemo, useState, type ReactElement } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { InputField } from "@/components/ui/InputField";
 import { Pagination } from "@/components/ui/Pagination";
+import { Table, type TableRow } from "@/components/ui/Table";
 import { userRouterConfig } from "../../../routes/user/user.routes";
 
 type DocumentRow = {
@@ -60,6 +62,13 @@ const sidebarItems = [
   userRouterConfig.MY_DOCUMENTS,
   userRouterConfig.MY_UPLOADS,
   userRouterConfig.CHANGE_PASSWORD,
+] as const;
+
+const documentColumns = [
+  { key: "name", label: "Tên tài liệu" },
+  { key: "date", label: "Ngày tải lên" },
+  { key: "status", label: "Trạng thái" },
+  { key: "actions", label: "Thao tác", align: "right" as const },
 ] as const;
 
 function MyDocumentSidebar({ pathname }: { pathname: string }): ReactElement {
@@ -150,6 +159,58 @@ export default function MyDocumentPage(): ReactElement {
     (activePage - 1) * 4,
     activePage * 4,
   );
+
+  const documentRows: TableRow[] = visibleDocuments.map((document) => ({
+    id: document.title,
+    cells: [
+      <div className="flex items-center gap-3" key="name">
+        <div className="flex h-10 w-10 items-center justify-center rounded-lg border border-outline-variant bg-primary-container/10 text-primary">
+          <span className="material-symbols-outlined">{document.icon}</span>
+        </div>
+        <div>
+          <p className="font-label-md text-label-md font-semibold text-on-surface">
+            {document.title}
+          </p>
+          <p className="font-label-sm text-label-sm text-on-surface-variant">
+            {document.category} • {document.size}
+          </p>
+        </div>
+      </div>,
+      <span
+        className="font-body-md text-body-md text-on-surface-variant"
+        key="date"
+      >
+        {document.date}
+      </span>,
+      <Badge
+        key="status"
+        tone={document.status === "public" ? "success" : "warning"}
+      >
+        {document.status === "public" ? "Công khai" : "Đang chờ duyệt"}
+      </Badge>,
+      <div className="flex justify-end gap-2" key="actions">
+        <Button type="button" variant="ghost" size="sm" className="px-3">
+          <span className="flex items-center gap-2">
+            <span className="material-symbols-outlined text-[18px]">edit</span>
+            Sửa
+          </span>
+        </Button>
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          className="px-3 text-error hover:bg-error-container hover:text-error"
+        >
+          <span className="flex items-center gap-2">
+            <span className="material-symbols-outlined text-[18px]">
+              delete
+            </span>
+            Xóa
+          </span>
+        </Button>
+      </div>,
+    ],
+  }));
 
   return (
     <div className="min-h-screen bg-surface text-on-surface">
@@ -243,97 +304,8 @@ export default function MyDocumentPage(): ReactElement {
               </div>
             </div>
 
-            <div className="overflow-x-auto rounded-2xl border border-outline-variant">
-              <table className="w-full text-left">
-                <thead>
-                  <tr className="bg-surface-container-low/60">
-                    <th className="px-5 py-4 font-label-md text-label-md text-on-surface-variant">
-                      Tên tài liệu
-                    </th>
-                    <th className="px-5 py-4 font-label-md text-label-md text-on-surface-variant">
-                      Ngày tải lên
-                    </th>
-                    <th className="px-5 py-4 font-label-md text-label-md text-on-surface-variant">
-                      Trạng thái
-                    </th>
-                    <th className="px-5 py-4 text-right font-label-md text-label-md text-on-surface-variant">
-                      Thao tác
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-outline-variant bg-surface-container-lowest">
-                  {visibleDocuments.map((document) => (
-                    <tr
-                      key={document.title}
-                      className="group hover:bg-surface-container-low transition-colors"
-                    >
-                      <td className="px-5 py-4">
-                        <div className="flex items-center gap-3">
-                          <div className="flex h-10 w-10 items-center justify-center rounded-lg border border-outline-variant bg-primary-container/10 text-primary">
-                            <span className="material-symbols-outlined">
-                              {document.icon}
-                            </span>
-                          </div>
-                          <div>
-                            <p className="font-label-md text-label-md font-semibold text-on-surface">
-                              {document.title}
-                            </p>
-                            <p className="font-label-sm text-label-sm text-on-surface-variant">
-                              {document.category} • {document.size}
-                            </p>
-                          </div>
-                        </div>
-                      </td>
-                      <td className="px-5 py-4 font-body-md text-body-md text-on-surface-variant">
-                        {document.date}
-                      </td>
-                      <td className="px-5 py-4">
-                        <span
-                          className={`inline-flex items-center rounded-full px-3 py-1 font-label-sm text-label-sm font-medium ${
-                            document.status === "public"
-                              ? "bg-green-100 text-green-800"
-                              : "bg-secondary-container text-on-secondary-container"
-                          }`}
-                        >
-                          {document.status === "public"
-                            ? "Công khai"
-                            : "Đang chờ duyệt"}
-                        </span>
-                      </td>
-                      <td className="px-5 py-4">
-                        <div className="flex justify-end gap-2 opacity-0 transition-opacity group-hover:opacity-100">
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="sm"
-                            className="px-3"
-                          >
-                            <span className="flex items-center gap-2">
-                              <span className="material-symbols-outlined text-[18px]">
-                                edit
-                              </span>
-                              Sửa
-                            </span>
-                          </Button>
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="sm"
-                            className="px-3 text-error hover:bg-error-container hover:text-error"
-                          >
-                            <span className="flex items-center gap-2">
-                              <span className="material-symbols-outlined text-[18px]">
-                                delete
-                              </span>
-                              Xóa
-                            </span>
-                          </Button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+            <div className="overflow-hidden rounded-2xl border border-outline-variant bg-surface-container-lowest">
+              <Table columns={documentColumns} rows={documentRows} />
             </div>
 
             <div className="mt-5 flex flex-col gap-4 border-t border-outline-variant pt-5 md:flex-row md:items-center md:justify-between">
