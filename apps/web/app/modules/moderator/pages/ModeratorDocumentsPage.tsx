@@ -1,7 +1,8 @@
 "use client";
 
+import { Pagination } from "@/components/ui/Pagination";
 import { Table, type TableRow } from "@/components/ui/Table";
-import { useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { documentReviewItems } from "../mockData";
 import type { DocumentReviewItem, DocumentReviewStatus } from "../types";
 import { ModeratorShell } from "../components/ModeratorShell";
@@ -35,15 +36,6 @@ const categoryToneMap: Record<string, "secondary" | "tertiary" | "neutral"> = {
 };
 
 const pageSize = 3;
-
-const documentColumns = [
-  { key: "title", label: "TIÊU ĐỀ TÀI LIỆU" },
-  { key: "author", label: "TÁC GIẢ" },
-  { key: "category", label: "DANH MỤC" },
-  { key: "uploadDate", label: "NGÀY TẢI" },
-  { key: "status", label: "TRẠNG THÁI" },
-  { key: "actions", label: "THAO TÁC", align: "right" as const },
-] as const;
 
 const documentColumns = [
   { key: "title", label: "TIÊU ĐỀ TÀI LIỆU" },
@@ -244,112 +236,6 @@ export default function ModeratorDocumentsPage(): React.JSX.Element {
       }),
     [handleStatusChange, visibleDocuments],
   );
-
-  const documentRows: TableRow[] = filteredDocuments.map((document, index) => {
-    const status = statusMeta[document.status];
-    const categoryTone =
-      categoryTones[index % categoryTones.length] ?? "neutral";
-
-    return {
-      id: document.id,
-      cells: [
-        <div className="flex items-center gap-3" key="title">
-          <div className="flex h-12 w-10 items-center justify-center rounded-sm bg-primary-fixed">
-            <MaterialIcon
-              className="text-primary"
-              name={document.fileType === "DOCX" ? "menu_book" : "article"}
-            />
-          </div>
-          <div>
-            <p className="max-w-[280px] truncate font-label-md text-label-md text-on-surface">
-              {document.title}
-            </p>
-            <p className="font-label-sm text-label-sm text-on-surface-variant">
-              {document.fileType} • {document.fileSize} • {document.id}
-            </p>
-          </div>
-        </div>,
-        <div className="flex items-center gap-2" key="author">
-          <img
-            alt={`${document.author} avatar`}
-            className="h-6 w-6 rounded-full object-cover"
-            height={24}
-            src={document.avatarUrl}
-            width={24}
-          />
-          <span className="font-body-md text-body-md text-on-surface">
-            {document.author}
-          </span>
-        </div>,
-        <ModeratorBadge key="category" tone={categoryTone}>
-          {document.category}
-        </ModeratorBadge>,
-        <span
-          className="font-body-md text-body-md text-on-surface"
-          key="uploadDate"
-        >
-          {document.uploadDate}
-        </span>,
-        <ModeratorBadge key="status" tone={status.tone}>
-          {status.label}
-        </ModeratorBadge>,
-        <div className="flex justify-end gap-2" key="actions">
-          <IconButton
-            href={`/moderator/documents/${document.id}`}
-            icon="visibility"
-            label={`Xem chi tiết ${document.title}`}
-          />
-          <IconButton
-            icon="rate_review"
-            label={`Yêu cầu chỉnh sửa ${document.title}`}
-            onClick={() =>
-              handleStatusChange(
-                document.id,
-                "changes_requested",
-                `Đã yêu cầu chỉnh sửa ${document.id}`,
-              )
-            }
-          />
-          <IconButton
-            icon="flag"
-            label={`Gắn cờ ${document.title}`}
-            onClick={() =>
-              handleStatusChange(
-                document.id,
-                "flagged",
-                `Đã gắn cờ ${document.id}`,
-              )
-            }
-            tone="tertiary"
-          />
-          <IconButton
-            icon="close"
-            label={`Từ chối ${document.title}`}
-            onClick={() =>
-              handleStatusChange(
-                document.id,
-                "rejected",
-                `Đã từ chối ${document.id}`,
-              )
-            }
-            tone="error"
-          />
-          <IconButton
-            icon="check"
-            label={`Phê duyệt ${document.title}`}
-            onClick={() =>
-              handleStatusChange(
-                document.id,
-                "approved",
-                `Đã phê duyệt ${document.id}`,
-              )
-            }
-            tone="primary"
-          />
-        </div>,
-      ],
-    };
-  });
 
   return (
     <ModeratorShell

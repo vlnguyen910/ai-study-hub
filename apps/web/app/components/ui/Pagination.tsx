@@ -16,14 +16,26 @@ export const Pagination: FC<PaginationProps> = ({
 }) => {
   const safeTotalPages = Math.max(1, totalPages);
   const safeCurrentPage = Math.min(Math.max(1, currentPage), safeTotalPages);
+  const pages = useMemo(() => {
+    const delta = 1;
+    const range: number[] = [];
+
+    for (let page = 1; page <= safeTotalPages; page += 1) {
+      if (
+        page === 1 ||
+        page === safeTotalPages ||
+        (page >= safeCurrentPage - delta && page <= safeCurrentPage + delta)
+      ) {
+        range.push(page);
+      }
+    }
+
+    return Array.from(new Set(range));
+  }, [safeCurrentPage, safeTotalPages]);
 
   const goToPage = (page: number) => {
     onPageChange(Math.min(Math.max(1, page), safeTotalPages));
   };
-  const pages = [1, 2, 3, totalPages].filter(
-    (value, index, self) =>
-      value <= totalPages && self.indexOf(value) === index,
-  );
 
   return (
     <div className="flex items-center gap-1">

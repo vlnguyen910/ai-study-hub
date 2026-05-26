@@ -1,7 +1,8 @@
 "use client";
 
+import { Pagination } from "@/components/ui/Pagination";
 import { Table, type TableRow } from "@/components/ui/Table";
-import { useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { postModerationItems } from "../mockData";
 import type { PostModerationItem, PostModerationStatus } from "../types";
 import { ModeratorShell } from "../components/ModeratorShell";
@@ -201,94 +202,6 @@ export default function ModeratorPostsPage(): React.JSX.Element {
       }),
     [handleStatusChange, visiblePosts],
   );
-
-  const postRows: TableRow[] = filteredPosts.map((post) => {
-    const status = statusMeta[post.status];
-
-    return {
-      id: post.id,
-      cells: [
-        <div className="flex items-center gap-3" key="post">
-          <div className="flex h-10 w-10 items-center justify-center rounded border border-outline-variant bg-secondary-container/20 text-secondary">
-            <MaterialIcon name="article" />
-          </div>
-          <div>
-            <p className="max-w-[260px] truncate font-label-md text-label-md text-on-surface">
-              {post.title}
-            </p>
-            <p className="max-w-[320px] truncate font-label-sm text-label-sm text-on-surface-variant">
-              {post.id} • {post.community}
-            </p>
-          </div>
-        </div>,
-        <div className="flex items-center gap-2" key="author">
-          <img
-            alt={`${post.author} avatar`}
-            className="h-6 w-6 rounded-full border border-outline-variant object-cover"
-            height={24}
-            src={post.avatarUrl}
-            width={24}
-          />
-          <span className="font-body-md text-body-md text-on-surface">
-            {post.author}
-          </span>
-        </div>,
-        <div className="flex flex-col gap-1" key="reason">
-          <ModeratorBadge tone={status.tone}>{status.label}</ModeratorBadge>
-          <span className="font-label-sm text-label-sm text-on-surface-variant">
-            {post.reason} • {post.reports} báo cáo
-          </span>
-        </div>,
-        <span
-          className="font-body-md text-body-md text-on-surface-variant"
-          key="time"
-        >
-          {post.reportedAt}
-        </span>,
-        <div className="flex justify-end gap-2" key="actions">
-          <IconButton
-            icon="check_circle"
-            label={`Duyệt ${post.title}`}
-            onClick={() =>
-              handleStatusChange(post.id, "approved", `Đã duyệt ${post.id}`)
-            }
-            tone="primary"
-          />
-          <IconButton
-            icon="delete"
-            label={`Ẩn ${post.title}`}
-            onClick={() =>
-              handleStatusChange(post.id, "hidden", `Đã ẩn ${post.id}`)
-            }
-            tone="error"
-          />
-          <IconButton
-            icon="restore"
-            label={`Khôi phục ${post.title}`}
-            onClick={() =>
-              handleStatusChange(post.id, "restored", `Đã khôi phục ${post.id}`)
-            }
-            tone="secondary"
-          />
-          <IconButton
-            icon="flag"
-            label={`Gắn cờ ${post.title}`}
-            onClick={() =>
-              handleStatusChange(post.id, "flagged", `Đã gắn cờ ${post.id}`)
-            }
-            tone="tertiary"
-          />
-          <IconButton
-            icon="edit"
-            label={`Chỉnh sửa ${post.title}`}
-            onClick={() =>
-              setToastMessage(`Mở trạng thái chỉnh sửa cho ${post.id}`)
-            }
-          />
-        </div>,
-      ],
-    };
-  });
 
   return (
     <ModeratorShell
