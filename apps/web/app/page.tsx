@@ -500,6 +500,9 @@ export default function Home(): ReactElement {
                       />
                       <button
                         type="button"
+                        aria-label={
+                          showLoginPassword ? "Hide password" : "Show password"
+                        }
                         className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-600"
                         onClick={() => setShowLoginPassword((prev) => !prev)}
                       >
@@ -723,6 +726,11 @@ export default function Home(): ReactElement {
                       />
                       <button
                         type="button"
+                        aria-label={
+                          showRegisterPassword
+                            ? "Hide password"
+                            : "Show password"
+                        }
                         className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-600"
                         onClick={() => setShowRegisterPassword((prev) => !prev)}
                       >
@@ -814,6 +822,11 @@ export default function Home(): ReactElement {
                       />
                       <button
                         type="button"
+                        aria-label={
+                          showRegisterConfirmPassword
+                            ? "Hide password"
+                            : "Show password"
+                        }
                         className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-600"
                         onClick={() =>
                           setShowRegisterConfirmPassword((prev) => !prev)
