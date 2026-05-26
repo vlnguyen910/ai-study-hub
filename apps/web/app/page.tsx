@@ -231,12 +231,13 @@ export default function Home(): ReactElement {
               <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
             </svg>
           </button>
-          <Link
-            href="/login"
-            className="bg-blue-600 text-white px-5 py-2 rounded hover:bg-blue-700 font-semibold"
+          <button
+            type="button"
+            onClick={openLogin}
+            className="rounded border border-gray-300 px-5 py-2 font-semibold text-gray-700 hover:border-blue-600 hover:text-blue-600"
           >
             Log in
-          </Link>
+          </button>
           <button
             type="button"
             onClick={openRegister}
@@ -499,9 +500,6 @@ export default function Home(): ReactElement {
                       />
                       <button
                         type="button"
-                        aria-label={
-                          showLoginPassword ? "Hide password" : "Show password"
-                        }
                         className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-600"
                         onClick={() => setShowLoginPassword((prev) => !prev)}
                       >
@@ -725,11 +723,6 @@ export default function Home(): ReactElement {
                       />
                       <button
                         type="button"
-                        aria-label={
-                          showRegisterPassword
-                            ? "Hide password"
-                            : "Show password"
-                        }
                         className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-600"
                         onClick={() => setShowRegisterPassword((prev) => !prev)}
                       >
@@ -739,7 +732,7 @@ export default function Home(): ReactElement {
                             height="20"
                             viewBox="0 0 24 24"
                             fill="none"
-                            xmlns="http://www.w3.org/2000/svg"
+                            xmlns="http://www.w3.org/2000/svgs"
                           >
                             <path
                               d="M17.94 17.94A10.07 10.07 0 0 1 12 20C7 20 2.73 16.11 1 12A15.42 15.42 0 0 1 4.54 6.54M9.9 4.24A9.12 9.12 0 0 1 12 4C17 4 21.27 7.89 23 12C22.25 13.88 21.1 15.54 19.64 16.89"
@@ -821,11 +814,6 @@ export default function Home(): ReactElement {
                       />
                       <button
                         type="button"
-                        aria-label={
-                          showRegisterConfirmPassword
-                            ? "Hide password"
-                            : "Show password"
-                        }
                         className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-600"
                         onClick={() =>
                           setShowRegisterConfirmPassword((prev) => !prev)
