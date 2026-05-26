@@ -49,11 +49,11 @@ Routes accessible to everyone **without** authentication:
 
 Routes for user authentication:
 
-- LOGIN (`/user/login`)
-- REGISTER (`/user/register`)
-- FORGOT_PASSWORD (`/user/forgot-password`)
-- RESET_PASSWORD (`/user/reset-password/:token`)
-- VERIFY_EMAIL (`/user/verify-email/:token`)
+- LOGIN (`/login`)
+- REGISTER (`/register`)
+- FORGOT_PASSWORD (`/forgot-password`)
+- RESET_PASSWORD (`/reset-password/:token`)
+- VERIFY_EMAIL (`/verify-email/:token`)
 
 **Behavior**: Should redirect to home if user is already authenticated.
 
@@ -122,7 +122,7 @@ const detailPath = getRoutePath(ROUTE_PATHS.LIBRARY_DETAIL, { id: "123" });
 const resetPath = getRoutePath(ROUTE_PATHS.AUTH_ROUTES.RESET_PASSWORD, {
   token: "abc123",
 });
-// Result: '/user/reset-password/abc123'
+// Result: '/reset-password/abc123'
 ```
 
 ### Protecting Routes with Component (Client-side)
@@ -246,7 +246,7 @@ const access = canAccessRoute({
 
 // Get redirect path if access denied
 const redirect = getAuthRedirect("/profile", false);
-// Returns: '/user/login?redirect=/profile'
+// Returns: '/login?redirect=/profile'
 ```
 
 ### Role Guard (`role.guard.ts`)
@@ -299,7 +299,7 @@ Request to Route
 
 ### Redirect Behavior
 
-- Unauthenticated users accessing protected routes → redirect to `/user/login?redirect={original-path}`
+- Unauthenticated users accessing protected routes → redirect to `/login?redirect={original-path}`
 - Authenticated users accessing auth routes → redirect to `/`
 - Non-admin users accessing admin routes → redirect to home based on role
 

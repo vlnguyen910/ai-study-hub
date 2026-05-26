@@ -13,6 +13,10 @@ export interface RoleGuardContext {
   requiredRoles?: UserRole[];
 }
 
+const matchesRouteSegment = (pathname: string, route: string): boolean => {
+  return pathname === route || pathname.startsWith(`${route}/`);
+};
+
 /**
  * Role-based route configuration
  */
@@ -66,22 +70,38 @@ export const hasRoleAccess = (context: RoleGuardContext): boolean => {
  */
 export const getRequiredRoleForRoute = (pathname: string): UserRole | null => {
   // Check admin routes
-  if (ROLE_BASED_ROUTES.ADMIN.some((route) => pathname.startsWith(route))) {
+  if (
+    ROLE_BASED_ROUTES.ADMIN.some((route) =>
+      matchesRouteSegment(pathname, route),
+    )
+  ) {
     return "admin";
   }
 
   // Check moderator routes
-  if (ROLE_BASED_ROUTES.MODERATOR.some((route) => pathname.startsWith(route))) {
+  if (
+    ROLE_BASED_ROUTES.MODERATOR.some((route) =>
+      matchesRouteSegment(pathname, route),
+    )
+  ) {
     return "moderator";
   }
 
   // Check teacher-specific routes
-  if (ROLE_BASED_ROUTES.TEACHER.some((route) => pathname.startsWith(route))) {
+  if (
+    ROLE_BASED_ROUTES.TEACHER.some((route) =>
+      matchesRouteSegment(pathname, route),
+    )
+  ) {
     return "teacher";
   }
 
   // Check student routes
-  if (ROLE_BASED_ROUTES.STUDENT.some((route) => pathname.startsWith(route))) {
+  if (
+    ROLE_BASED_ROUTES.STUDENT.some((route) =>
+      matchesRouteSegment(pathname, route),
+    )
+  ) {
     return "student";
   }
 

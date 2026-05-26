@@ -14,6 +14,10 @@ export interface GuardContext {
   token?: string;
 }
 
+const matchesRouteSegment = (pathname: string, route: string): boolean => {
+  return pathname === route || pathname.startsWith(`${route}/`);
+};
+
 /**
  * Check if user can access this route
  */
@@ -21,7 +25,9 @@ export const canAccessRoute = (context: GuardContext): boolean => {
   const { pathname, isAuthenticated } = context;
 
   // Protected routes require authentication
-  if (USER_PROTECTED_ROUTES.some((route) => pathname.startsWith(route))) {
+  if (
+    USER_PROTECTED_ROUTES.some((route) => matchesRouteSegment(pathname, route))
+  ) {
     return isAuthenticated;
   }
 
@@ -44,7 +50,7 @@ export const getAuthRedirect = (
   // If trying to access protected route without auth, redirect to login
   if (
     !isAuthenticated &&
-    USER_PROTECTED_ROUTES.some((route) => pathname.startsWith(route))
+    USER_PROTECTED_ROUTES.some((route) => matchesRouteSegment(pathname, route))
   ) {
     return `/login?redirect=${encodeURIComponent(pathname)}`;
   }
@@ -71,5 +77,13 @@ export const getAuthToken = (): string | null => {
 export const getAuthUser = () => {
   if (typeof window === "undefined") return null;
   const user = localStorage.getItem("user_info");
-  return user ? JSON.parse(user) : null;
+  if (!user) return null;
+
+  try {
+    return JSON.parse(user);
+  } catch {
+    // Invalid localStorage payload should not break route guard flow
+    localStorage.removeItem("user_info");
+    return null;
+  }
 };

@@ -52,11 +52,15 @@ export const userRouterConfig = {
   },
 } as const;
 
+const matchesRouteSegment = (pathname: string, route: string): boolean => {
+  return pathname === route || pathname.startsWith(`${route}/`);
+};
+
 /**
  * Check if a route requires user authentication
  */
 export const isUserProtectedRoute = (pathname: string): boolean => {
-  return USER_PROTECTED_ROUTES.some(
-    (route) => pathname === route || pathname.startsWith(route),
+  return USER_PROTECTED_ROUTES.some((route) =>
+    matchesRouteSegment(pathname, route),
   );
 };

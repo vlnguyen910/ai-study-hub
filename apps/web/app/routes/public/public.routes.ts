@@ -53,12 +53,15 @@ export const publicRouterConfig = {
   },
 } as const;
 
+const matchesRouteSegment = (pathname: string, route: string): boolean => {
+  return pathname === route || pathname.startsWith(`${route}/`);
+};
+
 /**
  * Check if a route is public
  */
 export const isPublicRoute = (pathname: string): boolean => {
-  return PUBLIC_ROUTES.some(
-    (route) =>
-      pathname === route || (route !== "/" && pathname.startsWith(route)),
+  return PUBLIC_ROUTES.some((route) =>
+    route === "/" ? pathname === "/" : matchesRouteSegment(pathname, route),
   );
 };
