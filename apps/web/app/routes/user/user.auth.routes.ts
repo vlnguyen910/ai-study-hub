@@ -9,6 +9,8 @@ export const AUTH_ROUTES = [
   ROUTE_PATHS.AUTH_ROUTES.LOGIN,
   ROUTE_PATHS.AUTH_ROUTES.REGISTER,
   ROUTE_PATHS.AUTH_ROUTES.FORGOT_PASSWORD,
+  ROUTE_PATHS.AUTH_ROUTES.RESET_PASSWORD,
+  ROUTE_PATHS.AUTH_ROUTES.VERIFY_EMAIL,
 ];
 
 export const authRouterConfig = {
@@ -48,7 +50,12 @@ export const authRouterConfig = {
  * Check if a route is an auth route
  */
 export const isAuthRoute = (pathname: string): boolean => {
-  return AUTH_ROUTES.some(
-    (route) => pathname === route || pathname.startsWith(route),
-  );
+  const routeToRegex = (routeTemplate: string): RegExp => {
+    // escape regex special chars, then convert :params to a segment matcher
+    const escaped = routeTemplate.replace(/[-/\\^$*+?.()|[\]{}]/g, "\\$&");
+    const pattern = escaped.replace(/:([a-zA-Z0-9_]+)/g, "[^/]+");
+    return new RegExp(`^${pattern}$`);
+  };
+
+  return AUTH_ROUTES.some((route) => routeToRegex(route).test(pathname));
 };

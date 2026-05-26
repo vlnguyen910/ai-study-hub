@@ -14,11 +14,16 @@
     "test:cov": "vitest run --coverage"
   },
   "dependencies": {
+    "@hookform/resolvers": "^5.4.0",
     "@repo/tokens": "workspace:*",
     "@repo/ui": "workspace:*",
+    "axios": "^1.16.1",
     "next": "16.2.0",
     "react": "^19.2.0",
-    "react-dom": "^19.2.0"
+    "react-dom": "^19.2.0",
+    "react-hook-form": "^7.76.1",
+    "zod": "^4.4.3",
+    "zustand": "^5.0.13"
   },
   "devDependencies": {
     "@repo/eslint-config": "workspace:*",

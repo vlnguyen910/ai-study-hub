@@ -22,6 +22,11 @@ enum userStatus {
   BANNED
 }
 
+enum deviceInfo {
+  WEB
+  MOBILE
+}
+
 model accounts {
   id         String     @id @default(auto()) @map("_id") @db.ObjectId
   email      String     @unique
@@ -31,6 +36,20 @@ model accounts {
   role       userRole   
   status     userStatus @default(ACTIVE)
   isVerified Boolean    @default(false)
+  sessions   sessions[]
   createdAt  DateTime   @default(now())
   updatedAt  DateTime   @updatedAt
+}
+
+model sessions {
+  id           String     @id @default(auto()) @map("_id") @db.ObjectId
+  userId       String     @db.ObjectId
+  user         accounts   @relation(fields: [userId], references: [id])
+  refreshToken String
+  deviceInfo   deviceInfo
+  isRevoked    Boolean    @default(false)
+  createdAt    DateTime   @default(now())
+  expiresAt    DateTime
+
+  @@index([userId])
 }

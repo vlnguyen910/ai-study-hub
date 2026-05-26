@@ -78,7 +78,7 @@ export default function Home(): ReactElement {
             </svg>
           </button>
           <Link
-            href="/user/login"
+            href="/login"
             className="bg-blue-600 text-white px-5 py-2 rounded hover:bg-blue-700 font-semibold"
           >
             Tham gia ngay

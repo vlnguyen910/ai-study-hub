@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
 import type { ReactNode } from "react";
 import { moderatorProfile } from "../mockData";
 import type { ModeratorNavSection } from "../types";
@@ -33,12 +32,6 @@ const sideNavItems: readonly {
   },
 ];
 
-const topNavItems = [
-  { label: "Dashboard", href: "/moderator" },
-  { label: "Analytics", href: "/moderator/documents" },
-  { label: "Reports", href: "/moderator/posts" },
-] as const;
-
 export function ModeratorShell({
   children,
   activeSection,
@@ -48,8 +41,6 @@ export function ModeratorShell({
   readonly activeSection: ModeratorNavSection;
   readonly searchPlaceholder?: string;
 }): React.JSX.Element {
-  const pathname = usePathname();
-
   return (
     <div className="min-h-screen bg-background text-on-surface">
       <aside className="fixed left-0 top-0 z-50 hidden h-screen w-64 flex-col border-r border-outline-variant bg-surface-container-low py-base lg:flex">
@@ -148,33 +139,6 @@ export function ModeratorShell({
               type="search"
             />
           </div>
-
-          <nav
-            aria-label="Moderator top navigation"
-            className="hidden items-center gap-6 xl:flex"
-          >
-            {topNavItems.map((item) => {
-              const isActive =
-                item.href === "/moderator"
-                  ? pathname === item.href
-                  : pathname.startsWith(item.href);
-
-              return (
-                <Link
-                  aria-current={isActive ? "page" : undefined}
-                  className={`pb-1 font-label-md text-label-md transition-colors ${
-                    isActive
-                      ? "border-b-2 border-primary text-primary"
-                      : "text-on-surface-variant hover:text-primary"
-                  }`}
-                  href={item.href}
-                  key={item.href}
-                >
-                  {item.label}
-                </Link>
-              );
-            })}
-          </nav>
         </div>
 
         <div className="flex items-center gap-2 sm:gap-4">

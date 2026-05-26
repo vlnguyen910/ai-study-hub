@@ -16,11 +16,11 @@ export const ROUTE_PATHS = {
   // ========== AUTH ROUTES (For unauthenticated users) ==========
   AUTH: "/user",
   AUTH_ROUTES: {
-    LOGIN: "/user/login",
-    REGISTER: "/user/register",
-    FORGOT_PASSWORD: "/user/forgot-password",
-    RESET_PASSWORD: "/user/reset-password/:token",
-    VERIFY_EMAIL: "/user/verify-email/:token",
+    LOGIN: "/login",
+    REGISTER: "/register",
+    FORGOT_PASSWORD: "/forgot-password",
+    RESET_PASSWORD: "/reset-password/:token",
+    VERIFY_EMAIL: "/verify-email/:token",
   },
 
   // ========== PROTECTED ROUTES (Require authentication) ==========

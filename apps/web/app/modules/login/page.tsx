@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import type { ReactElement } from "react";
+import { BackButton } from "@/components/ui/BackButton";
 import { Button } from "@repo/ui/button";
 
 export default function LoginPage(): ReactElement {
@@ -51,6 +52,7 @@ export default function LoginPage(): ReactElement {
     <div className="min-h-screen bg-gray-100 flex flex-col">
       <div className="flex-1 flex items-center justify-center p-8">
         <div className="w-full max-w-md bg-white rounded-lg shadow p-12 flex flex-col">
+          <BackButton className="mb-6 self-start" label="Back" mode="home" />
           <div className="flex items-center justify-center gap-2 text-2xl font-bold text-blue-600 mb-6">
             <svg
               width="24"
@@ -264,7 +266,7 @@ export default function LoginPage(): ReactElement {
           <p className="text-center text-sm text-gray-600 mt-8">
             Don't have an account?{" "}
             <Link
-              href="/user/register"
+              href="/register"
               className="text-blue-600 font-semibold hover:underline"
             >
               Sign up
