@@ -114,41 +114,7 @@ async function main() {
     },
   });
 
-  const sessions: SeedSession[] = insertedAccounts.flatMap((account) => {
-    const sessionCount = faker.number.int({ min: 1, max: 2 });
-
-    return Array.from({ length: sessionCount }).map(() => ({
-      userId: account.id,
-      refreshToken: faker.string.alphanumeric(64),
-      deviceInfo: faker.helpers.arrayElement(['WEB', 'MOBILE'] as const),
-      isRevoked: faker.datatype.boolean({ probability: 0.1 }),
-      expiresAt: faker.date.soon({ days: 30 }),
-    }));
-  });
-
-  if (sessions.length > 0) {
-    const hashedSessions = await Promise.all(
-      sessions.map(async (session) => ({
-        ...session,
-        refreshToken: await bcrypt.hash(
-          session.refreshToken,
-          SEED_REFRESH_TOKEN_SALT_ROUNDS,
-        ),
-      })),
-    );
-
-    await prisma.$runCommandRaw({
-      insert: 'sessions',
-      documents: hashedSessions.map((session) => ({
-        ...session,
-        createdAt: { $date: now },
-        expiresAt: { $date: session.expiresAt.toISOString() },
-      })),
-    } as unknown as InputJsonObject);
-  }
-
   console.log(`Seeded ${accounts.length} accounts.`);
-  console.log(`Seeded ${sessions.length} sessions.`);
   console.log(`Admin account: admin@${SEED_EMAIL_DOMAIN}`);
   console.log(`Seed password: ${SEED_PASSWORD}`);
 }
