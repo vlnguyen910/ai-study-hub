@@ -1,8 +1,7 @@
 "use client";
 
-import { Pagination } from "@/components/ui/Pagination";
 import { Table, type TableRow } from "@/components/ui/Table";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { postModerationItems } from "../mockData";
 import type { PostModerationItem, PostModerationStatus } from "../types";
 import { ModeratorShell } from "../components/ModeratorShell";
