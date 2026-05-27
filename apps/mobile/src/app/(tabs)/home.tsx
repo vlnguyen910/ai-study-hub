@@ -89,38 +89,56 @@ export default function HomeTab() {
             </Text>
           </View>
 
-          {isDevMode ? (
-            <>
-              <SearchBar
-                label="Search demo"
-                placeholder="Tìm tài liệu, khóa học, thẻ..."
-                value={query}
-                onChangeText={setQuery}
-                onClear={() => setQuery("")}
-              />
+          <SearchBar
+            label="Search demo"
+            placeholder="Tìm tài liệu, khóa học, thẻ..."
+            value={query}
+            onChangeText={setQuery}
+            onClear={() => setQuery("")}
+          />
 
-              <Card
-                title="Reusable primitives"
-                subtitle="Button, SearchBar, Card và BottomTabBar đều có thể dùng lại ở feature khác."
+          <Card
+            title="Reusable primitives"
+            subtitle="Button, SearchBar, Card và BottomTabBar đều có thể dùng lại ở feature khác."
+          >
+            <View className="gap-3">
+              <Button onPress={() => {}}>Primary action</Button>
+              <Button variant="outline" onPress={() => {}}>
+                Secondary action
+              </Button>
+              <Link
+                href={"/(templates)/feature-template" as never}
+                className="text-base font-semibold text-primary"
               >
-                <View className="gap-3">
-                  <Button onPress={() => {}}>Primary action</Button>
-                  <Button variant="outline" onPress={() => {}}>
-                    Secondary action
-                  </Button>
-                </View>
-              </Card>
+                Đi tới feature template
+              </Link>
 
-              <View className="gap-4">
-                {devRouteGroups.map((group) => (
-                  <RouteGroup
-                    key={group.title}
-                    title={group.title}
-                    routes={group.routes}
-                  />
-                ))}
-              </View>
-            </>
+              <Link
+                href={"/(templates)/auth-login" as never}
+                className="text-base font-semibold text-primary"
+              >
+                Đi tới auth login
+              </Link>
+
+              <Link
+                href={"/(templates)/profile" as never}
+                className="text-base font-semibold text-primary"
+              >
+                Mở Profile cá nhân
+              </Link>
+            </View>
+          </Card>
+
+          {isDevMode ? (
+            <View className="gap-4">
+              {devRouteGroups.map((group) => (
+                <RouteGroup
+                  key={group.title}
+                  title={group.title}
+                  routes={group.routes}
+                />
+              ))}
+            </View>
           ) : (
             <Card
               title="Component hub"

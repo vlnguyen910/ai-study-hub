@@ -70,6 +70,12 @@ export default function RootLayout() {
         }}
       />
       <Stack.Screen
+        name="(templates)/profile"
+        options={{
+          title: "Profile",
+        }}
+      />
+      <Stack.Screen
         name="notFound"
         options={{
           title: "Not Found",
