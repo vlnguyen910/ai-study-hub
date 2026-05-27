@@ -46,6 +46,7 @@ export class AuthService {
 
     return {
       message: 'Signup successful',
+      data: null,
     };
   }
 
@@ -100,6 +101,7 @@ export class AuthService {
   logout() {
     return {
       message: 'Logout successful',
+      data: null,
     };
   }
 

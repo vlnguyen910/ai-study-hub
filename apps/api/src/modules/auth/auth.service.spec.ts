@@ -83,7 +83,7 @@ describe('AuthService', () => {
     expect(prismaMock.sessions.create).not.toHaveBeenCalled();
     expect(result).toEqual({
       message: 'Signup successful',
-      data: undefined,
+      data: null,
     });
   });
 
@@ -155,7 +155,7 @@ describe('AuthService', () => {
   it('should return logout message', () => {
     expect(service.logout()).toEqual({
       message: 'Logout successful',
-      data: undefined,
+      data: null,
     });
   });
 });
