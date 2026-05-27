@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import {
@@ -130,11 +130,6 @@ export function ProfileScreen() {
     Partial<Record<ProfileFieldKey, string>>
   >({});
   const [lastUpdatedAt, setLastUpdatedAt] = useState("Chưa cập nhật");
-
-  const initials = useMemo(
-    () => getInitials(profile.fullName),
-    [profile.fullName],
-  );
 
   const startEditing = () => {
     setDraft(profile);
@@ -361,40 +356,18 @@ export function ProfileScreen() {
                   onPress={() => updateDraftField("avatarUrl", "")}
                 >
                   <Text className="text-sm font-semibold text-on-secondary-container">
-                    Xóa avatar
+                    Xóa ảnh đại diện
                   </Text>
                 </Pressable>
               ) : null}
             </View>
           </Card>
 
-          <Card className="mt-4 shadow-sm">
-            <View className="gap-3">
-              <View className="flex-row items-center gap-2">
-                <Ionicons
-                  name="information-circle-outline"
-                  size={18}
-                  color="#004ac6"
-                />
-                <Text className="text-base font-semibold text-on-surface">
-                  Ghi chú
-                </Text>
-              </View>
-              <Text className="text-sm leading-6 text-on-surface-variant">
-                Màn hình này đang chạy hoàn toàn ở phía mobile với chế độ xem và
-                sửa profile. Khi backend profile sẵn sàng, phần lưu thay đổi có
-                thể được nối sang API mà không cần đổi UI.
-              </Text>
-            </View>
+          <Card className="mt-4" title="Thông báo">
+            <Text className="text-sm leading-6 text-on-surface-variant">
+              {statusMessage}
+            </Text>
           </Card>
-
-          {statusMessage ? (
-            <View className="mt-4 rounded-2xl bg-primary-container px-4 py-3">
-              <Text className="text-sm font-medium text-on-primary-container">
-                {statusMessage}
-              </Text>
-            </View>
-          ) : null}
         </ScrollView>
       </KeyboardAvoidingView>
     </PageShell>
