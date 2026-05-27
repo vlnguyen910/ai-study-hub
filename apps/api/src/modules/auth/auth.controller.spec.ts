@@ -32,7 +32,12 @@ describe('AuthController', () => {
   });
 
   it('should call signup service', async () => {
-    authServiceMock.signup.mockResolvedValue({ accessToken: 'token' });
+    authServiceMock.signup.mockResolvedValue({
+      success: true,
+      status_code: 201,
+      message: 'Signup successful',
+      data: { accessToken: 'token' },
+    });
 
     await controller.signup({
       email: 'new-user@example.com',
@@ -45,7 +50,12 @@ describe('AuthController', () => {
   });
 
   it('should call signin service', async () => {
-    authServiceMock.signin.mockResolvedValue({ accessToken: 'token' });
+    authServiceMock.signin.mockResolvedValue({
+      success: true,
+      status_code: 200,
+      message: 'Signin successful',
+      data: { accessToken: 'token' },
+    });
 
     await controller.signin({
       email: 'new-user@example.com',
@@ -57,7 +67,12 @@ describe('AuthController', () => {
   });
 
   it('should call logout service', () => {
-    authServiceMock.logout.mockReturnValue({ message: 'Logout successful' });
+    authServiceMock.logout.mockReturnValue({
+      success: true,
+      status_code: 200,
+      message: 'Logout successful',
+      data: null,
+    });
 
     controller.logout();
 
