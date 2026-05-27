@@ -90,7 +90,10 @@ export class AuthService {
     });
 
     return {
-      ...tokens,
+      message: 'Signin successful',
+      data: {
+        ...tokens,
+      },
     };
   }
 
