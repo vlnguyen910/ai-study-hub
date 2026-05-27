@@ -83,6 +83,7 @@ describe('AuthService', () => {
     expect(prismaMock.sessions.create).not.toHaveBeenCalled();
     expect(result).toEqual({
       message: 'Signup successful',
+      data: undefined,
     });
   });
 
@@ -118,8 +119,8 @@ describe('AuthService', () => {
       deviceInfo: 'MOBILE',
     });
 
-    expect(result.accessToken).toBe('access-token');
-    expect(result.refreshToken).toBe('refresh-token');
+    expect(result.data.accessToken).toBe('access-token');
+    expect(result.data.refreshToken).toBe('refresh-token');
     expect(prismaMock.sessions.create).toHaveBeenCalled();
     const sessionCreatePayload = prismaMock.sessions.create.mock
       .calls[0][0] as {
@@ -154,6 +155,7 @@ describe('AuthService', () => {
   it('should return logout message', () => {
     expect(service.logout()).toEqual({
       message: 'Logout successful',
+      data: undefined,
     });
   });
 });
