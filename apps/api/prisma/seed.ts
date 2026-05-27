@@ -84,6 +84,28 @@ async function main() {
     },
   });
 
+  const userIds = accountsToDelete.map((account) => account.id);
+  await prisma.sessions.deleteMany({
+    where: {
+      userId: {
+        in: userIds,
+      },
+    },
+  });
+
+  // Then delete the accounts
+  await prisma.accounts.deleteMany({
+    where: {
+      email: {
+        in: seedEmails,
+      },
+    },
+  });
+
+  await prisma.accounts.createMany({
+    data: hashedAccounts,
+  });
+
   console.log(`Seeded ${accounts.length} accounts.`);
   console.log(`Admin account: admin@${SEED_EMAIL_DOMAIN}`);
   console.log(`Seed password: ${SEED_PASSWORD}`);
