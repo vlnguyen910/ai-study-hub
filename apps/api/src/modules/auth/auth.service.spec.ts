@@ -84,6 +84,7 @@ describe('AuthService', () => {
     expect(prismaMock.sessions.create).not.toHaveBeenCalled();
     expect(result).toEqual({
       message: 'Signup successful',
+      data: null,
     });
   });
 
