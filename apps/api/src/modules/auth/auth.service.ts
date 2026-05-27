@@ -52,6 +52,7 @@ export class AuthService {
 
     return {
       message: 'Signup successful',
+      data: null,
     };
   }
 
