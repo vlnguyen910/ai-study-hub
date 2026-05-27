@@ -14,6 +14,12 @@ type AuthTokens = {
   refreshToken: string;
 };
 
+type AuthTokenPayload = {
+  sub: string;
+  email: string;
+  role: string;
+};
+
 @Injectable()
 export class AuthService {
   constructor(
@@ -77,6 +83,7 @@ export class AuthService {
     const tokens = await this.generateTokens(
       account.id,
       account.email,
+      account.role,
       refreshExpiresIn,
     );
     const hashedRefreshToken = await this.hashRefreshToken(tokens.refreshToken);
@@ -108,11 +115,13 @@ export class AuthService {
   private async generateTokens(
     userId: string,
     email: string,
+    role: string,
     refreshExpiresIn: number,
   ): Promise<AuthTokens> {
-    const payload = {
+    const payload: AuthTokenPayload = {
       sub: userId,
       email,
+      role,
     };
 
     const accessToken = await this.jwtService.signAsync(payload, {
