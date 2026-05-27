@@ -14,28 +14,11 @@ function assertNonProductionDatabase() {
 async function main() {
   assertNonProductionDatabase();
 
-  const sessionsResult = await prisma.$runCommandRaw({
-    delete: 'sessions',
-    deletes: [
-      {
-        q: {},
-        limit: 0,
-      },
-    ],
-  });
+  const sessionsDeleted = await prisma.sessions.deleteMany({});
+  const accountsDeleted = await prisma.accounts.deleteMany({});
 
-  const result = await prisma.$runCommandRaw({
-    delete: 'accounts',
-    deletes: [
-      {
-        q: {},
-        limit: 0,
-      },
-    ],
-  });
-
-  console.log(`Deleted ${String(sessionsResult.n ?? 0)} sessions.`);
-  console.log(`Deleted ${String(result.n ?? 0)} accounts.`);
+  console.log(`Deleted ${sessionsDeleted.count} sessions.`);
+  console.log(`Deleted ${accountsDeleted.count} accounts.`);
 }
 
 main()
