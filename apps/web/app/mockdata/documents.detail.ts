@@ -1,4 +1,4 @@
-import { DocumentPreviewData } from "@/modules/document/detail/type";
+import { DocumentPreviewData } from "@/modules/user/documents/detail/type";
 
 export const documentDetailMock = {
   title:
