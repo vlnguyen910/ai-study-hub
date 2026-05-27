@@ -2,7 +2,7 @@ import type { FC, ReactNode } from "react";
 
 export const DocumentCarousel: FC<{ children: ReactNode }> = ({ children }) => {
   return (
-    <div className="w-full">
+    <div className="min-w-0 w-full overflow-hidden">
       <div
         className="
           flex
