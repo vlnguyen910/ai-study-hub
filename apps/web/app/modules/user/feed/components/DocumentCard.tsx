@@ -23,14 +23,14 @@ export const DocumentCard: FC<DocumentCardProps> = ({
     <Link href={`/documents/${id}`}>
       <div
         className={`
-        group
-        w-full
-        max-w-[320px]
-        shrink-0
-        cursor-pointer
-        select-none
-        ${className}
-      `}
+          group
+          w-[320px]
+          shrink-0
+          cursor-pointer
+          select-none
+          snap-start
+          ${className}
+  `}
       >
         {/* CARD INNER (no border, no bg → glass/clean feel) */}
         <div className="flex h-[420px] flex-col">

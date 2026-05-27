@@ -25,7 +25,7 @@ export default function HomePage(): React.JSX.Element {
   }, []);
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
+    <div className="min-w-0 bg-gray-50">
       {/* ================= SECTION 1 ================= */}
       <section className="mb-12">
         <div className="mb-6 flex items-center justify-between">
@@ -61,7 +61,6 @@ export default function HomePage(): React.JSX.Element {
               ))}
         </DocumentCarousel>
       </section>
-
       {/* ================= SECTION 2 ================= */}
       <section>
         <div className="grid grid-cols-3 gap-6">
