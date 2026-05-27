@@ -10,8 +10,8 @@ import { DocumentCarousel } from "../components/DocumentCarousel";
 import { DocumentCardSkeleton } from "../components/DocumentSkeleton";
 import { CommentCard } from "../components/CommentCard";
 
-import { MOCK_DOCUMENTS } from "../../../mockdata/documentMock";
-import { MOCK_COMMENTS } from "../../../mockdata/commentMock";
+import { MOCK_DOCUMENTS } from "../../../../mockdata/documentMock";
+import { MOCK_COMMENTS } from "../../../../mockdata/commentMock";
 
 export default function HomePage(): React.JSX.Element {
   const [loading, setLoading] = useState(true);
@@ -51,6 +51,7 @@ export default function HomePage(): React.JSX.Element {
               ))
             : MOCK_DOCUMENTS.map((doc) => (
                 <DocumentCard
+                  id={doc.id}
                   key={doc.id}
                   title={doc.title}
                   subtitle={doc.subtitle}
@@ -73,9 +74,16 @@ export default function HomePage(): React.JSX.Element {
             </div>
 
             <div className="space-y-4">
-              {MOCK_COMMENTS.map((comment) => (
-                <CommentCard key={comment.id} data={comment} />
-              ))}
+              {loading
+                ? Array.from({ length: 3 }).map((_, i) => (
+                    <div
+                      key={i}
+                      className="h-32 bg-surface-variant animate-pulse rounded-lg"
+                    />
+                  ))
+                : MOCK_COMMENTS.map((comment) => (
+                    <CommentCard key={comment.id} data={comment} />
+                  ))}
             </div>
           </div>
 
@@ -90,6 +98,7 @@ export default function HomePage(): React.JSX.Element {
             <div className="space-y-4">
               {MOCK_DOCUMENTS.slice(0, 2).map((doc) => (
                 <DocumentCard
+                  id={doc.id}
                   key={doc.id}
                   title={doc.title}
                   subtitle={doc.subtitle}

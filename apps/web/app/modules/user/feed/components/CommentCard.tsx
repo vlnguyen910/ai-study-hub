@@ -22,6 +22,15 @@ export interface CommentCardProps {
 }
 
 export const CommentCard: FC<CommentCardProps> = ({ data, className = "" }) => {
+  const handleReplyClick = () => {
+    // TODO: Implement reply functionality
+    console.log("Reply clicked for comment:", data.id);
+  };
+
+  const handleLikeClick = () => {
+    // TODO: Implement like functionality
+    console.log("Like clicked for comment:", data.id);
+  };
   return (
     <Card className={`bg-white text-black p-5 ${className}`}>
       <div className="flex flex-col gap-4">
@@ -61,6 +70,7 @@ export const CommentCard: FC<CommentCardProps> = ({ data, className = "" }) => {
               ariaLabel="replies"
               icon={<span className="material-symbols-outlined">chat</span>}
               className="p-1"
+              onClick={handleReplyClick}
             />
 
             <span>{data.replies} phản hồi</span>
@@ -72,6 +82,7 @@ export const CommentCard: FC<CommentCardProps> = ({ data, className = "" }) => {
               ariaLabel="likes"
               icon={<span className="material-symbols-outlined">favorite</span>}
               className="p-1"
+              onClick={handleLikeClick}
             />
 
             <span>{data.likes} lượt thích</span>

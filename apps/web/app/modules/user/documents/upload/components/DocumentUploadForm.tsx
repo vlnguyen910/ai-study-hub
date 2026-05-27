@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/Button";
 import {
   SCHOOL_OPTIONS,
   SUBJECT_OPTIONS,
-} from "../../../../mockdata/document.form";
+} from "../../../../../mockdata/document.form";
 
 export function DocumentUploadForm(): React.JSX.Element {
   const [subject, setSubject] = useState<string>(SUBJECT_OPTIONS[0]);
@@ -17,6 +17,7 @@ export function DocumentUploadForm(): React.JSX.Element {
 
   return (
     <form
+      onSubmit={(e) => e.preventDefault()}
       className="
         w-full
         max-w-4xl
@@ -85,11 +86,11 @@ export function DocumentUploadForm(): React.JSX.Element {
           sm:justify-end
         "
       >
-        <Button variant="secondary" className="w-full sm:w-auto">
+        <Button type="button" variant="secondary" className="w-full sm:w-auto">
           Lưu nháp
         </Button>
 
-        <Button variant="primary" className="w-full sm:w-auto">
+        <Button type="submit" variant="primary" className="w-full sm:w-auto">
           Công khai tài liệu
         </Button>
       </div>

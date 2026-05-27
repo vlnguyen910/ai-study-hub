@@ -1,13 +1,30 @@
 import { Card } from "@/components/ui/Card";
+import { Button } from "@/components/ui/Button";
+
 import { DocumentHero } from "../components/DocumentHero";
 import { DocumentPreview } from "../components/DocumentPreview";
-import { documentDetailMock } from "../../../../mockdata/documents.detail";
-import { Button } from "@/components/ui/Button";
 import { FileInfoCard } from "../components/FileInfoCard";
 import { RelatedDocumentCard } from "../components/RelatedDocumentCard";
 import { AuthorCard } from "../components/AuthorCard";
 
-export default function DocumentDetailPage(): React.JSX.Element {
+import { documentDetailMock } from "../../../../../mockdata/documents.detail";
+
+interface DocumentDetailPageProps {
+  readonly params: Promise<{
+    readonly id: string;
+  }>;
+}
+
+export default async function DocumentDetailPage({
+  params,
+}: DocumentDetailPageProps): Promise<React.JSX.Element> {
+  const { id } = await params;
+
+  const document = {
+    ...documentDetailMock,
+    id,
+  };
+
   return (
     <main
       className="
@@ -18,7 +35,7 @@ export default function DocumentDetailPage(): React.JSX.Element {
         py-8
       "
     >
-      <DocumentHero data={documentDetailMock} />
+      <DocumentHero data={document} />
 
       <div
         className="
@@ -30,27 +47,26 @@ export default function DocumentDetailPage(): React.JSX.Element {
       >
         {/* Left */}
         <div className="space-y-6">
-          <DocumentPreview preview={documentDetailMock.preview} />
+          <DocumentPreview preview={document.preview} />
 
-          {/* Description */}
           <Card className="space-y-5 p-6">
             <h2 className="text-xl font-semibold">Mô tả tài liệu</h2>
 
             <p className="leading-7 text-on-surface-variant">
-              {documentDetailMock.description}
+              {document.description}
             </p>
 
             <div className="flex flex-wrap gap-2">
-              {documentDetailMock.tags.map((tag) => (
+              {document.tags.map((tag) => (
                 <span
                   key={tag}
                   className="
-                      rounded-full
-                      bg-surface-variant
-                      px-3
-                      py-1
-                      text-xs
-                    "
+                    rounded-full
+                    bg-surface-variant
+                    px-3
+                    py-1
+                    text-xs
+                  "
                 >
                   {tag}
                 </span>
@@ -66,39 +82,47 @@ export default function DocumentDetailPage(): React.JSX.Element {
               <Button variant="ghost">Mới nhất</Button>
             </div>
 
-            <textarea
-              placeholder="Viết bình luận của bạn..."
-              className="
-                min-h-[120px]
-                w-full
-                rounded-xl
-                border
-                border-outline
-                bg-surface
-                p-4
-                outline-none
+            <label className="block space-y-2">
+              <span className="text-sm font-medium">Bình luận của bạn</span>
+
+              <textarea
+                id="document-comment"
+                placeholder="Viết bình luận của bạn..."
+                className="
+                  min-h-[120px]
+                  w-full
+                  rounded-xl
+                  border
+                 border-outline
+                 bg-surface
+                  p-4
+                  outline-none
+                  transition-colors
+                  focus:border-2
+                 focus:border-primary
               "
-            />
+              />
+            </label>
 
             <div className="flex justify-end">
               <Button>Gửi bình luận</Button>
             </div>
 
             <div className="space-y-5">
-              {documentDetailMock.comments.map((comment) => (
+              {document.comments.map((comment) => (
                 <div key={comment.id} className="flex gap-4">
                   <div
                     className="
-                        flex
-                        h-10
-                        w-10
-                        items-center
-                        justify-center
-                        rounded-full
-                        bg-slate-300
-                        text-sm
-                        font-medium
-                      "
+                      flex
+                      h-10
+                      w-10
+                      items-center
+                      justify-center
+                      rounded-full
+                      bg-slate-300
+                      text-sm
+                      font-medium
+                    "
                   >
                     {comment.author.charAt(0)}
                   </div>
@@ -118,14 +142,17 @@ export default function DocumentDetailPage(): React.JSX.Element {
 
         {/* Right */}
         <aside className="space-y-6">
-          <FileInfoCard data={documentDetailMock.fileInfo} />
+          <FileInfoCard data={document.fileInfo} />
 
           <Card className="space-y-4 p-5">
             <h3 className="text-lg font-semibold">Tài liệu liên quan</h3>
 
             <div className="space-y-4">
-              {documentDetailMock.relatedDocuments.map((document) => (
-                <RelatedDocumentCard key={document.id} document={document} />
+              {document.relatedDocuments.map((relatedDocument) => (
+                <RelatedDocumentCard
+                  key={relatedDocument.id}
+                  document={relatedDocument}
+                />
               ))}
             </div>
 
@@ -134,7 +161,7 @@ export default function DocumentDetailPage(): React.JSX.Element {
             </Button>
           </Card>
 
-          <AuthorCard author={documentDetailMock.author} />
+          <AuthorCard author={document.author} />
         </aside>
       </div>
     </main>

@@ -1,9 +1,12 @@
 "use client";
 
 import type { FC } from "react";
-import { uploadMock } from "../../../../mockdata/fileUploadMock";
+import { uploadMock } from "../../../../../mockdata/fileUploadMock";
+import { useFileUpload } from "../../../../../hooks/useFileUpload";
 
 export const FileUploadBox: FC = () => {
+  const { handleUpload, error, config } = useFileUpload();
+
   return (
     <div className="w-full max-w-2xl space-y-4">
       {/* Upload Area */}
@@ -33,7 +36,8 @@ export const FileUploadBox: FC = () => {
           type="file"
           className="hidden"
           multiple
-          accept=".pdf,.docx,.txt,.png,.jpg,.jpeg"
+          accept={config.allowedExtensions.join(",")}
+          onChange={handleUpload}
         />
 
         {/* Upload Icon */}
@@ -99,7 +103,7 @@ export const FileUploadBox: FC = () => {
           ))}
         </div>
       </label>
-
+      {error && <p className="text-sm font-medium text-red-600">{error}</p>}
       {/* Academic Integrity Warning */}
       <div
         className="
