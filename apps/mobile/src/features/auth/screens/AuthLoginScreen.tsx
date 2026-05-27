@@ -23,6 +23,7 @@ export function AuthLoginScreen() {
     setIsLoading(true);
     setTimeout(() => {
       setIsLoading(false);
+      router.replace("/(templates)/document-upload" as never);
     }, 1500);
   };
 

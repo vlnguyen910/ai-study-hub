@@ -22,6 +22,24 @@ export default function RootLayout() {
         }}
       />
       <Stack.Screen
+        name="(templates)/document-upload"
+        options={{
+          title: "Upload Document",
+        }}
+      />
+      <Stack.Screen
+        name="(templates)/document-edit"
+        options={{
+          title: "Edit Document",
+        }}
+      />
+      <Stack.Screen
+        name="(templates)/document-detail"
+        options={{
+          title: "Document Detail",
+        }}
+      />
+      <Stack.Screen
         name="(templates)/moderator-document-review"
         options={{
           title: "Review Queue",
