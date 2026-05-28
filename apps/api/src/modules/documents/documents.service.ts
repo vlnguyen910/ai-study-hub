@@ -58,17 +58,14 @@ export class DocumentsService {
   }
 
   async findAll(query: ListDocumentsQueryDto) {
-    const {
-      page = 1,
-      limit = 10,
-      status,
-      authorId,
-      subjectId,
-      include,
-    } = query;
+    const { page = 1, limit = 10, status, authorId, subjectId } = query;
     const skip = (page - 1) * limit;
 
-    const where: any = {};
+    const where: any = {
+      status: {
+        not: DocumentStatus.DELETED,
+      },
+    };
 
     if (status) {
       where.status = status;
@@ -110,7 +107,12 @@ export class DocumentsService {
     validateMongoDbId(id, 'Document ID');
 
     const document = await this.prismaService.documents.findUnique({
-      where: { id },
+      where: {
+        id,
+        status: {
+          not: DocumentStatus.DELETED,
+        },
+      },
       include: {
         author: {
           select: {
@@ -128,7 +130,7 @@ export class DocumentsService {
       },
     });
 
-    if (!document) {
+    if (!document || document.status === DocumentStatus.DELETED) {
       throw new NotFoundException(`Document with ID ${id} not found`);
     }
 
@@ -145,8 +147,24 @@ export class DocumentsService {
   ) {
     validateMongoDbId(id, 'Document ID');
 
+    if (updateDocumentDto.subjectId) {
+      const subject = await this.subjectsService.findOne(
+        updateDocumentDto.subjectId,
+      );
+
+      if (!subject) {
+        throw new BadRequestException(
+          `Subject with ID ${updateDocumentDto.subjectId} does not exist`,
+        );
+      }
+    }
     const existingDocument = await this.prismaService.documents.findUnique({
-      where: { id },
+      where: {
+        id,
+        status: {
+          not: DocumentStatus.DELETED,
+        },
+      },
     });
 
     if (!existingDocument) {
@@ -190,7 +208,12 @@ export class DocumentsService {
     validateMongoDbId(id, 'Document ID');
 
     const existingDocument = await this.prismaService.documents.findUnique({
-      where: { id },
+      where: {
+        id,
+        status: {
+          not: DocumentStatus.DELETED,
+        },
+      },
     });
 
     if (!existingDocument) {
