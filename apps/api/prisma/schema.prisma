@@ -64,16 +64,21 @@ model schools {
   name      String
   code      String   @unique
   createdAt DateTime @default(now())
+
+  //Relationships
+  subjects subjects[]
 }
 
 model subjects {
   id        String   @id @default(auto()) @map("_id") @db.ObjectId
   name      String
   code      String   @unique
+  schoolId  String   @db.ObjectId
   createdAt DateTime @default(now())
 
   //Relationships
   documents documents[]
+  school    schools  @relation(fields: [schoolId], references: [id])
 }
 
 enum DocumentStatus {
@@ -91,7 +96,7 @@ model documents {
   sizeInBytes     Int
   format          String
   resourceType    String
-  subjectId       String         @db.ObjectId
+  subjectId       String?         @db.ObjectId
   status          DocumentStatus @default(ACTIVE)
   authorId        String         @db.ObjectId
   isPublic        Boolean        @default(false)
@@ -103,7 +108,7 @@ model documents {
   deletedAt       DateTime?
 
   //Relationships
-  subject  subjects  @relation(fields: [subjectId], references: [id])
+  subject  subjects?  @relation(fields: [subjectId], references: [id])
   author   accounts  @relation("authorId", fields: [authorId], references: [id])
   reviewer accounts? @relation("reviewedById", fields: [reviewedById], references: [id])
 }
