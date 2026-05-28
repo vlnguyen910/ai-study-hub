@@ -1,5 +1,11 @@
 import { Type } from 'class-transformer';
-import { IsString, IsOptional, IsNumber, IsBoolean } from 'class-validator';
+import {
+  IsString,
+  IsOptional,
+  IsNumber,
+  IsBoolean,
+  IsDate,
+} from 'class-validator';
 
 export class DocumentAuthorDto {
   @IsString()
@@ -37,61 +43,25 @@ export class DocumentReviewerDto {
   email!: string;
 }
 
-export class DocumentResponseDto {
+export class PublicDocumentsResponseDto {
   @IsString()
   id!: string;
 
   @IsString()
   title!: string;
 
-  @IsOptional()
-  @IsString()
-  description?: string;
-
-  @IsString()
-  fileUrl!: string;
-
   @IsString()
   publicId!: string;
-
-  @IsNumber()
-  sizeInBytes!: number;
-
-  @IsString()
-  format!: string;
-
-  @IsString()
-  resourceType!: string;
 
   @IsOptional()
   @IsString()
   subjectId?: string;
 
   @IsString()
-  status!: 'ACTIVE' | 'REJECTED' | 'DELETED';
-
-  @IsBoolean()
-  isPublic!: boolean;
-
-  @IsOptional()
-  @IsString()
-  reviewedById?: string;
-
-  @IsOptional()
-  reviewedAt?: Date;
-
-  @IsOptional()
-  @IsString()
-  rejectionReason?: string;
-
-  @IsString()
   authorId!: string;
 
+  @IsDate()
   createdAt!: Date;
-  updatedAt!: Date;
-
-  @IsOptional()
-  deletedAt?: Date;
 
   @IsOptional()
   @Type(() => DocumentAuthorDto)
@@ -100,8 +70,4 @@ export class DocumentResponseDto {
   @IsOptional()
   @Type(() => DocumentSubjectDto)
   subject?: DocumentSubjectDto;
-
-  @IsOptional()
-  @Type(() => DocumentReviewerDto)
-  reviewer?: DocumentReviewerDto;
 }
