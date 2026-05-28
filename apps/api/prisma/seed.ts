@@ -106,7 +106,38 @@ async function main() {
     data: hashedAccounts,
   });
 
+  // Create hardcoded school
+  const school = await prisma.schools.create({
+    data: {
+      name: 'FPT University',
+      code: 'FPTU',
+    },
+  });
+
+  // Create sample subjects for the school
+  const subjectsList = [
+    { name: 'Mathematics', code: 'MATH' },
+    { name: 'Physics', code: 'PHYS' },
+    { name: 'Chemistry', code: 'CHEM' },
+    { name: 'Computer Science', code: 'CS' },
+    { name: 'Programming', code: 'PROG' },
+    { name: 'English', code: 'ENG' },
+    { name: 'Database', code: 'DB' },
+    { name: 'Web Development', code: 'WEB' },
+    { name: 'Mobile Development', code: 'MOBILE' },
+    { name: 'Data Science', code: 'DS' },
+  ];
+
+  const subjects = await prisma.subjects.createMany({
+    data: subjectsList.map((subject) => ({
+      ...subject,
+      schoolId: school.id,
+    })),
+  });
+
   console.log(`Seeded ${accounts.length} accounts.`);
+  console.log(`Created school: ${school.name} (${school.code})`);
+  console.log(`Created ${subjects.count} subjects for ${school.name}`);
   console.log(`Admin account: admin@${SEED_EMAIL_DOMAIN}`);
   console.log(`Seed password: ${SEED_PASSWORD}`);
 }
