@@ -74,18 +74,23 @@ pnpm build
 
 6. Sync the local database when Prisma schema changes.
 
-The API uses Prisma with MongoDB. Prisma Migrate does not create migration files for MongoDB, so database changes are applied by syncing `apps/api/prisma/schema.prisma` to the local database.
+The API uses Prisma with MongoDB Replica Set (3 nodes required for transactions). Prisma Migrate does not create migration files for MongoDB, so database changes are applied by syncing `apps/api/prisma/schema.prisma` to the local database.
 
-When you pull a branch that changes `apps/api/prisma/schema.prisma`, run:
+**First-time setup (initializes replica set + syncs schema + seeds data):**
 
 ```sh
-docker compose up -d mongodb
-test -f apps/api/.env || cp apps/api/.env.example apps/api/.env
+pnpm db:setup
+```
+
+**When you pull a branch that changes `apps/api/prisma/schema.prisma`:**
+
+```sh
+docker compose up -d
 pnpm db:sync
 pnpm db:seed
 ```
 
-When you change the Prisma schema yourself:
+**When you change the Prisma schema yourself:**
 
 ```sh
 pnpm db:sync

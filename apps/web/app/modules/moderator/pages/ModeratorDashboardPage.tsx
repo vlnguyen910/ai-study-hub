@@ -181,7 +181,7 @@ export default function ModeratorDashboardPage(): React.JSX.Element {
               <p className="font-label-sm text-label-sm text-on-surface-variant">
                 Tốc độ phản hồi
               </p>
-              <p className="text-xl font-bold">14m</p>
+              <p className="text-xl font-bold">14 phút</p>
             </div>
             <div className="border border-outline-variant bg-surface p-4">
               <p className="font-label-sm text-label-sm text-on-surface-variant">

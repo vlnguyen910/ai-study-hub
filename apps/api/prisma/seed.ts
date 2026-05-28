@@ -1,5 +1,4 @@
 import { PrismaClient } from '@prisma/client';
-import type { InputJsonObject } from '@prisma/client/runtime/library';
 import { faker } from '@faker-js/faker';
 import * as bcrypt from 'bcrypt';
 
@@ -14,8 +13,7 @@ const SEED_PASSWORD = 'Password123!';
 const SEED_PASSWORD_SALT_ROUNDS = 10;
 const SEED_REFRESH_TOKEN_SALT_ROUNDS = 10;
 type UserRole = 'USER' | 'ADMIN' | 'MODERATOR';
-type UserStatus = 'ACTIVE' | 'INACTIVE' | 'BANNED';
-type DeviceInfo = 'WEB' | 'MOBILE';
+type UserStatus = 'ACTIVE' | 'UNVERIFIED' | 'BANNED' | 'DELETED';
 
 type SeedAccount = {
   email: string;
@@ -24,15 +22,6 @@ type SeedAccount = {
   avatarUrl: string;
   role: UserRole;
   status: UserStatus;
-  isVerified: boolean;
-};
-
-type SeedSession = {
-  userId: string;
-  refreshToken: string;
-  deviceInfo: DeviceInfo;
-  isRevoked: boolean;
-  expiresAt: Date;
 };
 
 function buildSeedAccounts(): SeedAccount[] {
@@ -46,7 +35,6 @@ function buildSeedAccounts(): SeedAccount[] {
       avatarUrl: faker.image.avatar(),
       role: 'ADMIN',
       status: 'ACTIVE',
-      isVerified: true,
     },
   ];
 
@@ -60,8 +48,12 @@ function buildSeedAccounts(): SeedAccount[] {
       password: SEED_PASSWORD,
       avatarUrl: faker.image.avatar(),
       role: faker.helpers.arrayElement(['USER', 'MODERATOR'] as const),
-      status: faker.helpers.arrayElement(['ACTIVE', 'INACTIVE'] as const),
-      isVerified: faker.datatype.boolean({ probability: 0.75 }),
+      status: faker.helpers.arrayElement([
+        'ACTIVE',
+        'UNVERIFIED',
+        'BANNED',
+        'DELETED',
+      ] as const),
     });
   }
 
@@ -71,38 +63,17 @@ function buildSeedAccounts(): SeedAccount[] {
 async function main() {
   const accounts = buildSeedAccounts();
   const seedEmails = accounts.map((account) => account.email);
-  const now = new Date().toISOString();
+
   const hashedAccounts = await Promise.all(
     accounts.map(async (account) => ({
       ...account,
       password: await bcrypt.hash(account.password, SEED_PASSWORD_SALT_ROUNDS),
+      deletedAt: account.status === 'DELETED' ? new Date() : null,
     })),
   );
 
-  await prisma.$runCommandRaw({
-    delete: 'accounts',
-    deletes: [
-      {
-        q: {
-          email: {
-            $in: seedEmails,
-          },
-        },
-        limit: 0,
-      },
-    ],
-  });
-
-  await prisma.$runCommandRaw({
-    insert: 'accounts',
-    documents: hashedAccounts.map((account) => ({
-      ...account,
-      createdAt: { $date: now },
-      updatedAt: { $date: now },
-    })),
-  } as unknown as InputJsonObject);
-
-  const insertedAccounts = await prisma.accounts.findMany({
+  // Delete sessions first (they have a foreign key to accounts)
+  const accountsToDelete = await prisma.accounts.findMany({
     where: {
       email: {
         in: seedEmails,
@@ -110,45 +81,32 @@ async function main() {
     },
     select: {
       id: true,
-      email: true,
     },
   });
 
-  const sessions: SeedSession[] = insertedAccounts.flatMap((account) => {
-    const sessionCount = faker.number.int({ min: 1, max: 2 });
-
-    return Array.from({ length: sessionCount }).map(() => ({
-      userId: account.id,
-      refreshToken: faker.string.alphanumeric(64),
-      deviceInfo: faker.helpers.arrayElement(['WEB', 'MOBILE'] as const),
-      isRevoked: faker.datatype.boolean({ probability: 0.1 }),
-      expiresAt: faker.date.soon({ days: 30 }),
-    }));
+  const userIds = accountsToDelete.map((account) => account.id);
+  await prisma.sessions.deleteMany({
+    where: {
+      userId: {
+        in: userIds,
+      },
+    },
   });
 
-  if (sessions.length > 0) {
-    const hashedSessions = await Promise.all(
-      sessions.map(async (session) => ({
-        ...session,
-        refreshToken: await bcrypt.hash(
-          session.refreshToken,
-          SEED_REFRESH_TOKEN_SALT_ROUNDS,
-        ),
-      })),
-    );
+  // Then delete the accounts
+  await prisma.accounts.deleteMany({
+    where: {
+      email: {
+        in: seedEmails,
+      },
+    },
+  });
 
-    await prisma.$runCommandRaw({
-      insert: 'sessions',
-      documents: hashedSessions.map((session) => ({
-        ...session,
-        createdAt: { $date: now },
-        expiresAt: { $date: session.expiresAt.toISOString() },
-      })),
-    } as unknown as InputJsonObject);
-  }
+  await prisma.accounts.createMany({
+    data: hashedAccounts,
+  });
 
   console.log(`Seeded ${accounts.length} accounts.`);
-  console.log(`Seeded ${sessions.length} sessions.`);
   console.log(`Admin account: admin@${SEED_EMAIL_DOMAIN}`);
   console.log(`Seed password: ${SEED_PASSWORD}`);
 }

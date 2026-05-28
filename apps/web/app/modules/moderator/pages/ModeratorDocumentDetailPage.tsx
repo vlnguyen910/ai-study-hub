@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { documentReviewItems } from "../mockData";
 import type { DocumentReviewStatus } from "../types";
 import { ModeratorShell } from "../components/ModeratorShell";
@@ -19,15 +19,28 @@ const checkToneMap = {
   neutral: "neutral",
 } as const;
 
+const statusLabelMap: Record<DocumentReviewStatus, string> = {
+  pending: "Chờ duyệt",
+  priority: "Ưu tiên",
+  approved: "Đã duyệt",
+  rejected: "Đã từ chối",
+  changes_requested: "Cần chỉnh sửa",
+  flagged: "Đã gắn cờ",
+};
+
+const previewControls = [
+  { icon: "zoom_in", label: "Phóng to" },
+  { icon: "zoom_out", label: "Thu nhỏ" },
+  { icon: "fullscreen", label: "Toàn màn hình" },
+] as const;
+
 export default function ModeratorDocumentDetailPage({
   documentId,
 }: {
   readonly documentId: string;
 }): React.JSX.Element {
   const document = useMemo(
-    () =>
-      documentReviewItems.find((item) => item.id === documentId) ??
-      documentReviewItems[0],
+    () => documentReviewItems.find((item) => item.id === documentId),
     [documentId],
   );
   const [status, setStatus] = useState<DocumentReviewStatus>(
@@ -36,11 +49,19 @@ export default function ModeratorDocumentDetailPage({
   const [note, setNote] = useState("");
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
+  useEffect(() => {
+    if (document) {
+      setStatus(document.status);
+      setNote("");
+      setToastMessage(null);
+    }
+  }, [documentId, document]);
+
   if (!document) {
     return (
       <ModeratorShell activeSection="documents">
         <EmptyState
-          description="Mã tài liệu không tồn tại trong mock data hiện tại."
+          description="Mã tài liệu không tồn tại trong dữ liệu mẫu hiện tại."
           title="Không tìm thấy tài liệu"
         />
       </ModeratorShell>
@@ -58,7 +79,7 @@ export default function ModeratorDocumentDetailPage({
       searchPlaceholder="Tìm kiếm tài liệu..."
     >
       <nav
-        aria-label="Breadcrumb"
+        aria-label="Đường dẫn trang"
         className="mb-6 flex flex-wrap items-center gap-2 font-label-sm text-label-sm text-on-surface-variant"
       >
         <Link className="hover:text-primary" href="/moderator">
@@ -100,21 +121,21 @@ export default function ModeratorDocumentDetailPage({
                 </h1>
               </div>
               <div className="flex items-center gap-2">
-                {["zoom_in", "zoom_out", "fullscreen"].map((icon) => (
+                {previewControls.map((control) => (
                   <button
-                    aria-label={icon}
+                    aria-label={control.label}
                     className="rounded p-2 text-on-surface-variant transition-colors hover:bg-surface-container-high"
-                    key={icon}
+                    key={control.icon}
                     type="button"
                   >
-                    <MaterialIcon name={icon} />
+                    <MaterialIcon name={control.icon} />
                   </button>
                 ))}
               </div>
             </div>
             <div className="relative flex aspect-[3/4] items-center justify-center bg-surface-container p-6">
               <img
-                alt={`Preview of ${document.title}`}
+                alt={`Bản xem trước của ${document.title}`}
                 className="max-h-full max-w-[90%] border border-outline-variant object-cover"
                 height={900}
                 src={document.previewUrl}
@@ -122,7 +143,7 @@ export default function ModeratorDocumentDetailPage({
               />
               <div className="pointer-events-none absolute inset-0 flex rotate-45 items-center justify-center opacity-5">
                 <span className="text-6xl font-bold uppercase tracking-widest">
-                  AcademiShare Preview
+                  Bản xem trước AcademiShare
                 </span>
               </div>
             </div>
@@ -221,7 +242,7 @@ export default function ModeratorDocumentDetailPage({
               </div>
               <div>
                 <dt className="mb-1 font-label-sm text-label-sm uppercase tracking-wider text-on-surface-variant">
-                  Trạng thái demo
+                  Trạng thái
                 </dt>
                 <dd>
                   <ModeratorBadge
@@ -233,7 +254,7 @@ export default function ModeratorDocumentDetailPage({
                           : "tertiary"
                     }
                   >
-                    {status}
+                    {statusLabelMap[status]}
                   </ModeratorBadge>
                 </dd>
               </div>
@@ -299,7 +320,7 @@ export default function ModeratorDocumentDetailPage({
               <div className="flex items-center gap-2 rounded-lg border border-outline-variant bg-white p-3">
                 <MaterialIcon className="text-primary" name="security" />
                 <span className="font-label-sm text-label-sm">
-                  Tài liệu đã được quét virus bởi ClamAV
+                  Tài liệu đã được quét mã độc bởi ClamAV
                 </span>
               </div>
 
@@ -351,7 +372,7 @@ export default function ModeratorDocumentDetailPage({
                 onClick={() =>
                   handleAction(
                     "changes_requested",
-                    `Đã yêu cầu chỉnh sửa metadata cho ${document.id}`,
+                    `Đã yêu cầu chỉnh sửa thông tin mô tả cho ${document.id}`,
                   )
                 }
                 type="button"

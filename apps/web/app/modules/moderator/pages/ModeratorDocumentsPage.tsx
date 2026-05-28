@@ -1,6 +1,8 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { Pagination } from "@/components/ui/Pagination";
+import { Table, type TableRow } from "@/components/ui/Table";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { documentReviewItems } from "../mockData";
 import type { DocumentReviewItem, DocumentReviewStatus } from "../types";
 import { ModeratorShell } from "../components/ModeratorShell";
@@ -27,7 +29,22 @@ const statusMeta: Record<
   flagged: { label: "Flagged", tone: "error" },
 };
 
-const categoryTones = ["secondary", "tertiary", "neutral"] as const;
+const categoryToneMap: Record<string, "secondary" | "tertiary" | "neutral"> = {
+  "Khoa học Máy tính": "secondary",
+  "Kinh tế học": "tertiary",
+  "Tâm lý học": "neutral",
+};
+
+const pageSize = 3;
+
+const documentColumns = [
+  { key: "title", label: "TIÊU ĐỀ TÀI LIỆU" },
+  { key: "author", label: "TÁC GIẢ" },
+  { key: "category", label: "DANH MỤC" },
+  { key: "uploadDate", label: "NGÀY TẢI" },
+  { key: "status", label: "TRẠNG THÁI" },
+  { key: "actions", label: "THAO TÁC", align: "right" as const },
+] as const;
 
 function updateDocumentStatus(
   items: DocumentReviewItem[],
@@ -41,11 +58,12 @@ export default function ModeratorDocumentsPage(): React.JSX.Element {
   const [documents, setDocuments] = useState(documentReviewItems);
   const [query, setQuery] = useState("");
   const [category, setCategory] = useState("all");
+  const [currentPage, setCurrentPage] = useState(1);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   const categories = useMemo(
-    () => Array.from(new Set(documentReviewItems.map((item) => item.category))),
-    [],
+    () => Array.from(new Set(documents.map((item) => item.category))),
+    [documents],
   );
 
   const filteredDocuments = useMemo(() => {
@@ -63,24 +81,161 @@ export default function ModeratorDocumentsPage(): React.JSX.Element {
           document.subject,
           document.university,
           document.id,
-        ].some((value) => value.toLowerCase().includes(normalizedQuery));
+        ].some((value) =>
+          (value ?? "").toLowerCase().includes(normalizedQuery),
+        );
 
       return matchesCategory && matchesQuery;
     });
   }, [category, documents, query]);
 
+  const totalPages = Math.max(
+    1,
+    Math.ceil(filteredDocuments.length / pageSize),
+  );
+  const visibleDocuments = useMemo(
+    () =>
+      filteredDocuments.slice(
+        (currentPage - 1) * pageSize,
+        currentPage * pageSize,
+      ),
+    [currentPage, filteredDocuments],
+  );
+
+  useEffect(() => {
+    if (currentPage > totalPages) {
+      setCurrentPage(totalPages);
+    }
+  }, [currentPage, totalPages]);
+
   const pendingCount = documents.filter((doc) =>
     ["pending", "priority", "changes_requested"].includes(doc.status),
   ).length;
 
-  const handleStatusChange = (
-    id: string,
-    status: DocumentReviewStatus,
-    message: string,
-  ) => {
-    setDocuments((current) => updateDocumentStatus(current, id, status));
-    setToastMessage(message);
-  };
+  const handleStatusChange = useCallback(
+    (id: string, status: DocumentReviewStatus, message: string) => {
+      setDocuments((current) => updateDocumentStatus(current, id, status));
+      setToastMessage(message);
+    },
+    [],
+  );
+
+  const documentRows: TableRow[] = useMemo(
+    () =>
+      visibleDocuments.map((document) => {
+        const status = statusMeta[document.status];
+        const categoryTone = categoryToneMap[document.category] ?? "neutral";
+
+        return {
+          id: document.id,
+          cells: [
+            <div className="flex items-center gap-3" key="title">
+              <div className="flex h-12 w-10 items-center justify-center rounded-sm bg-primary-fixed">
+                <MaterialIcon
+                  className="text-primary"
+                  name={document.fileType === "DOCX" ? "menu_book" : "article"}
+                />
+              </div>
+              <div>
+                <p className="max-w-[280px] truncate font-label-md text-label-md text-on-surface">
+                  {document.title}
+                </p>
+                <p className="font-label-sm text-label-sm text-on-surface-variant">
+                  {document.fileType} • {document.fileSize} • {document.id}
+                </p>
+              </div>
+            </div>,
+            <div className="flex items-center gap-2" key="author">
+              <img
+                alt={`${document.author} avatar`}
+                className="h-6 w-6 rounded-full object-cover"
+                height={24}
+                src={document.avatarUrl}
+                width={24}
+              />
+              <span className="font-body-md text-body-md text-on-surface">
+                {document.author}
+              </span>
+            </div>,
+            <ModeratorBadge key="category" tone={categoryTone}>
+              {document.category}
+            </ModeratorBadge>,
+            <span
+              className="font-body-md text-body-md text-on-surface"
+              key="uploadDate"
+            >
+              {document.uploadDate}
+            </span>,
+            <ModeratorBadge key="status" tone={status.tone}>
+              {status.label}
+            </ModeratorBadge>,
+            <div className="flex justify-end gap-2" key="actions">
+              <IconButton
+                href={`/moderator/documents/${document.id}`}
+                icon="visibility"
+                label={`Xem chi tiết ${document.title}`}
+              />
+              {document.status !== "changes_requested" ? (
+                <IconButton
+                  icon="rate_review"
+                  label={`Yêu cầu chỉnh sửa ${document.title}`}
+                  onClick={() =>
+                    handleStatusChange(
+                      document.id,
+                      "changes_requested",
+                      `Đã yêu cầu chỉnh sửa ${document.id}`,
+                    )
+                  }
+                />
+              ) : null}
+              {document.status !== "flagged" ? (
+                <IconButton
+                  icon="flag"
+                  label={`Gắn cờ ${document.title}`}
+                  onClick={() =>
+                    handleStatusChange(
+                      document.id,
+                      "flagged",
+                      `Đã gắn cờ ${document.id}`,
+                    )
+                  }
+                  tone="tertiary"
+                />
+              ) : null}
+              {document.status !== "rejected" ? (
+                <IconButton
+                  icon="close"
+                  label={`Từ chối ${document.title}`}
+                  onClick={() =>
+                    handleStatusChange(
+                      document.id,
+                      "rejected",
+                      `Đã từ chối ${document.id}`,
+                    )
+                  }
+                  tone="error"
+                />
+              ) : null}
+              {document.status !== "approved" ? (
+                <IconButton
+                  icon="check"
+                  label={`Phê duyệt ${document.title}`}
+                  onClick={() =>
+                    handleStatusChange(
+                      document.id,
+                      "approved",
+                      `Đã phê duyệt ${document.id}`,
+                    )
+                  }
+                  tone="primary"
+                />
+              ) : null}
+            </div>,
+          ],
+        };
+      }),
+    [handleStatusChange, visibleDocuments],
+  );
 
   return (
     <ModeratorShell
@@ -143,7 +298,10 @@ export default function ModeratorDocumentsPage(): React.JSX.Element {
             </span>
             <select
               className="w-full border-none bg-transparent p-0 font-label-sm text-label-sm text-on-surface-variant outline-none"
-              onChange={(event) => setCategory(event.target.value)}
+              onChange={(event) => {
+                setCategory(event.target.value);
+                setCurrentPage(1);
+              }}
               value={category}
             >
               <option value="all">Tất cả thể loại</option>
@@ -161,7 +319,10 @@ export default function ModeratorDocumentsPage(): React.JSX.Element {
             </span>
             <input
               className="w-full border-none bg-transparent p-0 font-label-sm text-label-sm text-on-surface-variant outline-none"
-              onChange={(event) => setQuery(event.target.value)}
+              onChange={(event) => {
+                setQuery(event.target.value);
+                setCurrentPage(1);
+              }}
               placeholder="Tên tài liệu, tác giả, mã ID..."
               type="search"
               value={query}
@@ -172,6 +333,7 @@ export default function ModeratorDocumentsPage(): React.JSX.Element {
             onClick={() => {
               setQuery("");
               setCategory("all");
+              setCurrentPage(1);
             }}
             type="button"
           >
@@ -181,153 +343,7 @@ export default function ModeratorDocumentsPage(): React.JSX.Element {
         </div>
 
         <ModeratorCard className="overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full border-collapse text-left">
-              <thead>
-                <tr className="border-b border-outline-variant bg-surface-container-low">
-                  <th className="px-6 py-4 font-label-md text-label-md text-on-surface-variant">
-                    TIÊU ĐỀ TÀI LIỆU
-                  </th>
-                  <th className="px-6 py-4 font-label-md text-label-md text-on-surface-variant">
-                    TÁC GIẢ
-                  </th>
-                  <th className="px-6 py-4 font-label-md text-label-md text-on-surface-variant">
-                    DANH MỤC
-                  </th>
-                  <th className="px-6 py-4 font-label-md text-label-md text-on-surface-variant">
-                    NGÀY TẢI
-                  </th>
-                  <th className="px-6 py-4 font-label-md text-label-md text-on-surface-variant">
-                    TRẠNG THÁI
-                  </th>
-                  <th className="px-6 py-4 text-right font-label-md text-label-md text-on-surface-variant">
-                    THAO TÁC
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-outline-variant">
-                {filteredDocuments.map((document, index) => {
-                  const status = statusMeta[document.status];
-                  const categoryTone =
-                    categoryTones[index % categoryTones.length] ?? "neutral";
-
-                  return (
-                    <tr
-                      className="group transition-colors hover:bg-surface-container-lowest"
-                      key={document.id}
-                    >
-                      <td className="px-6 py-5">
-                        <div className="flex items-center gap-3">
-                          <div className="flex h-12 w-10 items-center justify-center rounded-sm bg-primary-fixed">
-                            <MaterialIcon
-                              className="text-primary"
-                              name={
-                                document.fileType === "DOCX"
-                                  ? "menu_book"
-                                  : "article"
-                              }
-                            />
-                          </div>
-                          <div>
-                            <p className="max-w-[280px] truncate font-label-md text-label-md text-on-surface transition-colors group-hover:text-primary">
-                              {document.title}
-                            </p>
-                            <p className="font-label-sm text-label-sm text-on-surface-variant">
-                              {document.fileType} • {document.fileSize} •{" "}
-                              {document.id}
-                            </p>
-                          </div>
-                        </div>
-                      </td>
-                      <td className="px-6 py-5">
-                        <div className="flex items-center gap-2">
-                          <img
-                            alt={`${document.author} avatar`}
-                            className="h-6 w-6 rounded-full object-cover"
-                            height={24}
-                            src={document.avatarUrl}
-                            width={24}
-                          />
-                          <span className="font-body-md text-body-md text-on-surface">
-                            {document.author}
-                          </span>
-                        </div>
-                      </td>
-                      <td className="px-6 py-5">
-                        <ModeratorBadge tone={categoryTone}>
-                          {document.category}
-                        </ModeratorBadge>
-                      </td>
-                      <td className="px-6 py-5 font-body-md text-body-md text-on-surface">
-                        {document.uploadDate}
-                      </td>
-                      <td className="px-6 py-5">
-                        <ModeratorBadge tone={status.tone}>
-                          {status.label}
-                        </ModeratorBadge>
-                      </td>
-                      <td className="px-6 py-5">
-                        <div className="flex justify-end gap-2">
-                          <IconButton
-                            href={`/moderator/documents/${document.id}`}
-                            icon="visibility"
-                            label={`Xem chi tiết ${document.title}`}
-                          />
-                          <IconButton
-                            icon="rate_review"
-                            label={`Yêu cầu chỉnh sửa ${document.title}`}
-                            onClick={() =>
-                              handleStatusChange(
-                                document.id,
-                                "changes_requested",
-                                `Đã yêu cầu chỉnh sửa ${document.id}`,
-                              )
-                            }
-                          />
-                          <IconButton
-                            icon="flag"
-                            label={`Gắn cờ ${document.title}`}
-                            onClick={() =>
-                              handleStatusChange(
-                                document.id,
-                                "flagged",
-                                `Đã gắn cờ ${document.id}`,
-                              )
-                            }
-                            tone="tertiary"
-                          />
-                          <IconButton
-                            icon="close"
-                            label={`Từ chối ${document.title}`}
-                            onClick={() =>
-                              handleStatusChange(
-                                document.id,
-                                "rejected",
-                                `Đã từ chối ${document.id}`,
-                              )
-                            }
-                            tone="error"
-                          />
-                          <IconButton
-                            icon="check"
-                            label={`Phê duyệt ${document.title}`}
-                            onClick={() =>
-                              handleStatusChange(
-                                document.id,
-                                "approved",
-                                `Đã phê duyệt ${document.id}`,
-                              )
-                            }
-                            tone="primary"
-                          />
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
+          <Table columns={documentColumns} rows={documentRows} />
           {filteredDocuments.length === 0 ? (
             <EmptyState
               description="Thử đổi bộ lọc hoặc xóa nội dung tìm kiếm để xem lại hàng đợi."
@@ -336,38 +352,14 @@ export default function ModeratorDocumentsPage(): React.JSX.Element {
           ) : null}
           <div className="flex flex-col gap-3 border-t border-outline-variant bg-surface-container-lowest px-6 py-4 sm:flex-row sm:items-center sm:justify-between">
             <p className="font-label-sm text-label-sm text-on-surface-variant">
-              Hiển thị {filteredDocuments.length} của {documents.length} tài
-              liệu
+              Hiển thị {visibleDocuments.length} của {filteredDocuments.length}{" "}
+              tài liệu
             </p>
-            <div className="flex items-center gap-2">
-              <button
-                className="border border-outline-variant p-2 text-on-surface-variant transition-colors hover:bg-surface-container-high disabled:opacity-50"
-                disabled
-                type="button"
-              >
-                <span className="sr-only">Trang trước</span>
-                <MaterialIcon className="text-sm" name="chevron_left" />
-              </button>
-              <button
-                className="border-2 border-primary bg-primary-fixed px-3 py-1 font-label-md text-label-md text-primary"
-                type="button"
-              >
-                1
-              </button>
-              <button
-                className="border border-outline-variant px-3 py-1 font-label-md text-label-md text-on-surface transition-colors hover:bg-surface-container-high"
-                type="button"
-              >
-                2
-              </button>
-              <button
-                className="border border-outline-variant p-2 text-on-surface-variant transition-colors hover:bg-surface-container-high"
-                type="button"
-              >
-                <span className="sr-only">Trang sau</span>
-                <MaterialIcon className="text-sm" name="chevron_right" />
-              </button>
-            </div>
+            <Pagination
+              currentPage={currentPage}
+              onPageChange={setCurrentPage}
+              totalPages={totalPages}
+            />
           </div>
         </ModeratorCard>
 

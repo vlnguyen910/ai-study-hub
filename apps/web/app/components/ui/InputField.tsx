@@ -19,14 +19,16 @@ export function InputField({
   leftIcon,
   rightIcon,
   className = "",
+  required,
   ...props
 }: InputFieldProps): React.JSX.Element {
   const hasError = Boolean(errorText);
-  const paddingClasses = leftIcon
-    ? "pl-10 pr-3 focus:pl-[9px] focus:pr-[11px]"
-    : rightIcon
-      ? "pl-3 pr-10 focus:pl-[11px] focus:pr-[9px]"
-      : "px-3 focus:px-[11px]";
+  const leftPaddingClasses = leftIcon
+    ? "pl-10 focus:pl-[39px]"
+    : "pl-3 focus:pl-[11px]";
+  const rightPaddingClasses = rightIcon
+    ? "pr-10 focus:pr-[39px]"
+    : "pr-3 focus:pr-[11px]";
 
   return (
     <label className="block">
@@ -37,6 +39,11 @@ export function InputField({
           }`}
         >
           {label}
+          {required ? (
+            <span aria-hidden="true" className="ml-0.5 font-bold text-error">
+              *
+            </span>
+          ) : null}
         </span>
       ) : null}
       <div className="relative">
@@ -46,11 +53,12 @@ export function InputField({
           </span>
         ) : null}
         <input
-          className={`w-full rounded-xl border bg-surface py-2 font-body-md focus:border-2 focus:border-primary focus:py-[7px] focus:outline-none ${paddingClasses} ${
+          className={`w-full rounded-xl border bg-surface py-2 font-body-md focus:border-2 focus:border-primary focus:py-[7px] focus:outline-none ${leftPaddingClasses} ${rightPaddingClasses} ${
             hasError
               ? "border-error bg-error-container text-error"
               : "border-outline"
           } ${className}`}
+          required={required}
           {...props}
         />
         {rightIcon ? (
