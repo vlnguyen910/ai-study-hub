@@ -4,6 +4,7 @@ import {
   ConflictException,
 } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
+import { validateMongoDbId } from '../../common/utils/mongodb.utils';
 import {
   CreateSubjectDto,
   UpdateSubjectDto,
@@ -70,6 +71,8 @@ export class SubjectsService {
   }
 
   async findOne(id: string) {
+    validateMongoDbId(id, 'Subject ID');
+
     const subject = await this.prismaService.subjects.findUnique({
       where: { id },
     });
@@ -85,6 +88,8 @@ export class SubjectsService {
   }
 
   async update(id: string, updateSubjectDto: UpdateSubjectDto) {
+    validateMongoDbId(id, 'Subject ID');
+
     const existingSubject = await this.prismaService.subjects.findUnique({
       where: { id },
     });
@@ -120,6 +125,8 @@ export class SubjectsService {
   }
 
   async delete(id: string) {
+    validateMongoDbId(id, 'Subject ID');
+
     const existingSubject = await this.prismaService.subjects.findUnique({
       where: { id },
     });
