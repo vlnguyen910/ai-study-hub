@@ -29,17 +29,21 @@ enum deviceInfo {
 }
 
 model accounts {
-  id         String     @id @default(auto()) @map("_id") @db.ObjectId
-  email      String     @unique
-  name       String
-  password   String
-  avatarUrl  String
-  role       userRole   
-  status     userStatus @default(ACTIVE)
-  sessions   sessions[]
-  createdAt  DateTime   @default(now())
-  updatedAt  DateTime   @updatedAt
-  deletedAt  DateTime?  
+  id        String     @id @default(auto()) @map("_id") @db.ObjectId
+  email     String     @unique
+  name      String
+  password  String
+  avatarUrl String
+  role      userRole
+  status    userStatus @default(ACTIVE)
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+  deletedAt DateTime?
+
+  //Relationships
+  sessions          sessions[]
+  documents         documents[] @relation("authorId")
+  reviewedDocuments documents[] @relation("reviewedById")
 }
 
 model sessions {
@@ -53,4 +57,53 @@ model sessions {
   expiresAt    DateTime
 
   @@index([userId])
+}
+
+model schools {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  name      String
+  code      String   @unique
+  createdAt DateTime @default(now())
+}
+
+model subjects {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  name      String
+  code      String   @unique
+  createdAt DateTime @default(now())
+
+  //Relationships
+  documents documents[]
+}
+
+enum DocumentStatus {
+  ACTIVE
+  REJECTED
+  DELETED
+}
+
+model documents {
+  id              String         @id @default(auto()) @map("_id") @db.ObjectId
+  title           String
+  description     String?
+  fileUrl         String
+  publicId        String
+  sizeInBytes     Int
+  format          String
+  resourceType    String
+  subjectId       String         @db.ObjectId
+  status          DocumentStatus @default(ACTIVE)
+  authorId        String         @db.ObjectId
+  isPublic        Boolean        @default(false)
+  reviewedById    String?        @db.ObjectId
+  reviewedAt      DateTime?
+  rejectionReason String?
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+  deletedAt       DateTime?
+
+  //Relationships
+  subject  subjects  @relation(fields: [subjectId], references: [id])
+  author   accounts  @relation("authorId", fields: [authorId], references: [id])
+  reviewer accounts? @relation("reviewedById", fields: [reviewedById], references: [id])
 }
