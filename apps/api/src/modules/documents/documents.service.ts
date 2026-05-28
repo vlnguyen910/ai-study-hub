@@ -38,8 +38,8 @@ export class DocumentsService {
         ...createDocumentDto,
         authorId,
         status: createDocumentDto.isPublic
-          ? DocumentStatus.ACTIVE
-          : DocumentStatus.PENDING,
+          ? DocumentStatus.PENDING
+          : DocumentStatus.ACTIVE,
       },
       include: {
         author: {
@@ -57,19 +57,14 @@ export class DocumentsService {
     };
   }
 
-  async findAll(query: ListDocumentsQueryDto) {
-    const { page = 1, limit = 10, status, authorId, subjectId } = query;
+  async findAllPublic(query: ListDocumentsQueryDto) {
+    const { page = 1, limit = 10, authorId, subjectId } = query;
     const skip = (page - 1) * limit;
 
     const where: any = {
-      status: {
-        not: DocumentStatus.DELETED,
-      },
+      isPublic: true,
+      status: DocumentStatus.ACTIVE,
     };
-
-    if (status) {
-      where.status = status;
-    }
 
     if (authorId) {
       where.authorId = authorId;
@@ -129,10 +124,6 @@ export class DocumentsService {
         },
       },
     });
-
-    if (!document || document.status === DocumentStatus.DELETED) {
-      throw new NotFoundException(`Document with ID ${id} not found`);
-    }
 
     return {
       message: 'Document fetched successfully',

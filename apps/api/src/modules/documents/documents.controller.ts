@@ -38,8 +38,8 @@ export class DocumentsController {
   @Version('1')
   @Public()
   @Get()
-  findAll(@Query() query: ListDocumentsQueryDto) {
-    return this.documentsService.findAll(query);
+  findAllPublic(@Query() query: ListDocumentsQueryDto) {
+    return this.documentsService.findAllPublic(query);
   }
 
   @Version('1')

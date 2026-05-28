@@ -16,10 +16,6 @@ export class ListDocumentsQueryDto {
   limit?: number = 10;
 
   @IsOptional()
-  @IsEnum(DocumentStatus)
-  status?: DocumentStatus;
-
-  @IsOptional()
   @IsString()
   authorId?: string;
 
