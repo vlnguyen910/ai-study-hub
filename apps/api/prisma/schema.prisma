@@ -10,20 +10,20 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-enum userRole {
+enum UserRole {
   USER
   ADMIN
   MODERATOR
 }
 
-enum userStatus {
+enum UserStatus {
   ACTIVE
   BANNED
   UNVERIFIED
   DELETED
 }
 
-enum deviceInfo {
+enum DeviceInfo {
   WEB
   MOBILE
 }
@@ -34,8 +34,8 @@ model accounts {
   name      String
   password  String
   avatarUrl String
-  role      userRole
-  status    userStatus @default(ACTIVE)
+  role      UserRole
+  status    UserStatus @default(ACTIVE)
   createdAt DateTime   @default(now())
   updatedAt DateTime   @updatedAt
   deletedAt DateTime?
@@ -51,7 +51,7 @@ model sessions {
   userId       String     @db.ObjectId
   user         accounts   @relation(fields: [userId], references: [id])
   refreshToken String
-  deviceInfo   deviceInfo
+  deviceInfo   DeviceInfo
   isRevoked    Boolean    @default(false)
   createdAt    DateTime   @default(now())
   expiresAt    DateTime
@@ -82,6 +82,7 @@ model subjects {
 }
 
 enum DocumentStatus {
+  PENDING
   ACTIVE
   REJECTED
   DELETED
@@ -97,7 +98,7 @@ model documents {
   format          String
   resourceType    String
   subjectId       String?         @db.ObjectId
-  status          DocumentStatus @default(ACTIVE)
+  status          DocumentStatus @default(PENDING)
   authorId        String         @db.ObjectId
   isPublic        Boolean        @default(false)
   reviewedById    String?        @db.ObjectId
