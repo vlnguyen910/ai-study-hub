@@ -6,17 +6,33 @@ import {
 } from '@nestjs/common';
 import { DocumentStatus, Prisma } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
+import { validateMongoDbId } from '../../common/utils/mongodb.utils';
 import {
   CreateDocumentDto,
   UpdateDocumentDto,
   ListDocumentsQueryDto,
 } from './dto';
+import { SubjectsService } from '../subjects';
 
 @Injectable()
 export class DocumentsService {
-  constructor(private readonly prismaService: PrismaService) {}
+  constructor(
+    private readonly prismaService: PrismaService,
+    private readonly subjectsService: SubjectsService,
+  ) {}
 
   async create(createDocumentDto: CreateDocumentDto, authorId: string) {
+    if (createDocumentDto.subjectId) {
+      const subject = await this.subjectsService.findOne(
+        createDocumentDto.subjectId,
+      );
+      if (!subject) {
+        throw new BadRequestException(
+          `Subject with ID ${createDocumentDto.subjectId} does not exist`,
+        );
+      }
+    }
+
     const document = await this.prismaService.documents.create({
       data: {
         ...createDocumentDto,
@@ -91,6 +107,8 @@ export class DocumentsService {
   }
 
   async findOne(id: string) {
+    validateMongoDbId(id, 'Document ID');
+
     const document = await this.prismaService.documents.findUnique({
       where: { id },
       include: {
@@ -125,6 +143,8 @@ export class DocumentsService {
     updateDocumentDto: UpdateDocumentDto,
     userId: string,
   ) {
+    validateMongoDbId(id, 'Document ID');
+
     const existingDocument = await this.prismaService.documents.findUnique({
       where: { id },
     });
@@ -167,6 +187,8 @@ export class DocumentsService {
   }
 
   async delete(id: string, userId: string) {
+    validateMongoDbId(id, 'Document ID');
+
     const existingDocument = await this.prismaService.documents.findUnique({
       where: { id },
     });
