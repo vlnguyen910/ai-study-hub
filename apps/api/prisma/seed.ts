@@ -106,15 +106,6 @@ async function main() {
     data: hashedAccounts,
   });
 
-  // Create hardcoded school
-  const school = await prisma.schools.create({
-    data: {
-      name: 'FPT University',
-      code: 'FPTU',
-    },
-  });
-
-  // Create sample subjects for the school
   const subjectsList = [
     { name: 'Mathematics', code: 'MATH' },
     { name: 'Physics', code: 'PHYS' },
@@ -128,16 +119,46 @@ async function main() {
     { name: 'Data Science', code: 'DS' },
   ];
 
-  const subjects = await prisma.subjects.createMany({
-    data: subjectsList.map((subject) => ({
-      ...subject,
-      schoolId: school.id,
-    })),
+  const { school, subjects } = await prisma.$transaction(async (tx) => {
+    const school = await tx.schools.upsert({
+      where: {
+        code: 'FPTU',
+      },
+      update: {
+        name: 'FPT University',
+      },
+      create: {
+        name: 'FPT University',
+        code: 'FPTU',
+      },
+    });
+
+    const subjects: Array<Awaited<ReturnType<typeof tx.subjects.upsert>>> = [];
+
+    for (const subject of subjectsList) {
+      subjects.push(
+        await tx.subjects.upsert({
+          where: {
+            code: subject.code,
+          },
+          update: {
+            name: subject.name,
+            schoolId: school.id,
+          },
+          create: {
+            ...subject,
+            schoolId: school.id,
+          },
+        }),
+      );
+    }
+
+    return { school, subjects };
   });
 
   console.log(`Seeded ${accounts.length} accounts.`);
-  console.log(`Created school: ${school.name} (${school.code})`);
-  console.log(`Created ${subjects.count} subjects for ${school.name}`);
+  console.log(`Ensured school: ${school.name} (${school.code})`);
+  console.log(`Ensured ${subjects.length} subjects for ${school.name}`);
   console.log(`Admin account: admin@${SEED_EMAIL_DOMAIN}`);
   console.log(`Seed password: ${SEED_PASSWORD}`);
 }
