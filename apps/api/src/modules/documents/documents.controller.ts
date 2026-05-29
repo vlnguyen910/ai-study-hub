@@ -7,8 +7,8 @@ import {
   Param,
   Delete,
   Query,
-  UseGuards,
   Version,
+  UseGuards,
 } from '@nestjs/common';
 import { DocumentsService } from './documents.service';
 import {
@@ -18,8 +18,8 @@ import {
 } from './dto';
 import { User } from '../../common/decorators/user.decorator';
 import type { RequestUser } from '../../common/decorators/user.decorator';
-import { AuthGuard } from '../../common/guards/auth.guard';
 import { Public } from '../../common/decorators/public.decorator';
+import { AuthGuard } from '../../common/guards/auth.guard';
 
 @UseGuards(AuthGuard)
 @Controller('documents')
@@ -45,8 +45,8 @@ export class DocumentsController {
   @Version('1')
   @Public()
   @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.documentsService.findOne(id);
+  findOnePublic(@Param('id') id: string) {
+    return this.documentsService.findOnePublic(id);
   }
 
   @Version('1')
