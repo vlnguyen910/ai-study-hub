@@ -14,6 +14,7 @@ import { SubjectsModule } from './modules/subjects/subjects.module';
       cache: true,
       validate: (config) => {
         const requiredKeys = [
+          'DATABASE_URL',
           'JWT_ACCESS_SECRET',
           'JWT_REFRESH_SECRET',
           'JWT_ACCESS_EXPIRES_IN',

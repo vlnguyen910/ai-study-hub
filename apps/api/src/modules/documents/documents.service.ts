@@ -12,6 +12,7 @@ import {
   UpdateDocumentDto,
   ListDocumentsQueryDto,
 } from './dto';
+import { plainToInstance } from 'class-transformer';
 import { SubjectsService } from '../subjects';
 
 @Injectable()
@@ -80,6 +81,26 @@ export class DocumentsService {
         skip,
         take: limit,
         orderBy: { createdAt: 'desc' },
+        select: {
+          id: true,
+          title: true,
+          publicId: true,
+          author: {
+            select: {
+              id: true,
+              name: true,
+              avatarUrl: true,
+            },
+          },
+          subject: {
+            select: {
+              id: true,
+              name: true,
+              code: true,
+            },
+          },
+          createdAt: true,
+        },
       }),
       this.prismaService.documents.count({ where }),
     ]);
@@ -87,7 +108,7 @@ export class DocumentsService {
     return {
       message: 'Documents fetched successfully',
       data: {
-        documents,
+        documents: documents,
         pagination: {
           page,
           limit,
@@ -98,7 +119,7 @@ export class DocumentsService {
     };
   }
 
-  async findOne(id: string) {
+  async findOnePublic(id: string) {
     validateMongoDbId(id, 'Document ID');
 
     const document = await this.prismaService.documents.findUnique({
@@ -107,10 +128,20 @@ export class DocumentsService {
         status: {
           not: DocumentStatus.DELETED,
         },
+        isPublic: true,
       },
-      include: {
+      select: {
+        id: true,
+        title: true,
+        description: true,
+        fileUrl: true,
+        publicId: true,
+        format: true,
+        sizeInBytes: true,
+        createdAt: true,
         author: {
           select: {
+            id: true,
             name: true,
             email: true,
             avatarUrl: true,
@@ -118,6 +149,7 @@ export class DocumentsService {
         },
         subject: {
           select: {
+            id: true,
             name: true,
             code: true,
           },
