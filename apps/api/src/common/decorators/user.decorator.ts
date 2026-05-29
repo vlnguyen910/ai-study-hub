@@ -9,16 +9,22 @@ export type RequestUser = {
 };
 
 export const User = createParamDecorator(
-  (data: keyof RequestUser | undefined, ctx: ExecutionContext) => {
-    const request = ctx
-      .switchToHttp()
-      .getRequest<Request & { user?: RequestUser }>();
-    const user = request.user;
-
-    if (!data) {
-      return user;
-    }
-
-    return user?.[data];
-  },
+  (data: keyof RequestUser | undefined, ctx: ExecutionContext) =>
+    getUserFromContext(data, ctx),
 );
+
+export function getUserFromContext(
+  data: keyof RequestUser | undefined,
+  ctx: ExecutionContext,
+) {
+  const request = ctx
+    .switchToHttp()
+    .getRequest<Request & { user?: RequestUser }>();
+  const user = request.user;
+
+  if (!data) {
+    return user;
+  }
+
+  return user?.[data];
+}
