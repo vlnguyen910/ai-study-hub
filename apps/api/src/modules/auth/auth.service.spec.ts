@@ -158,4 +158,22 @@ describe('AuthService', () => {
       data: null,
     });
   });
+
+  it('parseExpiresIn handles various formats and fallbacks', () => {
+    const p: any = service as any;
+    // undefined -> fallback
+    expect(p.parseExpiresIn(undefined, 10)).toBe(10);
+    // numeric string
+    expect(p.parseExpiresIn('60', 10)).toBe(60);
+    // minutes
+    expect(p.parseExpiresIn('5m', 10)).toBe(300);
+    // hours
+    expect(p.parseExpiresIn('2h', 10)).toBe(7200);
+    // days
+    expect(p.parseExpiresIn('3d', 10)).toBe(259200);
+    // seconds
+    expect(p.parseExpiresIn('45s', 10)).toBe(45);
+    // invalid -> fallback
+    expect(p.parseExpiresIn('xyz', 10)).toBe(10);
+  });
 });

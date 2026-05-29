@@ -19,8 +19,9 @@ import {
 import { Public, Roles } from '../../common/decorators';
 import { AuthGuard } from '../../common/guards/auth.guard';
 import { UserRole } from '@prisma/client';
+import { RolesGuard } from '../../common/guards/roles.guard';
 
-@UseGuards(AuthGuard)
+@UseGuards(AuthGuard, RolesGuard)
 @Controller('subjects')
 export class SubjectsController {
   constructor(private readonly subjectsService: SubjectsService) {}
