@@ -4,7 +4,7 @@ import { AccountsService } from './accounts.service';
 
 describe('AccountsService', () => {
   let service: AccountsService;
-  let moduleRef: any;
+  let moduleRef: TestingModule;
 
   beforeEach(async () => {
     moduleRef = await Test.createTestingModule({
