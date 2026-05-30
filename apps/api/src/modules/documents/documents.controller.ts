@@ -20,6 +20,7 @@ import { User } from '../../common/decorators/user.decorator';
 import type { RequestUser } from '../../common/decorators/user.decorator';
 import { Public } from '../../common/decorators/public.decorator';
 import { AuthGuard } from '../../common/guards/auth.guard';
+import { OptionalJwtGuard } from '../../common/guards/optional-jwt.guard';
 
 @UseGuards(AuthGuard)
 @Controller('documents')
@@ -38,15 +39,23 @@ export class DocumentsController {
   @Version('1')
   @Public()
   @Get()
-  findAllPublic(@Query() query: ListDocumentsQueryDto) {
-    return this.documentsService.findAllPublic(query);
+  @UseGuards(OptionalJwtGuard)
+  findAll(@Query() query: ListDocumentsQueryDto, @User() user?: RequestUser) {
+    return this.documentsService.findAll(query, user);
+  }
+
+  @Version('1')
+  @Get('me')
+  findMine(@Query() query: ListDocumentsQueryDto, @User() user: RequestUser) {
+    return this.documentsService.findMine(query, user.sub);
   }
 
   @Version('1')
   @Public()
+  @UseGuards(OptionalJwtGuard)
   @Get(':id')
-  findOnePublic(@Param('id') id: string) {
-    return this.documentsService.findOnePublic(id);
+  findOne(@Param('id') id: string, @User() user?: RequestUser) {
+    return this.documentsService.findOne(id, user);
   }
 
   @Version('1')

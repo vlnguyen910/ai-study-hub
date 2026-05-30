@@ -2,14 +2,16 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { DocumentsController } from './documents.controller';
 import { DocumentsService } from './documents.service';
 import { AuthGuard } from '../../common/guards/auth.guard';
+import { OptionalJwtGuard } from '../../common/guards/optional-jwt.guard';
 
 describe('DocumentsController', () => {
   let controller: DocumentsController;
 
   const documentsServiceMock = {
     create: jest.fn(),
-    findAllPublic: jest.fn(),
-    findOnePublic: jest.fn(),
+    findAll: jest.fn(),
+    findMine: jest.fn(),
+    findOne: jest.fn(),
     update: jest.fn(),
     delete: jest.fn(),
   };
@@ -30,6 +32,9 @@ describe('DocumentsController', () => {
     // Override guards to avoid instantiating JwtService/Config in unit tests
     moduleBuilder
       .overrideGuard(AuthGuard)
+      .useValue({ canActivate: () => true });
+    moduleBuilder
+      .overrideGuard(OptionalJwtGuard)
       .useValue({ canActivate: () => true });
 
     const module: TestingModule = await moduleBuilder.compile();
@@ -52,20 +57,36 @@ describe('DocumentsController', () => {
     expect(documentsServiceMock.create).toHaveBeenCalledWith(dto, 'user-123');
   });
 
-  it('should call findAllPublic service', async () => {
-    documentsServiceMock.findAllPublic.mockResolvedValue([]);
+  it('should call findAll service with optional user', async () => {
+    documentsServiceMock.findAll.mockResolvedValue([]);
+    const query = { page: 1 };
+    const user = { sub: 'user-123', email: 'u@example.com' } as any;
 
-    await controller.findAllPublic({} as any);
+    await controller.findAll(query as any, user);
 
-    expect(documentsServiceMock.findAllPublic).toHaveBeenCalled();
+    expect(documentsServiceMock.findAll).toHaveBeenCalledWith(query, user);
   });
 
-  it('should call findOnePublic service', async () => {
-    documentsServiceMock.findOnePublic.mockResolvedValue({ id: 'doc1' });
+  it('should call findMine service with user id', async () => {
+    documentsServiceMock.findMine.mockResolvedValue([]);
+    const query = { page: 1 };
+    const user = { sub: 'user-123' } as any;
 
-    await controller.findOnePublic('doc1');
+    await controller.findMine(query as any, user);
 
-    expect(documentsServiceMock.findOnePublic).toHaveBeenCalledWith('doc1');
+    expect(documentsServiceMock.findMine).toHaveBeenCalledWith(
+      query,
+      'user-123',
+    );
+  });
+
+  it('should call findOne service with optional user', async () => {
+    documentsServiceMock.findOne.mockResolvedValue({ id: 'doc1' });
+    const user = { sub: 'user-123', email: 'u@example.com' } as any;
+
+    await controller.findOne('doc1', user);
+
+    expect(documentsServiceMock.findOne).toHaveBeenCalledWith('doc1', user);
   });
 
   it('should call update service with user id', async () => {

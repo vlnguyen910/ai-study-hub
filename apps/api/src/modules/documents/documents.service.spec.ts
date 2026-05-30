@@ -2,7 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { DocumentsService } from './documents.service';
 import { PrismaService } from '../../prisma/prisma.service';
 import { SubjectsService } from '../subjects';
-import { DocumentStatus } from '@prisma/client';
+import { DocumentStatus, UserRole } from '@prisma/client';
 
 describe('DocumentsService', () => {
   let service: DocumentsService;
@@ -12,6 +12,7 @@ describe('DocumentsService', () => {
       create: jest.fn(),
       findMany: jest.fn(),
       count: jest.fn(),
+      findFirst: jest.fn(),
       findUnique: jest.fn(),
       update: jest.fn(),
     },
@@ -85,47 +86,441 @@ describe('DocumentsService', () => {
     expect(res.data).toEqual(created);
   });
 
-  it('findAllPublic accepts authorId and subjectId filters', async () => {
+  it('findAll accepts authorId and subjectId filters without bypassing visibility', async () => {
     const docs = [{ id: '507f1f77bcf86cd799439011' }];
     prismaMock.documents.findMany.mockResolvedValue(docs);
     prismaMock.documents.count.mockResolvedValue(1);
 
-    const res = await service.findAllPublic({
+    const res = await service.findAll({
       authorId: 'u1',
       subjectId: '507f1f77bcf86cd799439011',
       page: 2,
       limit: 5,
     } as any);
 
-    expect(prismaMock.documents.findMany).toHaveBeenCalled();
+    expect(prismaMock.documents.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          authorId: 'u1',
+          subjectId: '507f1f77bcf86cd799439011',
+          status: { not: DocumentStatus.DELETED },
+          OR: [
+            {
+              status: DocumentStatus.ACTIVE,
+              isPublic: true,
+            },
+          ],
+        }),
+      }),
+    );
     expect(res.data.pagination.page).toBe(2);
   });
 
-  it('findAllPublic returns paginated documents response', async () => {
+  it('findAll returns paginated documents response for guest', async () => {
     const docs = [{ id: '507f1f77bcf86cd799439011' }];
     prismaMock.documents.findMany.mockResolvedValue(docs);
     prismaMock.documents.count.mockResolvedValue(1);
 
-    const res = await service.findAllPublic({} as any);
+    const res = await service.findAll({} as any);
 
-    expect(prismaMock.documents.findMany).toHaveBeenCalled();
+    expect(prismaMock.documents.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          status: { not: DocumentStatus.DELETED },
+          OR: [
+            {
+              status: DocumentStatus.ACTIVE,
+              isPublic: true,
+            },
+          ],
+        }),
+        select: expect.objectContaining({
+          status: true,
+          isPublic: true,
+          updatedAt: true,
+        }),
+      }),
+    );
     expect(prismaMock.documents.count).toHaveBeenCalled();
     expect(res.message).toBe('Documents fetched successfully');
     expect(res.data.documents).toEqual(docs);
     expect(res.data.pagination.total).toBe(1);
   });
 
-  it('findOnePublic returns document response', async () => {
+  it('findAll includes own non-deleted visible documents for logged-in user', async () => {
+    prismaMock.documents.findMany.mockResolvedValue([]);
+    prismaMock.documents.count.mockResolvedValue(0);
+
+    await service.findAll({} as any, {
+      sub: 'owner-1',
+      email: 'owner@example.com',
+      role: UserRole.USER,
+    });
+
+    expect(prismaMock.documents.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          status: { not: DocumentStatus.DELETED },
+          OR: expect.arrayContaining([
+            {
+              status: DocumentStatus.ACTIVE,
+              isPublic: true,
+            },
+            {
+              status: DocumentStatus.ACTIVE,
+              isPublic: false,
+              authorId: 'owner-1',
+            },
+            {
+              status: DocumentStatus.PENDING,
+              authorId: 'owner-1',
+            },
+            {
+              status: DocumentStatus.REJECTED,
+              authorId: 'owner-1',
+            },
+          ]),
+        }),
+      }),
+    );
+  });
+
+  it('findAll includes all pending and rejected documents for moderator', async () => {
+    prismaMock.documents.findMany.mockResolvedValue([]);
+    prismaMock.documents.count.mockResolvedValue(0);
+
+    await service.findAll({} as any, {
+      sub: 'moderator-1',
+      email: 'mod@example.com',
+      role: UserRole.MODERATOR,
+    });
+
+    expect(prismaMock.documents.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          OR: expect.arrayContaining([
+            { status: DocumentStatus.PENDING },
+            { status: DocumentStatus.REJECTED },
+          ]),
+        }),
+      }),
+    );
+  });
+
+  it('findAll combines status filter with visibility', async () => {
+    prismaMock.documents.findMany.mockResolvedValue([]);
+    prismaMock.documents.count.mockResolvedValue(0);
+
+    await service.findAll({
+      status: DocumentStatus.PENDING,
+      subjectId: '507f1f77bcf86cd799439011',
+    } as any);
+
+    expect(prismaMock.documents.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          subjectId: '507f1f77bcf86cd799439011',
+          status: {
+            equals: DocumentStatus.PENDING,
+            not: DocumentStatus.DELETED,
+          },
+          OR: [
+            {
+              status: DocumentStatus.ACTIVE,
+              isPublic: true,
+            },
+          ],
+        }),
+      }),
+    );
+  });
+
+  it('findAll keeps deleted hidden when status filter is DELETED', async () => {
+    prismaMock.documents.findMany.mockResolvedValue([]);
+    prismaMock.documents.count.mockResolvedValue(0);
+
+    await service.findAll({ status: DocumentStatus.DELETED } as any);
+
+    expect(prismaMock.documents.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          status: {
+            equals: DocumentStatus.DELETED,
+            not: DocumentStatus.DELETED,
+          },
+        }),
+      }),
+    );
+  });
+
+  it('findMine returns current user non-deleted documents and ignores authorId query', async () => {
+    const docs = [{ id: '507f1f77bcf86cd799439011' }];
+    prismaMock.documents.findMany.mockResolvedValue(docs);
+    prismaMock.documents.count.mockResolvedValue(1);
+
+    const res = await service.findMine(
+      {
+        authorId: 'other-user',
+        subjectId: '507f1f77bcf86cd799439011',
+        status: DocumentStatus.REJECTED,
+        page: 2,
+        limit: 5,
+      } as any,
+      'owner-1',
+    );
+
+    expect(prismaMock.documents.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: {
+          authorId: 'owner-1',
+          subjectId: '507f1f77bcf86cd799439011',
+          status: {
+            equals: DocumentStatus.REJECTED,
+            not: DocumentStatus.DELETED,
+          },
+        },
+        skip: 5,
+        take: 5,
+        select: expect.objectContaining({
+          status: true,
+          isPublic: true,
+          updatedAt: true,
+        }),
+      }),
+    );
+    expect(res.data.documents).toEqual(docs);
+    expect(res.data.pagination.page).toBe(2);
+  });
+
+  it('findMine keeps deleted hidden when status filter is DELETED', async () => {
+    prismaMock.documents.findMany.mockResolvedValue([]);
+    prismaMock.documents.count.mockResolvedValue(0);
+
+    await service.findMine(
+      { status: DocumentStatus.DELETED } as any,
+      'owner-1',
+    );
+
+    expect(prismaMock.documents.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: {
+          authorId: 'owner-1',
+          status: {
+            equals: DocumentStatus.DELETED,
+            not: DocumentStatus.DELETED,
+          },
+        },
+      }),
+    );
+  });
+
+  it('findOne returns active public document for guest', async () => {
     const doc = { id: '507f1f77bcf86cd799439011', title: 'T' };
-    prismaMock.documents.findUnique.mockResolvedValue(doc);
+    prismaMock.documents.findFirst.mockResolvedValue(doc);
 
-    const res = await service.findOnePublic('507f1f77bcf86cd799439011');
+    const res = await service.findOne('507f1f77bcf86cd799439011');
 
-    expect(prismaMock.documents.findUnique).toHaveBeenCalled();
+    expect(prismaMock.documents.findFirst).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          id: '507f1f77bcf86cd799439011',
+          status: { not: DocumentStatus.DELETED },
+          OR: [
+            {
+              status: DocumentStatus.ACTIVE,
+              isPublic: true,
+            },
+          ],
+        }),
+      }),
+    );
     expect(res).toEqual({
       message: 'Document fetched successfully',
       data: doc,
     });
+  });
+
+  it('findOne hides active private document from guest', async () => {
+    prismaMock.documents.findFirst.mockResolvedValue(null);
+
+    await expect(service.findOne('507f1f77bcf86cd799439011')).rejects.toThrow();
+  });
+
+  it('findOne allows owner to view active private document', async () => {
+    const doc = { id: '507f1f77bcf86cd799439011', title: 'Private' };
+    prismaMock.documents.findFirst.mockResolvedValue(doc);
+
+    const res = await service.findOne('507f1f77bcf86cd799439011', {
+      sub: 'owner-1',
+      email: 'owner@example.com',
+      role: UserRole.USER,
+    });
+
+    expect(prismaMock.documents.findFirst).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          OR: expect.arrayContaining([
+            {
+              status: DocumentStatus.ACTIVE,
+              isPublic: false,
+              authorId: 'owner-1',
+            },
+          ]),
+        }),
+      }),
+    );
+    expect(res.data).toEqual(doc);
+  });
+
+  it('findOne hides active private document from unrelated logged-in user', async () => {
+    prismaMock.documents.findFirst.mockResolvedValue(null);
+
+    await expect(
+      service.findOne('507f1f77bcf86cd799439011', {
+        sub: 'other-user',
+        email: 'other@example.com',
+        role: UserRole.USER,
+      }),
+    ).rejects.toThrow();
+  });
+
+  it('findOne allows owner to view pending document', async () => {
+    const doc = {
+      id: '507f1f77bcf86cd799439011',
+      status: DocumentStatus.PENDING,
+    };
+    prismaMock.documents.findFirst.mockResolvedValue(doc);
+
+    const res = await service.findOne('507f1f77bcf86cd799439011', {
+      sub: 'owner-1',
+      email: 'owner@example.com',
+      role: UserRole.USER,
+    });
+
+    expect(prismaMock.documents.findFirst).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          OR: expect.arrayContaining([
+            {
+              status: DocumentStatus.PENDING,
+              authorId: 'owner-1',
+            },
+          ]),
+        }),
+      }),
+    );
+    expect(res.data).toEqual(doc);
+  });
+
+  it('findOne allows moderator to view any pending document', async () => {
+    const doc = {
+      id: '507f1f77bcf86cd799439011',
+      status: DocumentStatus.PENDING,
+    };
+    prismaMock.documents.findFirst.mockResolvedValue(doc);
+
+    const res = await service.findOne('507f1f77bcf86cd799439011', {
+      sub: 'moderator-1',
+      email: 'mod@example.com',
+      role: UserRole.MODERATOR,
+    });
+
+    expect(prismaMock.documents.findFirst).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          OR: expect.arrayContaining([{ status: DocumentStatus.PENDING }]),
+        }),
+      }),
+    );
+    expect(res.data).toEqual(doc);
+  });
+
+  it('findOne hides pending document from unrelated logged-in user', async () => {
+    prismaMock.documents.findFirst.mockResolvedValue(null);
+
+    await expect(
+      service.findOne('507f1f77bcf86cd799439011', {
+        sub: 'other-user',
+        email: 'other@example.com',
+        role: UserRole.USER,
+      }),
+    ).rejects.toThrow();
+  });
+
+  it('findOne allows owner to view rejected document', async () => {
+    const doc = {
+      id: '507f1f77bcf86cd799439011',
+      status: DocumentStatus.REJECTED,
+    };
+    prismaMock.documents.findFirst.mockResolvedValue(doc);
+
+    const res = await service.findOne('507f1f77bcf86cd799439011', {
+      sub: 'owner-1',
+      email: 'owner@example.com',
+      role: UserRole.USER,
+    });
+
+    expect(prismaMock.documents.findFirst).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          OR: expect.arrayContaining([
+            {
+              status: DocumentStatus.REJECTED,
+              authorId: 'owner-1',
+            },
+          ]),
+        }),
+      }),
+    );
+    expect(res.data).toEqual(doc);
+  });
+
+  it('findOne allows moderator to view rejected document', async () => {
+    const doc = {
+      id: '507f1f77bcf86cd799439011',
+      status: DocumentStatus.REJECTED,
+    };
+    prismaMock.documents.findFirst.mockResolvedValue(doc);
+
+    const res = await service.findOne('507f1f77bcf86cd799439011', {
+      sub: 'moderator-1',
+      email: 'mod@example.com',
+      role: UserRole.MODERATOR,
+    });
+
+    expect(prismaMock.documents.findFirst).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          OR: expect.arrayContaining([{ status: DocumentStatus.REJECTED }]),
+        }),
+      }),
+    );
+    expect(res.data).toEqual(doc);
+  });
+
+  it('findOne hides rejected document from guest', async () => {
+    prismaMock.documents.findFirst.mockResolvedValue(null);
+
+    await expect(service.findOne('507f1f77bcf86cd799439011')).rejects.toThrow();
+  });
+
+  it('findOne hides deleted document from everyone', async () => {
+    prismaMock.documents.findFirst.mockResolvedValue(null);
+
+    await expect(
+      service.findOne('507f1f77bcf86cd799439011', {
+        sub: 'moderator-1',
+        email: 'mod@example.com',
+        role: UserRole.MODERATOR,
+      }),
+    ).rejects.toThrow();
+    expect(prismaMock.documents.findFirst).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          status: { not: DocumentStatus.DELETED },
+        }),
+      }),
+    );
   });
 
   it('update returns updated document when author matches', async () => {
@@ -168,8 +563,8 @@ describe('DocumentsService', () => {
     expect(res).toEqual({ message: 'Document deleted successfully' });
   });
 
-  it('findOnePublic throws BadRequestException for invalid id', async () => {
-    await expect(service.findOnePublic('bad-id')).rejects.toThrow();
+  it('findOne throws BadRequestException for invalid id', async () => {
+    await expect(service.findOne('bad-id')).rejects.toThrow();
   });
 
   it('update throws NotFoundException when document missing', async () => {
@@ -224,11 +619,11 @@ describe('DocumentsService', () => {
     ).rejects.toThrow();
   });
 
-  it('findAllPublic handles zero total and calculates totalPages as 0', async () => {
+  it('findAll handles zero total and calculates totalPages as 0', async () => {
     prismaMock.documents.findMany.mockResolvedValue([]);
     prismaMock.documents.count.mockResolvedValue(0);
 
-    const res = await service.findAllPublic({} as any);
+    const res = await service.findAll({} as any);
 
     expect(res.data.pagination.total).toBe(0);
     expect(res.data.pagination.totalPages).toBe(0);

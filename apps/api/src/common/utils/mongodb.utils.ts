@@ -5,7 +5,7 @@ import { BadRequestException } from '@nestjs/common';
  * MongoDB ObjectIDs are 24-character hex strings
  */
 export function isValidMongoDbId(id: string): boolean {
-  return /^[0-9a-f]{24}$/.test(id);
+  return typeof id === 'string' && /^[0-9a-fA-F]{24}$/.test(id);
 }
 
 /**
