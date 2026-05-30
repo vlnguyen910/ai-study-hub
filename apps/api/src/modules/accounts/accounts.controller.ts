@@ -8,12 +8,13 @@ import {
   Delete,
   Version,
 } from '@nestjs/common';
+import { UserRole } from '@prisma/client';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { AccountsService } from './accounts.service';
 import { CreateAccountDto } from './dto/create-account.dto';
 import { UpdateAccountDto } from './dto/update-account.dto';
 
-@Roles('ADMIN')
+@Roles(UserRole.ADMIN)
 @Controller('accounts')
 export class AccountsController {
   constructor(private readonly accountsService: AccountsService) {}
@@ -28,6 +29,12 @@ export class AccountsController {
   @Get()
   findAll() {
     return this.accountsService.findAll();
+  }
+
+  @Version('1')
+  @Patch(':accountId/ban')
+  ban(@Param('accountId') accountId: string) {
+    return this.accountsService.ban(accountId);
   }
 
   @Version('1')
