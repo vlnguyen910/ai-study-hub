@@ -24,6 +24,10 @@ export class ListDocumentsQueryDto {
   subjectId?: string;
 
   @IsOptional()
+  @IsEnum(DocumentStatus)
+  status?: DocumentStatus;
+
+  @IsOptional()
   @IsString()
   include?: string;
 }

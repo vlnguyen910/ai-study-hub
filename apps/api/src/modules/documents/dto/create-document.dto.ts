@@ -31,6 +31,7 @@ export class CreateDocumentDto {
 
   @IsOptional()
   @IsString()
+  @IsNotEmpty()
   subjectId?: string;
 
   @IsNotEmpty()

@@ -4,7 +4,7 @@ import {
   ForbiddenException,
   BadRequestException,
 } from '@nestjs/common';
-import { DocumentStatus, Prisma } from '@prisma/client';
+import { DocumentStatus, Prisma, UserRole } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { validateMongoDbId } from '../../common/utils/mongodb.utils';
 import {
@@ -12,8 +12,8 @@ import {
   UpdateDocumentDto,
   ListDocumentsQueryDto,
 } from './dto';
-import { plainToInstance } from 'class-transformer';
 import { SubjectsService } from '../subjects';
+import type { RequestUser } from '../../common/decorators/user.decorator';
 
 @Injectable()
 export class DocumentsService {
@@ -21,6 +21,68 @@ export class DocumentsService {
     private readonly prismaService: PrismaService,
     private readonly subjectsService: SubjectsService,
   ) {}
+
+  private readonly listDocumentSelect = {
+    id: true,
+    title: true,
+    publicId: true,
+    status: true,
+    isPublic: true,
+    createdAt: true,
+    updatedAt: true,
+    author: {
+      select: {
+        id: true,
+        name: true,
+        avatarUrl: true,
+      },
+    },
+    subject: {
+      select: {
+        id: true,
+        name: true,
+        code: true,
+      },
+    },
+  } satisfies Prisma.documentsSelect;
+
+  private buildVisibleDocumentFilters(user?: RequestUser) {
+    const visibilityFilters: Prisma.documentsWhereInput[] = [
+      {
+        status: DocumentStatus.ACTIVE,
+        isPublic: true,
+      },
+    ];
+
+    if (!user) {
+      return visibilityFilters;
+    }
+
+    visibilityFilters.push(
+      {
+        status: DocumentStatus.ACTIVE,
+        isPublic: false,
+        authorId: user.sub,
+      },
+      {
+        status: DocumentStatus.PENDING,
+        authorId: user.sub,
+      },
+      {
+        status: DocumentStatus.REJECTED,
+        authorId: user.sub,
+      },
+    );
+
+    if (user.role === UserRole.MODERATOR) {
+      visibilityFilters.push(
+        { status: DocumentStatus.PENDING },
+        { status: DocumentStatus.REJECTED },
+      );
+    }
+
+    return visibilityFilters;
+  }
 
   async create(createDocumentDto: CreateDocumentDto, authorId: string) {
     if (createDocumentDto.subjectId) {
@@ -58,13 +120,15 @@ export class DocumentsService {
     };
   }
 
-  async findAllPublic(query: ListDocumentsQueryDto) {
-    const { page = 1, limit = 10, authorId, subjectId } = query;
+  async findAll(query: ListDocumentsQueryDto, user?: RequestUser) {
+    const { page = 1, limit = 10, authorId, subjectId, status } = query;
     const skip = (page - 1) * limit;
 
-    const where: any = {
-      isPublic: true,
-      status: DocumentStatus.ACTIVE,
+    const where: Prisma.documentsWhereInput = {
+      status: {
+        not: DocumentStatus.DELETED,
+      },
+      OR: this.buildVisibleDocumentFilters(user),
     };
 
     if (authorId) {
@@ -75,32 +139,20 @@ export class DocumentsService {
       where.subjectId = subjectId;
     }
 
+    if (status) {
+      where.status = {
+        equals: status,
+        not: DocumentStatus.DELETED,
+      };
+    }
+
     const [documents, total] = await Promise.all([
       this.prismaService.documents.findMany({
         where,
         skip,
         take: limit,
         orderBy: { createdAt: 'desc' },
-        select: {
-          id: true,
-          title: true,
-          publicId: true,
-          author: {
-            select: {
-              id: true,
-              name: true,
-              avatarUrl: true,
-            },
-          },
-          subject: {
-            select: {
-              id: true,
-              name: true,
-              code: true,
-            },
-          },
-          createdAt: true,
-        },
+        select: this.listDocumentSelect,
       }),
       this.prismaService.documents.count({ where }),
     ]);
@@ -119,16 +171,63 @@ export class DocumentsService {
     };
   }
 
-  async findOnePublic(id: string) {
+  async findMine(query: ListDocumentsQueryDto, userId: string) {
+    const { page = 1, limit = 10, subjectId, status } = query;
+    const skip = (page - 1) * limit;
+
+    const where: Prisma.documentsWhereInput = {
+      authorId: userId,
+      status: {
+        not: DocumentStatus.DELETED,
+      },
+    };
+
+    if (subjectId) {
+      where.subjectId = subjectId;
+    }
+
+    if (status) {
+      where.status = {
+        equals: status,
+        not: DocumentStatus.DELETED,
+      };
+    }
+
+    const [documents, total] = await Promise.all([
+      this.prismaService.documents.findMany({
+        where,
+        skip,
+        take: limit,
+        orderBy: { createdAt: 'desc' },
+        select: this.listDocumentSelect,
+      }),
+      this.prismaService.documents.count({ where }),
+    ]);
+
+    return {
+      message: 'Documents fetched successfully',
+      data: {
+        documents,
+        pagination: {
+          page,
+          limit,
+          total,
+          totalPages: Math.ceil(total / limit),
+        },
+      },
+    };
+  }
+
+  async findOne(id: string, user?: RequestUser) {
     validateMongoDbId(id, 'Document ID');
 
-    const document = await this.prismaService.documents.findUnique({
+    const document = await this.prismaService.documents.findFirst({
       where: {
         id,
         status: {
           not: DocumentStatus.DELETED,
         },
-        isPublic: true,
+        OR: this.buildVisibleDocumentFilters(user),
       },
       select: {
         id: true,
@@ -156,6 +255,10 @@ export class DocumentsService {
         },
       },
     });
+
+    if (!document) {
+      throw new NotFoundException(`Document with ID ${id} not found`);
+    }
 
     return {
       message: 'Document fetched successfully',
