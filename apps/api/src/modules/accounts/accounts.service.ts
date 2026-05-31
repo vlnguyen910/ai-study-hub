@@ -1,4 +1,8 @@
-import { Injectable, ConflictException } from '@nestjs/common';
+import {
+  Injectable,
+  ConflictException,
+  NotFoundException,
+} from '@nestjs/common';
 import * as bcrypt from 'bcrypt';
 import { UserRole, UserStatus } from '@prisma/client';
 import { CreateAccountDto } from './dto/create-account.dto';
@@ -46,12 +50,22 @@ export class AccountsService {
 
   findAll() {
     return this.prismaService.accounts.findMany({
+      where: { status: { not: UserStatus.DELETED } },
       select: accountPublicSelect,
     });
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} account`;
+  findOne(id: string) {
+    const account = this.prismaService.accounts.findUnique({
+      where: { id },
+      select: accountPublicSelect,
+    });
+
+    if (!account) {
+      throw new NotFoundException('Account not found');
+    }
+
+    return account;
   }
 
   ban(accountId: string) {
@@ -64,11 +78,44 @@ export class AccountsService {
     });
   }
 
-  update(id: number, updateAccountDto: UpdateAccountDto) {
-    return `This action updates a #${id} account`;
+  async update(id: string, updateAccountDto: UpdateAccountDto) {
+    const account = await this.prismaService.accounts.findUnique({
+      where: { id },
+    });
+
+    if (!account) {
+      throw new NotFoundException('Account not found');
+    }
+
+    const updatedAccount = await this.prismaService.accounts.update({
+      where: { id: account.id },
+      data: {
+        name: updateAccountDto.name,
+        avatarUrl: updateAccountDto.avatarUrl,
+      },
+      select: accountPublicSelect,
+    });
+
+    return updatedAccount;
   }
 
-  remove(id: number) {
-    return `This action removes a #${id} account`;
+  async remove(id: string) {
+    const account = await this.prismaService.accounts.findUnique({
+      where: { id },
+    });
+
+    if (!account) {
+      throw new NotFoundException('Account not found');
+    }
+
+    await this.prismaService.accounts.update({
+      where: { id: account.id },
+      data: {
+        status: UserStatus.DELETED,
+      },
+      select: accountPublicSelect,
+    });
+
+    return { message: `Account deleted successfully` };
   }
 }
