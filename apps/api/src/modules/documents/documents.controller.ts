@@ -21,6 +21,7 @@ import type { RequestUser } from '../../common/decorators/user.decorator';
 import { Public } from '../../common/decorators/public.decorator';
 import { AuthGuard } from '../../common/guards/auth.guard';
 import { OptionalJwtGuard } from '../../common/guards/optional-jwt.guard';
+import { ParseMongoIdPipe } from '../../common/pipes/parse-mongoid.pipe';
 
 @UseGuards(AuthGuard)
 @Controller('documents')
@@ -54,14 +55,17 @@ export class DocumentsController {
   @Public()
   @UseGuards(OptionalJwtGuard)
   @Get(':id')
-  findOne(@Param('id') id: string, @User() user?: RequestUser) {
+  findOne(
+    @Param('id', new ParseMongoIdPipe()) id: string,
+    @User() user?: RequestUser,
+  ) {
     return this.documentsService.findOne(id, user);
   }
 
   @Version('1')
   @Patch(':id')
   update(
-    @Param('id') id: string,
+    @Param('id', new ParseMongoIdPipe()) id: string,
     @Body() updateDocumentDto: UpdateDocumentDto,
     @User() user: RequestUser,
   ) {
@@ -70,7 +74,10 @@ export class DocumentsController {
 
   @Version('1')
   @Delete(':id')
-  remove(@Param('id') id: string, @User() user: RequestUser) {
+  remove(
+    @Param('id', new ParseMongoIdPipe()) id: string,
+    @User() user: RequestUser,
+  ) {
     return this.documentsService.delete(id, user.sub);
   }
 }

@@ -6,7 +6,6 @@ import {
 } from '@nestjs/common';
 import { DocumentStatus, Prisma, UserRole } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
-import { validateMongoDbId } from '../../common/utils/mongodb.utils';
 import {
   CreateDocumentDto,
   UpdateDocumentDto,
@@ -219,8 +218,6 @@ export class DocumentsService {
   }
 
   async findOne(id: string, user?: RequestUser) {
-    validateMongoDbId(id, 'Document ID');
-
     const document = await this.prismaService.documents.findFirst({
       where: {
         id,
@@ -271,8 +268,6 @@ export class DocumentsService {
     updateDocumentDto: UpdateDocumentDto,
     userId: string,
   ) {
-    validateMongoDbId(id, 'Document ID');
-
     if (updateDocumentDto.subjectId) {
       const subject = await this.subjectsService.findOne(
         updateDocumentDto.subjectId,
@@ -331,8 +326,6 @@ export class DocumentsService {
   }
 
   async delete(id: string, userId: string) {
-    validateMongoDbId(id, 'Document ID');
-
     const existingDocument = await this.prismaService.documents.findUnique({
       where: {
         id,
