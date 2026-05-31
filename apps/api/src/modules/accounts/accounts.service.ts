@@ -71,6 +71,21 @@ export class AccountsService {
   }
 
   async ban(accountId: string) {
+    const account = await this.prismaService.accounts.findUnique({
+      where: {
+        id: accountId,
+        status: { not: UserStatus.DELETED },
+      },
+    });
+
+    if (!account) {
+      throw new NotFoundException('Account not found');
+    }
+
+    if (account.status === UserStatus.BANNED) {
+      return { message: 'Account is already banned' };
+    }
+
     await this.prismaService.accounts.update({
       where: { id: accountId },
       data: {
