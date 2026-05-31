@@ -13,6 +13,7 @@ import { Roles } from '../../common/decorators/roles.decorator';
 import { AccountsService } from './accounts.service';
 import { CreateAccountDto } from './dto/create-account.dto';
 import { UpdateAccountDto } from './dto/update-account.dto';
+import { ParseMongoIdPipe } from '../../common/pipes/parse-mongoid.pipe';
 
 @Roles(UserRole.ADMIN)
 @Controller('accounts')
@@ -39,19 +40,22 @@ export class AccountsController {
 
   @Version('1')
   @Get(':id')
-  findOne(@Param('id') id: string) {
+  findOne(@Param('id', new ParseMongoIdPipe()) id: string) {
     return this.accountsService.findOne(id);
   }
 
   @Version('1')
   @Patch(':id')
-  update(@Param('id') id: string, @Body() updateAccountDto: UpdateAccountDto) {
+  update(
+    @Param('id', new ParseMongoIdPipe()) id: string,
+    @Body() updateAccountDto: UpdateAccountDto,
+  ) {
     return this.accountsService.update(id, updateAccountDto);
   }
 
   @Version('1')
   @Delete(':id')
-  remove(@Param('id') id: string) {
+  remove(@Param('id', new ParseMongoIdPipe()) id: string) {
     return this.accountsService.remove(id);
   }
 }

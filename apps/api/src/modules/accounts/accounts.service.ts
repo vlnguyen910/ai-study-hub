@@ -9,18 +9,6 @@ import { CreateAccountDto } from './dto/create-account.dto';
 import { UpdateAccountDto } from './dto/update-account.dto';
 import { PrismaService } from '../../prisma/prisma.service';
 
-const accountPublicSelect = {
-  id: true,
-  email: true,
-  name: true,
-  avatarUrl: true,
-  role: true,
-  status: true,
-  createdAt: true,
-  updatedAt: true,
-  deletedAt: true,
-} as const;
-
 @Injectable()
 export class AccountsService {
   constructor(private readonly prismaService: PrismaService) {}
@@ -36,7 +24,7 @@ export class AccountsService {
 
     const hashedPassword = await bcrypt.hash(createAccountDto.password, 10);
 
-    return this.prismaService.accounts.create({
+    await this.prismaService.accounts.create({
       data: {
         email: createAccountDto.email,
         name: createAccountDto.name,
@@ -44,21 +32,35 @@ export class AccountsService {
         avatarUrl: createAccountDto.avatarUrl ?? '',
         role: createAccountDto.role ?? UserRole.USER,
       },
-      select: accountPublicSelect,
+    });
+
+    return { message: 'Account created successfully' };
+  }
+
+  async findAll() {
+    return await this.prismaService.accounts.findMany({
+      where: {
+        status: { not: UserStatus.DELETED },
+        role: { not: UserRole.ADMIN },
+      },
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        avatarUrl: true,
+        role: true,
+        status: true,
+        createdAt: true,
+      },
     });
   }
 
-  findAll() {
-    return this.prismaService.accounts.findMany({
-      where: { status: { not: UserStatus.DELETED } },
-      select: accountPublicSelect,
-    });
-  }
-
-  findOne(id: string) {
-    const account = this.prismaService.accounts.findUnique({
-      where: { id },
-      select: accountPublicSelect,
+  async findOne(id: string) {
+    const account = await this.prismaService.accounts.findUnique({
+      where: {
+        id,
+        status: { not: UserStatus.DELETED },
+      },
     });
 
     if (!account) {
@@ -68,14 +70,15 @@ export class AccountsService {
     return account;
   }
 
-  ban(accountId: string) {
-    return this.prismaService.accounts.update({
+  async ban(accountId: string) {
+    await this.prismaService.accounts.update({
       where: { id: accountId },
       data: {
         status: UserStatus.BANNED,
       },
-      select: accountPublicSelect,
     });
+
+    return { message: `Account banned successfully` };
   }
 
   async update(id: string, updateAccountDto: UpdateAccountDto) {
@@ -93,7 +96,12 @@ export class AccountsService {
         name: updateAccountDto.name,
         avatarUrl: updateAccountDto.avatarUrl,
       },
-      select: accountPublicSelect,
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        avatarUrl: true,
+      },
     });
 
     return updatedAccount;
@@ -113,7 +121,6 @@ export class AccountsService {
       data: {
         status: UserStatus.DELETED,
       },
-      select: accountPublicSelect,
     });
 
     return { message: `Account deleted successfully` };
