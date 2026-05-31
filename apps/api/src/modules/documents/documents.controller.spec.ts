@@ -67,6 +67,30 @@ describe('DocumentsController', () => {
     expect(documentsServiceMock.findAll).toHaveBeenCalledWith(query, user);
   });
 
+  it('should call findAll service with undefined user for guest requests', async () => {
+    documentsServiceMock.findAll.mockResolvedValue([]);
+    const query = { page: 1, limit: 10 };
+
+    await controller.findAll(query as any, undefined);
+
+    expect(documentsServiceMock.findAll).toHaveBeenCalledWith(query, undefined);
+  });
+
+  it('should return findAll service response unchanged', async () => {
+    const serviceResponse = {
+      message: 'Documents fetched successfully',
+      data: {
+        documents: [{ id: 'doc1' }],
+        pagination: { page: 1, limit: 10, total: 1, totalPages: 1 },
+      },
+    };
+    documentsServiceMock.findAll.mockResolvedValue(serviceResponse);
+
+    const result = await controller.findAll({ page: 1 } as any, undefined);
+
+    expect(result).toEqual(serviceResponse);
+  });
+
   it('should call findMine service with user id', async () => {
     documentsServiceMock.findMine.mockResolvedValue([]);
     const query = { page: 1 };
@@ -87,6 +111,29 @@ describe('DocumentsController', () => {
     await controller.findOne('doc1', user);
 
     expect(documentsServiceMock.findOne).toHaveBeenCalledWith('doc1', user);
+  });
+
+  it('should call findOne service with undefined user for guest requests', async () => {
+    documentsServiceMock.findOne.mockResolvedValue({ id: 'doc1' });
+
+    await controller.findOne('doc1', undefined);
+
+    expect(documentsServiceMock.findOne).toHaveBeenCalledWith(
+      'doc1',
+      undefined,
+    );
+  });
+
+  it('should return findOne service response unchanged', async () => {
+    const serviceResponse = {
+      message: 'Document fetched successfully',
+      data: { id: 'doc1', title: 'Doc' },
+    };
+    documentsServiceMock.findOne.mockResolvedValue(serviceResponse);
+
+    const result = await controller.findOne('doc1', undefined);
+
+    expect(result).toEqual(serviceResponse);
   });
 
   it('should call update service with user id', async () => {

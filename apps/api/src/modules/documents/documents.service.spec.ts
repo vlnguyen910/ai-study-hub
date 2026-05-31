@@ -147,6 +147,63 @@ describe('DocumentsService', () => {
     expect(res.data.pagination.total).toBe(1);
   });
 
+  it('findAll uses default pagination values when page and limit are not provided', async () => {
+    // Purpose: verify guest/default listing falls back to page=1 and limit=10.
+    // Expected: prisma query uses skip=0 and take=10 with createdAt desc ordering.
+    prismaMock.documents.findMany.mockResolvedValue([]);
+    prismaMock.documents.count.mockResolvedValue(0);
+
+    await service.findAll({} as any);
+
+    expect(prismaMock.documents.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        skip: 0,
+        take: 10,
+        orderBy: { createdAt: 'desc' },
+      }),
+    );
+  });
+
+  it('findAll keeps visibility OR constraints when combining authorId subjectId and status filters', async () => {
+    // Purpose: ensure explicit filters (author/subject/status) do not bypass visibility rules.
+    // Expected: where clause still includes OR visibility entries for public and owner-visible docs.
+    prismaMock.documents.findMany.mockResolvedValue([]);
+    prismaMock.documents.count.mockResolvedValue(0);
+
+    await service.findAll(
+      {
+        authorId: 'owner-1',
+        subjectId: '507f1f77bcf86cd799439011',
+        status: DocumentStatus.PENDING,
+      } as any,
+      {
+        sub: 'owner-1',
+        email: 'owner@example.com',
+        role: UserRole.USER,
+      },
+    );
+
+    expect(prismaMock.documents.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          authorId: 'owner-1',
+          subjectId: '507f1f77bcf86cd799439011',
+          status: {
+            equals: DocumentStatus.PENDING,
+            not: DocumentStatus.DELETED,
+          },
+          OR: expect.arrayContaining([
+            { status: DocumentStatus.ACTIVE, isPublic: true },
+            {
+              status: DocumentStatus.PENDING,
+              authorId: 'owner-1',
+            },
+          ]),
+        }),
+      }),
+    );
+  });
+
   it('findAll includes own non-deleted visible documents for logged-in user', async () => {
     prismaMock.documents.findMany.mockResolvedValue([]);
     prismaMock.documents.count.mockResolvedValue(0);
@@ -315,6 +372,8 @@ describe('DocumentsService', () => {
   });
 
   it('findOne returns active public document for guest', async () => {
+    // Purpose: assert document detail payload uses the expected public-detail field projection.
+    // Expected: service returns success response and prisma select includes author/subject detail fields.
     const doc = { id: '507f1f77bcf86cd799439011', title: 'T' };
     prismaMock.documents.findFirst.mockResolvedValue(doc);
 
@@ -338,12 +397,47 @@ describe('DocumentsService', () => {
       message: 'Document fetched successfully',
       data: doc,
     });
+
+    expect(prismaMock.documents.findFirst).toHaveBeenCalledWith(
+      expect.objectContaining({
+        select: expect.objectContaining({
+          id: true,
+          title: true,
+          description: true,
+          fileUrl: true,
+          publicId: true,
+          format: true,
+          sizeInBytes: true,
+          createdAt: true,
+          author: expect.objectContaining({
+            select: expect.objectContaining({
+              id: true,
+              name: true,
+              email: true,
+              avatarUrl: true,
+            }),
+          }),
+          subject: expect.objectContaining({
+            select: expect.objectContaining({
+              id: true,
+              name: true,
+              code: true,
+            }),
+          }),
+        }),
+      }),
+    );
   });
 
   it('findOne hides active private document from guest', async () => {
+    // Purpose: prevent guest users from seeing private document details.
+    // Expected: a NotFound-style response path with the document-not-found message.
     prismaMock.documents.findFirst.mockResolvedValue(null);
 
     await expect(service.findOne('507f1f77bcf86cd799439011')).rejects.toThrow();
+    await expect(service.findOne('507f1f77bcf86cd799439011')).rejects.toThrow(
+      'Document with ID 507f1f77bcf86cd799439011 not found',
+    );
   });
 
   it('findOne allows owner to view active private document', async () => {
