@@ -34,7 +34,7 @@ export class AccountsController {
 
   @Version('1')
   @Patch(':accountId/ban')
-  ban(@Param('accountId') accountId: string) {
+  ban(@Param('accountId', new ParseMongoIdPipe()) accountId: string) {
     return this.accountsService.ban(accountId);
   }
 

@@ -61,6 +61,9 @@ export class AccountsService {
         id,
         status: { not: UserStatus.DELETED },
       },
+      omit: {
+        password: true,
+      },
     });
 
     if (!account) {
@@ -124,7 +127,10 @@ export class AccountsService {
 
   async remove(id: string) {
     const account = await this.prismaService.accounts.findUnique({
-      where: { id },
+      where: {
+        id,
+        status: { not: UserStatus.DELETED },
+      },
     });
 
     if (!account) {
