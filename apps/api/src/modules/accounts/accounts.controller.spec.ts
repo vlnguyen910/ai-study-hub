@@ -10,7 +10,7 @@ describe('AccountsController', () => {
   const accountsServiceMock = {
     create: jest.fn().mockReturnValue('created'),
     findAll: jest.fn().mockResolvedValue([]),
-    ban: jest.fn().mockReturnValue('banned'),
+    ban: jest.fn().mockReturnValue({ message: 'Account banned successfully' }),
     findOne: jest.fn().mockReturnValue('one'),
     update: jest.fn().mockReturnValue('updated'),
     remove: jest.fn().mockReturnValue('removed'),
@@ -49,7 +49,9 @@ describe('AccountsController', () => {
   });
 
   it('should call ban', () => {
-    expect(controller.ban('acc-1')).toBe('banned');
+    expect(controller.ban('acc-1')).toEqual({
+      message: 'Account banned successfully',
+    });
     expect(accountsServiceMock.ban).toHaveBeenCalledWith('acc-1');
   });
 
