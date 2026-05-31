@@ -4,6 +4,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import * as bcrypt from 'bcrypt';
 import { PrismaService } from '../../prisma/prisma.service';
 import { AuthService } from './auth.service';
+import { DeviceInfo } from '@prisma/client';
 
 describe('AuthService', () => {
   let service: AuthService;
@@ -148,6 +149,7 @@ describe('AuthService', () => {
       service.signin({
         email: 'new-user@example.com',
         password: 'WrongPassword!',
+        deviceInfo: DeviceInfo.WEB,
       }),
     ).rejects.toBeInstanceOf(UnauthorizedException);
   });
