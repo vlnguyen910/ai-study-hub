@@ -92,7 +92,7 @@ export class AuthService {
       data: {
         userId: account.id,
         refreshToken: hashedRefreshToken,
-        deviceInfo: signinDto.deviceInfo ?? 'WEB',
+        deviceInfo: signinDto.deviceInfo,
         expiresAt: this.getRefreshExpiresAt(refreshExpiresIn),
       },
     });
