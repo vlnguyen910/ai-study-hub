@@ -10,6 +10,9 @@ export * from "./public/public.routes";
 export * from "./user/user.routes";
 export * from "./user/user.auth.routes";
 
+// Moderator routes
+export * from "./moderator/moderator.routes";
+
 // Library routes
 export * from "./library/library.routes";
 

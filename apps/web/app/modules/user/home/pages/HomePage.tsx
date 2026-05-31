@@ -25,7 +25,7 @@ export default function HomePage(): React.JSX.Element {
   }, []);
 
   return (
-    <div className="min-w-0 bg-gray-50">
+    <div className="min-w-0 bg-background">
       {/* ================= SECTION 1 ================= */}
       <section className="mb-12">
         <div className="mb-6 flex items-center justify-between">
@@ -80,7 +80,7 @@ export default function HomePage(): React.JSX.Element {
                       className="h-32 bg-surface-variant animate-pulse rounded-lg"
                     />
                   ))
-                : MOCK_COMMENTS.map((comment) => (
+                : MOCK_COMMENTS.slice(0, 4).map((comment) => (
                     <CommentCard key={comment.id} data={comment} />
                   ))}
             </div>

@@ -35,4 +35,52 @@ export const MOCK_COMMENTS: Comment[] = [
     replies: 12,
     likes: 102,
   },
+  {
+    id: "3",
+    avatarUrl: "",
+    initials: "AN",
+    username: "Anh Nguyen",
+    title: "Giảng viên",
+    subject: "Kinh tế",
+    content:
+      "Cung và cầu là nền tảng của kinh tế vi mô, ảnh hưởng trực tiếp đến giá cả thị trường.",
+    replies: 12,
+    likes: 102,
+  },
+  {
+    id: "4",
+    avatarUrl: "",
+    initials: "AN",
+    username: "Anh Nguyen",
+    title: "Giảng viên",
+    subject: "Kinh tế",
+    content:
+      "Cung và cầu là nền tảng của kinh tế vi mô, ảnh hưởng trực tiếp đến giá cả thị trường.",
+    replies: 12,
+    likes: 102,
+  },
+  {
+    id: "4",
+    avatarUrl: "",
+    initials: "AN",
+    username: "Anh Nguyen",
+    title: "Giảng viên",
+    subject: "Kinh tế",
+    content:
+      "Cung và cầu là nền tảng của kinh tế vi mô, ảnh hưởng trực tiếp đến giá cả thị trường.",
+    replies: 12,
+    likes: 102,
+  },
+  {
+    id: "6",
+    avatarUrl: "",
+    initials: "AN",
+    username: "Anh Nguyen",
+    title: "Giảng viên",
+    subject: "Kinh tế",
+    content:
+      "Cung và cầu là nền tảng của kinh tế vi mô, ảnh hưởng trực tiếp đến giá cả thị trường.",
+    replies: 12,
+    likes: 102,
+  },
 ];

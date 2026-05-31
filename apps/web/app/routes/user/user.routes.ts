@@ -14,9 +14,21 @@ export const USER_PROTECTED_ROUTES = [
 ];
 
 export const userRouterConfig = {
+  HOME: {
+    path: ROUTE_PATHS.PROTECTED_ROUTES.HOME,
+    title: "Trang chủ",
+    public: false,
+    requiresAuth: true,
+  },
   PROFILE: {
     path: ROUTE_PATHS.PROTECTED_ROUTES.PROFILE,
     title: "Hồ sơ cá nhân",
+    public: false,
+    requiresAuth: true,
+  },
+  UPLOADS: {
+    path: ROUTE_PATHS.PROTECTED_ROUTES.UPLOADS,
+    title: "Đóng góp",
     public: false,
     requiresAuth: true,
   },

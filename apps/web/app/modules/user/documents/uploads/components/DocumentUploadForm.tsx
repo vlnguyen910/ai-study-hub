@@ -22,8 +22,7 @@ export function DocumentUploadForm(): React.JSX.Element {
         w-full
         max-w-4xl
         space-y-6
-        rounded-3xl
-        bg-surface
+
       "
     >
       {/* Row 1 */}
