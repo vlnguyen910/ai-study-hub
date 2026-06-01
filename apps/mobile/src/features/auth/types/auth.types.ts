@@ -1,18 +1,25 @@
-export interface TemplateFeatureItem {
-  id: string;
-  title: string;
-  description: string;
-  updatedAt: string;
+export interface SignInPayload {
+  email: string;
+  password: string;
+  deviceInfo: "WEB" | "MOBILE";
 }
 
-export interface TemplateFeatureResponse {
-  items: TemplateFeatureItem[];
+export interface SignUpPayload {
+  name: string;
+  email: string;
+  password: string;
+  deviceInfo?: "WEB" | "MOBILE";
+  avatarUrl?: string;
 }
 
-export interface TemplateFeatureState {
-  items: TemplateFeatureItem[];
-  isLoading: boolean;
-  errorMessage: string | null;
+export interface AuthResponseData {
+  accessToken: string;
+  refreshToken: string;
 }
 
-export type FetchTemplateFeatureItems = () => Promise<TemplateFeatureItem[]>;
+export interface AuthResponse {
+  success: boolean;
+  status_code: number;
+  message: string;
+  data: AuthResponseData | null;
+}

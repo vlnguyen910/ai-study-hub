@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link } from "expo-router";
 import { ScrollView, Text, View } from "react-native";
 import { Button, Card, PageShell, SearchBar } from "@/components";
+import { removeTokens } from "@/utils/storage";
 
 type RouteLink = {
   label: string;
