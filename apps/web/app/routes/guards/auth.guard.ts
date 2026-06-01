@@ -68,6 +68,17 @@ export const getAuthRedirect = (
  */
 export const getAuthToken = (): string | null => {
   if (typeof window === "undefined") return null;
+  try {
+    const raw = localStorage.getItem("auth-storage");
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (parsed?.state?.accessToken) {
+        return parsed.state.accessToken;
+      }
+    }
+  } catch (e) {
+    // Suppress parse error
+  }
   return localStorage.getItem("auth_token");
 };
 
@@ -76,6 +87,18 @@ export const getAuthToken = (): string | null => {
  */
 export const getAuthUser = () => {
   if (typeof window === "undefined") return null;
+  try {
+    const raw = localStorage.getItem("auth-storage");
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (parsed?.state?.user) {
+        return parsed.state.user;
+      }
+    }
+  } catch (e) {
+    // Suppress parse error
+  }
+
   const user = localStorage.getItem("user_info");
   if (!user) return null;
 

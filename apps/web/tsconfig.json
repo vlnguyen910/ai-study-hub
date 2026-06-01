@@ -9,6 +9,7 @@
     "paths": {
       "@repo/tokens": ["../../packages/tokens/src/index.ts"],
       "@repo/tokens/web": ["../../packages/tokens/src/web.ts"],
+      "@/*": ["./app/*"],
       "@/types": ["./app/types/index.ts"],
       "@/consts": ["./app/consts/index.ts"],
       "@/config/*": ["./app/config/*"],
