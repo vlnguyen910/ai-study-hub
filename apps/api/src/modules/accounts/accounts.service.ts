@@ -3,8 +3,7 @@ import {
   ConflictException,
   NotFoundException,
 } from '@nestjs/common';
-import * as bcrypt from 'bcrypt';
-import { UserRole, UserStatus } from '@prisma/client';
+import { accounts, UserRole, UserStatus } from '@prisma/client';
 import { CreateAccountDto } from './dto/create-account.dto';
 import { UpdateAccountDto } from './dto/update-account.dto';
 import { PrismaService } from '../../prisma/prisma.service';
@@ -22,13 +21,11 @@ export class AccountsService {
       throw new ConflictException('Email already exists');
     }
 
-    const hashedPassword = await bcrypt.hash(createAccountDto.password, 10);
-
     await this.prismaService.accounts.create({
       data: {
         email: createAccountDto.email,
         name: createAccountDto.name,
-        password: hashedPassword,
+        password: createAccountDto.hashedPassword,
         avatarUrl: createAccountDto.avatarUrl ?? '',
         role: createAccountDto.role ?? UserRole.USER,
       },
@@ -71,6 +68,15 @@ export class AccountsService {
     }
 
     return account;
+  }
+
+  async findAccountByEmail(email: string): Promise<accounts | null> {
+    return await this.prismaService.accounts.findUnique({
+      where: {
+        email,
+        status: { not: UserStatus.DELETED },
+      },
+    });
   }
 
   async ban(accountId: string) {

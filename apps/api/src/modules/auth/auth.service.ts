@@ -1,53 +1,49 @@
 import {
   ConflictException,
+  Inject,
   Injectable,
   UnauthorizedException,
 } from '@nestjs/common';
-import { JwtService } from '@nestjs/jwt';
-import * as bcrypt from 'bcrypt';
+import { JwtService, JwtSignOptions } from '@nestjs/jwt';
 import { PrismaService } from '../../prisma/prisma.service';
 import { SigninDto } from './dto/signin.dto';
 import { SignupDto } from './dto/signup.dto';
-
-type AuthTokens = {
-  accessToken: string;
-  refreshToken: string;
-};
-
-type AuthTokenPayload = {
-  sub: string;
-  email: string;
-  role: string;
-};
+import { jwtConfiguration } from '../../config';
+import type { ConfigType } from '@nestjs/config';
+import { TokenPayload } from '../../common/interfaces/auth.interface';
+import { JwtTokenType } from '../../common/enums/jwt.enum';
+import { accounts, UserRole } from '@prisma/client';
+import { v4 as uuidv4 } from 'uuid';
+import argon2 from 'argon2';
+import { AccountsService } from '../accounts/accounts.service';
 
 @Injectable()
 export class AuthService {
   constructor(
-    private readonly prismaService: PrismaService,
-    private readonly jwtService: JwtService,
+    private jwtService: JwtService,
+    @Inject(jwtConfiguration.KEY)
+    private readonly jwtConfig: ConfigType<typeof jwtConfiguration>,
+    private accountService: AccountsService,
+    private prismaService: PrismaService,
   ) {}
 
   async signup(signupDto: SignupDto) {
-    const existingAccount = await this.prismaService.accounts.findUnique({
-      where: {
-        email: signupDto.email,
-      },
-    });
+    const existingAccount = await this.accountService.findAccountByEmail(
+      signupDto.email,
+    );
 
     if (existingAccount) {
       throw new ConflictException('Email already exists');
     }
 
-    const hashedPassword = await bcrypt.hash(signupDto.password, 10);
+    const hashedPassword = await argon2.hash(signupDto.password);
 
-    const account = await this.prismaService.accounts.create({
-      data: {
-        email: signupDto.email,
-        name: signupDto.name,
-        password: hashedPassword,
-        avatarUrl: signupDto.avatarUrl ?? '',
-        role: 'USER',
-      },
+    await this.accountService.create({
+      email: signupDto.email,
+      name: signupDto.name,
+      hashedPassword: hashedPassword,
+      avatarUrl: signupDto.avatarUrl,
+      role: UserRole.USER,
     });
 
     return {
@@ -57,51 +53,38 @@ export class AuthService {
   }
 
   async signin(signinDto: SigninDto) {
-    const account = await this.prismaService.accounts.findUnique({
-      where: {
-        email: signinDto.email,
-      },
-    });
+    const account = await this.accountService.findAccountByEmail(
+      signinDto.email,
+    );
 
     if (!account) {
       throw new UnauthorizedException('Invalid credentials');
     }
 
-    const isPasswordMatched = await bcrypt.compare(
-      signinDto.password,
+    const isMatchPassword = await argon2.verify(
       account.password,
+      signinDto.password,
     );
 
-    if (!isPasswordMatched) {
+    if (!isMatchPassword) {
       throw new UnauthorizedException('Invalid credentials');
     }
 
-    const refreshExpiresIn = this.parseExpiresIn(
-      process.env.JWT_REFRESH_EXPIRES_IN,
-      30 * 24 * 60 * 60,
-    );
-    const tokens = await this.generateTokens(
-      account.id,
-      account.email,
-      account.role,
-      refreshExpiresIn,
-    );
-    const hashedRefreshToken = await this.hashRefreshToken(tokens.refreshToken);
+    const data = await this.manageUserToken(account);
 
+    const hashedRefreshToken = await argon2.hash(data.refreshToken);
     await this.prismaService.sessions.create({
       data: {
         userId: account.id,
         refreshToken: hashedRefreshToken,
         deviceInfo: signinDto.deviceInfo,
-        expiresAt: this.getRefreshExpiresAt(refreshExpiresIn),
+        expiresAt: this.getExpiryDate(this.jwtConfig.refreshTokenExpiresIn),
       },
     });
 
     return {
       message: 'Signin successful',
-      data: {
-        ...tokens,
-      },
+      data: data,
     };
   }
 
@@ -112,80 +95,67 @@ export class AuthService {
     };
   }
 
-  private async generateTokens(
-    userId: string,
-    email: string,
-    role: string,
-    refreshExpiresIn: number,
-  ): Promise<AuthTokens> {
-    const payload: AuthTokenPayload = {
-      sub: userId,
-      email,
-      role,
+  private async manageUserToken(account: accounts) {
+    const jti = uuidv4();
+    const tokenPayload: TokenPayload = {
+      sub: account.id,
+      jti,
+      name: account.name,
+      email: account.email,
+      role: account.role,
+      status: account.status,
+      type: JwtTokenType.AccessToken, // Placeholder, type is overwritten by generateToken
     };
 
-    const accessToken = await this.jwtService.signAsync(payload, {
-      secret: process.env.JWT_ACCESS_SECRET,
-      expiresIn: this.parseExpiresIn(
-        process.env.JWT_ACCESS_EXPIRES_IN,
-        15 * 60,
+    const [accessToken, refreshToken] = await Promise.all([
+      this.generateToken(
+        tokenPayload,
+        JwtTokenType.AccessToken,
+        this.jwtConfig.accessTokenExpiresIn,
       ),
-    });
+      this.generateToken(
+        tokenPayload,
+        JwtTokenType.RefreshToken,
+        this.jwtConfig.refreshTokenExpiresIn,
+      ),
+    ]);
 
-    const refreshToken = await this.jwtService.signAsync(payload, {
-      secret: process.env.JWT_REFRESH_SECRET,
-      expiresIn: refreshExpiresIn,
-    });
+    return { accessToken, refreshToken };
+  }
 
-    return {
-      accessToken,
-      refreshToken,
+  private async generateToken(
+    payload: TokenPayload,
+    type: JwtTokenType,
+    expiresIn: number | string,
+  ) {
+    const tokenPayload: TokenPayload = {
+      ...payload,
+      type,
     };
+
+    const options: Partial<JwtSignOptions> = {
+      expiresIn: expiresIn,
+    } as unknown as JwtSignOptions;
+
+    return this.jwtService.signAsync(tokenPayload, options);
   }
 
-  private getRefreshExpiresAt(refreshExpiresIn: number) {
-    return new Date(Date.now() + refreshExpiresIn * 1000);
-  }
+  private getExpiryDate(expiresIn: string) {
+    const match = expiresIn.trim().match(/^(\d+)([smhd])$/i);
 
-  private async hashRefreshToken(refreshToken: string): Promise<string> {
-    return bcrypt.hash(refreshToken, 10);
-  }
-
-  private parseExpiresIn(
-    rawValue: string | undefined,
-    fallback: number,
-  ): number {
-    if (!rawValue) {
-      return fallback;
+    if (!match) {
+      throw new Error(`Unsupported token expiry format: ${expiresIn}`);
     }
 
-    const normalized = rawValue.trim().toLowerCase();
+    const amount = Number(match[1]);
+    const unit = match[2].toLowerCase();
+    const multipliers: Record<string, number> = {
+      s: 1000,
+      m: 60 * 1000,
+      h: 60 * 60 * 1000,
+      d: 24 * 60 * 60 * 1000,
+    };
 
-    if (/^\d+$/.test(normalized)) {
-      return Number.parseInt(normalized, 10);
-    }
-
-    const matched = normalized.match(/^(\d+)(s|m|h|d)$/);
-
-    if (!matched) {
-      return fallback;
-    }
-
-    const value = Number.parseInt(matched[1], 10);
-    const unit = matched[2];
-
-    if (unit === 's') {
-      return value;
-    }
-
-    if (unit === 'm') {
-      return value * 60;
-    }
-
-    if (unit === 'h') {
-      return value * 60 * 60;
-    }
-
-    return value * 24 * 60 * 60;
+    return new Date(Date.now() + amount * multipliers[unit]);
   }
 }

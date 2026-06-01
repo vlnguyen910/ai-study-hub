@@ -6,7 +6,7 @@ import { AuthModule } from './modules/auth/auth.module';
 import { DocumentsModule } from './modules/documents/documents.module';
 import { SubjectsModule } from './modules/subjects/subjects.module';
 import { jwtConfiguration } from './config/jwt.config';
-import { PrismaService } from './prisma/prisma.service';
+import { PrismaModule } from './prisma/prisma.module';
 
 @Module({
   imports: [
@@ -15,12 +15,12 @@ import { PrismaService } from './prisma/prisma.service';
       cache: true,
       load: [jwtConfiguration],
     }),
+    PrismaModule,
     AccountsModule,
     AuthModule,
     DocumentsModule,
     SubjectsModule,
   ],
   controllers: [AppController],
-  providers: [PrismaService],
 })
 export class AppModule {}
