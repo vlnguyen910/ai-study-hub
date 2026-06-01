@@ -8,8 +8,8 @@ export default function UserLayout({
 }): React.JSX.Element {
   return (
     <UserShell
-      title="User Dashboard"
-      subtitle="Manage your documents and settings"
+      title="Không gian học tập"
+      subtitle="Quản lý tài liệu và đóng góp của bạn"
     >
       {children}
     </UserShell>

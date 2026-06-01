@@ -4,4 +4,6 @@ export interface SideNavItem {
   readonly href: string;
   readonly section: "main" | "secondary";
   readonly active?: boolean;
+  readonly exact?: boolean;
+  readonly action?: () => void;
 }

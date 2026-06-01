@@ -1,10 +1,13 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import type { FC, ReactNode } from "react";
 
 import { SideNav } from "@/components/layout/SideNav";
-import type { SideNavItem } from "../../../types/sideNav";
-import { userRouterConfig } from "../../../routes/user/user.routes";
+import { InfoSection } from "@/components/ui/InfoSection";
+import { USER_NAV_ITEMS } from "../../../constants/nav.constants";
+import { ROUTE_PATHS } from "../../../routes/router.const";
+import { useAuthStore } from "../../../stores/auth/store";
 
 export interface UserShellProps {
   readonly children: ReactNode;
@@ -17,48 +20,30 @@ export const UserShell: FC<UserShellProps> = ({
   title,
   subtitle,
 }) => {
-  const navItems: SideNavItem[] = [
-    {
-      label: userRouterConfig.HOME.title,
-      icon: "home",
-      href: userRouterConfig.HOME.path,
-      section: "main",
-    },
-    {
-      label: userRouterConfig.MY_DOCUMENTS.title,
-      icon: "description",
-      href: userRouterConfig.MY_DOCUMENTS.path,
-      section: "main",
-    },
-    {
-      label: userRouterConfig.UPLOADS.title,
-      icon: "cloud_upload",
-      href: userRouterConfig.UPLOADS.path,
-      section: "main",
-    },
-    {
-      label: userRouterConfig.FAVORITES.title,
-      icon: "favorite",
-      href: userRouterConfig.FAVORITES.path,
-      section: "main",
-    },
-    {
-      label: userRouterConfig.SETTINGS.title,
-      icon: "settings",
-      href: userRouterConfig.SETTINGS.path,
-      section: "secondary",
-    },
-  ];
+  const router = useRouter();
+  const { logout } = useAuthStore();
+
+  const handleLogout = () => {
+    logout();
+    router.push(ROUTE_PATHS.AUTH_ROUTES.LOGIN);
+  };
+
+  const navItems = USER_NAV_ITEMS.map((item) =>
+    item.href === "#" ? { ...item, action: handleLogout } : item,
+  );
 
   return (
     <div className="min-h-screen bg-background text-on-surface">
-      <div className="flex">
-        <SideNav title={title} subtitle={subtitle} items={navItems} />
+      <SideNav
+        title={title}
+        subtitle={subtitle}
+        items={navItems}
+        footerContent={<InfoSection />}
+      />
 
-        <main className="min-w-0 flex-1">
-          <div className="min-w-0 px-4 py-6 sm:px-6 lg:px-8">{children}</div>
-        </main>
-      </div>
+      <main className="min-h-screen overflow-x-hidden px-4 py-6 sm:px-6 lg:ml-72 lg:px-8">
+        <div className="min-w-0">{children}</div>
+      </main>
     </div>
   );
 };
