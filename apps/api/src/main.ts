@@ -33,7 +33,10 @@ async function bootstrap() {
     }),
   );
 
-  //Cors enables
+  // CORS enables
+  // corsOrigins is either:
+  // - true (development: allow all origins)
+  // - string[] (production: specific allowed origins)
   app.enableCors({
     origin: corsOrigins,
     credentials: true,
