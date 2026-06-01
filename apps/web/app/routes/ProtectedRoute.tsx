@@ -32,21 +32,21 @@ export const ProtectedRoute: FC<ProtectedRouteProps> = ({
 }) => {
   const router = useRouter();
   const [mounted, setMounted] = useState(false);
-
-  const token = getAuthToken();
-  const user = getAuthUser();
-  const isAuthenticated = !!token && !!user;
-  const userRole = (user?.role || "guest") as UserRole;
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [userRole, setUserRole] = useState<UserRole>("guest");
 
   useEffect(() => {
     setMounted(true);
-  }, []);
+    const token = getAuthToken();
+    const user = getAuthUser();
+    const isAuth = !!token && !!user;
+    const role = (user?.role || "guest") as UserRole;
 
-  useEffect(() => {
-    if (!mounted) return;
+    setIsAuthenticated(isAuth);
+    setUserRole(role);
 
     // Check authentication
-    if (!isAuthenticated) {
+    if (!isAuth) {
       router.push(
         `/login?redirect=${encodeURIComponent(window.location.pathname)}`,
       );
@@ -58,14 +58,14 @@ export const ProtectedRoute: FC<ProtectedRouteProps> = ({
       requiredRole &&
       !hasRoleAccess({
         pathname: window.location.pathname,
-        userRole,
+        userRole: role,
         requiredRoles: [requiredRole],
       })
     ) {
-      router.push(getRoleRedirect(userRole));
+      router.push(getRoleRedirect(role));
       return;
     }
-  }, [mounted, isAuthenticated, userRole, requiredRole, router]);
+  }, [requiredRole, router]);
 
   if (!mounted) {
     return null;
