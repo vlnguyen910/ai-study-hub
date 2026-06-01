@@ -1,8 +1,9 @@
+import { DeviceInfo } from '@prisma/client';
 import type { AuthDeviceInfo } from './signup.dto';
 import {
   IsEmail,
-  IsIn,
-  IsOptional,
+  IsEnum,
+  IsNotEmpty,
   IsString,
   MinLength,
 } from 'class-validator';
@@ -15,7 +16,7 @@ export class SigninDto {
   @MinLength(8)
   password!: string;
 
-  @IsOptional()
-  @IsIn(['WEB', 'MOBILE'])
-  deviceInfo?: AuthDeviceInfo;
+  @IsNotEmpty()
+  @IsEnum(DeviceInfo)
+  deviceInfo!: AuthDeviceInfo;
 }

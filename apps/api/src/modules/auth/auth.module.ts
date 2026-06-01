@@ -33,6 +33,6 @@ import { AuthService } from './auth.service';
       useClass: RolesGuard,
     },
   ],
-  exports: [AuthService],
+  exports: [AuthService, JwtModule, Reflector],
 })
 export class AuthModule {}

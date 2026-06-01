@@ -106,7 +106,59 @@ async function main() {
     data: hashedAccounts,
   });
 
+  const subjectsList = [
+    { name: 'Mathematics', code: 'MATH' },
+    { name: 'Physics', code: 'PHYS' },
+    { name: 'Chemistry', code: 'CHEM' },
+    { name: 'Computer Science', code: 'CS' },
+    { name: 'Programming', code: 'PROG' },
+    { name: 'English', code: 'ENG' },
+    { name: 'Database', code: 'DB' },
+    { name: 'Web Development', code: 'WEB' },
+    { name: 'Mobile Development', code: 'MOBILE' },
+    { name: 'Data Science', code: 'DS' },
+  ];
+
+  const { school, subjects } = await prisma.$transaction(async (tx) => {
+    const school = await tx.schools.upsert({
+      where: {
+        code: 'FPTU',
+      },
+      update: {
+        name: 'FPT University',
+      },
+      create: {
+        name: 'FPT University',
+        code: 'FPTU',
+      },
+    });
+
+    const subjects: Array<Awaited<ReturnType<typeof tx.subjects.upsert>>> = [];
+
+    for (const subject of subjectsList) {
+      subjects.push(
+        await tx.subjects.upsert({
+          where: {
+            code: subject.code,
+          },
+          update: {
+            name: subject.name,
+            schoolId: school.id,
+          },
+          create: {
+            ...subject,
+            schoolId: school.id,
+          },
+        }),
+      );
+    }
+
+    return { school, subjects };
+  });
+
   console.log(`Seeded ${accounts.length} accounts.`);
+  console.log(`Ensured school: ${school.name} (${school.code})`);
+  console.log(`Ensured ${subjects.length} subjects for ${school.name}`);
   console.log(`Admin account: admin@${SEED_EMAIL_DOMAIN}`);
   console.log(`Seed password: ${SEED_PASSWORD}`);
 }

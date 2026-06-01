@@ -4,6 +4,8 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { AccountsModule } from './modules/accounts/accounts.module';
 import { AuthModule } from './modules/auth/auth.module';
+import { DocumentsModule } from './modules/documents/documents.module';
+import { SubjectsModule } from './modules/subjects/subjects.module';
 
 @Module({
   imports: [
@@ -12,6 +14,7 @@ import { AuthModule } from './modules/auth/auth.module';
       cache: true,
       validate: (config) => {
         const requiredKeys = [
+          'DATABASE_URL',
           'JWT_ACCESS_SECRET',
           'JWT_REFRESH_SECRET',
           'JWT_ACCESS_EXPIRES_IN',
@@ -29,6 +32,8 @@ import { AuthModule } from './modules/auth/auth.module';
     }),
     AccountsModule,
     AuthModule,
+    DocumentsModule,
+    SubjectsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

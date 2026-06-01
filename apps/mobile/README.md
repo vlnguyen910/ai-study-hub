@@ -26,13 +26,29 @@ cp .env.example .env
 Set the API base URL for the mobile app:
 
 ```
-EXPO_PUBLIC_API_URL=http://localhost:8080 # local development
+# Android emulator on Genymotion:
+EXPO_PUBLIC_API_URL=http://10.0.3.2:8080
+
+# iOS simulator / desktop browser / real device on the same LAN:
+# EXPO_PUBLIC_API_URL=http://<your-host-ip>:8080
 ```
 
 ## Run (local)
 
 ```bash
 pnpm -F mobile dev
+```
+
+To launch directly in an Android emulator from Expo:
+
+```bash
+pnpm -F mobile android
+```
+
+If Expo cannot reach the device over LAN, start it with a tunnel:
+
+```bash
+pnpm -F mobile start -- --tunnel
 ```
 
 Other run options:

@@ -1,0 +1,466 @@
+{
+  "info": {
+    "_postman_id": "ai-study-hub-api",
+    "name": "AI Study Hub API",
+    "description": "Complete API testing collection for AI Study Hub with all endpoints, request bodies, and authentication",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "123456"
+  },
+  "item": [
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Signup",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"user@example.com\",\n  \"name\": \"John Doe\",\n  \"password\": \"securepassword123\",\n  \"avatarUrl\": \"https://example.com/avatar.jpg\",\n  \"deviceInfo\": \"WEB\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/auth/signup",
+              "protocol": "http",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "auth", "signup"]
+            },
+            "description": "Register a new user account"
+          },
+          "response": []
+        },
+        {
+          "name": "Signin",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"user@example.com\",\n  \"password\": \"securepassword123\",\n  \"deviceInfo\": \"WEB\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/auth/signin",
+              "protocol": "http",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "auth", "signin"]
+            },
+            "description": "Login with email and password"
+          },
+          "response": []
+        },
+        {
+          "name": "Logout",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/auth/logout",
+              "protocol": "http",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "auth", "logout"]
+            },
+            "description": "Logout current user (requires authentication)"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Accounts",
+      "item": [
+        {
+          "name": "Create Account",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/accounts",
+              "protocol": "http",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "accounts"]
+            },
+            "description": "Create a new account (Admin only)"
+          },
+          "response": []
+        },
+        {
+          "name": "Get All Accounts",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/accounts",
+              "protocol": "http",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "accounts"]
+            },
+            "description": "Retrieve all accounts (Admin only)"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Account by ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/accounts/1",
+              "protocol": "http",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "accounts", "1"]
+            },
+            "description": "Get specific account by ID (Admin only)"
+          },
+          "response": []
+        },
+        {
+          "name": "Update Account",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/accounts/1",
+              "protocol": "http",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "accounts", "1"]
+            },
+            "description": "Update account details (Admin only)"
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Account",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/accounts/1",
+              "protocol": "http",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "accounts", "1"]
+            },
+            "description": "Delete an account (Admin only)"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Documents",
+      "item": [
+        {
+          "name": "Create Document",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Physics Chapter 1\",\n  \"description\": \"Introduction to mechanics\",\n  \"fileUrl\": \"https://example.com/docs/physics-ch1.pdf\",\n  \"publicId\": \"abc123def456\",\n  \"sizeInBytes\": 2048576,\n  \"format\": \"pdf\",\n  \"resourceType\": \"document\",\n  \"subjectId\": \"subject-001\",\n  \"isPublic\": true\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/documents",
+              "protocol": "http",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "documents"]
+            },
+            "description": "Create a new document (requires authentication)"
+          },
+          "response": []
+        },
+        {
+          "name": "Get All Documents",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/documents?page=1&limit=10&subjectId=subject-001&status=ACTIVE",
+              "protocol": "http",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "documents"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "10"
+                },
+                {
+                  "key": "subjectId",
+                  "value": "subject-001",
+                  "disabled": true
+                },
+                {
+                  "key": "status",
+                  "value": "ACTIVE",
+                  "disabled": true
+                },
+                {
+                  "key": "authorId",
+                  "value": "user-123",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "Get all documents with optional pagination and filters (public access)"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Document by ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/documents/doc-001",
+              "protocol": "http",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "documents", "doc-001"]
+            },
+            "description": "Get a specific document by ID (public access)"
+          },
+          "response": []
+        },
+        {
+          "name": "Update Document",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Physics Chapter 1 - Updated\",\n  \"description\": \"Introduction to mechanics and motion\",\n  \"isPublic\": false,\n  \"subjectId\": \"subject-002\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/documents/doc-001",
+              "protocol": "http",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "documents", "doc-001"]
+            },
+            "description": "Update document details (requires authentication)"
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Document",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/documents/doc-001",
+              "protocol": "http",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "documents", "doc-001"]
+            },
+            "description": "Delete a document (requires authentication)"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Subjects",
+      "item": [
+        {
+          "name": "Create Subject",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Physics\",\n  \"code\": \"PHY101\",\n  \"schoolId\": \"school-001\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/subjects",
+              "protocol": "http",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "subjects"]
+            },
+            "description": "Create a new subject"
+          },
+          "response": []
+        },
+        {
+          "name": "Get All Subjects",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/subjects?page=1&limit=20&schoolId=school-001",
+              "protocol": "http",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "subjects"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "20"
+                },
+                {
+                  "key": "schoolId",
+                  "value": "school-001",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "Get all subjects with optional pagination and filters"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Subject by ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/subjects/subject-001",
+              "protocol": "http",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "subjects", "subject-001"]
+            },
+            "description": "Get a specific subject by ID"
+          },
+          "response": []
+        },
+        {
+          "name": "Update Subject",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Physics Advanced\",\n  \"code\": \"PHY201\",\n  \"schoolId\": \"school-002\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/subjects/subject-001",
+              "protocol": "http",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "subjects", "subject-001"]
+            },
+            "description": "Update subject details"
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Subject",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/subjects/subject-001",
+              "protocol": "http",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "subjects", "subject-001"]
+            },
+            "description": "Delete a subject"
+          },
+          "response": []
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "localhost:8080",
+      "type": "string"
+    },
+    {
+      "key": "access_token",
+      "value": "",
+      "type": "string"
+    }
+  ]
+}

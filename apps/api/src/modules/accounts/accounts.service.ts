@@ -1,4 +1,10 @@
-import { Injectable } from '@nestjs/common';
+import {
+  Injectable,
+  ConflictException,
+  NotFoundException,
+} from '@nestjs/common';
+import * as bcrypt from 'bcrypt';
+import { UserRole, UserStatus } from '@prisma/client';
 import { CreateAccountDto } from './dto/create-account.dto';
 import { UpdateAccountDto } from './dto/update-account.dto';
 import { PrismaService } from '../../prisma/prisma.service';
@@ -7,23 +13,137 @@ import { PrismaService } from '../../prisma/prisma.service';
 export class AccountsService {
   constructor(private readonly prismaService: PrismaService) {}
 
-  create(createAccountDto: CreateAccountDto) {
-    return 'This action adds a new account';
+  async create(createAccountDto: CreateAccountDto) {
+    const existing = await this.prismaService.accounts.findUnique({
+      where: { email: createAccountDto.email },
+    });
+
+    if (existing) {
+      throw new ConflictException('Email already exists');
+    }
+
+    const hashedPassword = await bcrypt.hash(createAccountDto.password, 10);
+
+    await this.prismaService.accounts.create({
+      data: {
+        email: createAccountDto.email,
+        name: createAccountDto.name,
+        password: hashedPassword,
+        avatarUrl: createAccountDto.avatarUrl ?? '',
+        role: createAccountDto.role ?? UserRole.USER,
+      },
+    });
+
+    return { message: 'Account created successfully' };
   }
 
-  findAll() {
-    return this.prismaService.accounts.findMany();
+  async findAll() {
+    return await this.prismaService.accounts.findMany({
+      where: {
+        status: { not: UserStatus.DELETED },
+        role: { not: UserRole.ADMIN },
+      },
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        avatarUrl: true,
+        role: true,
+        status: true,
+        createdAt: true,
+      },
+    });
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} account`;
+  async findOne(id: string) {
+    const account = await this.prismaService.accounts.findUnique({
+      where: {
+        id,
+        status: { not: UserStatus.DELETED },
+      },
+      omit: {
+        password: true,
+      },
+    });
+
+    if (!account) {
+      throw new NotFoundException('Account not found');
+    }
+
+    return account;
   }
 
-  update(id: number, updateAccountDto: UpdateAccountDto) {
-    return `This action updates a #${id} account`;
+  async ban(accountId: string) {
+    const account = await this.prismaService.accounts.findUnique({
+      where: {
+        id: accountId,
+        status: { not: UserStatus.DELETED },
+      },
+    });
+
+    if (!account) {
+      throw new NotFoundException('Account not found');
+    }
+
+    if (account.status === UserStatus.BANNED) {
+      return { message: 'Account is already banned' };
+    }
+
+    await this.prismaService.accounts.update({
+      where: { id: accountId },
+      data: {
+        status: UserStatus.BANNED,
+      },
+    });
+
+    return { message: `Account banned successfully` };
   }
 
-  remove(id: number) {
-    return `This action removes a #${id} account`;
+  async update(id: string, updateAccountDto: UpdateAccountDto) {
+    const account = await this.prismaService.accounts.findUnique({
+      where: { id },
+    });
+
+    if (!account) {
+      throw new NotFoundException('Account not found');
+    }
+
+    const updatedAccount = await this.prismaService.accounts.update({
+      where: { id: account.id },
+      data: {
+        name: updateAccountDto.name,
+        avatarUrl: updateAccountDto.avatarUrl,
+      },
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        avatarUrl: true,
+      },
+    });
+
+    return updatedAccount;
+  }
+
+  async remove(id: string) {
+    const account = await this.prismaService.accounts.findUnique({
+      where: {
+        id,
+        status: { not: UserStatus.DELETED },
+      },
+    });
+
+    if (!account) {
+      throw new NotFoundException('Account not found');
+    }
+
+    await this.prismaService.accounts.update({
+      where: { id: account.id },
+      data: {
+        status: UserStatus.DELETED,
+      },
+    });
+
+    return { message: `Account deleted successfully` };
   }
 }
