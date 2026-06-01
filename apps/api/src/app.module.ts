@@ -7,13 +7,14 @@ import { DocumentsModule } from './modules/documents/documents.module';
 import { SubjectsModule } from './modules/subjects/subjects.module';
 import { jwtConfiguration } from './config/jwt.config';
 import { PrismaModule } from './prisma/prisma.module';
+import { cookieConfiguration } from './config/cookies.config';
 
 @Module({
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
       cache: true,
-      load: [jwtConfiguration],
+      load: [jwtConfiguration, cookieConfiguration],
     }),
     PrismaModule,
     AccountsModule,
