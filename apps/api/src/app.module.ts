@@ -1,34 +1,19 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { AppController } from './app.controller';
-import { AppService } from './app.service';
 import { AccountsModule } from './modules/accounts/accounts.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { DocumentsModule } from './modules/documents/documents.module';
 import { SubjectsModule } from './modules/subjects/subjects.module';
+import { jwtConfiguration } from './config/jwt.config';
+import { PrismaService } from './prisma/prisma.service';
 
 @Module({
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
       cache: true,
-      validate: (config) => {
-        const requiredKeys = [
-          'DATABASE_URL',
-          'JWT_ACCESS_SECRET',
-          'JWT_REFRESH_SECRET',
-          'JWT_ACCESS_EXPIRES_IN',
-          'JWT_REFRESH_EXPIRES_IN',
-        ];
-
-        for (const key of requiredKeys) {
-          if (!config[key]) {
-            throw new Error(`Missing required environment variable: ${key}`);
-          }
-        }
-
-        return config;
-      },
+      load: [jwtConfiguration],
     }),
     AccountsModule,
     AuthModule,
@@ -36,6 +21,6 @@ import { SubjectsModule } from './modules/subjects/subjects.module';
     SubjectsModule,
   ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [PrismaService],
 })
 export class AppModule {}
