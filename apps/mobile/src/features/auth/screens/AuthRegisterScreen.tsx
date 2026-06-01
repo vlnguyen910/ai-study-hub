@@ -10,23 +10,20 @@ import {
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
+import { Controller } from "react-hook-form";
 import { Button, Card, PageShell } from "@/components";
+import { useSignUp } from "../hooks/useSignUp";
 
 export function AuthRegisterScreen() {
-  const [fullName, setFullName] = useState("");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
+
+  const { form, isLoading, submit } = useSignUp();
 
   const handleRegister = () => {
-    if (!fullName || !email || !password || !confirmPassword) return;
-    setIsLoading(true);
-    setTimeout(() => {
-      setIsLoading(false);
-    }, 1500);
+    submit(() => {
+      router.replace("/(templates)/auth-login" as never);
+    });
   };
 
   return (
@@ -68,23 +65,42 @@ export function AuthRegisterScreen() {
                 <Text className="text-xs font-bold text-on-background mb-1.5">
                   Họ và tên
                 </Text>
-                <View className="flex-row items-center border border-outline-variant bg-white px-3 py-2.5 rounded-xl">
-                  <Ionicons
-                    name="person-outline"
-                    size={20}
-                    color="#737686"
-                    style={{ marginRight: 8 }}
-                  />
-                  <TextInput
-                    className="flex-1 text-base text-on-background p-0"
-                    placeholder="Nguyễn Văn A"
-                    placeholderTextColor="#737686"
-                    value={fullName}
-                    onChangeText={setFullName}
-                    autoCapitalize="words"
-                    autoCorrect={false}
-                  />
-                </View>
+                <Controller
+                  control={form.control}
+                  name="name"
+                  render={({
+                    field: { onChange, onBlur, value },
+                    fieldState: { error },
+                  }) => (
+                    <>
+                      <View
+                        className={`flex-row items-center border ${error ? "border-red-500" : "border-outline-variant"} bg-white px-3 py-2.5 rounded-xl`}
+                      >
+                        <Ionicons
+                          name="person-outline"
+                          size={20}
+                          color="#737686"
+                          style={{ marginRight: 8 }}
+                        />
+                        <TextInput
+                          className="flex-1 text-base text-on-background p-0"
+                          placeholder="Nguyễn Văn A"
+                          placeholderTextColor="#737686"
+                          value={value}
+                          onBlur={onBlur}
+                          onChangeText={onChange}
+                          autoCapitalize="words"
+                          autoCorrect={false}
+                        />
+                      </View>
+                      {error && (
+                        <Text className="text-red-500 text-xs mt-1">
+                          {error.message}
+                        </Text>
+                      )}
+                    </>
+                  )}
+                />
               </View>
 
               {/* Email Input */}
@@ -92,24 +108,43 @@ export function AuthRegisterScreen() {
                 <Text className="text-xs font-bold text-on-background mb-1.5">
                   Email
                 </Text>
-                <View className="flex-row items-center border border-outline-variant bg-white px-3 py-2.5 rounded-xl">
-                  <Ionicons
-                    name="mail-outline"
-                    size={20}
-                    color="#737686"
-                    style={{ marginRight: 8 }}
-                  />
-                  <TextInput
-                    className="flex-1 text-base text-on-background p-0"
-                    placeholder="example@email.com"
-                    placeholderTextColor="#737686"
-                    keyboardType="email-address"
-                    autoCapitalize="none"
-                    autoCorrect={false}
-                    value={email}
-                    onChangeText={setEmail}
-                  />
-                </View>
+                <Controller
+                  control={form.control}
+                  name="email"
+                  render={({
+                    field: { onChange, onBlur, value },
+                    fieldState: { error },
+                  }) => (
+                    <>
+                      <View
+                        className={`flex-row items-center border ${error ? "border-red-500" : "border-outline-variant"} bg-white px-3 py-2.5 rounded-xl`}
+                      >
+                        <Ionicons
+                          name="mail-outline"
+                          size={20}
+                          color="#737686"
+                          style={{ marginRight: 8 }}
+                        />
+                        <TextInput
+                          className="flex-1 text-base text-on-background p-0"
+                          placeholder="example@email.com"
+                          placeholderTextColor="#737686"
+                          keyboardType="email-address"
+                          autoCapitalize="none"
+                          autoCorrect={false}
+                          value={value}
+                          onBlur={onBlur}
+                          onChangeText={onChange}
+                        />
+                      </View>
+                      {error && (
+                        <Text className="text-red-500 text-xs mt-1">
+                          {error.message}
+                        </Text>
+                      )}
+                    </>
+                  )}
+                />
               </View>
 
               {/* Password Input */}
@@ -117,38 +152,56 @@ export function AuthRegisterScreen() {
                 <Text className="text-xs font-bold text-on-background mb-1.5">
                   Mật khẩu
                 </Text>
-                <View className="flex-row items-center border border-outline-variant bg-white px-3 py-2.5 rounded-xl">
-                  <Ionicons
-                    name="lock-closed-outline"
-                    size={20}
-                    color="#737686"
-                    style={{ marginRight: 8 }}
-                  />
-                  <TextInput
-                    className="flex-1 text-base text-on-background p-0"
-                    placeholder="••••••••"
-                    placeholderTextColor="#737686"
-                    secureTextEntry={!showPassword}
-                    autoCapitalize="none"
-                    autoCorrect={false}
-                    value={password}
-                    onChangeText={setPassword}
-                  />
-                  <Pressable
-                    onPress={() => setShowPassword(!showPassword)}
-                    className="ml-2 p-1"
-                    accessibilityRole="button"
-                    accessibilityLabel={
-                      showPassword ? "Hide password" : "Show password"
-                    }
-                  >
-                    <Ionicons
-                      name={showPassword ? "eye-outline" : "eye-off-outline"}
-                      size={20}
-                      color="#737686"
-                    />
-                  </Pressable>
-                </View>
+                <Controller
+                  control={form.control}
+                  name="password"
+                  render={({
+                    field: { onChange, onBlur, value },
+                    fieldState: { error },
+                  }) => (
+                    <>
+                      <View
+                        className={`flex-row items-center border ${error ? "border-red-500" : "border-outline-variant"} bg-white px-3 py-2.5 rounded-xl`}
+                      >
+                        <Ionicons
+                          name="lock-closed-outline"
+                          size={20}
+                          color="#737686"
+                          style={{ marginRight: 8 }}
+                        />
+                        <TextInput
+                          className="flex-1 text-base text-on-background p-0"
+                          placeholder="••••••••"
+                          placeholderTextColor="#737686"
+                          secureTextEntry={!showPassword}
+                          autoCapitalize="none"
+                          autoCorrect={false}
+                          value={value}
+                          onBlur={onBlur}
+                          onChangeText={onChange}
+                        />
+                        <Pressable
+                          onPress={() => setShowPassword(!showPassword)}
+                          className="ml-2 p-1"
+                          accessibilityRole="button"
+                        >
+                          <Ionicons
+                            name={
+                              showPassword ? "eye-outline" : "eye-off-outline"
+                            }
+                            size={20}
+                            color="#737686"
+                          />
+                        </Pressable>
+                      </View>
+                      {error && (
+                        <Text className="text-red-500 text-xs mt-1">
+                          {error.message}
+                        </Text>
+                      )}
+                    </>
+                  )}
+                />
               </View>
 
               {/* Confirm Password Input */}
@@ -156,40 +209,60 @@ export function AuthRegisterScreen() {
                 <Text className="text-xs font-bold text-on-background mb-1.5">
                   Xác nhận mật khẩu
                 </Text>
-                <View className="flex-row items-center border border-outline-variant bg-white px-3 py-2.5 rounded-xl">
-                  <Ionicons
-                    name="lock-closed-outline"
-                    size={20}
-                    color="#737686"
-                    style={{ marginRight: 8 }}
-                  />
-                  <TextInput
-                    className="flex-1 text-base text-on-background p-0"
-                    placeholder="••••••••"
-                    placeholderTextColor="#737686"
-                    secureTextEntry={!showConfirmPassword}
-                    autoCapitalize="none"
-                    autoCorrect={false}
-                    value={confirmPassword}
-                    onChangeText={setConfirmPassword}
-                  />
-                  <Pressable
-                    onPress={() => setShowConfirmPassword(!showConfirmPassword)}
-                    className="ml-2 p-1"
-                    accessibilityRole="button"
-                    accessibilityLabel={
-                      showConfirmPassword ? "Hide password" : "Show password"
-                    }
-                  >
-                    <Ionicons
-                      name={
-                        showConfirmPassword ? "eye-outline" : "eye-off-outline"
-                      }
-                      size={20}
-                      color="#737686"
-                    />
-                  </Pressable>
-                </View>
+                <Controller
+                  control={form.control}
+                  name="confirmPassword"
+                  render={({
+                    field: { onChange, onBlur, value },
+                    fieldState: { error },
+                  }) => (
+                    <>
+                      <View
+                        className={`flex-row items-center border ${error ? "border-red-500" : "border-outline-variant"} bg-white px-3 py-2.5 rounded-xl`}
+                      >
+                        <Ionicons
+                          name="lock-closed-outline"
+                          size={20}
+                          color="#737686"
+                          style={{ marginRight: 8 }}
+                        />
+                        <TextInput
+                          className="flex-1 text-base text-on-background p-0"
+                          placeholder="••••••••"
+                          placeholderTextColor="#737686"
+                          secureTextEntry={!showConfirmPassword}
+                          autoCapitalize="none"
+                          autoCorrect={false}
+                          value={value}
+                          onBlur={onBlur}
+                          onChangeText={onChange}
+                        />
+                        <Pressable
+                          onPress={() =>
+                            setShowConfirmPassword(!showConfirmPassword)
+                          }
+                          className="ml-2 p-1"
+                          accessibilityRole="button"
+                        >
+                          <Ionicons
+                            name={
+                              showConfirmPassword
+                                ? "eye-outline"
+                                : "eye-off-outline"
+                            }
+                            size={20}
+                            color="#737686"
+                          />
+                        </Pressable>
+                      </View>
+                      {error && (
+                        <Text className="text-red-500 text-xs mt-1">
+                          {error.message}
+                        </Text>
+                      )}
+                    </>
+                  )}
+                />
               </View>
 
               {/* Register Button */}
