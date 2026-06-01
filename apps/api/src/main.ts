@@ -1,5 +1,6 @@
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe, VersioningType } from '@nestjs/common';
+import cookieParser from 'cookie-parser';
 import { AppModule } from './app.module';
 import { ResponseInterceptor } from './common/interceptors/response.interceptor';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
@@ -14,6 +15,9 @@ async function bootstrap() {
     type: VersioningType.URI,
     prefix: 'api/v',
   });
+
+  // Cookie Parser Middleware
+  app.use(cookieParser());
 
   // Global Filters
   app.useGlobalFilters(new HttpExceptionFilter());
