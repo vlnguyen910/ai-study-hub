@@ -5,7 +5,6 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import type { ReactElement } from "react";
 import { Button } from "@repo/ui/button";
-
 export default function RegisterPage(): ReactElement {
   const router = useRouter();
   const [formData, setFormData] = useState({
@@ -41,7 +40,7 @@ export default function RegisterPage(): ReactElement {
     };
 
     if (!formData.name.trim()) {
-      newErrors.name = "Full Name is required";
+      newErrors.name = "Full name is required";
       isValid = false;
     }
 
@@ -56,15 +55,12 @@ export default function RegisterPage(): ReactElement {
     if (!formData.password) {
       newErrors.password = "Password is required";
       isValid = false;
-    } else if (formData.password.length < 8) {
-      newErrors.password = "Password must be at least 8 characters";
+    } else if (formData.password.length < 6) {
+      newErrors.password = "Password must be at least 6 characters";
       isValid = false;
     }
 
-    if (!formData.confirmPassword) {
-      newErrors.confirmPassword = "Please confirm your password";
-      isValid = false;
-    } else if (formData.password !== formData.confirmPassword) {
+    if (formData.password !== formData.confirmPassword) {
       newErrors.confirmPassword = "Passwords do not match";
       isValid = false;
     }
@@ -76,8 +72,7 @@ export default function RegisterPage(): ReactElement {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (validate()) {
-      console.log("Register with:", formData);
-      // TODO: Perform register API request here
+      console.log("Register form submitted successfully on client:", formData);
     }
   };
 

@@ -6,7 +6,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useEffect, type FC, type ReactNode } from "react";
+import { useEffect, useState, type FC, type ReactNode } from "react";
 import { getAuthToken, getAuthUser } from "./guards/auth.guard";
 import {
   hasRoleAccess,
@@ -31,12 +31,20 @@ export const ProtectedRoute: FC<ProtectedRouteProps> = ({
   requiredRole,
 }) => {
   const router = useRouter();
+  const [mounted, setMounted] = useState(false);
+
   const token = getAuthToken();
   const user = getAuthUser();
   const isAuthenticated = !!token && !!user;
   const userRole = (user?.role || "guest") as UserRole;
 
   useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (!mounted) return;
+
     // Check authentication
     if (!isAuthenticated) {
       router.push(
@@ -57,7 +65,11 @@ export const ProtectedRoute: FC<ProtectedRouteProps> = ({
       router.push(getRoleRedirect(userRole));
       return;
     }
-  }, [isAuthenticated, userRole, requiredRole, router]);
+  }, [mounted, isAuthenticated, userRole, requiredRole, router]);
+
+  if (!mounted) {
+    return null;
+  }
 
   if (!isAuthenticated) {
     return null;
@@ -66,7 +78,7 @@ export const ProtectedRoute: FC<ProtectedRouteProps> = ({
   if (
     requiredRole &&
     !hasRoleAccess({
-      pathname: window.location.pathname,
+      pathname: typeof window !== "undefined" ? window.location.pathname : "",
       userRole,
       requiredRoles: [requiredRole],
     })
