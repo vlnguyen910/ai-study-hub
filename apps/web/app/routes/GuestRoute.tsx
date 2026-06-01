@@ -18,20 +18,19 @@ export const GuestRoute: FC<GuestRouteProps> = ({
 }): React.JSX.Element | null => {
   const router = useRouter();
   const [mounted, setMounted] = useState(false);
-
-  const token = getAuthToken();
-  const user = getAuthUser();
-  const isAuthenticated = !!token && !!user;
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   useEffect(() => {
     setMounted(true);
-  }, []);
+    const token = getAuthToken();
+    const user = getAuthUser();
+    const isAuth = !!token && !!user;
+    setIsAuthenticated(isAuth);
 
-  useEffect(() => {
-    if (mounted && isAuthenticated) {
+    if (isAuth) {
       router.replace("/");
     }
-  }, [mounted, isAuthenticated, router]);
+  }, [router]);
 
   if (!mounted) {
     return null;
