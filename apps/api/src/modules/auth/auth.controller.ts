@@ -6,6 +6,7 @@ import {
   Inject,
   Post,
   Res,
+  UseGuards,
   Version,
 } from '@nestjs/common';
 import type { ConfigType } from '@nestjs/config';
@@ -15,7 +16,11 @@ import { SigninDto } from './dto/signin.dto';
 import { SignupDto } from './dto/signup.dto';
 import { Public } from '../../common/decorators/public.decorator';
 import { cookieConfiguration } from '../../config';
-import { DeviceType } from '@prisma/client';
+import { accounts, DeviceType } from '@prisma/client';
+import { AuthGuard } from '../../common/guards/auth.guard';
+import { User } from '../../common/decorators';
+import { TokenPayload } from '../../common/interfaces/auth.interface';
+import { LogoutDto } from './dto/logout.dto';
 
 @Controller('auth')
 export class AuthController {
@@ -72,20 +77,18 @@ export class AuthController {
   }
 
   @Version('1')
+  @UseGuards(AuthGuard)
   @HttpCode(HttpStatus.OK)
   @Post('logout')
-  logout(@Res() res: Response) {
-    const result = this.authService.logout();
-
+  logout(
+    @User() user: TokenPayload,
+    @Res({ passthrough: true }) res: Response,
+    @Body() logoutDto: LogoutDto,
+  ) {
     // Clear cookies
     res.clearCookie('accessToken');
     res.clearCookie('refreshToken');
 
-    return res.json({
-      success: true,
-      statusCode: HttpStatus.OK,
-      message: result.message,
-      data: result.data,
-    });
+    return this.authService.logout(user.sub, logoutDto.deviceId);
   }
 }

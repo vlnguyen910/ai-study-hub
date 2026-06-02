@@ -101,7 +101,24 @@ export class AuthService {
     };
   }
 
-  logout() {
+  async logout(userId: string, deviceId: string) {
+    const account = this.accountService.findOne(userId);
+
+    if (!account) {
+      throw new UnauthorizedException('Invalid user');
+    }
+
+    await this.prismaService.sessions.updateMany({
+      where: {
+        userId,
+        deviceId,
+        isRevoked: false,
+      },
+      data: {
+        isRevoked: true,
+      },
+    });
+
     return {
       message: 'Logout successful',
       data: null,
