@@ -101,7 +101,7 @@ export class AuthService {
   }
 
   async logout(userId: string, deviceId: string) {
-    const account = this.accountService.findOne(userId);
+    const account = await this.accountService.findOne(userId);
 
     if (!account) {
       throw new UnauthorizedException('Invalid user');
