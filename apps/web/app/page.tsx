@@ -2,14 +2,43 @@
 
 import Link from "next/link";
 import { useEffect, useState, type ReactElement } from "react";
+import { getDocuments } from "@/API";
 import { useAuthStore } from "@/stores";
 
 export default function Home(): ReactElement {
   const [mounted, setMounted] = useState(false);
+  const [documentCount, setDocumentCount] = useState<number | null>(null);
+  const [documentsLoadFailed, setDocumentsLoadFailed] = useState(false);
   const { accessToken, user, logout } = useAuthStore();
 
   useEffect(() => {
     setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    let isActive = true;
+
+    const fetchDocuments = async () => {
+      try {
+        const documents = await getDocuments({ page: 1, limit: 12 });
+
+        if (isActive) {
+          setDocumentCount(documents.length);
+          setDocumentsLoadFailed(false);
+        }
+      } catch {
+        if (isActive) {
+          setDocumentCount(null);
+          setDocumentsLoadFailed(true);
+        }
+      }
+    };
+
+    fetchDocuments();
+
+    return () => {
+      isActive = false;
+    };
   }, []);
 
   return (
@@ -145,6 +174,11 @@ export default function Home(): ReactElement {
               Nền tảng chia sẻ kiến thức toàn diện, nơi bạn có thể tìm kiếm hàng
               triệu giáo trình, đề thi và bài giảng chất lượng từ cộng đồng sinh
               viên ưu tú.
+              {documentsLoadFailed
+                ? " Khong load duoc tai lieu."
+                : documentCount !== null
+                  ? ` Dang co ${documentCount} tai lieu moi duoc tai tu API.`
+                  : ""}
             </p>
             <div className="flex items-center bg-white border border-gray-300 rounded-xl p-1 shadow-sm mt-4">
               <svg

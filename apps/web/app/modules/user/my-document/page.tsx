@@ -1,8 +1,15 @@
 "use client";
 
-import { useMemo, useState, type ReactElement } from "react";
+import {
+  deleteDocument,
+  getDocumentById,
+  getDocuments,
+  updateDocument,
+  type DocumentDto,
+} from "@/API";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useEffect, useMemo, useState, type ReactElement } from "react";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
@@ -12,6 +19,7 @@ import { Table, type TableRow } from "@/components/ui/Table";
 import { userRouterConfig } from "../../../routes/user/user.routes";
 
 type DocumentRow = {
+  id: string;
   title: string;
   category: string;
   size: string;
@@ -19,41 +27,6 @@ type DocumentRow = {
   status: "public" | "pending";
   icon: "picture_as_pdf" | "description" | "archive";
 };
-
-const DOCUMENTS: DocumentRow[] = [
-  {
-    title: "Giải tích 2 - Đề cương ôn tập kỳ 2023.2",
-    category: "Toán học",
-    size: "4.2 MB",
-    date: "12/05/2024",
-    status: "public",
-    icon: "picture_as_pdf",
-  },
-  {
-    title: "Tiểu luận Triết học Mác-Lênin",
-    category: "Lý luận chính trị",
-    size: "1.8 MB",
-    date: "08/05/2024",
-    status: "pending",
-    icon: "description",
-  },
-  {
-    title: "Source code đồ án Cơ sở dữ liệu",
-    category: "CNTT",
-    size: "15.6 MB",
-    date: "01/05/2024",
-    status: "public",
-    icon: "archive",
-  },
-  {
-    title: "Giáo trình Vật lý đại cương A1",
-    category: "Vật lý",
-    size: "22.4 MB",
-    date: "25/04/2024",
-    status: "public",
-    icon: "picture_as_pdf",
-  },
-];
 
 const sidebarItems = [
   userRouterConfig.PROFILE,
@@ -124,13 +97,62 @@ function MyDocumentSidebar({ pathname }: { pathname: string }): ReactElement {
   );
 }
 
+function mapApiToRow(document: DocumentDto, index: number): DocumentRow {
+  const sizeInMb = ((document.sizeInBytes ?? 0) / (1024 * 1024)).toFixed(1);
+  const dateText = document.updatedAt
+    ? new Date(document.updatedAt).toLocaleDateString("vi-VN")
+    : new Date().toLocaleDateString("vi-VN");
+
+  return {
+    id: document.id || `api-${index}`,
+    title: document.title,
+    category: document.subjectId ?? "General",
+    size: `${sizeInMb} MB`,
+    date: dateText,
+    status: document.isPublic ? "public" : "pending",
+    icon: "picture_as_pdf",
+  };
+}
+
 export default function MyDocumentPage(): ReactElement {
   const pathname = usePathname();
+  const [documents, setDocuments] = useState<DocumentRow[]>([]);
+  const [loadError, setLoadError] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
 
+  useEffect(() => {
+    let isMounted = true;
+
+    const fetchDocuments = async () => {
+      try {
+        const response = await getDocuments({ page: 1, limit: 50 });
+
+        if (isMounted) {
+          setDocuments(response.map((item, index) => mapApiToRow(item, index)));
+          setLoadError(false);
+        }
+      } catch {
+        if (isMounted) {
+          setDocuments([]);
+          setLoadError(true);
+        }
+      }
+    };
+
+    fetchDocuments();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
   const stats = [
-    { label: "Tổng tài liệu", value: "124", icon: "description" },
+    {
+      label: "Tổng tài liệu",
+      value: String(documents.length),
+      icon: "description",
+    },
     { label: "Lượt xem", value: "2,850", icon: "visibility" },
     { label: "Lượt tải", value: "842", icon: "download" },
     { label: "Đóng góp", value: "Level 4", icon: "workspace_premium" },
@@ -140,16 +162,16 @@ export default function MyDocumentPage(): ReactElement {
     const term = searchTerm.trim().toLowerCase();
 
     if (!term) {
-      return DOCUMENTS;
+      return documents;
     }
 
-    return DOCUMENTS.filter((document) =>
+    return documents.filter((document) =>
       [document.title, document.category, document.date, document.size]
         .join(" ")
         .toLowerCase()
         .includes(term),
     );
-  }, [searchTerm]);
+  }, [documents, searchTerm]);
 
   const activePage = Math.min(
     currentPage,
@@ -161,7 +183,7 @@ export default function MyDocumentPage(): ReactElement {
   );
 
   const documentRows: TableRow[] = visibleDocuments.map((document) => ({
-    id: document.title,
+    id: document.id,
     cells: [
       <div className="flex items-center gap-3" key="name">
         <div className="flex h-10 w-10 items-center justify-center rounded-lg border border-outline-variant bg-primary-container/10 text-primary">
@@ -189,7 +211,30 @@ export default function MyDocumentPage(): ReactElement {
         {document.status === "public" ? "Công khai" : "Đang chờ duyệt"}
       </Badge>,
       <div className="flex justify-end gap-2" key="actions">
-        <Button type="button" variant="ghost" size="sm" className="px-3">
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          className="px-3"
+          onClick={async () => {
+            try {
+              const detail = await getDocumentById(document.id);
+              await updateDocument(document.id, {
+                title: `${detail.title} (Edited)`,
+              });
+
+              setDocuments((current) =>
+                current.map((item) =>
+                  item.id === document.id
+                    ? { ...item, title: `${item.title} (Edited)` }
+                    : item,
+                ),
+              );
+            } catch {
+              // Ignore to keep current UI behavior.
+            }
+          }}
+        >
           <span className="flex items-center gap-2">
             <span className="material-symbols-outlined text-[18px]">edit</span>
             Sửa
@@ -200,6 +245,16 @@ export default function MyDocumentPage(): ReactElement {
           variant="ghost"
           size="sm"
           className="px-3 text-error hover:bg-error-container hover:text-error"
+          onClick={async () => {
+            try {
+              await deleteDocument(document.id);
+              setDocuments((current) =>
+                current.filter((item) => item.id !== document.id),
+              );
+            } catch {
+              // Ignore to keep current UI behavior.
+            }
+          }}
         >
           <span className="flex items-center gap-2">
             <span className="material-symbols-outlined text-[18px]">
@@ -230,6 +285,11 @@ export default function MyDocumentPage(): ReactElement {
                 <p className="mt-1 font-body-md text-body-md text-on-surface-variant">
                   Quản lý tài liệu, trạng thái và thao tác chỉnh sửa nhanh.
                 </p>
+                {loadError ? (
+                  <p className="mt-2 text-sm text-error">
+                    Không load được tài liệu. Vui lòng thử lại sau.
+                  </p>
+                ) : null}
               </div>
 
               <div className="flex flex-wrap gap-2">

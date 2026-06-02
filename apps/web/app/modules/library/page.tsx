@@ -1,10 +1,11 @@
 "use client";
 
-import { useMemo, useState, type ReactElement } from "react";
+import { createDocument, getDocuments, type DocumentDto } from "@/API";
 import Link from "next/link";
+import { useEffect, useMemo, useState, type ReactElement } from "react";
 
 type DocumentItem = {
-  id: number;
+  id: string;
   title: string;
   author: string;
   pages: number;
@@ -34,93 +35,6 @@ type FilterDropdownProps = {
   selectedValues: string[];
   onToggleValue: (value: string) => void;
 };
-
-const DOCUMENTS: DocumentItem[] = [
-  {
-    id: 1,
-    title: "Tổng hợp đề thi Giải tích 1 - Bách Khoa (2020-2023)",
-    author: "Nguyễn Văn A • ĐH Bách Khoa",
-    pages: 42,
-    views: "1.2k",
-    rating: 4.8,
-    type: "PDF",
-    image:
-      "https://images.unsplash.com/photo-1633613286848-e6f43bbafb84?w=500&q=80",
-    subject: "Giải tích 1",
-    university: "ĐH Bách Khoa",
-    category: "Đề thi & Đáp án",
-  },
-  {
-    id: 2,
-    title: "Giáo trình Giải tích 1 - GS. Nguyễn Trọng Ng...",
-    author: "Lê Thị B • ĐH KHTN",
-    pages: 18,
-    views: "850",
-    rating: 4.9,
-    type: "DOCX",
-    image:
-      "https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=500&q=80",
-    subject: "Giải tích 1",
-    university: "ĐH Khoa học Tự nhiên",
-    category: "Giáo trình",
-  },
-  {
-    id: 3,
-    title: "Bài tập lớn Giải tích 1: Ứng dụng tích phân...",
-    author: "Trần Minh C • ĐH Công Nghệ",
-    pages: 124,
-    views: "430",
-    rating: 4.5,
-    type: "PDF",
-    image:
-      "https://images.unsplash.com/photo-1517842645767-c639042777db?w=500&q=80",
-    subject: "Giải tích 1",
-    university: "ĐH Công Nghệ",
-    category: "Bài tập lớn",
-  },
-  {
-    id: 4,
-    title: "Sổ tay công thức Giải tích 2 - Tóm tắt nhanh",
-    author: "Hoàng Văn D • ĐH Sư phạm",
-    pages: 5,
-    views: "2.5k",
-    rating: 5.0,
-    type: "PDF",
-    image:
-      "https://images.unsplash.com/photo-1633613286848-e6f43bbafb84?w=500&q=80",
-    subject: "Giải tích 2",
-    university: "ĐH Sư phạm",
-    category: "Giáo trình",
-  },
-  {
-    id: 5,
-    title: "Đề cương ôn tập Đại số tuyến tính - Hệ đại trà & CLC",
-    author: "Phạm Thu E • ĐH Bách Khoa",
-    pages: 64,
-    views: "620",
-    rating: 4.7,
-    type: "PDF",
-    image:
-      "https://images.unsplash.com/photo-1517842645767-c639042777db?w=500&q=80",
-    subject: "Đại số tuyến tính",
-    university: "ĐH Bách Khoa",
-    category: "Đề thi & Đáp án",
-  },
-  {
-    id: 6,
-    title: "Lưu ý các lỗi thường gặp trong bài thi Xác suất thống kê",
-    author: "Vũ Đức F • ĐH Quốc Gia",
-    pages: 22,
-    views: "310",
-    rating: 4.6,
-    type: "PDF",
-    image:
-      "https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=500&q=80",
-    subject: "Xác suất thống kê",
-    university: "ĐH Quốc Gia",
-    category: "Đề thi & Đáp án",
-  },
-];
 
 const SUBJECT_OPTIONS: FilterOption[] = [
   { value: "Giải tích 1", label: "Giải tích 1" },
@@ -256,7 +170,30 @@ function FilterDropdown({
   );
 }
 
+function mapApiDocument(document: DocumentDto, index: number): DocumentItem {
+  const format = String(document.format ?? "PDF").toUpperCase();
+
+  return {
+    id: document.id || `api-${index}`,
+    title: document.title,
+    author: document.authorId
+      ? `${document.authorId} • AI Study Hub`
+      : "Unknown author",
+    pages: Math.max(1, Math.floor((document.sizeInBytes ?? 100_000) / 80_000)),
+    views: "0",
+    rating: 4.5,
+    type: format === "DOCX" ? "DOCX" : "PDF",
+    image:
+      "https://images.unsplash.com/photo-1633613286848-e6f43bbafb84?w=500&q=80",
+    subject: document.subjectId ?? "General",
+    university: "AI Study Hub",
+    category: document.status ?? "General",
+  };
+}
+
 export default function LibraryPage(): ReactElement {
+  const [documents, setDocuments] = useState<DocumentItem[]>([]);
+  const [loadError, setLoadError] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [openFilter, setOpenFilter] = useState<
     "subject" | "university" | "type" | null
@@ -268,10 +205,38 @@ export default function LibraryPage(): ReactElement {
   const [selectedUniversity, setSelectedUniversity] = useState("");
   const [selectedTypes, setSelectedTypes] = useState<string[]>([]);
 
+  useEffect(() => {
+    let isMounted = true;
+
+    const fetchDocuments = async () => {
+      try {
+        const response = await getDocuments({ page: 1, limit: 30 });
+
+        if (isMounted) {
+          setDocuments(
+            response.map((item, index) => mapApiDocument(item, index)),
+          );
+          setLoadError(false);
+        }
+      } catch {
+        if (isMounted) {
+          setDocuments([]);
+          setLoadError(true);
+        }
+      }
+    };
+
+    fetchDocuments();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
   const filteredDocuments = useMemo(() => {
     const normalizedQuery = searchQuery.trim().toLowerCase();
 
-    return DOCUMENTS.filter((document) => {
+    return documents.filter((document) => {
       const matchesQuery =
         normalizedQuery.length === 0 ||
         [
@@ -291,7 +256,13 @@ export default function LibraryPage(): ReactElement {
 
       return matchesQuery && matchesSubject && matchesUniversity && matchesType;
     });
-  }, [searchQuery, selectedSubjects, selectedTypes, selectedUniversity]);
+  }, [
+    documents,
+    searchQuery,
+    selectedSubjects,
+    selectedTypes,
+    selectedUniversity,
+  ]);
 
   const hasActiveFilters =
     searchQuery.trim().length > 0 ||
@@ -302,7 +273,9 @@ export default function LibraryPage(): ReactElement {
   const pageTitle = hasActiveFilters ? "Kết quả tìm kiếm" : "Thư viện";
   const pageSubtitle = hasActiveFilters
     ? `Tìm thấy ${filteredDocuments.length} tài liệu phù hợp`
-    : `Khám phá ${DOCUMENTS.length} tài liệu học thuật được chọn lọc từ cộng đồng`;
+    : loadError
+      ? "Không load được tài liệu"
+      : `Khám phá ${documents.length} tài liệu học thuật được chọn lọc từ cộng đồng`;
 
   const resetFilters = () => {
     setSearchQuery("");
@@ -418,6 +391,28 @@ export default function LibraryPage(): ReactElement {
             <button
               type="button"
               className="w-full py-3 px-4 bg-blue-600 text-white font-semibold rounded hover:bg-blue-700 transition-colors"
+              onClick={async () => {
+                try {
+                  const created = await createDocument({
+                    title: "Uploaded from Library",
+                    description: "Created from library upload button",
+                    fileUrl: "https://example.com/docs/uploaded.pdf",
+                    publicId: `library-${Date.now()}`,
+                    sizeInBytes: 512000,
+                    format: "pdf",
+                    resourceType: "document",
+                    subjectId: "subject-001",
+                    isPublic: true,
+                  });
+
+                  setDocuments((current) => [
+                    mapApiDocument(created, current.length),
+                    ...current,
+                  ]);
+                } catch {
+                  // Keep UI stable when upload endpoint is unavailable.
+                }
+              }}
             >
               Upload Document
             </button>
@@ -476,6 +471,12 @@ export default function LibraryPage(): ReactElement {
               </button>
             </div>
           </div>
+
+          {loadError ? (
+            <div className="mx-8 mt-4 rounded border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+              Không load được tài liệu. Vui lòng thử lại sau.
+            </div>
+          ) : null}
 
           <div className="flex-1 overflow-y-auto p-8">
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">

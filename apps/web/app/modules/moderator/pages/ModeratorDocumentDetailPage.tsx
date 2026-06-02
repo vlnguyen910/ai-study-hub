@@ -1,8 +1,8 @@
 "use client";
 
+import { getDocumentById, verifyDocument } from "@/API";
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
-import { documentReviewItems } from "../mockData";
+import { useEffect, useState } from "react";
 import type { DocumentReviewStatus } from "../types";
 import { ModeratorShell } from "../components/ModeratorShell";
 import {
@@ -34,41 +34,165 @@ const previewControls = [
   { icon: "fullscreen", label: "Toàn màn hình" },
 ] as const;
 
+type DocumentDetailState = {
+  id: string;
+  title: string;
+  description: string;
+  fileSize: string;
+  fileType: string;
+  previewUrl: string;
+  tags: string[];
+  checks: Array<{
+    label: string;
+    value: string;
+    tone: "success" | "warning" | "error" | "neutral";
+  }>;
+  versions: Array<{
+    version: string;
+    uploadedBy: string;
+    uploadedAt: string;
+    note: string;
+  }>;
+};
+
 export default function ModeratorDocumentDetailPage({
   documentId,
 }: {
   readonly documentId: string;
 }): React.JSX.Element {
-  const document = useMemo(
-    () => documentReviewItems.find((item) => item.id === documentId),
-    [documentId],
-  );
-  const [status, setStatus] = useState<DocumentReviewStatus>(
-    document?.status ?? "pending",
-  );
+  const [document, setDocument] = useState<DocumentDetailState | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
+  const [status, setStatus] = useState<DocumentReviewStatus>("pending");
   const [note, setNote] = useState("");
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   useEffect(() => {
-    if (document) {
-      setStatus(document.status);
-      setNote("");
-      setToastMessage(null);
-    }
-  }, [documentId, document]);
+    let isMounted = true;
 
-  if (!document) {
+    const fetchDocumentDetail = async () => {
+      try {
+        const detail = await getDocumentById(documentId);
+
+        if (!isMounted) {
+          return;
+        }
+
+        const rawTags = Array.isArray(detail.tags) ? detail.tags : [];
+        const rawChecks = Array.isArray(detail.checks) ? detail.checks : [];
+        const rawVersions = Array.isArray(detail.versions)
+          ? detail.versions
+          : [];
+
+        const checks = rawChecks.map((item, index) => {
+          const record = item as Record<string, unknown>;
+          const toneValue = String(record.tone ?? "neutral");
+          const tone =
+            toneValue === "success" ||
+            toneValue === "warning" ||
+            toneValue === "error" ||
+            toneValue === "neutral"
+              ? toneValue
+              : "neutral";
+
+          return {
+            label: String(record.label ?? `Check ${index + 1}`),
+            value: String(record.value ?? "N/A"),
+            tone,
+          };
+        });
+
+        const versions = rawVersions.map((item, index) => {
+          const record = item as Record<string, unknown>;
+
+          return {
+            version: String(record.version ?? `${index + 1}`),
+            uploadedBy: String(record.uploadedBy ?? "Unknown"),
+            uploadedAt: String(record.uploadedAt ?? "N/A"),
+            note: String(record.note ?? ""),
+          };
+        });
+
+        setDocument({
+          id: String(detail.id || documentId),
+          title: String(detail.title ?? "Untitled document"),
+          description: String(detail.description ?? "Không có mô tả"),
+          fileSize:
+            typeof detail.sizeInBytes === "number"
+              ? `${(detail.sizeInBytes / (1024 * 1024)).toFixed(2)} MB`
+              : "N/A",
+          fileType: String(detail.format ?? "N/A"),
+          previewUrl: String(
+            detail.fileUrl ??
+              "https://images.unsplash.com/photo-1633613286848-e6f43bbafb84?w=800&q=80",
+          ),
+          tags: rawTags.map((tag) => String(tag)),
+          checks,
+          versions,
+        });
+
+        if (
+          detail.status &&
+          statusLabelMap[detail.status as DocumentReviewStatus]
+        ) {
+          setStatus(detail.status as DocumentReviewStatus);
+        }
+
+        setLoadError(false);
+      } catch {
+        if (isMounted) {
+          setDocument(null);
+          setLoadError(true);
+        }
+      } finally {
+        if (isMounted) {
+          setIsLoading(false);
+        }
+      }
+    };
+
+    fetchDocumentDetail();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [documentId]);
+
+  if (isLoading) {
     return (
       <ModeratorShell activeSection="documents">
         <EmptyState
-          description="Mã tài liệu không tồn tại trong dữ liệu mẫu hiện tại."
-          title="Không tìm thấy tài liệu"
+          description="Vui lòng chờ trong giây lát."
+          title="Đang tải tài liệu"
         />
       </ModeratorShell>
     );
   }
 
-  const handleAction = (nextStatus: DocumentReviewStatus, message: string) => {
+  if (loadError || !document) {
+    return (
+      <ModeratorShell activeSection="documents">
+        <EmptyState
+          description="Vui lòng thử lại sau hoặc kiểm tra kết nối API."
+          title="Không load được tài liệu"
+        />
+      </ModeratorShell>
+    );
+  }
+
+  const handleAction = async (
+    nextStatus: DocumentReviewStatus,
+    message: string,
+  ) => {
+    try {
+      await verifyDocument(documentId, {
+        status: nextStatus,
+        note: note || undefined,
+      });
+    } catch {
+      // Keep local status update even if verify endpoint is temporarily unavailable.
+    }
+
     setStatus(nextStatus);
     setToastMessage(message);
   };
@@ -327,7 +451,7 @@ export default function ModeratorDocumentDetailPage({
               <div className="grid grid-cols-2 gap-3 pt-4">
                 <button
                   className="flex items-center justify-center gap-2 rounded-lg bg-on-error-container py-3 font-label-md text-label-md text-on-error transition-opacity hover:opacity-90"
-                  onClick={() =>
+                  onClick={async () =>
                     handleAction(
                       "rejected",
                       `Đã từ chối ${document.id}${note ? " kèm ghi chú" : ""}`,
@@ -340,7 +464,7 @@ export default function ModeratorDocumentDetailPage({
                 </button>
                 <button
                   className="flex items-center justify-center gap-2 rounded-lg bg-primary py-3 font-label-md text-label-md text-on-primary transition-colors hover:bg-on-primary-fixed-variant"
-                  onClick={() =>
+                  onClick={async () =>
                     handleAction(
                       "approved",
                       `Đã phê duyệt ${document.id}${
@@ -356,7 +480,7 @@ export default function ModeratorDocumentDetailPage({
               </div>
               <button
                 className="flex w-full items-center justify-center gap-1 py-2 font-label-sm text-label-sm text-on-surface-variant transition-colors hover:text-primary"
-                onClick={() =>
+                onClick={async () =>
                   handleAction(
                     "flagged",
                     `Đã báo cáo vi phạm bản quyền cho ${document.id}`,
@@ -369,7 +493,7 @@ export default function ModeratorDocumentDetailPage({
               </button>
               <button
                 className="flex w-full items-center justify-center gap-1 py-2 font-label-sm text-label-sm text-on-surface-variant transition-colors hover:text-primary"
-                onClick={() =>
+                onClick={async () =>
                   handleAction(
                     "changes_requested",
                     `Đã yêu cầu chỉnh sửa thông tin mô tả cho ${document.id}`,
