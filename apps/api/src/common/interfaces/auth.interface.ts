@@ -9,7 +9,7 @@ export class TokenPayload {
   role!: UserRole;
   status!: UserStatus;
   type!: JwtTokenType;
-  jti!: string;
+  deviceId!: string;
 }
 
 export interface AuthenticatedRequest extends Request {
