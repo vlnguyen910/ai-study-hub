@@ -2,11 +2,26 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { DocumentsService } from './documents.service';
 import { PrismaService } from '../../prisma/prisma.service';
 import { SubjectsService } from '../subjects';
-import { DocumentStatus, UserRole } from '@prisma/client';
+import { DocumentStatus, UserRole, UserStatus } from '@prisma/client';
+import { JwtTokenType } from '../../common/enums/jwt.enum';
+import { TokenPayload } from '../../common/interfaces/auth.interface';
 
 jest.mock('uuid', () => ({
   v4: jest.fn(() => 'test-jti'),
 }));
+
+const createTokenPayload = (
+  overrides: Partial<TokenPayload> = {},
+): TokenPayload => ({
+  sub: 'owner-1',
+  email: 'owner@example.com',
+  name: 'Test User',
+  role: UserRole.USER,
+  status: UserStatus.ACTIVE,
+  type: JwtTokenType.AccessToken,
+  deviceId: 'device-1',
+  ...overrides,
+});
 
 describe('DocumentsService', () => {
   let service: DocumentsService;
@@ -180,11 +195,7 @@ describe('DocumentsService', () => {
         subjectId: '507f1f77bcf86cd799439011',
         status: DocumentStatus.PENDING,
       } as any,
-      {
-        sub: 'owner-1',
-        email: 'owner@example.com',
-        role: UserRole.USER,
-      },
+      createTokenPayload(),
     );
 
     expect(prismaMock.documents.findMany).toHaveBeenCalledWith(
@@ -212,11 +223,7 @@ describe('DocumentsService', () => {
     prismaMock.documents.findMany.mockResolvedValue([]);
     prismaMock.documents.count.mockResolvedValue(0);
 
-    await service.findAll({} as any, {
-      sub: 'owner-1',
-      email: 'owner@example.com',
-      role: UserRole.USER,
-    });
+    await service.findAll({} as any, createTokenPayload());
 
     expect(prismaMock.documents.findMany).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -250,11 +257,14 @@ describe('DocumentsService', () => {
     prismaMock.documents.findMany.mockResolvedValue([]);
     prismaMock.documents.count.mockResolvedValue(0);
 
-    await service.findAll({} as any, {
-      sub: 'moderator-1',
-      email: 'mod@example.com',
-      role: UserRole.MODERATOR,
-    });
+    await service.findAll(
+      {} as any,
+      createTokenPayload({
+        sub: 'moderator-1',
+        email: 'mod@example.com',
+        role: UserRole.MODERATOR,
+      }),
+    );
 
     expect(prismaMock.documents.findMany).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -448,11 +458,10 @@ describe('DocumentsService', () => {
     const doc = { id: '507f1f77bcf86cd799439011', title: 'Private' };
     prismaMock.documents.findFirst.mockResolvedValue(doc);
 
-    const res = await service.findOne('507f1f77bcf86cd799439011', {
-      sub: 'owner-1',
-      email: 'owner@example.com',
-      role: UserRole.USER,
-    });
+    const res = await service.findOne(
+      '507f1f77bcf86cd799439011',
+      createTokenPayload(),
+    );
 
     expect(prismaMock.documents.findFirst).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -475,9 +484,10 @@ describe('DocumentsService', () => {
 
     await expect(
       service.findOne('507f1f77bcf86cd799439011', {
-        sub: 'other-user',
-        email: 'other@example.com',
-        role: UserRole.USER,
+        ...createTokenPayload({
+          sub: 'other-user',
+          email: 'other@example.com',
+        }),
       }),
     ).rejects.toThrow();
   });
@@ -489,11 +499,10 @@ describe('DocumentsService', () => {
     };
     prismaMock.documents.findFirst.mockResolvedValue(doc);
 
-    const res = await service.findOne('507f1f77bcf86cd799439011', {
-      sub: 'owner-1',
-      email: 'owner@example.com',
-      role: UserRole.USER,
-    });
+    const res = await service.findOne(
+      '507f1f77bcf86cd799439011',
+      createTokenPayload(),
+    );
 
     expect(prismaMock.documents.findFirst).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -517,11 +526,14 @@ describe('DocumentsService', () => {
     };
     prismaMock.documents.findFirst.mockResolvedValue(doc);
 
-    const res = await service.findOne('507f1f77bcf86cd799439011', {
-      sub: 'moderator-1',
-      email: 'mod@example.com',
-      role: UserRole.MODERATOR,
-    });
+    const res = await service.findOne(
+      '507f1f77bcf86cd799439011',
+      createTokenPayload({
+        sub: 'moderator-1',
+        email: 'mod@example.com',
+        role: UserRole.MODERATOR,
+      }),
+    );
 
     expect(prismaMock.documents.findFirst).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -538,9 +550,10 @@ describe('DocumentsService', () => {
 
     await expect(
       service.findOne('507f1f77bcf86cd799439011', {
-        sub: 'other-user',
-        email: 'other@example.com',
-        role: UserRole.USER,
+        ...createTokenPayload({
+          sub: 'other-user',
+          email: 'other@example.com',
+        }),
       }),
     ).rejects.toThrow();
   });
@@ -552,11 +565,10 @@ describe('DocumentsService', () => {
     };
     prismaMock.documents.findFirst.mockResolvedValue(doc);
 
-    const res = await service.findOne('507f1f77bcf86cd799439011', {
-      sub: 'owner-1',
-      email: 'owner@example.com',
-      role: UserRole.USER,
-    });
+    const res = await service.findOne(
+      '507f1f77bcf86cd799439011',
+      createTokenPayload(),
+    );
 
     expect(prismaMock.documents.findFirst).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -580,11 +592,14 @@ describe('DocumentsService', () => {
     };
     prismaMock.documents.findFirst.mockResolvedValue(doc);
 
-    const res = await service.findOne('507f1f77bcf86cd799439011', {
-      sub: 'moderator-1',
-      email: 'mod@example.com',
-      role: UserRole.MODERATOR,
-    });
+    const res = await service.findOne(
+      '507f1f77bcf86cd799439011',
+      createTokenPayload({
+        sub: 'moderator-1',
+        email: 'mod@example.com',
+        role: UserRole.MODERATOR,
+      }),
+    );
 
     expect(prismaMock.documents.findFirst).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -607,9 +622,11 @@ describe('DocumentsService', () => {
 
     await expect(
       service.findOne('507f1f77bcf86cd799439011', {
-        sub: 'moderator-1',
-        email: 'mod@example.com',
-        role: UserRole.MODERATOR,
+        ...createTokenPayload({
+          sub: 'moderator-1',
+          email: 'mod@example.com',
+          role: UserRole.MODERATOR,
+        }),
       }),
     ).rejects.toThrow();
     expect(prismaMock.documents.findFirst).toHaveBeenCalledWith(
