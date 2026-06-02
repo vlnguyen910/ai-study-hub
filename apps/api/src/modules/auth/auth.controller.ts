@@ -16,11 +16,11 @@ import { SigninDto } from './dto/signin.dto';
 import { SignupDto } from './dto/signup.dto';
 import { Public } from '../../common/decorators/public.decorator';
 import { cookieConfiguration } from '../../config';
-import { accounts, DeviceType } from '@prisma/client';
-import { AuthGuard } from '../../common/guards/auth.guard';
+import { DeviceType } from '@prisma/client';
 import { User } from '../../common/decorators';
 import { TokenPayload } from '../../common/interfaces/auth.interface';
-import { LogoutDto } from './dto/logout.dto';
+import { RefreshTokenGuard } from '../../common/guards/refresh-token.guard';
+import { JwtAuthGuard } from '../../common/guards/jwt.guard';
 
 @Controller('auth')
 export class AuthController {
@@ -77,18 +77,26 @@ export class AuthController {
   }
 
   @Version('1')
-  @UseGuards(AuthGuard)
+  @UseGuards(JwtAuthGuard)
   @HttpCode(HttpStatus.OK)
   @Post('logout')
   logout(
     @User() user: TokenPayload,
     @Res({ passthrough: true }) res: Response,
-    @Body() logoutDto: LogoutDto,
   ) {
     // Clear cookies
     res.clearCookie('accessToken');
     res.clearCookie('refreshToken');
 
-    return this.authService.logout(user.sub, logoutDto.deviceId);
+    return this.authService.logout(user.sub, user.deviceId);
+  }
+
+  @Version('1')
+  @Post('refresh')
+  @UseGuards(RefreshTokenGuard)
+  async refreshToken(@User() userPayload: TokenPayload) {
+    const data = await this.authService.refreshToken(userPayload);
+
+    return data;
   }
 }

@@ -13,7 +13,6 @@ import type { ConfigType } from '@nestjs/config';
 import { TokenPayload } from '../../common/interfaces/auth.interface';
 import { JwtTokenType } from '../../common/enums/jwt.enum';
 import { accounts, DeviceType, UserRole } from '@prisma/client';
-import { v4 as uuidv4 } from 'uuid';
 import argon2 from 'argon2';
 import { AccountsService } from '../accounts/accounts.service';
 
@@ -70,7 +69,7 @@ export class AuthService {
       throw new UnauthorizedException('Invalid credentials');
     }
 
-    const data = await this.manageUserToken(account);
+    const data = await this.manageUserToken(account, signinDto.deviceId);
 
     const hashedRefreshToken = await argon2.hash(data.refreshToken);
     // Avoiding multiple sessions with same deviceId for the same user, we use upsert to update existing session or create new one
@@ -125,16 +124,30 @@ export class AuthService {
     };
   }
 
-  private async manageUserToken(account: accounts) {
-    const jti = uuidv4();
+  async refreshToken(userPayload: TokenPayload) {
+    const accessToken = await this.generateToken(
+      userPayload,
+      JwtTokenType.AccessToken,
+      this.jwtConfig.accessTokenExpiresIn,
+    );
+
+    return {
+      message: 'Token refreshed successfully',
+      data: {
+        accessToken: accessToken,
+      },
+    };
+  }
+
+  private async manageUserToken(account: accounts, deviceId: string) {
     const tokenPayload: TokenPayload = {
       sub: account.id,
-      jti,
       name: account.name,
       email: account.email,
       role: account.role,
       status: account.status,
-      type: JwtTokenType.AccessToken, // Placeholder, type is overwritten by generateToken
+      type: JwtTokenType.AccessToken, // Default to AccessToken, will be overridden in generateToken
+      deviceId: deviceId,
     };
 
     const [accessToken, refreshToken] = await Promise.all([

@@ -12,7 +12,7 @@ import {
   ListDocumentsQueryDto,
 } from './dto';
 import { SubjectsService } from '../subjects';
-import type { RequestUser } from '../../common/decorators/user.decorator';
+import { TokenPayload } from '../../common/interfaces/auth.interface';
 
 @Injectable()
 export class DocumentsService {
@@ -45,7 +45,7 @@ export class DocumentsService {
     },
   } satisfies Prisma.documentsSelect;
 
-  private buildVisibleDocumentFilters(user?: RequestUser) {
+  private buildVisibleDocumentFilters(user?: TokenPayload) {
     const visibilityFilters: Prisma.documentsWhereInput[] = [
       {
         status: DocumentStatus.ACTIVE,
@@ -119,7 +119,7 @@ export class DocumentsService {
     };
   }
 
-  async findAll(query: ListDocumentsQueryDto, user?: RequestUser) {
+  async findAll(query: ListDocumentsQueryDto, user?: TokenPayload) {
     const { page = 1, limit = 10, authorId, subjectId, status } = query;
     const skip = (page - 1) * limit;
 
@@ -217,7 +217,7 @@ export class DocumentsService {
     };
   }
 
-  async findOne(id: string, user?: RequestUser) {
+  async findOne(id: string, user?: TokenPayload) {
     const document = await this.prismaService.documents.findFirst({
       where: {
         id,
