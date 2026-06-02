@@ -15,7 +15,7 @@ import { SigninDto } from './dto/signin.dto';
 import { SignupDto } from './dto/signup.dto';
 import { Public } from '../../common/decorators/public.decorator';
 import { cookieConfiguration } from '../../config';
-import { DeviceInfo } from '@prisma/client';
+import { DeviceType } from '@prisma/client';
 
 @Controller('auth')
 export class AuthController {
@@ -29,10 +29,7 @@ export class AuthController {
   @Public()
   @Post('signup')
   signup(@Body() signupDto: SignupDto) {
-    return this.authService.signup({
-      ...signupDto,
-      deviceInfo: DeviceInfo.WEB,
-    });
+    return this.authService.signup(signupDto);
   }
 
   @Version('1')
@@ -40,7 +37,7 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   @Post('signin')
   async signin(@Body() signinDto: SigninDto, @Res() res: Response) {
-    const result = await this.authService.signin(signinDto);
+    const result = await this.authService.signin(signinDto, DeviceType.WEB);
 
     // Set access token as HTTP-only cookie
     res.cookie('accessToken', result.data.accessToken, {
@@ -66,10 +63,7 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   @Post('mobile-signin')
   async mobileSignin(@Body() signinDto: SigninDto) {
-    const result = await this.authService.signin({
-      ...signinDto,
-      deviceInfo: DeviceInfo.MOBILE,
-    });
+    const result = await this.authService.signin(signinDto, DeviceType.MOBILE);
 
     return {
       message: result.message,

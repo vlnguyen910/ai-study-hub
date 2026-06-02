@@ -23,7 +23,7 @@ enum UserStatus {
   DELETED
 }
 
-enum DeviceInfo {
+enum DeviceType {
   WEB
   MOBILE
 }
@@ -51,12 +51,13 @@ model sessions {
   userId       String     @db.ObjectId
   user         accounts   @relation(fields: [userId], references: [id])
   refreshToken String
-  deviceInfo   DeviceInfo
+  deviceId     String     @unique
+  deviceType   DeviceType
   isRevoked    Boolean    @default(false)
   createdAt    DateTime   @default(now())
   expiresAt    DateTime
 
-  @@index([userId])
+  @@unique([userId, deviceId])
 }
 
 model schools {
@@ -78,7 +79,7 @@ model subjects {
 
   //Relationships
   documents documents[]
-  school    schools  @relation(fields: [schoolId], references: [id])
+  school    schools     @relation(fields: [schoolId], references: [id])
 }
 
 enum DocumentStatus {
@@ -97,7 +98,7 @@ model documents {
   sizeInBytes     Int
   format          String
   resourceType    String
-  subjectId       String?         @db.ObjectId
+  subjectId       String?        @db.ObjectId
   status          DocumentStatus @default(PENDING)
   authorId        String         @db.ObjectId
   isPublic        Boolean        @default(false)
@@ -109,7 +110,7 @@ model documents {
   deletedAt       DateTime?
 
   //Relationships
-  subject  subjects?  @relation(fields: [subjectId], references: [id])
+  subject  subjects? @relation(fields: [subjectId], references: [id])
   author   accounts  @relation("authorId", fields: [authorId], references: [id])
   reviewer accounts? @relation("reviewedById", fields: [reviewedById], references: [id])
 }
