@@ -24,8 +24,4 @@ export class SignupDto {
   @IsOptional()
   @IsUrl({ require_tld: false })
   avatarUrl?: string;
-
-  @IsOptional()
-  @IsIn(['WEB', 'MOBILE'])
-  deviceInfo?: AuthDeviceInfo;
 }

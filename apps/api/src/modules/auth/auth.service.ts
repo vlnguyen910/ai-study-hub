@@ -12,7 +12,7 @@ import { jwtConfiguration } from '../../config';
 import type { ConfigType } from '@nestjs/config';
 import { TokenPayload } from '../../common/interfaces/auth.interface';
 import { JwtTokenType } from '../../common/enums/jwt.enum';
-import { accounts, UserRole } from '@prisma/client';
+import { accounts, DeviceType, UserRole } from '@prisma/client';
 import { v4 as uuidv4 } from 'uuid';
 import argon2 from 'argon2';
 import { AccountsService } from '../accounts/accounts.service';
@@ -52,7 +52,7 @@ export class AuthService {
     };
   }
 
-  async signin(signinDto: SigninDto) {
+  async signin(signinDto: SigninDto, deviceType: DeviceType) {
     const account = await this.accountService.findAccountByEmail(
       signinDto.email,
     );
@@ -73,11 +73,24 @@ export class AuthService {
     const data = await this.manageUserToken(account);
 
     const hashedRefreshToken = await argon2.hash(data.refreshToken);
-    await this.prismaService.sessions.create({
-      data: {
+    // Avoiding multiple sessions with same deviceId for the same user, we use upsert to update existing session or create new one
+    await this.prismaService.sessions.upsert({
+      where: {
+        userId_deviceId: {
+          userId: account.id,
+          deviceId: signinDto.deviceId,
+        },
+      },
+      update: {
+        refreshToken: hashedRefreshToken,
+        expiresAt: this.getExpiryDate(this.jwtConfig.refreshTokenExpiresIn),
+        isRevoked: false,
+      },
+      create: {
         userId: account.id,
         refreshToken: hashedRefreshToken,
-        deviceInfo: signinDto.deviceInfo,
+        deviceId: signinDto.deviceId,
+        deviceType: deviceType,
         expiresAt: this.getExpiryDate(this.jwtConfig.refreshTokenExpiresIn),
       },
     });

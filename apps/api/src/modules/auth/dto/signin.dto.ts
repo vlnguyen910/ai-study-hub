@@ -1,4 +1,4 @@
-import { DeviceInfo } from '@prisma/client';
+import { DeviceType } from '@prisma/client';
 import type { AuthDeviceInfo } from './signup.dto';
 import {
   IsEmail,
@@ -17,6 +17,6 @@ export class SigninDto {
   password!: string;
 
   @IsNotEmpty()
-  @IsEnum(DeviceInfo)
-  deviceInfo!: AuthDeviceInfo;
+  @IsString()
+  deviceId!: string;
 }
