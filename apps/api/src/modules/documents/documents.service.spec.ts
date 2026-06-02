@@ -4,6 +4,10 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { SubjectsService } from '../subjects';
 import { DocumentStatus, UserRole } from '@prisma/client';
 
+jest.mock('uuid', () => ({
+  v4: jest.fn(() => 'test-jti'),
+}));
+
 describe('DocumentsService', () => {
   let service: DocumentsService;
 

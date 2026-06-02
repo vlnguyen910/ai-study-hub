@@ -26,20 +26,10 @@ export class OptionalJwtGuard implements CanActivate {
     const request = context
       .switchToHttp()
       .getRequest<Request & { user?: AuthenticatedUser }>();
-    const authorizationHeader = request.headers.authorization;
-
-    if (!authorizationHeader) {
-      return true;
-    }
-
-    if (!authorizationHeader.startsWith('Bearer ')) {
-      throw new UnauthorizedException('Invalid authorization header');
-    }
-
-    const token = authorizationHeader.slice(7).trim();
+    const token = this.extractToken(request);
 
     if (!token) {
-      throw new UnauthorizedException('Invalid authorization header');
+      return true;
     }
 
     try {
@@ -54,5 +44,25 @@ export class OptionalJwtGuard implements CanActivate {
     } catch {
       throw new UnauthorizedException('Invalid or expired access token');
     }
+  }
+
+  private extractToken(request: Request): string | undefined {
+    const authorizationHeader = request.headers.authorization;
+
+    if (!authorizationHeader) {
+      return request.cookies?.['accessToken'];
+    }
+
+    if (!authorizationHeader.startsWith('Bearer ')) {
+      throw new UnauthorizedException('Invalid authorization header');
+    }
+
+    const token = authorizationHeader.slice(7).trim();
+
+    if (!token) {
+      throw new UnauthorizedException('Invalid authorization header');
+    }
+
+    return token;
   }
 }

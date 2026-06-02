@@ -13,8 +13,11 @@ describe('OptionalJwtGuard', () => {
     guard = new OptionalJwtGuard(jwtService, configService);
   });
 
-  function mockContext(headers: Record<string, string | undefined>) {
-    const req: any = { headers };
+  function mockContext(
+    headers: Record<string, string | undefined>,
+    cookies: Record<string, string | undefined> = {},
+  ) {
+    const req: any = { headers, cookies };
     const ctx: any = {
       switchToHttp: () => ({ getRequest: () => req }),
     } as ExecutionContext;
@@ -42,6 +45,21 @@ describe('OptionalJwtGuard', () => {
     jwtService.verifyAsync = jest.fn().mockResolvedValue(payload);
 
     const { ctx, req } = mockContext({ authorization: `Bearer ${token}` });
+
+    await expect(guard.canActivate(ctx)).resolves.toBe(true);
+    expect(jwtService.verifyAsync).toHaveBeenCalledWith(token, {
+      secret: 'secret',
+    });
+    expect(req.user).toEqual(payload);
+  });
+
+  it('verifies access token cookie and attaches user', async () => {
+    const token = 'cookie-token';
+    const payload = { sub: 'u1', email: 'a@b', role: 'USER' };
+    jest.spyOn(configService, 'getOrThrow').mockReturnValue('secret');
+    jwtService.verifyAsync = jest.fn().mockResolvedValue(payload);
+
+    const { ctx, req } = mockContext({}, { accessToken: token });
 
     await expect(guard.canActivate(ctx)).resolves.toBe(true);
     expect(jwtService.verifyAsync).toHaveBeenCalledWith(token, {

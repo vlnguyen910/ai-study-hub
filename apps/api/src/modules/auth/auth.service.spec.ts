@@ -1,26 +1,39 @@
 import { ConflictException, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { Test, TestingModule } from '@nestjs/testing';
-import * as bcrypt from 'bcrypt';
+import argon2 from 'argon2';
+import { DeviceInfo, UserRole, UserStatus } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
+import { jwtConfiguration } from '../../config';
+import { AccountsService } from '../accounts/accounts.service';
 import { AuthService } from './auth.service';
-import { DeviceInfo } from '@prisma/client';
+
+jest.mock('uuid', () => ({
+  v4: jest.fn(() => 'test-jti'),
+}));
 
 describe('AuthService', () => {
   let service: AuthService;
 
   const prismaMock = {
-    accounts: {
-      findUnique: jest.fn(),
-      create: jest.fn(),
-    },
     sessions: {
       create: jest.fn(),
     },
   };
 
+  const accountsServiceMock = {
+    create: jest.fn(),
+    findAccountByEmail: jest.fn(),
+  };
+
   const jwtMock = {
     signAsync: jest.fn(),
+  };
+
+  const jwtConfigMock = {
+    secret: 'test-secret',
+    accessTokenExpiresIn: '15m',
+    refreshTokenExpiresIn: '7d',
   };
 
   beforeEach(async () => {
@@ -34,8 +47,16 @@ describe('AuthService', () => {
           useValue: prismaMock,
         },
         {
+          provide: AccountsService,
+          useValue: accountsServiceMock,
+        },
+        {
           provide: JwtService,
           useValue: jwtMock,
+        },
+        {
+          provide: jwtConfiguration.KEY,
+          useValue: jwtConfigMock,
         },
       ],
     }).compile();
@@ -43,17 +64,11 @@ describe('AuthService', () => {
     service = module.get<AuthService>(AuthService);
   });
 
-  it('should sign up a new account and return tokens', async () => {
-    prismaMock.accounts.findUnique.mockResolvedValue(null);
-    prismaMock.accounts.create.mockResolvedValue({
-      id: 'user-1',
-      email: 'new-user@example.com',
-      name: 'New User',
+  it('should sign up a new account without creating a session', async () => {
+    accountsServiceMock.findAccountByEmail.mockResolvedValue(null);
+    accountsServiceMock.create.mockResolvedValue({
+      message: 'Account created successfully',
     });
-    jwtMock.signAsync
-      .mockResolvedValueOnce('access-token')
-      .mockResolvedValueOnce('refresh-token');
-    prismaMock.sessions.create.mockResolvedValue({ id: 'session-1' });
 
     const result = await service.signup({
       email: 'new-user@example.com',
@@ -62,22 +77,22 @@ describe('AuthService', () => {
       deviceInfo: 'WEB',
     });
 
-    expect(prismaMock.accounts.create).toHaveBeenCalledWith(
+    expect(accountsServiceMock.create).toHaveBeenCalledWith(
       expect.objectContaining({
-        data: expect.objectContaining({
-          email: 'new-user@example.com',
-          name: 'New User',
-          password: expect.any(String),
-        }),
+        email: 'new-user@example.com',
+        name: 'New User',
+        hashedPassword: expect.any(String),
+        avatarUrl: undefined,
+        role: UserRole.USER,
       }),
     );
 
-    const createPayload = prismaMock.accounts.create.mock.calls[0][0] as {
-      data: { password: string };
+    const createPayload = accountsServiceMock.create.mock.calls[0][0] as {
+      hashedPassword: string;
     };
-    const passwordMatched = await bcrypt.compare(
+    const passwordMatched = await argon2.verify(
+      createPayload.hashedPassword,
       'Password123!',
-      createPayload.data.password,
     );
     expect(passwordMatched).toBe(true);
 
@@ -89,7 +104,9 @@ describe('AuthService', () => {
   });
 
   it('should throw conflict exception when email exists on signup', async () => {
-    prismaMock.accounts.findUnique.mockResolvedValue({ id: 'existing-user' });
+    accountsServiceMock.findAccountByEmail.mockResolvedValue({
+      id: 'existing-user',
+    });
 
     await expect(
       service.signup({
@@ -101,13 +118,15 @@ describe('AuthService', () => {
   });
 
   it('should sign in successfully with valid credentials', async () => {
-    const hashedPassword = await bcrypt.hash('Password123!', 10);
+    const hashedPassword = await argon2.hash('Password123!');
 
-    prismaMock.accounts.findUnique.mockResolvedValue({
+    accountsServiceMock.findAccountByEmail.mockResolvedValue({
       id: 'user-1',
       email: 'new-user@example.com',
       name: 'New User',
       password: hashedPassword,
+      role: UserRole.USER,
+      status: UserStatus.ACTIVE,
     });
     jwtMock.signAsync
       .mockResolvedValueOnce('access-token')
@@ -122,23 +141,43 @@ describe('AuthService', () => {
 
     expect(result.data.accessToken).toBe('access-token');
     expect(result.data.refreshToken).toBe('refresh-token');
-    expect(prismaMock.sessions.create).toHaveBeenCalled();
+    expect(jwtMock.signAsync).toHaveBeenCalledWith(
+      expect.objectContaining({
+        sub: 'user-1',
+        email: 'new-user@example.com',
+        name: 'New User',
+        role: UserRole.USER,
+        status: UserStatus.ACTIVE,
+        jti: 'test-jti',
+      }),
+      { expiresIn: jwtConfigMock.accessTokenExpiresIn },
+    );
+    expect(prismaMock.sessions.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          userId: 'user-1',
+          refreshToken: expect.any(String),
+          deviceInfo: DeviceInfo.MOBILE,
+          expiresAt: expect.any(Date),
+        }),
+      }),
+    );
     const sessionCreatePayload = prismaMock.sessions.create.mock
       .calls[0][0] as {
       data: { refreshToken: string };
     };
     expect(
-      await bcrypt.compare(
-        'refresh-token',
+      await argon2.verify(
         sessionCreatePayload.data.refreshToken,
+        'refresh-token',
       ),
     ).toBe(true);
   });
 
   it('should throw unauthorized exception for invalid signin password', async () => {
-    const hashedPassword = await bcrypt.hash('Password123!', 10);
+    const hashedPassword = await argon2.hash('Password123!');
 
-    prismaMock.accounts.findUnique.mockResolvedValue({
+    accountsServiceMock.findAccountByEmail.mockResolvedValue({
       id: 'user-1',
       email: 'new-user@example.com',
       name: 'New User',
@@ -161,21 +200,17 @@ describe('AuthService', () => {
     });
   });
 
-  it('parseExpiresIn handles various formats and fallbacks', () => {
+  it('getExpiryDate handles supported duration formats', () => {
     const p: any = service as any;
-    // undefined -> fallback
-    expect(p.parseExpiresIn(undefined, 10)).toBe(10);
-    // numeric string
-    expect(p.parseExpiresIn('60', 10)).toBe(60);
-    // minutes
-    expect(p.parseExpiresIn('5m', 10)).toBe(300);
-    // hours
-    expect(p.parseExpiresIn('2h', 10)).toBe(7200);
-    // days
-    expect(p.parseExpiresIn('3d', 10)).toBe(259200);
-    // seconds
-    expect(p.parseExpiresIn('45s', 10)).toBe(45);
-    // invalid -> fallback
-    expect(p.parseExpiresIn('xyz', 10)).toBe(10);
+    const now = Date.now();
+    jest.spyOn(Date, 'now').mockReturnValue(now);
+
+    expect(p.getExpiryDate('45s').getTime()).toBe(now + 45 * 1000);
+    expect(p.getExpiryDate('5m').getTime()).toBe(now + 5 * 60 * 1000);
+    expect(p.getExpiryDate('2h').getTime()).toBe(now + 2 * 60 * 60 * 1000);
+    expect(p.getExpiryDate('3d').getTime()).toBe(now + 3 * 24 * 60 * 60 * 1000);
+    expect(() => p.getExpiryDate('xyz')).toThrow(
+      'Unsupported token expiry format: xyz',
+    );
   });
 });
