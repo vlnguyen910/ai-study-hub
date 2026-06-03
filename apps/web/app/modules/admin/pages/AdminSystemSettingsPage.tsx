@@ -5,7 +5,6 @@ import { InputField } from "@/components/ui/InputField";
 import { Switch } from "@/components/ui/Switch";
 import { Toast } from "@/components/ui/Toast";
 import { useState, type ReactNode } from "react";
-import { AdminShell } from "../components/AdminShell";
 import {
   AdminCard,
   AdminSelect,
@@ -54,10 +53,7 @@ export default function AdminSystemSettingsPage(): React.JSX.Element {
   };
 
   return (
-    <AdminShell
-      activeSection="settings"
-      searchPlaceholder="Tìm kiếm cấu hình hệ thống..."
-    >
+    <>
       <div className="mb-8 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
         <div>
           <h1 className="text-3xl font-bold tracking-normal text-on-surface">
@@ -87,7 +83,7 @@ export default function AdminSystemSettingsPage(): React.JSX.Element {
       </div>
 
       {message ? (
-        <div className="fixed right-4 top-20 z-[90]">
+        <div className="fixed right-4 top-20 z-90">
           <Toast
             icon={<MaterialIcon className="text-[18px]" name="check" />}
             message={message}
@@ -159,7 +155,7 @@ export default function AdminSystemSettingsPage(): React.JSX.Element {
                     Mô tả hệ thống
                   </span>
                   <textarea
-                    className="min-h-28 w-full resize-y rounded border border-outline bg-surface px-3 py-2 font-body-md text-body-md outline-none focus:border-2 focus:border-primary focus:px-[11px] focus:py-[7px]"
+                    className="min-h-28 w-full resize-y rounded border border-outline bg-surface px-3 py-2 font-body-md text-body-md outline-none focus:border-2 focus:border-primary focus:px-2.75 focus:py-1.75"
                     onChange={(event) =>
                       setSettings((current) => ({
                         ...current,
@@ -355,7 +351,7 @@ export default function AdminSystemSettingsPage(): React.JSX.Element {
           ) : null}
         </div>
       </div>
-    </AdminShell>
+    </>
   );
 }
 
@@ -395,7 +391,7 @@ function ToggleRow({
   readonly onChange: (checked: boolean) => void;
 }): React.JSX.Element {
   return (
-    <div className="flex min-h-[74px] items-center justify-between gap-4 rounded border border-outline-variant bg-surface p-4">
+    <div className="flex min-h-18.5 items-center justify-between gap-4 rounded border border-outline-variant bg-surface p-4">
       <div>
         <p className="font-label-md text-label-md tracking-normal">{label}</p>
         <p className="font-label-sm text-label-sm text-on-surface-variant tracking-normal">

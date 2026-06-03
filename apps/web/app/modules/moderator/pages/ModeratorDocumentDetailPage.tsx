@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { documentReviewItems } from "../mockData";
 import type { DocumentReviewStatus } from "../types";
-import { ModeratorShell } from "../components/ModeratorShell";
+
 import {
   EmptyState,
   MaterialIcon,
@@ -59,12 +59,10 @@ export default function ModeratorDocumentDetailPage({
 
   if (!document) {
     return (
-      <ModeratorShell activeSection="documents">
-        <EmptyState
-          description="Mã tài liệu không tồn tại trong dữ liệu mẫu hiện tại."
-          title="Không tìm thấy tài liệu"
-        />
-      </ModeratorShell>
+      <EmptyState
+        description="Mã tài liệu không tồn tại trong dữ liệu mẫu hiện tại."
+        title="Không tìm thấy tài liệu"
+      />
     );
   }
 
@@ -74,10 +72,7 @@ export default function ModeratorDocumentDetailPage({
   };
 
   return (
-    <ModeratorShell
-      activeSection="documents"
-      searchPlaceholder="Tìm kiếm tài liệu..."
-    >
+    <>
       <nav
         aria-label="Đường dẫn trang"
         className="mb-6 flex flex-wrap items-center gap-2 font-label-sm text-label-sm text-on-surface-variant"
@@ -384,6 +379,6 @@ export default function ModeratorDocumentDetailPage({
           </section>
         </aside>
       </div>
-    </ModeratorShell>
+    </>
   );
 }

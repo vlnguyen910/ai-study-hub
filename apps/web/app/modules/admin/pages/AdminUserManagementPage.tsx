@@ -9,7 +9,6 @@ import { SearchInput } from "@/components/ui/SearchInput";
 import { SelectField } from "@/components/ui/SelectField";
 import { Table, type TableRow } from "@/components/ui/Table";
 import { useMemo, useState } from "react";
-import { AdminShell } from "../components/AdminShell";
 import {
   AdminCard,
   AdminIconAction,
@@ -309,132 +308,127 @@ export default function AdminUserManagementPage(): React.JSX.Element {
   }));
 
   return (
-    <AdminShell
-      activeSection="users"
-      searchPlaceholder="Tìm kiếm người dùng theo tên, email hoặc ID..."
-    >
-      <div className="relative">
-        <div className="mb-8 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
-          <div>
-            <h1 className="text-3xl font-bold tracking-normal text-on-surface">
-              Quản lý người dùng
-            </h1>
-            <p className="mt-2 max-w-2xl font-body-md text-body-md text-on-surface-variant">
-              Tìm kiếm, lọc trạng thái và thao tác nhanh với tài khoản hệ thống.
-            </p>
-          </div>
-          <Button
-            className="inline-flex items-center justify-center gap-2 self-start rounded"
-            onClick={handleOpenAdd}
-          >
-            <MaterialIcon className="text-[18px]" name="person_add" />
-            Thêm người dùng
-          </Button>
+    <div className="relative">
+      <div className="mb-8 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+        <div>
+          <h1 className="text-3xl font-bold tracking-normal text-on-surface">
+            Quản lý người dùng
+          </h1>
+          <p className="mt-2 max-w-2xl font-body-md text-body-md text-on-surface-variant">
+            Tìm kiếm, lọc trạng thái và thao tác nhanh với tài khoản hệ thống.
+          </p>
         </div>
-
-        <Card className="mb-6 p-4">
-          <div className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(320px,1fr)_220px_220px_auto] lg:items-end">
-            <SearchInput
-              label="Tìm kiếm"
-              onChange={(event) => {
-                setQuery(event.target.value);
-                setCurrentPage(1);
-              }}
-              onClear={() => {
-                setQuery("");
-                setCurrentPage(1);
-              }}
-              placeholder="Tìm kiếm người dùng..."
-              value={query}
-            />
-            <SelectField
-              label="Vai trò"
-              onChange={(value) => {
-                setRoleFilter(roleValuesMap[value] ?? "all");
-                setCurrentPage(1);
-              }}
-              options={roleOptionsList}
-              value={roleLabelsMap[roleFilter]}
-            />
-            <SelectField
-              label="Trạng thái"
-              onChange={(value) => {
-                setStatusFilter(statusValuesMap[value] ?? "all");
-                setCurrentPage(1);
-              }}
-              options={statusOptionsList}
-              value={statusLabelsMap[statusFilter]}
-            />
-          </div>
-        </Card>
-
-        <AdminCard className="w-full max-w-[calc(100vw-32px)] overflow-hidden lg:max-w-none">
-          <div className="flex flex-col gap-3 border-b border-outline-variant p-4 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <h2 className="font-label-md text-label-md text-on-surface tracking-normal">
-                Danh sách người dùng
-              </h2>
-              <p className="font-label-sm text-label-sm text-on-surface-variant tracking-normal">
-                {filteredUsers.length} kết quả · {users.length} tài khoản
-              </p>
-            </div>
-            <Badge tone="neutral">
-              Trang {currentPage}/{totalPages}
-            </Badge>
-          </div>
-          <Table columns={userColumns} rows={rows} />
-          <div className="flex flex-col gap-3 border-t border-outline-variant p-4 sm:flex-row sm:items-center sm:justify-between">
-            <p className="font-label-sm text-label-sm text-on-surface-variant tracking-normal">
-              Hiển thị {visibleUsers.length} trên {filteredUsers.length} người
-              dùng.
-            </p>
-            <Pagination
-              currentPage={currentPage}
-              onPageChange={setCurrentPage}
-              totalPages={totalPages}
-            />
-          </div>
-        </AdminCard>
-
-        {formOpen ? (
-          <UserFormDialog
-            draft={draft}
-            editingUser={editingUser}
-            onCancel={() => {
-              setFormOpen(false);
-              setEditingUser(null);
-              setDraft(emptyDraft);
-            }}
-            onChange={setDraft}
-            onSave={handleSaveUser}
-          />
-        ) : null}
-
-        {viewUser ? (
-          <UserDetailDialog onClose={() => setViewUser(null)} user={viewUser} />
-        ) : null}
-
-        <AdminConfirmDialog
-          confirmLabel="Xóa"
-          description={
-            deleteUser
-              ? `Tài khoản ${deleteUser.name} sẽ bị xóa khỏi danh sách.`
-              : ""
-          }
-          onCancel={() => setDeleteUser(null)}
-          onConfirm={() => {
-            if (deleteUser) {
-              setUsers((current) =>
-                current.filter((user) => user.id !== deleteUser.id),
-              );
-              setDeleteUser(null);
-            }
-          }}
-          open={deleteUser !== null}
-          title="Xóa người dùng"
-        />
+        <Button
+          className="inline-flex items-center justify-center gap-2 self-start rounded"
+          onClick={handleOpenAdd}
+        >
+          <MaterialIcon className="text-[18px]" name="person_add" />
+          Thêm người dùng
+        </Button>
       </div>
-    </AdminShell>
+
+      <Card className="mb-6 p-4">
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(320px,1fr)_220px_220px_auto] lg:items-end">
+          <SearchInput
+            label="Tìm kiếm"
+            onChange={(event) => {
+              setQuery(event.target.value);
+              setCurrentPage(1);
+            }}
+            onClear={() => {
+              setQuery("");
+              setCurrentPage(1);
+            }}
+            placeholder="Tìm kiếm người dùng..."
+            value={query}
+          />
+          <SelectField
+            label="Vai trò"
+            onChange={(value) => {
+              setRoleFilter(roleValuesMap[value] ?? "all");
+              setCurrentPage(1);
+            }}
+            options={roleOptionsList}
+            value={roleLabelsMap[roleFilter]}
+          />
+          <SelectField
+            label="Trạng thái"
+            onChange={(value) => {
+              setStatusFilter(statusValuesMap[value] ?? "all");
+              setCurrentPage(1);
+            }}
+            options={statusOptionsList}
+            value={statusLabelsMap[statusFilter]}
+          />
+        </div>
+      </Card>
+
+      <AdminCard className="w-full max-w-[calc(100vw-32px)] overflow-hidden lg:max-w-none">
+        <div className="flex flex-col gap-3 border-b border-outline-variant p-4 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h2 className="font-label-md text-label-md text-on-surface tracking-normal">
+              Danh sách người dùng
+            </h2>
+            <p className="font-label-sm text-label-sm text-on-surface-variant tracking-normal">
+              {filteredUsers.length} kết quả · {users.length} tài khoản
+            </p>
+          </div>
+          <Badge tone="neutral">
+            Trang {currentPage}/{totalPages}
+          </Badge>
+        </div>
+        <Table columns={userColumns} rows={rows} />
+        <div className="flex flex-col gap-3 border-t border-outline-variant p-4 sm:flex-row sm:items-center sm:justify-between">
+          <p className="font-label-sm text-label-sm text-on-surface-variant tracking-normal">
+            Hiển thị {visibleUsers.length} trên {filteredUsers.length} người
+            dùng.
+          </p>
+          <Pagination
+            currentPage={currentPage}
+            onPageChange={setCurrentPage}
+            totalPages={totalPages}
+          />
+        </div>
+      </AdminCard>
+
+      {formOpen ? (
+        <UserFormDialog
+          draft={draft}
+          editingUser={editingUser}
+          onCancel={() => {
+            setFormOpen(false);
+            setEditingUser(null);
+            setDraft(emptyDraft);
+          }}
+          onChange={setDraft}
+          onSave={handleSaveUser}
+        />
+      ) : null}
+
+      {viewUser ? (
+        <UserDetailDialog onClose={() => setViewUser(null)} user={viewUser} />
+      ) : null}
+
+      <AdminConfirmDialog
+        confirmLabel="Xóa"
+        description={
+          deleteUser
+            ? `Tài khoản ${deleteUser.name} sẽ bị xóa khỏi danh sách.`
+            : ""
+        }
+        onCancel={() => setDeleteUser(null)}
+        onConfirm={() => {
+          if (deleteUser) {
+            setUsers((current) =>
+              current.filter((user) => user.id !== deleteUser.id),
+            );
+            setDeleteUser(null);
+          }
+        }}
+        open={deleteUser !== null}
+        title="Xóa người dùng"
+      />
+    </div>
   );
 }
 

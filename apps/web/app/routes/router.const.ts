@@ -26,9 +26,12 @@ export const ROUTE_PATHS = {
   // ========== PROTECTED ROUTES (Require authentication) ==========
   PROTECTED: "/dashboard",
   PROTECTED_ROUTES: {
+    HOME: "/home",
     DASHBOARD: "/dashboard",
+    LIBRARY: "/library",
     PROFILE: "/profile",
     SETTINGS: "/settings",
+    UPLOADS: "/uploads",
     FAVORITES: "/favorites",
     MY_DOCUMENTS: "/my-documents",
     MY_UPLOADS: "/my-uploads",
