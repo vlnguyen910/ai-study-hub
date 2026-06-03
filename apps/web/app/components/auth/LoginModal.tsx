@@ -104,7 +104,7 @@ export default function LoginModal({
         throw new Error("Login succeeded but token payload was invalid.");
       }
 
-      setAuth(null, user.role, user);
+      setAuth(null, user.role, user, refreshToken);
       resetForm();
       onClose();
     } catch (error: unknown) {
