@@ -4,7 +4,7 @@ import {
   recentActivities,
   weeklyDocumentFlow,
 } from "../mockData";
-import { ModeratorShell } from "../components/ModeratorShell";
+
 import { MaterialIcon, ModeratorCard } from "../components/ModeratorPrimitives";
 
 const statToneClasses = {
@@ -24,7 +24,7 @@ const activityToneClasses = {
 
 export default function ModeratorDashboardPage(): React.JSX.Element {
   return (
-    <ModeratorShell activeSection="dashboard">
+    <>
       <div className="mb-10">
         <h1 className="mb-2 font-headline-lg text-headline-lg text-on-surface">
           Tổng quan kiểm duyệt
@@ -192,6 +192,6 @@ export default function ModeratorDashboardPage(): React.JSX.Element {
           </div>
         </ModeratorCard>
       </div>
-    </ModeratorShell>
+    </>
   );
 }

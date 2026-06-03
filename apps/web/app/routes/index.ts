@@ -13,6 +13,9 @@ export * from "./user/user.auth.routes";
 // Library routes
 export * from "./library/library.routes";
 
+// Moderator routes
+export * from "./moderator/moderator.routes";
+
 // Admin routes
 export * from "./admin/admin.routes";
 

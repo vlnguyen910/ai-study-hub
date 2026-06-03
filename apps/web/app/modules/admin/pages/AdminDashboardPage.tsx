@@ -7,7 +7,6 @@ import {
   recentAdminActivities,
   systemServices,
 } from "../mockData";
-import { AdminShell } from "../components/AdminShell";
 import {
   AdminCard,
   AdminToneIcon,
@@ -43,7 +42,7 @@ export default function AdminDashboardPage(): React.JSX.Element {
   );
 
   return (
-    <AdminShell activeSection="dashboard">
+    <>
       <div className="mb-8 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
         <div>
           <h1 className="text-3xl font-bold tracking-normal text-on-surface">
@@ -260,6 +259,6 @@ export default function AdminDashboardPage(): React.JSX.Element {
           </div>
         </AdminCard>
       </div>
-    </AdminShell>
+    </>
   );
 }

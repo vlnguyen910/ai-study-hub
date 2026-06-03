@@ -5,7 +5,7 @@ import { Table, type TableRow } from "@/components/ui/Table";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { postModerationItems } from "../mockData";
 import type { PostModerationItem, PostModerationStatus } from "../types";
-import { ModeratorShell } from "../components/ModeratorShell";
+
 import {
   EmptyState,
   IconButton,
@@ -204,10 +204,7 @@ export default function ModeratorPostsPage(): React.JSX.Element {
   );
 
   return (
-    <ModeratorShell
-      activeSection="posts"
-      searchPlaceholder="Tìm kiếm bài viết hoặc tác giả..."
-    >
+    <>
       <div className="mb-8 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
         <div>
           <h1 className="font-headline-lg text-headline-lg text-on-surface">
@@ -351,6 +348,6 @@ export default function ModeratorPostsPage(): React.JSX.Element {
           </div>
         </section>
       </div>
-    </ModeratorShell>
+    </>
   );
 }
