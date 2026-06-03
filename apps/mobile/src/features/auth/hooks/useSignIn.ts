@@ -8,7 +8,7 @@ import {
 import { signInService, AuthServiceError } from "../services/auth.service";
 import type { SignInPayload } from "../types/auth.types";
 import { Alert } from "react-native";
-import { saveTokens } from "../../../utils/storage";
+import { getOrCreateDeviceId, saveTokens } from "../../../utils/storage";
 
 export const useSignIn = () => {
   const [isLoading, setIsLoading] = useState(false);
@@ -28,10 +28,12 @@ export const useSignIn = () => {
     setErrorMessage(null);
 
     try {
+      const deviceId = await getOrCreateDeviceId();
+
       const payload: SignInPayload = {
         email: values.email,
         password: values.password,
-        deviceInfo: "MOBILE",
+        deviceId,
       };
 
       const response = await signInService(payload);

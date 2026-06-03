@@ -1,27 +1,62 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import type { ReactElement } from "react";
 import { Button } from "@repo/ui/button";
-export default function LoginPage(): ReactElement {
-  const router = useRouter();
+import { buildUserFromRefreshToken, extractRefreshToken } from "@/lib/auth";
+import { apiClient } from "@/lib/axios";
+import { API_ENDPOINTS } from "@/shared/constants";
+import { useAuthStore } from "@/stores/auth/store";
+import { getOrCreateDeviceId } from "@/utils";
+
+interface LoginModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onOpenRegister: () => void;
+}
+
+export default function LoginModal({
+  isOpen,
+  onClose,
+  onOpenRegister,
+}: LoginModalProps): ReactElement | null {
   const [formData, setFormData] = useState({ email: "", password: "" });
-  const [errors, setErrors] = useState({ email: "", password: "" });
+  const [errors, setErrors] = useState({
+    email: "",
+    password: "",
+    general: "",
+  });
   const [showPassword, setShowPassword] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const { setAuth } = useAuthStore();
+
+  const resetForm = () => {
+    setFormData({ email: "", password: "" });
+    setErrors({ email: "", password: "", general: "" });
+    setShowPassword(false);
+    setIsLoading(false);
+  };
+
+  useEffect(() => {
+    if (isOpen) {
+      resetForm();
+    }
+  }, [isOpen]);
+
+  if (!isOpen) return null;
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { id, value } = e.target;
     setFormData((prev) => ({ ...prev, [id]: value }));
     if (errors[id as keyof typeof errors]) {
-      setErrors((prev) => ({ ...prev, [id]: "" }));
+      setErrors((prev) => ({ ...prev, [id]: "", general: "" }));
     }
   };
 
   const validate = () => {
     let isValid = true;
-    const newErrors = { email: "", password: "" };
+    const newErrors = { email: "", password: "", general: "" };
 
     if (!formData.email) {
       newErrors.email = "Email is required";
@@ -43,37 +78,50 @@ export default function LoginPage(): ReactElement {
     return isValid;
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (validate()) {
-      console.log("Login form submitted successfully on client:", formData);
-    }
-  };
+    if (!validate() || isLoading) return;
 
-  const closeLogin = () => {
-    if (typeof window === "undefined") return;
-
-    let canGoBackInApp = false;
+    setIsLoading(true);
     try {
-      canGoBackInApp =
-        typeof document !== "undefined" &&
-        Boolean(document.referrer) &&
-        new URL(document.referrer).origin === window.location.origin;
-    } catch (e) {
-      canGoBackInApp = false;
-    }
+      const deviceId = getOrCreateDeviceId();
 
-    if (canGoBackInApp && window.history.length > 1) {
-      router.back();
-      return;
-    }
+      const data = await apiClient.post(API_ENDPOINTS.AUTH.LOGIN, {
+        email: formData.email,
+        password: formData.password,
+        deviceId,
+      });
 
-    router.replace("/");
+      const refreshToken = extractRefreshToken(data);
+      const user = buildUserFromRefreshToken(refreshToken ?? undefined, {
+        email: formData.email,
+      });
+
+      if (!refreshToken) {
+        throw new Error("Login succeeded but refresh token was missing.");
+      }
+      if (!user) {
+        throw new Error("Login succeeded but token payload was invalid.");
+      }
+
+      setAuth(null, user.role, user);
+      resetForm();
+      onClose();
+    } catch (error: unknown) {
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : "Login failed. Please try again.";
+      setErrors((prev) => ({ ...prev, general: errorMessage }));
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleBackdropClick = (e: React.MouseEvent<HTMLDivElement>) => {
     if (e.target === e.currentTarget) {
-      closeLogin();
+      resetForm();
+      onClose();
     }
   };
 
@@ -86,7 +134,10 @@ export default function LoginPage(): ReactElement {
         <div className="relative w-full max-w-md rounded-3xl border border-white/70 bg-white p-8 shadow-2xl shadow-slate-950/20">
           <button
             type="button"
-            onClick={closeLogin}
+            onClick={() => {
+              resetForm();
+              onClose();
+            }}
             aria-label="Close login modal"
             className="absolute right-4 top-4 inline-flex h-9 w-9 items-center justify-center rounded-full border border-gray-200 bg-white text-gray-500 shadow-sm transition-colors hover:bg-gray-50 hover:text-gray-900"
           >
@@ -152,6 +203,12 @@ export default function LoginPage(): ReactElement {
             onSubmit={handleSubmit}
             noValidate
           >
+            {errors.general && (
+              <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-900">
+                {errors.general}
+              </div>
+            )}
+
             <div className="flex flex-col gap-2">
               <label
                 htmlFor="email"
@@ -198,14 +255,14 @@ export default function LoginPage(): ReactElement {
                   className={`w-full h-12 px-4 pr-12 bg-gray-100 border rounded text-gray-900 text-sm focus:outline-none focus:border-blue-600 focus:bg-white transition-all ${
                     errors.password ? "border-red-600" : "border-gray-300"
                   }`}
-                  placeholder="••••••••"
+                  placeholder="••••••"
                   value={formData.password}
                   onChange={handleChange}
                 />
                 <button
                   type="button"
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-600"
                   onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
                 >
                   {showPassword ? (
                     <svg
@@ -216,14 +273,16 @@ export default function LoginPage(): ReactElement {
                       xmlns="http://www.w3.org/2000/svg"
                     >
                       <path
-                        d="M17.94 17.94A10.07 10.07 0 0 1 12 20C7 20 2.73 16.11 1 12A15.42 15.42 0 0 1 4.54 6.54M9.9 4.24A9.12 9.12 0 0 1 12 4C17 4 21.27 7.89 23 12C22.25 13.88 21.1 15.54 19.64 16.89"
+                        d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"
                         stroke="currentColor"
                         strokeWidth="2"
                         strokeLinecap="round"
                         strokeLinejoin="round"
                       />
-                      <path
-                        d="M14.12 14.12A3 3 0 0 1 9.88 9.88M1 1L23 23"
+                      <circle
+                        cx="12"
+                        cy="12"
+                        r="3"
                         stroke="currentColor"
                         strokeWidth="2"
                         strokeLinecap="round"
@@ -239,16 +298,17 @@ export default function LoginPage(): ReactElement {
                       xmlns="http://www.w3.org/2000/svg"
                     >
                       <path
-                        d="M1 12C2.73 7.89 7 4 12 4C17 4 21.27 7.89 23 12C21.27 16.11 17 20 12 20C7 20 2.73 16.11 1 12Z"
+                        d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"
                         stroke="currentColor"
                         strokeWidth="2"
                         strokeLinecap="round"
                         strokeLinejoin="round"
                       />
-                      <circle
-                        cx="12"
-                        cy="12"
-                        r="3"
+                      <line
+                        x1="1"
+                        y1="1"
+                        x2="23"
+                        y2="23"
                         stroke="currentColor"
                         strokeWidth="2"
                         strokeLinecap="round"
@@ -265,70 +325,55 @@ export default function LoginPage(): ReactElement {
               )}
             </div>
 
-            <Button
-              appName="web"
-              className="w-full h-12 bg-blue-600 text-white font-semibold hover:bg-blue-700 rounded mt-2"
-              type="submit"
-            >
-              Log in
+            <Button className="w-full h-12 text-base" disabled={isLoading}>
+              {isLoading ? "Logging in..." : "Log in"}
             </Button>
-
-            <div className="relative my-4">
-              <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-gray-300"></div>
-              </div>
-              <div className="relative flex justify-center text-sm">
-                <span className="px-2 bg-white text-gray-600">
-                  Or continue with
-                </span>
-              </div>
-            </div>
-
-            <div className="flex gap-4">
-              <button
-                type="button"
-                className="flex-1 h-11 border border-gray-300 rounded flex items-center justify-center hover:bg-gray-50"
-              >
-                <svg
-                  width="20"
-                  height="20"
-                  viewBox="0 0 24 24"
-                  fill="currentColor"
-                >
-                  <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
-                  <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
-                  <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" />
-                  <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
-                </svg>
-              </button>
-              <button
-                type="button"
-                className="flex-1 h-11 border border-gray-300 rounded flex items-center justify-center hover:bg-gray-50"
-              >
-                <svg
-                  width="20"
-                  height="20"
-                  viewBox="0 0 24 24"
-                  fill="currentColor"
-                >
-                  <path d="M12 0C5.373 0 0 5.373 0 12c0 5.303 3.438 9.8 8.205 11.385.6.111.82-.261.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.605-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 21.795 24 17.295 24 12c0-6.627-5.373-12-12-12z" />
-                </svg>
-              </button>
-            </div>
           </form>
 
-          <p className="text-center text-sm text-gray-600 mt-8">
+          <div className="flex gap-3 mt-6">
+            <div className="flex-1 h-px bg-gray-300 my-auto"></div>
+            <span className="text-sm text-gray-500">Or continue with</span>
+            <div className="flex-1 h-px bg-gray-300 my-auto"></div>
+          </div>
+
+          <div className="flex gap-3 mt-6">
+            <button className="flex-1 h-10 border border-gray-300 rounded-lg flex items-center justify-center hover:bg-gray-50 transition">
+              <svg
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="currentColor"
+              >
+                <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
+                <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
+                <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" />
+                <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
+              </svg>
+            </button>
+            <button className="flex-1 h-10 border border-gray-300 rounded-lg flex items-center justify-center hover:bg-gray-50 transition">
+              <svg
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="currentColor"
+              >
+                <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z" />
+              </svg>
+            </button>
+          </div>
+
+          <p className="text-center text-gray-600 text-sm mt-6">
             Don't have an account?{" "}
-            <Link
-              href="/register"
-              className="text-blue-600 font-semibold hover:underline"
+            <button
+              onClick={() => {
+                resetForm();
+                onClose();
+                onOpenRegister();
+              }}
+              className="text-blue-600 hover:underline font-medium"
             >
               Sign up
-            </Link>
-          </p>
-
-          <p className="mt-4 text-center text-xs text-gray-500">
-            Click outside the form to close.
+            </button>
           </p>
         </div>
       </div>

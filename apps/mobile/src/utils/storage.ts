@@ -2,6 +2,11 @@ import * as SecureStore from "expo-secure-store";
 
 const ACCESS_TOKEN_KEY = "accessToken";
 const REFRESH_TOKEN_KEY = "refreshToken";
+const DEVICE_ID_KEY = "deviceId";
+
+const generateDeviceId = (): string => {
+  return `device-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+};
 
 export const saveTokens = async (accessToken: string, refreshToken: string) => {
   try {
@@ -36,5 +41,21 @@ export const removeTokens = async () => {
     await SecureStore.deleteItemAsync(REFRESH_TOKEN_KEY);
   } catch (error) {
     console.error("Error removing tokens:", error);
+  }
+};
+
+export const getOrCreateDeviceId = async (): Promise<string> => {
+  try {
+    const existingDeviceId = await SecureStore.getItemAsync(DEVICE_ID_KEY);
+    if (existingDeviceId) {
+      return existingDeviceId;
+    }
+
+    const deviceId = generateDeviceId();
+    await SecureStore.setItemAsync(DEVICE_ID_KEY, deviceId);
+    return deviceId;
+  } catch (error) {
+    console.error("Error getting device id:", error);
+    return generateDeviceId();
   }
 };

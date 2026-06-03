@@ -5,20 +5,20 @@
 
 export const API_ENDPOINTS = {
   AUTH: {
-    LOGIN: "/auth/login",
-    REGISTER: "/auth/register",
-    LOGOUT: "/auth/logout",
-    REFRESH: "/auth/refresh",
-    ME: "/auth/me",
+    LOGIN: "/api/v1/auth/signin",
+    REGISTER: "/api/v1/auth/signup",
+    LOGOUT: "/api/v1/auth/logout",
+    REFRESH: "/api/v1/auth/refresh",
+    ME: "/api/v1/auth/me",
   },
   ACCOUNTS: {
-    BASE: "/accounts",
-    DETAIL: (id: string) => `/accounts/${id}`,
+    BASE: "/api/v1/accounts",
+    DETAIL: (id: string) => `/api/v1/accounts/${id}`,
   },
   DOCUMENTS: {
-    BASE: "/documents",
-    DETAIL: (id: string) => `/documents/${id}`,
-    APPROVE: (id: string) => `/documents/${id}/approve`,
-    REJECT: (id: string) => `/documents/${id}/reject`,
+    BASE: "/api/v1/documents",
+    DETAIL: (id: string) => `/api/v1/documents/${id}`,
+    APPROVE: (id: string) => `/api/v1/documents/${id}/approve`,
+    REJECT: (id: string) => `/api/v1/documents/${id}/reject`,
   },
 } as const;

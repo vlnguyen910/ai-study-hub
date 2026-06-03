@@ -88,10 +88,10 @@ export default function ForgotPasswordPage(): ReactElement {
                   Send again
                 </Button>
                 <Link
-                  href="/login"
+                  href="/"
                   className="inline-flex h-12 items-center justify-center rounded border border-gray-300 px-4 text-sm font-semibold text-gray-700 hover:bg-gray-50"
                 >
-                  Back to login
+                  Back to home
                 </Link>
               </div>
             </div>
@@ -139,7 +139,7 @@ export default function ForgotPasswordPage(): ReactElement {
               <div className="text-center text-sm text-gray-600">
                 Remembered your password?{" "}
                 <Link
-                  href="/login"
+                  href="/"
                   className="text-blue-600 hover:underline font-medium"
                 >
                   Sign in

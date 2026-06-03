@@ -5,7 +5,7 @@
  */
 
 import { USER_PROTECTED_ROUTES } from "../user/user.routes";
-import { AUTH_ROUTES, isAuthRoute } from "../user/user.auth.routes";
+import { isAuthRoute } from "../user/user.auth.routes";
 
 export interface GuardContext {
   pathname: string;
@@ -14,8 +14,44 @@ export interface GuardContext {
   token?: string;
 }
 
+export interface AuthSession {
+  isAuthenticated: boolean;
+  user: {
+    id: string;
+    email: string;
+    name: string;
+    role: "guest" | "student" | "teacher" | "moderator" | "admin";
+  } | null;
+  accessToken: string | null;
+}
+
+type StoredAuthState = {
+  state?: {
+    accessToken?: string | null;
+    isAuthenticated?: boolean;
+    user?: AuthSession["user"];
+  };
+};
+
 const matchesRouteSegment = (pathname: string, route: string): boolean => {
   return pathname === route || pathname.startsWith(`${route}/`);
+};
+
+const readStoredAuthState = (): StoredAuthState | null => {
+  if (typeof window === "undefined") {
+    return null;
+  }
+
+  try {
+    const raw = localStorage.getItem("auth-storage");
+    if (!raw) {
+      return null;
+    }
+
+    return JSON.parse(raw) as StoredAuthState;
+  } catch {
+    return null;
+  }
 };
 
 /**
@@ -68,16 +104,10 @@ export const getAuthRedirect = (
  */
 export const getAuthToken = (): string | null => {
   if (typeof window === "undefined") return null;
-  try {
-    const raw = localStorage.getItem("auth-storage");
-    if (raw) {
-      const parsed = JSON.parse(raw);
-      if (parsed?.state?.accessToken) {
-        return parsed.state.accessToken;
-      }
-    }
-  } catch (e) {
-    // Suppress parse error
+
+  const parsed = readStoredAuthState();
+  if (parsed?.state?.accessToken) {
+    return parsed.state.accessToken;
   }
   return localStorage.getItem("auth_token");
 };
@@ -86,18 +116,12 @@ export const getAuthToken = (): string | null => {
  * Extract user from localStorage (for client-side)
  */
 export const getAuthUser = () => {
-  if (typeof window === "undefined") return null;
-  try {
-    const raw = localStorage.getItem("auth-storage");
-    if (raw) {
-      const parsed = JSON.parse(raw);
-      if (parsed?.state?.user) {
-        return parsed.state.user;
-      }
-    }
-  } catch (e) {
-    // Suppress parse error
+  const parsed = readStoredAuthState();
+  if (parsed?.state?.user) {
+    return parsed.state.user;
   }
+
+  if (typeof window === "undefined") return null;
 
   const user = localStorage.getItem("user_info");
   if (!user) return null;
@@ -109,4 +133,26 @@ export const getAuthUser = () => {
     localStorage.removeItem("user_info");
     return null;
   }
+};
+
+export const getAuthSession = (): AuthSession => {
+  if (typeof window === "undefined") {
+    return {
+      accessToken: null,
+      user: null,
+      isAuthenticated: false,
+    };
+  }
+
+  const parsed = readStoredAuthState();
+  const accessToken = parsed?.state?.accessToken ?? null;
+  const user = parsed?.state?.user ?? getAuthUser();
+  const isAuthenticated =
+    parsed?.state?.isAuthenticated ?? Boolean(accessToken || user);
+
+  return {
+    accessToken,
+    user,
+    isAuthenticated,
+  };
 };

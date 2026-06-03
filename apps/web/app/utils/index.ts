@@ -47,6 +47,34 @@ export const removeLocalStorage = (key: string) => {
   }
 };
 
+const DEVICE_ID_STORAGE_KEY = "device_id";
+
+const generateDeviceId = () => {
+  if (
+    typeof crypto !== "undefined" &&
+    typeof crypto.randomUUID === "function"
+  ) {
+    return crypto.randomUUID();
+  }
+
+  return `device-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+};
+
+export const getOrCreateDeviceId = (): string => {
+  if (typeof window === "undefined") {
+    return generateDeviceId();
+  }
+
+  const existingDeviceId = getLocalStorage<string>(DEVICE_ID_STORAGE_KEY);
+  if (typeof existingDeviceId === "string" && existingDeviceId.length > 0) {
+    return existingDeviceId;
+  }
+
+  const deviceId = generateDeviceId();
+  setLocalStorage(DEVICE_ID_STORAGE_KEY, deviceId);
+  return deviceId;
+};
+
 // Format utilities
 export const formatNumber = (num: number): string => {
   return num.toLocaleString("en-US");

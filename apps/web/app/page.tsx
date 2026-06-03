@@ -2,11 +2,17 @@
 
 import Link from "next/link";
 import { useEffect, useState, type ReactElement } from "react";
+import { apiClient } from "@/lib/axios";
+import { API_ENDPOINTS } from "@/shared/constants";
 import { useAuthStore } from "@/stores";
+import LoginModal from "./components/auth/LoginModal";
+import RegisterModal from "./components/auth/RegisterModal";
 
 export default function Home(): ReactElement {
   const [mounted, setMounted] = useState(false);
-  const { accessToken, user, logout } = useAuthStore();
+  const [isLoginOpen, setIsLoginOpen] = useState(false);
+  const [isRegisterOpen, setIsRegisterOpen] = useState(false);
+  const { isAuthenticated, user, logout } = useAuthStore();
 
   useEffect(() => {
     setMounted(true);
@@ -90,7 +96,7 @@ export default function Home(): ReactElement {
 
         {/* Right Action Button */}
         <div className="flex items-center gap-4">
-          {mounted && accessToken && user ? (
+          {mounted && isAuthenticated && user ? (
             <div className="flex items-center gap-6">
               <Link
                 href={
@@ -112,9 +118,13 @@ export default function Home(): ReactElement {
               </Link>
               <button
                 type="button"
-                onClick={() => {
-                  logout();
-                  window.location.reload();
+                onClick={async () => {
+                  try {
+                    await apiClient.post(API_ENDPOINTS.AUTH.LOGOUT);
+                  } finally {
+                    logout();
+                    window.location.reload();
+                  }
                 }}
                 className="text-xs text-red-600 hover:text-red-800 underline transition-colors cursor-pointer font-medium"
               >
@@ -122,12 +132,12 @@ export default function Home(): ReactElement {
               </button>
             </div>
           ) : (
-            <Link
-              href="/login"
+            <button
+              onClick={() => setIsLoginOpen(true)}
               className="bg-[#004ac6] hover:bg-[#2c5b9e] text-white font-bold px-7 py-2.5 rounded-full text-sm shadow-sm transition-colors duration-200 cursor-pointer"
             >
               Đăng nhập
-            </Link>
+            </button>
           )}
         </div>
       </header>
@@ -237,6 +247,23 @@ export default function Home(): ReactElement {
           </div>
         </section>
       </main>
+
+      <LoginModal
+        isOpen={isLoginOpen}
+        onClose={() => setIsLoginOpen(false)}
+        onOpenRegister={() => {
+          setIsLoginOpen(false);
+          setIsRegisterOpen(true);
+        }}
+      />
+      <RegisterModal
+        isOpen={isRegisterOpen}
+        onClose={() => setIsRegisterOpen(false)}
+        onOpenLogin={() => {
+          setIsRegisterOpen(false);
+          setIsLoginOpen(true);
+        }}
+      />
     </div>
   );
 }
