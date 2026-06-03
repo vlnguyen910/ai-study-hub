@@ -1,28 +1,28 @@
 import {
   CanActivate,
   ExecutionContext,
+  Inject,
   Injectable,
   UnauthorizedException,
 } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
-import { Reflector } from '@nestjs/core';
 import { Request } from 'express';
+import type { ConfigType } from '@nestjs/config';
+import { Reflector } from '@nestjs/core';
+import { jwtConfiguration } from '../../config';
 import { IS_PUBLIC_KEY } from '../decorators/public.decorator';
-import { UserRole } from '@prisma/client';
-
-type AuthenticatedUser = {
-  sub: string;
-  email: string;
-  role?: UserRole;
-};
+import {
+  AuthenticatedRequest,
+  TokenPayload,
+} from '../interfaces/auth.interface';
 
 @Injectable()
 export class AuthGuard implements CanActivate {
   constructor(
-    private readonly reflector: Reflector,
-    private readonly jwtService: JwtService,
-    private readonly configService: ConfigService,
+    private jwtService: JwtService,
+    @Inject(jwtConfiguration.KEY)
+    private readonly jwtConfig: ConfigType<typeof jwtConfiguration>,
+    private reflector: Reflector,
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
@@ -30,34 +30,32 @@ export class AuthGuard implements CanActivate {
       context.getHandler(),
       context.getClass(),
     ]);
-
     if (isPublic) {
       return true;
     }
 
-    const request = context
-      .switchToHttp()
-      .getRequest<Request & { user?: AuthenticatedUser }>();
-    const authorizationHeader = request.headers.authorization;
-
-    if (!authorizationHeader?.startsWith('Bearer ')) {
-      throw new UnauthorizedException('Missing access token');
+    const request = context.switchToHttp().getRequest<AuthenticatedRequest>();
+    const token = this.extractTokenFromHeader(request);
+    if (!token) {
+      throw new UnauthorizedException();
     }
-
-    const token = authorizationHeader.slice(7).trim();
-
     try {
-      const payload = await this.jwtService.verifyAsync<AuthenticatedUser>(
-        token,
-        {
-          secret: this.configService.getOrThrow<string>('JWT_ACCESS_SECRET'),
-        },
-      );
-
-      request.user = payload;
-      return true;
+      const payload = await this.jwtService.verifyAsync<TokenPayload>(token, {
+        secret: this.jwtConfig.secret,
+      });
+      request['user'] = payload;
     } catch {
-      throw new UnauthorizedException('Invalid or expired access token');
+      throw new UnauthorizedException();
     }
+    return true;
+  }
+
+  private extractTokenFromHeader(request: Request): string | undefined {
+    const [type, token] = request.headers.authorization?.split(' ') ?? [];
+    if (type === 'Bearer' && token) {
+      return token;
+    }
+    // Fallback: try to get token from cookies (web clients)
+    return request.cookies?.['accessToken'];
   }
 }

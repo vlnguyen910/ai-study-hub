@@ -1,0 +1,17 @@
+import { UserRole, UserStatus } from '@prisma/client';
+import { JwtTokenType } from '../enums/jwt.enum';
+import { Request } from 'express';
+
+export class TokenPayload {
+  sub!: string;
+  email!: string;
+  name!: string;
+  role!: UserRole;
+  status!: UserStatus;
+  type!: JwtTokenType;
+  jti!: string;
+}
+
+export interface AuthenticatedRequest extends Request {
+  user: TokenPayload;
+}

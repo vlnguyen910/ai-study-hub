@@ -22,6 +22,7 @@ export * from "./guards/role.guard";
 
 // Protected route component
 export { ProtectedRoute, type ProtectedRouteProps } from "./ProtectedRoute";
+export { GuestRoute, type GuestRouteProps } from "./GuestRoute";
 
 // Main route config
 export { ROUTE_PATHS, getRoutePath } from "./router.const";

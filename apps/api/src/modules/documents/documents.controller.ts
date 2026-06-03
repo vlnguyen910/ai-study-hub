@@ -23,12 +23,12 @@ import { AuthGuard } from '../../common/guards/auth.guard';
 import { OptionalJwtGuard } from '../../common/guards/optional-jwt.guard';
 import { ParseMongoIdPipe } from '../../common/pipes/parse-mongoid.pipe';
 
-@UseGuards(AuthGuard)
 @Controller('documents')
 export class DocumentsController {
   constructor(private readonly documentsService: DocumentsService) {}
 
   @Version('1')
+  @UseGuards(AuthGuard)
   @Post()
   create(
     @Body() createDocumentDto: CreateDocumentDto,
@@ -46,6 +46,7 @@ export class DocumentsController {
   }
 
   @Version('1')
+  @UseGuards(AuthGuard)
   @Get('me')
   findMine(@Query() query: ListDocumentsQueryDto, @User() user: RequestUser) {
     return this.documentsService.findMine(query, user.sub);

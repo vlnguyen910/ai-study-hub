@@ -5,7 +5,6 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import type { ReactElement } from "react";
 import { Button } from "@repo/ui/button";
-
 export default function LoginPage(): ReactElement {
   const router = useRouter();
   const [formData, setFormData] = useState({ email: "", password: "" });
@@ -35,6 +34,9 @@ export default function LoginPage(): ReactElement {
     if (!formData.password) {
       newErrors.password = "Password is required";
       isValid = false;
+    } else if (formData.password.length < 6) {
+      newErrors.password = "Password must be at least 6 characters";
+      isValid = false;
     }
 
     setErrors(newErrors);
@@ -44,8 +46,7 @@ export default function LoginPage(): ReactElement {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (validate()) {
-      console.log("Login with:", formData);
-      // TODO: Perform login API request here
+      console.log("Login form submitted successfully on client:", formData);
     }
   };
 

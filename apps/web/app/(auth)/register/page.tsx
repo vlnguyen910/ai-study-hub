@@ -1,2 +1,10 @@
-export { default } from "../../modules/register/page";
-export * from "../../modules/register/page";
+import RegisterPageComponent from "../../modules/register/page";
+import { GuestRoute } from "@/routes/GuestRoute";
+
+export default function RegisterPage(): React.JSX.Element {
+  return (
+    <GuestRoute>
+      <RegisterPageComponent />
+    </GuestRoute>
+  );
+}

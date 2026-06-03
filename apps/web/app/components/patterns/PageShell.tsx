@@ -1,5 +1,4 @@
 import type { FC, ReactNode } from "react";
-import { TopNav } from "../layout/TopNav";
 import { SideNav } from "../layout/SideNav";
 import { Footer } from "../layout/Footer";
 import { styleGuideLayout } from "@/data/mockData";
@@ -11,10 +10,6 @@ export interface PageShellProps {
 export const PageShell: FC<PageShellProps> = ({ children }) => {
   return (
     <div className="bg-surface text-on-surface min-h-screen relative">
-      <TopNav
-        brandName={styleGuideLayout.brandName}
-        avatarUrl={styleGuideLayout.userAvatarUrl}
-      />
       <div className="flex max-w-container-max mx-auto px-margin-desktop py-gutter">
         <SideNav
           title={styleGuideLayout.sideNavTitle}

@@ -1,6 +1,6 @@
 import { PrismaClient } from '@prisma/client';
 import { faker } from '@faker-js/faker';
-import * as bcrypt from 'bcrypt';
+import argon2 from 'argon2';
 
 const prisma = new PrismaClient();
 
@@ -11,7 +11,6 @@ const SEED_ACCOUNT_COUNT = Number.parseInt(
 const SEED_EMAIL_DOMAIN = 'seed.ai-study-hub.local';
 const SEED_PASSWORD = 'Password123!';
 const SEED_PASSWORD_SALT_ROUNDS = 10;
-const SEED_REFRESH_TOKEN_SALT_ROUNDS = 10;
 type UserRole = 'USER' | 'ADMIN' | 'MODERATOR';
 type UserStatus = 'ACTIVE' | 'UNVERIFIED' | 'BANNED' | 'DELETED';
 
@@ -67,7 +66,7 @@ async function main() {
   const hashedAccounts = await Promise.all(
     accounts.map(async (account) => ({
       ...account,
-      password: await bcrypt.hash(account.password, SEED_PASSWORD_SALT_ROUNDS),
+      password: await argon2.hash(account.password),
       deletedAt: account.status === 'DELETED' ? new Date() : null,
     })),
   );

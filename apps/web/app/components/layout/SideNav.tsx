@@ -14,7 +14,7 @@ export const SideNav: FC<SideNavProps> = ({ title, subtitle, ctaLabel }) => {
   );
 
   return (
-    <aside className="hidden lg:flex min-h-[calc(100vh-64px)] w-64 flex-col border-r border-outline-variant pr-8 mr-8">
+    <aside className="hidden lg:flex min-h-screen w-64 flex-col border-r border-outline-variant pr-8 mr-8">
       <div className="mb-8">
         <h2 className="mb-2 font-headline-md text-headline-md font-bold text-primary">
           {title}
