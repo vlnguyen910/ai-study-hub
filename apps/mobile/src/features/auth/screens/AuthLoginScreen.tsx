@@ -10,21 +10,18 @@ import {
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
+import { Controller } from "react-hook-form";
 import { Button, Card, PageShell } from "@/components";
+import { useSignIn } from "../hooks/useSignIn";
 
 export function AuthLoginScreen() {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
+  const { form, isLoading, submit } = useSignIn();
 
   const handleSignIn = () => {
-    if (!email || !password) return;
-    setIsLoading(true);
-    setTimeout(() => {
-      setIsLoading(false);
-      router.replace("/(templates)/document-upload" as never);
-    }, 1500);
+    submit(() => {
+      router.replace("/" as never);
+    });
   };
 
   return (
@@ -83,34 +80,57 @@ export function AuthLoginScreen() {
                 >
                   Email
                 </Text>
-                <View
-                  style={{
-                    flexDirection: "row",
-                    alignItems: "center",
-                    borderWidth: 1,
-                    borderColor: "#c3c6d7",
-                    backgroundColor: "#ffffff",
-                    paddingHorizontal: 12,
-                    paddingVertical: 10,
-                    borderRadius: 12,
-                  }}
-                >
-                  <TextInput
-                    style={{
-                      flex: 1,
-                      fontSize: 16,
-                      color: "#191b23",
-                      padding: 0,
-                    }}
-                    placeholder="Enter your email"
-                    placeholderTextColor="#737686"
-                    keyboardType="email-address"
-                    autoCapitalize="none"
-                    autoCorrect={false}
-                    value={email}
-                    onChangeText={setEmail}
-                  />
-                </View>
+                <Controller
+                  control={form.control}
+                  name="email"
+                  render={({
+                    field: { onChange, onBlur, value },
+                    fieldState: { error },
+                  }) => (
+                    <>
+                      <View
+                        style={{
+                          flexDirection: "row",
+                          alignItems: "center",
+                          borderWidth: 1,
+                          borderColor: error ? "#ef4444" : "#c3c6d7",
+                          backgroundColor: "#ffffff",
+                          paddingHorizontal: 12,
+                          paddingVertical: 10,
+                          borderRadius: 12,
+                        }}
+                      >
+                        <TextInput
+                          style={{
+                            flex: 1,
+                            fontSize: 16,
+                            color: "#191b23",
+                            padding: 0,
+                          }}
+                          placeholder="Enter your email"
+                          placeholderTextColor="#737686"
+                          keyboardType="email-address"
+                          autoCapitalize="none"
+                          autoCorrect={false}
+                          value={value}
+                          onBlur={onBlur}
+                          onChangeText={onChange}
+                        />
+                      </View>
+                      {error && (
+                        <Text
+                          style={{
+                            color: "#ef4444",
+                            fontSize: 12,
+                            marginTop: 4,
+                          }}
+                        >
+                          {error.message}
+                        </Text>
+                      )}
+                    </>
+                  )}
+                />
               </View>
 
               {/* Password Input */}
@@ -125,48 +145,73 @@ export function AuthLoginScreen() {
                 >
                   Password
                 </Text>
-                <View
-                  style={{
-                    flexDirection: "row",
-                    alignItems: "center",
-                    borderWidth: 1,
-                    borderColor: "#c3c6d7",
-                    backgroundColor: "#ffffff",
-                    paddingHorizontal: 12,
-                    paddingVertical: 10,
-                    borderRadius: 12,
-                  }}
-                >
-                  <TextInput
-                    style={{
-                      flex: 1,
-                      fontSize: 16,
-                      color: "#191b23",
-                      padding: 0,
-                    }}
-                    placeholder="Enter your password"
-                    placeholderTextColor="#737686"
-                    secureTextEntry={!showPassword}
-                    autoCapitalize="none"
-                    autoCorrect={false}
-                    value={password}
-                    onChangeText={setPassword}
-                  />
-                  <Pressable
-                    onPress={() => setShowPassword(!showPassword)}
-                    style={{ marginLeft: 8, padding: 4 }}
-                    accessibilityRole="button"
-                    accessibilityLabel={
-                      showPassword ? "Hide password" : "Show password"
-                    }
-                  >
-                    <Ionicons
-                      name={showPassword ? "eye-outline" : "eye-off-outline"}
-                      size={20}
-                      color="#737686"
-                    />
-                  </Pressable>
-                </View>
+                <Controller
+                  control={form.control}
+                  name="password"
+                  render={({
+                    field: { onChange, onBlur, value },
+                    fieldState: { error },
+                  }) => (
+                    <>
+                      <View
+                        style={{
+                          flexDirection: "row",
+                          alignItems: "center",
+                          borderWidth: 1,
+                          borderColor: error ? "#ef4444" : "#c3c6d7",
+                          backgroundColor: "#ffffff",
+                          paddingHorizontal: 12,
+                          paddingVertical: 10,
+                          borderRadius: 12,
+                        }}
+                      >
+                        <TextInput
+                          style={{
+                            flex: 1,
+                            fontSize: 16,
+                            color: "#191b23",
+                            padding: 0,
+                          }}
+                          placeholder="Enter your password"
+                          placeholderTextColor="#737686"
+                          secureTextEntry={!showPassword}
+                          autoCapitalize="none"
+                          autoCorrect={false}
+                          value={value}
+                          onBlur={onBlur}
+                          onChangeText={onChange}
+                        />
+                        <Pressable
+                          onPress={() => setShowPassword(!showPassword)}
+                          style={{ marginLeft: 8, padding: 4 }}
+                          accessibilityRole="button"
+                          accessibilityLabel={
+                            showPassword ? "Hide password" : "Show password"
+                          }
+                        >
+                          <Ionicons
+                            name={
+                              showPassword ? "eye-outline" : "eye-off-outline"
+                            }
+                            size={20}
+                            color="#737686"
+                          />
+                        </Pressable>
+                      </View>
+                      {error && (
+                        <Text
+                          style={{
+                            color: "#ef4444",
+                            fontSize: 12,
+                            marginTop: 4,
+                          }}
+                        >
+                          {error.message}
+                        </Text>
+                      )}
+                    </>
+                  )}
+                />
 
                 {/* Forgot Password Link - Bulletproof Right Alignment */}
                 <View

@@ -6,7 +6,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useEffect, type FC, type ReactNode } from "react";
+import { useEffect, useState, type FC, type ReactNode } from "react";
 import { getAuthToken, getAuthUser } from "./guards/auth.guard";
 import {
   hasRoleAccess,
@@ -31,14 +31,22 @@ export const ProtectedRoute: FC<ProtectedRouteProps> = ({
   requiredRole,
 }) => {
   const router = useRouter();
-  const token = getAuthToken();
-  const user = getAuthUser();
-  const isAuthenticated = !!token && !!user;
-  const userRole = (user?.role || "guest") as UserRole;
+  const [mounted, setMounted] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [userRole, setUserRole] = useState<UserRole>("guest");
 
   useEffect(() => {
+    setMounted(true);
+    const token = getAuthToken();
+    const user = getAuthUser();
+    const isAuth = !!token && !!user;
+    const role = (user?.role || "guest") as UserRole;
+
+    setIsAuthenticated(isAuth);
+    setUserRole(role);
+
     // Check authentication
-    if (!isAuthenticated) {
+    if (!isAuth) {
       router.push(
         `/login?redirect=${encodeURIComponent(window.location.pathname)}`,
       );
@@ -50,14 +58,18 @@ export const ProtectedRoute: FC<ProtectedRouteProps> = ({
       requiredRole &&
       !hasRoleAccess({
         pathname: window.location.pathname,
-        userRole,
+        userRole: role,
         requiredRoles: [requiredRole],
       })
     ) {
-      router.push(getRoleRedirect(userRole));
+      router.push(getRoleRedirect(role));
       return;
     }
-  }, [isAuthenticated, userRole, requiredRole, router]);
+  }, [requiredRole, router]);
+
+  if (!mounted) {
+    return null;
+  }
 
   if (!isAuthenticated) {
     return null;
@@ -66,7 +78,7 @@ export const ProtectedRoute: FC<ProtectedRouteProps> = ({
   if (
     requiredRole &&
     !hasRoleAccess({
-      pathname: window.location.pathname,
+      pathname: typeof window !== "undefined" ? window.location.pathname : "",
       userRole,
       requiredRoles: [requiredRole],
     })

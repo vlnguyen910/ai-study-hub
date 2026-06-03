@@ -1,5 +1,4 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import * as bcrypt from 'bcrypt';
 import { UserStatus } from '@prisma/client';
 import { ConflictException, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
@@ -36,13 +35,13 @@ describe('AccountsService', () => {
     expect(service).toBeDefined();
   });
 
-  it('create hashes password and returns a public account payload', async () => {
+  it('create stores hashed password and returns success message', async () => {
     const prisma: any = moduleRef.get(PrismaService as any);
     prisma.accounts.create.mockResolvedValue({ id: 'acc-1' });
     const res = await service.create({
       email: 'admin@example.com',
       name: 'Admin User',
-      password: 'Password123!',
+      hashedPassword: 'hashed-password',
       role: 'ADMIN' as any,
     });
 
@@ -50,9 +49,7 @@ describe('AccountsService', () => {
     expect(createArgs.data.email).toBe('admin@example.com');
     expect(createArgs.data.name).toBe('Admin User');
     expect(createArgs.data.role).toBe('ADMIN');
-    expect(await bcrypt.compare('Password123!', createArgs.data.password)).toBe(
-      true,
-    );
+    expect(createArgs.data.password).toBe('hashed-password');
     expect(res).toEqual({ message: 'Account created successfully' });
   });
 
@@ -64,7 +61,7 @@ describe('AccountsService', () => {
       service.create({
         email: 'existing@example.com',
         name: 'Existing',
-        password: 'Password123!',
+        hashedPassword: 'hashed-password',
       } as any),
     ).rejects.toBeInstanceOf(ConflictException);
   });

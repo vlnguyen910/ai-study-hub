@@ -16,23 +16,23 @@ import {
   UpdateDocumentDto,
   ListDocumentsQueryDto,
 } from './dto';
-import { User } from '../../common/decorators/user.decorator';
-import type { RequestUser } from '../../common/decorators/user.decorator';
 import { Public } from '../../common/decorators/public.decorator';
-import { AuthGuard } from '../../common/guards/auth.guard';
 import { OptionalJwtGuard } from '../../common/guards/optional-jwt.guard';
 import { ParseMongoIdPipe } from '../../common/pipes/parse-mongoid.pipe';
+import { JwtAuthGuard } from '../../common/guards/jwt.guard';
+import { TokenPayload } from '../../common/interfaces/auth.interface';
+import { User } from '../../common/decorators';
 
-@UseGuards(AuthGuard)
 @Controller('documents')
 export class DocumentsController {
   constructor(private readonly documentsService: DocumentsService) {}
 
   @Version('1')
+  @UseGuards(JwtAuthGuard)
   @Post()
   create(
     @Body() createDocumentDto: CreateDocumentDto,
-    @User() user: RequestUser,
+    @User() user: TokenPayload,
   ) {
     return this.documentsService.create(createDocumentDto, user.sub);
   }
@@ -41,13 +41,14 @@ export class DocumentsController {
   @Public()
   @Get()
   @UseGuards(OptionalJwtGuard)
-  findAll(@Query() query: ListDocumentsQueryDto, @User() user?: RequestUser) {
+  findAll(@Query() query: ListDocumentsQueryDto, @User() user?: TokenPayload) {
     return this.documentsService.findAll(query, user);
   }
 
   @Version('1')
+  @UseGuards(JwtAuthGuard)
   @Get('me')
-  findMine(@Query() query: ListDocumentsQueryDto, @User() user: RequestUser) {
+  findMine(@Query() query: ListDocumentsQueryDto, @User() user: TokenPayload) {
     return this.documentsService.findMine(query, user.sub);
   }
 
@@ -57,26 +58,28 @@ export class DocumentsController {
   @Get(':id')
   findOne(
     @Param('id', new ParseMongoIdPipe()) id: string,
-    @User() user?: RequestUser,
+    @User() user?: TokenPayload,
   ) {
     return this.documentsService.findOne(id, user);
   }
 
   @Version('1')
+  @UseGuards(JwtAuthGuard)
   @Patch(':id')
   update(
     @Param('id', new ParseMongoIdPipe()) id: string,
     @Body() updateDocumentDto: UpdateDocumentDto,
-    @User() user: RequestUser,
+    @User() user: TokenPayload,
   ) {
     return this.documentsService.update(id, updateDocumentDto, user.sub);
   }
 
   @Version('1')
+  @UseGuards(JwtAuthGuard)
   @Delete(':id')
   remove(
     @Param('id', new ParseMongoIdPipe()) id: string,
-    @User() user: RequestUser,
+    @User() user: TokenPayload,
   ) {
     return this.documentsService.delete(id, user.sub);
   }
