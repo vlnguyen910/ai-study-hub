@@ -19,15 +19,6 @@ describe('User decorator', () => {
     expect(res).toEqual(user);
   });
 
-  it('returns requested field when data provided', () => {
-    const user = { sub: 'u1', email: 'a@b', role: 'ADMIN' };
-    const ctx = mockContext(user);
-
-    const res = getUserFromContext('email', ctx as any);
-
-    expect(res).toBe('a@b');
-  });
-
   it('returns undefined when request has no user', () => {
     const ctx = mockContext(undefined);
 

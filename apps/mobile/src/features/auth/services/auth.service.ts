@@ -1,0 +1,76 @@
+import axios, { type AxiosInstance } from "axios";
+import { apiClient } from "@/services";
+import type {
+  AuthResponse,
+  SignInPayload,
+  SignUpPayload,
+} from "../types/auth.types";
+
+export class AuthServiceError extends Error {
+  status?: number;
+
+  constructor(message: string, status?: number) {
+    super(message);
+    this.name = "AuthServiceError";
+    this.status = status;
+  }
+}
+
+export type ApiClient = Pick<AxiosInstance, "post">;
+
+export const signInService = async (
+  payload: SignInPayload,
+  client: ApiClient = apiClient,
+): Promise<AuthResponse> => {
+  try {
+    const response = await client.post<AuthResponse>(
+      "/api/v1/auth/signin",
+      payload,
+    );
+    return response.data;
+  } catch (error) {
+    if (axios.isAxiosError(error)) {
+      console.error(
+        "❌ [signInService] Lỗi từ API:",
+        error.response?.data || error.message,
+      );
+      throw new AuthServiceError(
+        error.response?.data?.message ||
+          "Đăng nhập thất bại. Vui lòng kiểm tra lại email và mật khẩu.",
+        error.response?.status,
+      );
+    }
+
+    if (error instanceof Error) {
+      throw new AuthServiceError(error.message);
+    }
+
+    throw new AuthServiceError("Không thể kết nối đến máy chủ");
+  }
+};
+
+export const signUpService = async (
+  payload: SignUpPayload,
+  client: ApiClient = apiClient,
+): Promise<AuthResponse> => {
+  try {
+    const response = await client.post<AuthResponse>(
+      "/api/v1/auth/signup",
+      payload,
+    );
+    return response.data;
+  } catch (error) {
+    if (axios.isAxiosError(error)) {
+      throw new AuthServiceError(
+        error.response?.data?.message || "Đăng ký thất bại. Vui lòng thử lại.",
+        error.response?.status,
+      );
+    }
+
+    if (error instanceof Error) {
+      throw new AuthServiceError(error.message);
+    }
+
+    throw new AuthServiceError("Không thể kết nối đến máy chủ");
+  }
+};

@@ -1,1 +1,1 @@
-export * from "./template-feature.validator";
+export * from "./auth.validator";

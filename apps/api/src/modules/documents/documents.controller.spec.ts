@@ -4,6 +4,10 @@ import { DocumentsService } from './documents.service';
 import { AuthGuard } from '../../common/guards/auth.guard';
 import { OptionalJwtGuard } from '../../common/guards/optional-jwt.guard';
 
+jest.mock('uuid', () => ({
+  v4: jest.fn(() => 'test-jti'),
+}));
+
 describe('DocumentsController', () => {
   let controller: DocumentsController;
 
