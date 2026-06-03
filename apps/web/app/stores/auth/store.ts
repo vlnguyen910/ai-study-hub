@@ -6,11 +6,18 @@ import type { User } from "./types";
 
 interface AuthState {
   accessToken: string | null;
+  refreshToken: string | null;
   role: UserRole | null;
   user: User | null;
   isAuthenticated: boolean;
   isLoginPromptOpen: boolean;
-  setAuth: (accessToken: string | null, role: UserRole, user?: User) => void;
+  setAuth: (
+    accessToken: string | null,
+    role: UserRole,
+    user?: User,
+    refreshToken?: string | null,
+  ) => void;
+  setAccessToken: (accessToken: string | null) => void;
   logout: () => void;
   setLoginPromptOpen: (open: boolean) => void;
 }
@@ -19,20 +26,29 @@ export const useAuthStore = create<AuthState>()(
   persist(
     (set) => ({
       accessToken: null,
+      refreshToken: null,
       role: null,
       user: null,
       isAuthenticated: false,
       isLoginPromptOpen: false,
-      setAuth: (accessToken, role, user) =>
+      setAuth: (accessToken, role, user, refreshToken) =>
         set({
           accessToken,
+          refreshToken: refreshToken ?? null,
           role,
           user,
           isAuthenticated: true,
         }),
+      setAccessToken: (accessToken) =>
+        set((state) => ({
+          ...state,
+          accessToken,
+          isAuthenticated: Boolean(accessToken || state.user),
+        })),
       logout: () => {
         set({
           accessToken: null,
+          refreshToken: null,
           role: null,
           user: null,
           isAuthenticated: false,
@@ -48,6 +64,7 @@ export const useAuthStore = create<AuthState>()(
       storage: createJSONStorage(() => localStorage),
       partialize: (state) => ({
         accessToken: state.accessToken,
+        refreshToken: state.refreshToken,
         role: state.role,
         user: state.user,
         isAuthenticated: state.isAuthenticated,
