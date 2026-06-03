@@ -5,6 +5,7 @@ import type {
   SignInPayload,
   SignUpPayload,
 } from "../types/auth.types";
+import { API_ENDPOINTS } from "../../../constants/endpoints";
 
 export class AuthServiceError extends Error {
   status?: number;
@@ -24,7 +25,7 @@ export const signInService = async (
 ): Promise<AuthResponse> => {
   try {
     const response = await client.post<AuthResponse>(
-      "/api/v1/auth/signin",
+      API_ENDPOINTS.AUTH.MOBILE_SIGN_IN,
       payload,
     );
     return response.data;
@@ -55,7 +56,7 @@ export const signUpService = async (
 ): Promise<AuthResponse> => {
   try {
     const response = await client.post<AuthResponse>(
-      "/api/v1/auth/signup",
+      API_ENDPOINTS.AUTH.SIGN_UP,
       payload,
     );
     return response.data;

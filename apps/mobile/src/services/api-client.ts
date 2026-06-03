@@ -3,7 +3,7 @@ import { getAccessToken } from "../utils/storage";
 
 export const getApiBaseUrl = (): string => {
   return (
-    process.env.EXPO_PUBLIC_API_URL || process.env.DEFAULT_API_BASE_URL || ""
+    process.env.EXPO_PUBLIC_API_URL ?? process.env.DEFAULT_API_BASE_URL ?? ""
   );
 };
 
@@ -22,6 +22,7 @@ apiClient.interceptors.request.use(
     if (token && config.headers) {
       config.headers.Authorization = `Bearer ${token}`;
     }
+
     return config;
   },
   (error) => {
