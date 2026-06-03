@@ -18,38 +18,26 @@ export const apiClient = axios.create({
   withCredentials: true,
 });
 
+const handleLogoutAndShowLogin = () => {
+  const store = useAuthStore.getState();
+  store.logout();
+  store.setLoginPromptOpen(true);
+};
+
 let refreshTokenPromise: Promise<string | null> | null = null;
 
 const refreshAccessToken = async (): Promise<string | null> => {
   const { refreshToken } = useAuthStore.getState();
 
-  if (!refreshToken) {
-    return null;
-  }
+  if (!refreshToken) return null;
 
   if (!refreshTokenPromise) {
     refreshTokenPromise = apiClient
-      .post(
-        API_ENDPOINTS.AUTH.REFRESH,
-        {
-          refreshToken,
-        },
-        {
-          skipToast: true,
-        },
-      )
+      .post(API_ENDPOINTS.AUTH.REFRESH, { refreshToken }, { skipToast: true })
       .then((response) => {
-        if (
-          !response ||
-          typeof response !== "object" ||
-          !response.data || // Thay đổi logic kiểm tra: phải có response.data
-          typeof (response.data as { accessToken?: unknown }).accessToken !==
-            "string"
-        ) {
-          return null;
-        }
-
-        return (response.data as { accessToken: string }).accessToken; // Đọc từ response.data
+        const data = response as unknown as { accessToken?: unknown };
+        if (!data || typeof data.accessToken !== "string") return null;
+        return data.accessToken;
       })
       .finally(() => {
         refreshTokenPromise = null;
@@ -80,21 +68,11 @@ apiClient.interceptors.response.use(
     const is401 = error.response?.status === 401;
     const isAuthRequest = originalRequest.url?.includes("/auth/");
 
-    if (axios.isCancel(error)) {
-      return Promise.reject(error);
-    }
-
-    if (originalRequest.skipToast) {
-      return Promise.reject(error);
-    }
+    if (axios.isCancel(error)) return Promise.reject(error);
+    if (originalRequest.skipToast) return Promise.reject(error);
 
     if (is401 && isAuthRequest) {
-      useAuthStore.getState().logout();
-
-      if (typeof window !== "undefined") {
-        window.location.href = "/login";
-      }
-
+      handleLogoutAndShowLogin();
       return Promise.reject(error);
     }
 
@@ -103,29 +81,17 @@ apiClient.interceptors.response.use(
 
       try {
         const accessToken = await refreshAccessToken();
-
-        if (!accessToken) {
-          throw new Error("Failed to refresh access token.");
-        }
-
+        if (!accessToken) throw new Error("Failed to refresh access token.");
         useAuthStore.getState().setAccessToken(accessToken);
-
         return apiClient(originalRequest);
       } catch {
-        useAuthStore.getState().logout();
-
-        if (typeof window !== "undefined") {
-          window.location.href = "/login";
-        }
+        handleLogoutAndShowLogin();
+        return Promise.reject(error);
       }
     }
 
     if (is401 && !isAuthRequest) {
-      useAuthStore.getState().logout();
-
-      if (typeof window !== "undefined") {
-        window.location.href = "/login";
-      }
+      handleLogoutAndShowLogin();
     }
 
     return Promise.reject(error);
