@@ -4,8 +4,6 @@ import { Request } from 'express';
 
 export class TokenPayload {
   sub!: string;
-  email!: string;
-  name!: string;
   role!: UserRole;
   status!: UserStatus;
   type!: JwtTokenType;

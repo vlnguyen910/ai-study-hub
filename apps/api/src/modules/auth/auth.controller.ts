@@ -94,9 +94,10 @@ export class AuthController {
   @Version('1')
   @Post('refresh')
   @UseGuards(RefreshTokenGuard)
-  async refreshToken(@User() userPayload: TokenPayload) {
-    const data = await this.authService.refreshToken(userPayload);
-
-    return data;
+  async refreshToken(
+    @User() userPayload: TokenPayload,
+    @Body() body: { refreshToken: string },
+  ) {
+    return this.authService.refreshToken(userPayload, body.refreshToken);
   }
 }
