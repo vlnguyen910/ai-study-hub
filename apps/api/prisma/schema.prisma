@@ -51,7 +51,7 @@ model sessions {
   userId       String     @db.ObjectId
   user         accounts   @relation(fields: [userId], references: [id])
   refreshToken String
-  deviceId     String     @unique
+  deviceId     String     
   deviceType   DeviceType
   isRevoked    Boolean    @default(false)
   createdAt    DateTime   @default(now())

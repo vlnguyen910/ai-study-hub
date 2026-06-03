@@ -1,16 +1,19 @@
 import { ExecutionContext, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
-import { ConfigService } from '@nestjs/config';
 import { OptionalJwtGuard } from './optional-jwt.guard';
 
 describe('OptionalJwtGuard', () => {
   let guard: OptionalJwtGuard;
   const jwtService = { verifyAsync: jest.fn() } as unknown as JwtService;
-  const configService = { getOrThrow: jest.fn() } as unknown as ConfigService;
+  const jwtConfig = {
+    secret: 'secret',
+    accessTokenExpiresIn: '15m',
+    refreshTokenExpiresIn: '30d',
+  };
 
   beforeEach(() => {
     jest.clearAllMocks();
-    guard = new OptionalJwtGuard(jwtService, configService);
+    guard = new OptionalJwtGuard(jwtService, jwtConfig);
   });
 
   function mockContext(
@@ -41,7 +44,6 @@ describe('OptionalJwtGuard', () => {
   it('verifies bearer token and attaches user', async () => {
     const token = 'valid-token';
     const payload = { sub: 'u1', email: 'a@b', role: 'USER' };
-    jest.spyOn(configService, 'getOrThrow').mockReturnValue('secret');
     jwtService.verifyAsync = jest.fn().mockResolvedValue(payload);
 
     const { ctx, req } = mockContext({ authorization: `Bearer ${token}` });
@@ -56,7 +58,6 @@ describe('OptionalJwtGuard', () => {
   it('verifies access token cookie and attaches user', async () => {
     const token = 'cookie-token';
     const payload = { sub: 'u1', email: 'a@b', role: 'USER' };
-    jest.spyOn(configService, 'getOrThrow').mockReturnValue('secret');
     jwtService.verifyAsync = jest.fn().mockResolvedValue(payload);
 
     const { ctx, req } = mockContext({}, { accessToken: token });
@@ -69,7 +70,6 @@ describe('OptionalJwtGuard', () => {
   });
 
   it('throws when bearer token is invalid', async () => {
-    jest.spyOn(configService, 'getOrThrow').mockReturnValue('secret');
     jwtService.verifyAsync = jest.fn().mockRejectedValue(new Error('invalid'));
 
     const { ctx } = mockContext({ authorization: 'Bearer bad-token' });

@@ -1,13 +1,15 @@
 import {
   CanActivate,
   ExecutionContext,
+  Inject,
   Injectable,
   UnauthorizedException,
 } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
+import type { ConfigType } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { Request } from 'express';
 import { UserRole } from '@prisma/client';
+import { jwtConfiguration } from '../../config';
 
 type AuthenticatedUser = {
   sub: string;
@@ -19,7 +21,8 @@ type AuthenticatedUser = {
 export class OptionalJwtGuard implements CanActivate {
   constructor(
     private readonly jwtService: JwtService,
-    private readonly configService: ConfigService,
+    @Inject(jwtConfiguration.KEY)
+    private readonly jwtConfig: ConfigType<typeof jwtConfiguration>,
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
@@ -36,7 +39,7 @@ export class OptionalJwtGuard implements CanActivate {
       request.user = await this.jwtService.verifyAsync<AuthenticatedUser>(
         token,
         {
-          secret: this.configService.getOrThrow<string>('JWT_ACCESS_SECRET'),
+          secret: this.jwtConfig.secret,
         },
       );
 
