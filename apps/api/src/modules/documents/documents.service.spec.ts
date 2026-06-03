@@ -14,8 +14,6 @@ const createTokenPayload = (
   overrides: Partial<TokenPayload> = {},
 ): TokenPayload => ({
   sub: 'owner-1',
-  email: 'owner@example.com',
-  name: 'Test User',
   role: UserRole.USER,
   status: UserStatus.ACTIVE,
   type: JwtTokenType.AccessToken,
@@ -261,7 +259,6 @@ describe('DocumentsService', () => {
       {} as any,
       createTokenPayload({
         sub: 'moderator-1',
-        email: 'mod@example.com',
         role: UserRole.MODERATOR,
       }),
     );
@@ -486,7 +483,6 @@ describe('DocumentsService', () => {
       service.findOne('507f1f77bcf86cd799439011', {
         ...createTokenPayload({
           sub: 'other-user',
-          email: 'other@example.com',
         }),
       }),
     ).rejects.toThrow();
@@ -530,7 +526,6 @@ describe('DocumentsService', () => {
       '507f1f77bcf86cd799439011',
       createTokenPayload({
         sub: 'moderator-1',
-        email: 'mod@example.com',
         role: UserRole.MODERATOR,
       }),
     );
@@ -552,7 +547,6 @@ describe('DocumentsService', () => {
       service.findOne('507f1f77bcf86cd799439011', {
         ...createTokenPayload({
           sub: 'other-user',
-          email: 'other@example.com',
         }),
       }),
     ).rejects.toThrow();
@@ -596,7 +590,6 @@ describe('DocumentsService', () => {
       '507f1f77bcf86cd799439011',
       createTokenPayload({
         sub: 'moderator-1',
-        email: 'mod@example.com',
         role: UserRole.MODERATOR,
       }),
     );
@@ -624,7 +617,6 @@ describe('DocumentsService', () => {
       service.findOne('507f1f77bcf86cd799439011', {
         ...createTokenPayload({
           sub: 'moderator-1',
-          email: 'mod@example.com',
           role: UserRole.MODERATOR,
         }),
       }),

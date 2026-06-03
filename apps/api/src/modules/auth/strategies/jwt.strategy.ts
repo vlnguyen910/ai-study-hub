@@ -6,6 +6,7 @@ import type { Request } from 'express';
 import { TokenPayload } from '../../../common/interfaces/auth.interface';
 import { JwtTokenType } from '../../../common/enums/jwt.enum';
 import { jwtConfiguration } from '../../../config';
+import { UserStatus } from '@prisma/client';
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
@@ -32,15 +33,12 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
       throw new UnauthorizedException('Invalid token: missing deviceId');
     }
 
-    //TODO: Uncomment this when verify email is implemented
-    // if (payload.status !== UserStatus.ACTIVE) {
-    //     throw new UnauthorizedException('User is not active');
-    // }
+    if (payload.status !== UserStatus.ACTIVE) {
+      throw new UnauthorizedException('User is not active');
+    }
 
     return {
       sub: payload.sub,
-      email: payload.email,
-      name: payload.name,
       role: payload.role,
       status: payload.status,
       type: payload.type,

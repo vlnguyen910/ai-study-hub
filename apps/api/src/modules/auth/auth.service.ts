@@ -35,6 +35,7 @@ export class AuthService {
       throw new ConflictException('Email already exists');
     }
 
+    //TODO: move hashing password to accounts service
     const hashedPassword = await argon2.hash(signupDto.password);
 
     await this.accountService.create({
@@ -69,9 +70,9 @@ export class AuthService {
       throw new UnauthorizedException('Invalid credentials');
     }
 
-    const data = await this.manageUserToken(account, signinDto.deviceId);
+    const tokens = await this.manageUserToken(account, signinDto.deviceId);
 
-    const hashedRefreshToken = await argon2.hash(data.refreshToken);
+    const hashedRefreshToken = await argon2.hash(tokens.refreshToken);
     // Avoiding multiple sessions with same deviceId for the same user, we use upsert to update existing session or create new one
     await this.prismaService.sessions.upsert({
       where: {
@@ -96,7 +97,7 @@ export class AuthService {
 
     return {
       message: 'Signin successful',
-      data: data,
+      data: tokens,
     };
   }
 
@@ -124,7 +125,31 @@ export class AuthService {
     };
   }
 
-  async refreshToken(userPayload: TokenPayload) {
+  async refreshToken(userPayload: TokenPayload, refreshToken: string) {
+    const session = await this.prismaService.sessions.findFirst({
+      where: {
+        userId: userPayload.sub,
+        deviceId: userPayload.deviceId,
+        isRevoked: false,
+        expiresAt: {
+          gt: new Date(),
+        },
+      },
+    });
+
+    if (!session) {
+      throw new UnauthorizedException('Invalid session');
+    }
+
+    const isValidRefreshToken = await argon2.verify(
+      session.refreshToken,
+      refreshToken,
+    );
+
+    if (!isValidRefreshToken) {
+      throw new UnauthorizedException('Invalid refresh token');
+    }
+
     const accessToken = await this.generateToken(
       userPayload,
       JwtTokenType.AccessToken,
@@ -142,8 +167,6 @@ export class AuthService {
   private async manageUserToken(account: accounts, deviceId: string) {
     const tokenPayload: TokenPayload = {
       sub: account.id,
-      name: account.name,
-      email: account.email,
       role: account.role,
       status: account.status,
       type: JwtTokenType.AccessToken, // Default to AccessToken, will be overridden in generateToken
