@@ -6,6 +6,7 @@ import {
   Inject,
   Post,
   Res,
+  UseGuards,
   Version,
 } from '@nestjs/common';
 import type { ConfigType } from '@nestjs/config';
@@ -15,7 +16,11 @@ import { SigninDto } from './dto/signin.dto';
 import { SignupDto } from './dto/signup.dto';
 import { Public } from '../../common/decorators/public.decorator';
 import { cookieConfiguration } from '../../config';
-import { DeviceInfo } from '@prisma/client';
+import { DeviceType } from '@prisma/client';
+import { User } from '../../common/decorators';
+import { TokenPayload } from '../../common/interfaces/auth.interface';
+import { RefreshTokenGuard } from '../../common/guards/refresh-token.guard';
+import { JwtAuthGuard } from '../../common/guards/jwt.guard';
 
 @Controller('auth')
 export class AuthController {
@@ -29,10 +34,7 @@ export class AuthController {
   @Public()
   @Post('signup')
   signup(@Body() signupDto: SignupDto) {
-    return this.authService.signup({
-      ...signupDto,
-      deviceInfo: DeviceInfo.WEB,
-    });
+    return this.authService.signup(signupDto);
   }
 
   @Version('1')
@@ -40,7 +42,7 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   @Post('signin')
   async signin(@Body() signinDto: SigninDto, @Res() res: Response) {
-    const result = await this.authService.signin(signinDto);
+    const result = await this.authService.signin(signinDto, DeviceType.WEB);
 
     // Set access token as HTTP-only cookie
     res.cookie('accessToken', result.data.accessToken, {
@@ -66,10 +68,7 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   @Post('mobile-signin')
   async mobileSignin(@Body() signinDto: SigninDto) {
-    const result = await this.authService.signin({
-      ...signinDto,
-      deviceInfo: DeviceInfo.MOBILE,
-    });
+    const result = await this.authService.signin(signinDto, DeviceType.MOBILE);
 
     return {
       message: result.message,
@@ -78,20 +77,27 @@ export class AuthController {
   }
 
   @Version('1')
+  @UseGuards(JwtAuthGuard)
   @HttpCode(HttpStatus.OK)
   @Post('logout')
-  logout(@Res() res: Response) {
-    const result = this.authService.logout();
-
+  logout(
+    @User() user: TokenPayload,
+    @Res({ passthrough: true }) res: Response,
+  ) {
     // Clear cookies
     res.clearCookie('accessToken');
     res.clearCookie('refreshToken');
 
-    return res.json({
-      success: true,
-      statusCode: HttpStatus.OK,
-      message: result.message,
-      data: result.data,
-    });
+    return this.authService.logout(user.sub, user.deviceId);
+  }
+
+  @Version('1')
+  @Post('refresh')
+  @UseGuards(RefreshTokenGuard)
+  async refreshToken(
+    @User() userPayload: TokenPayload,
+    @Body() body: { refreshToken: string },
+  ) {
+    return this.authService.refreshToken(userPayload, body.refreshToken);
   }
 }
