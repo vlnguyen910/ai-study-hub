@@ -18,7 +18,7 @@ export class CreateAccountDto {
 
   @IsString()
   @MinLength(8)
-  hashedPassword!: string;
+  password!: string;
 
   @IsOptional()
   @IsUrl({ require_tld: false })

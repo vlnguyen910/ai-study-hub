@@ -121,14 +121,14 @@ async function main() {
   const { school, subjects } = await prisma.$transaction(async (tx) => {
     const school = await tx.schools.upsert({
       where: {
-        code: 'FPTU',
+        code: process.env.DEFAULT_SCHOOL_CODE || 'FPTU',
       },
       update: {
         name: 'FPT University',
       },
       create: {
         name: 'FPT University',
-        code: 'FPTU',
+        code: process.env.DEFAULT_SCHOOL_CODE || 'FPTU',
       },
     });
 

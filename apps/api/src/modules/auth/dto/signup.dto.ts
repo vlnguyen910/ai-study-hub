@@ -2,7 +2,6 @@ export type AuthDeviceInfo = 'WEB' | 'MOBILE';
 
 import {
   IsEmail,
-  IsIn,
   IsOptional,
   IsString,
   IsUrl,
