@@ -7,6 +7,7 @@ import { accounts, UserRole, UserStatus } from '@prisma/client';
 import { CreateAccountDto } from './dto/create-account.dto';
 import { UpdateAccountDto } from './dto/update-account.dto';
 import { PrismaService } from '../../prisma/prisma.service';
+import argon2 from 'argon2';
 
 @Injectable()
 export class AccountsService {
@@ -21,11 +22,13 @@ export class AccountsService {
       throw new ConflictException('Email already exists');
     }
 
+    const hashedPassword = await argon2.hash(createAccountDto.password);
+
     await this.prismaService.accounts.create({
       data: {
         email: createAccountDto.email,
         name: createAccountDto.name,
-        password: createAccountDto.hashedPassword,
+        password: hashedPassword,
         avatarUrl: createAccountDto.avatarUrl ?? '',
         role: createAccountDto.role ?? UserRole.USER,
       },

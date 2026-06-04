@@ -35,13 +35,10 @@ export class AuthService {
       throw new ConflictException('Email already exists');
     }
 
-    //TODO: move hashing password to accounts service
-    const hashedPassword = await argon2.hash(signupDto.password);
-
     await this.accountService.create({
       email: signupDto.email,
       name: signupDto.name,
-      hashedPassword: hashedPassword,
+      password: signupDto.password,
       avatarUrl: signupDto.avatarUrl,
       role: UserRole.USER,
     });

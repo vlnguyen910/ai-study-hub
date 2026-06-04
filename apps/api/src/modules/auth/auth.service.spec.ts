@@ -80,7 +80,7 @@ describe('AuthService', () => {
       expect.objectContaining({
         email: 'new-user@example.com',
         name: 'New User',
-        hashedPassword: expect.any(String),
+        password: expect.any(String),
         avatarUrl: undefined,
         role: UserRole.USER,
       }),
