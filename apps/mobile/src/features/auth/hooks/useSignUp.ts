@@ -33,7 +33,6 @@ export const useSignUp = () => {
         name: values.name,
         email: values.email,
         password: values.password,
-        deviceInfo: "MOBILE",
       };
 
       const response = await signUpService(payload);

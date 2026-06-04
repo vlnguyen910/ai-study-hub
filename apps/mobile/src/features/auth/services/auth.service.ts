@@ -24,7 +24,7 @@ export const signInService = async (
 ): Promise<AuthResponse> => {
   try {
     const response = await client.post<AuthResponse>(
-      "/api/v1/auth/signin",
+      "/api/v1/auth/mobile-signin",
       payload,
     );
     return response.data;

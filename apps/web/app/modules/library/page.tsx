@@ -334,7 +334,7 @@ export default function LibraryPage(): ReactElement {
               Đăng nhập để lưu tài liệu, theo dõi khóa học và đóng góp nội dung.
             </p>
             <Link
-              href="/login"
+              href="/"
               className="block text-center w-full py-2 bg-blue-600 text-white text-sm font-semibold rounded hover:bg-blue-700 transition-colors"
             >
               Đăng nhập ngay

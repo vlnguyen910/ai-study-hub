@@ -51,10 +51,10 @@ export default function VerifyEmailPage({
 
           <div className="flex flex-col gap-3 sm:flex-row">
             <Link
-              href="/login"
+              href="/"
               className="inline-flex h-12 flex-1 items-center justify-center rounded bg-blue-600 px-4 text-sm font-semibold text-white hover:bg-blue-700"
             >
-              Continue to login
+              Continue to home
             </Link>
             <Link
               href="/forgot-password"

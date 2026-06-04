@@ -103,10 +103,10 @@ export default function ResetPasswordPage(): ReactElement {
               </div>
 
               <Link
-                href="/login"
+                href="/"
                 className="inline-flex h-12 w-full items-center justify-center rounded bg-blue-600 px-4 text-sm font-semibold text-white hover:bg-blue-700"
               >
-                Continue to login
+                Continue to home
               </Link>
             </div>
           ) : (

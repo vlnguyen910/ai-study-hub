@@ -1,14 +1,13 @@
 export interface SignInPayload {
   email: string;
   password: string;
-  deviceInfo: "WEB" | "MOBILE";
+  deviceId: string;
 }
 
 export interface SignUpPayload {
   name: string;
   email: string;
   password: string;
-  deviceInfo?: "WEB" | "MOBILE";
   avatarUrl?: string;
 }
 
