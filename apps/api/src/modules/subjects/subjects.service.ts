@@ -32,6 +32,12 @@ export class SubjectsService {
       select: { id: true },
     });
 
+    if (!hardCodedSchoolId) {
+      throw new NotFoundException(
+        `Default school with code ${process.env.DEFAULT_SCHOOL_CODE || 'FPTU'} not found`,
+      );
+    }
+
     const subject = await this.prismaService.subjects.create({
       data: {
         ...createSubjectDto,

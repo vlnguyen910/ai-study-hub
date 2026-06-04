@@ -56,9 +56,13 @@ describe('AccountsController', () => {
   });
 
   it('should call findOne/update/remove', () => {
+    const user = { sub: 'acc-1' } as any;
+
     expect(controller.findOne('5')).toBe('one');
-    expect(controller.update('5', {} as any)).toBe('updated');
-    expect(controller.remove('5')).toBe('removed');
+    expect(controller.update('5', {} as any, user)).toBe('updated');
+    expect(controller.remove('5', user)).toBe('removed');
+    expect(accountsServiceMock.update).toHaveBeenCalledWith('5', {}, 'acc-1');
+    expect(accountsServiceMock.remove).toHaveBeenCalledWith('5', 'acc-1');
   });
 
   it('should restrict admin endpoints to ADMIN role', () => {
