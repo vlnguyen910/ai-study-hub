@@ -108,13 +108,19 @@ export class AccountsService {
     return { message: `Account banned successfully` };
   }
 
-  async update(id: string, updateAccountDto: UpdateAccountDto) {
+  async update(id: string, updateAccountDto: UpdateAccountDto, userId: string) {
     const account = await this.prismaService.accounts.findUnique({
       where: { id },
     });
 
     if (!account) {
       throw new NotFoundException('Account not found');
+    }
+
+    if (account.id !== userId) {
+      throw new ConflictException(
+        'You have no permission to update this account',
+      );
     }
 
     const updatedAccount = await this.prismaService.accounts.update({
@@ -134,7 +140,7 @@ export class AccountsService {
     return updatedAccount;
   }
 
-  async remove(id: string) {
+  async remove(id: string, userId: string) {
     const account = await this.prismaService.accounts.findUnique({
       where: {
         id,
@@ -144,6 +150,12 @@ export class AccountsService {
 
     if (!account) {
       throw new NotFoundException('Account not found');
+    }
+
+    if (account.id !== userId) {
+      throw new ConflictException(
+        'You have no permission to delete this account',
+      );
     }
 
     await this.prismaService.accounts.update({

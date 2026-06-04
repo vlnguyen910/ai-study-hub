@@ -158,10 +158,14 @@ describe('AccountsService', () => {
     };
     prisma.accounts.update.mockResolvedValue(updated);
 
-    const res = await service.update('acc-1', {
-      name: 'New',
-      avatarUrl: 'u',
-    } as any);
+    const res = await service.update(
+      'acc-1',
+      {
+        name: 'New',
+        avatarUrl: 'u',
+      } as any,
+      'acc-1',
+    );
     expect(res).toEqual(updated);
     expect(prisma.accounts.update).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -182,7 +186,7 @@ describe('AccountsService', () => {
     prisma.accounts.findUnique.mockResolvedValue({ id: 'acc-1' });
     prisma.accounts.update.mockResolvedValue({ id: 'acc-1' });
 
-    const res = await service.remove('acc-1');
+    const res = await service.remove('acc-1', 'acc-1');
     expect(prisma.accounts.update).toHaveBeenCalledWith(
       expect.objectContaining({
         where: { id: 'acc-1' },

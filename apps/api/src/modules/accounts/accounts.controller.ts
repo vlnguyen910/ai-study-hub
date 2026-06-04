@@ -17,6 +17,8 @@ import { UpdateAccountDto } from './dto/update-account.dto';
 import { ParseMongoIdPipe } from '../../common/pipes/parse-mongoid.pipe';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import { JwtAuthGuard } from '../../common/guards/jwt.guard';
+import { TokenPayload } from '../../common/interfaces/auth.interface';
+import { User } from '../../common/decorators';
 
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Controller('accounts')
@@ -57,14 +59,18 @@ export class AccountsController {
   update(
     @Param('id', new ParseMongoIdPipe()) id: string,
     @Body() updateAccountDto: UpdateAccountDto,
+    @User() user: TokenPayload,
   ) {
-    return this.accountsService.update(id, updateAccountDto);
+    return this.accountsService.update(id, updateAccountDto, user.sub);
   }
 
   @Roles(UserRole.USER)
   @Version('1')
   @Delete(':id')
-  remove(@Param('id', new ParseMongoIdPipe()) id: string) {
-    return this.accountsService.remove(id);
+  remove(
+    @Param('id', new ParseMongoIdPipe()) id: string,
+    @User() user: TokenPayload,
+  ) {
+    return this.accountsService.remove(id, user.sub);
   }
 }
