@@ -14,6 +14,9 @@ describe('SubjectsService', () => {
       update: jest.fn(),
       delete: jest.fn(),
     },
+    schools: {
+      findFirst: jest.fn(),
+    },
   };
 
   beforeEach(async () => {
@@ -31,13 +34,24 @@ describe('SubjectsService', () => {
 
   it('create returns created subject when code not duplicate', async () => {
     prismaMock.subjects.findUnique.mockResolvedValue(null);
+    prismaMock.schools.findFirst.mockResolvedValue({ id: 'school-1' });
     const created = { id: '507f1f77bcf86cd799439011', code: 'MATH' };
     prismaMock.subjects.create.mockResolvedValue(created);
 
     const res = await service.create({ code: 'MATH', name: 'Math' } as any);
 
     expect(prismaMock.subjects.findUnique).toHaveBeenCalled();
-    expect(prismaMock.subjects.create).toHaveBeenCalled();
+    expect(prismaMock.schools.findFirst).toHaveBeenCalledWith({
+      where: { code: process.env.DEFAULT_SCHOOL_CODE || 'FPTU' },
+      select: { id: true },
+    });
+    expect(prismaMock.subjects.create).toHaveBeenCalledWith({
+      data: {
+        code: 'MATH',
+        name: 'Math',
+        schoolId: 'school-1',
+      },
+    });
     expect(res).toEqual({
       message: 'Subject created successfully',
       data: created,
