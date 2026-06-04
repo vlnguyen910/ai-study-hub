@@ -42,13 +42,14 @@ const refreshAccessToken = async (): Promise<string | null> => {
         if (
           !response ||
           typeof response !== "object" ||
-          typeof (response as { accessToken?: unknown }).accessToken !==
+          !response.data || // Thay đổi logic kiểm tra: phải có response.data
+          typeof (response.data as { accessToken?: unknown }).accessToken !==
             "string"
         ) {
           return null;
         }
 
-        return (response as { accessToken: string }).accessToken;
+        return (response.data as { accessToken: string }).accessToken; // Đọc từ response.data
       })
       .finally(() => {
         refreshTokenPromise = null;
