@@ -7,7 +7,7 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect, useState, type FC, type ReactNode } from "react";
-import { getAuthToken, getAuthUser } from "./guards/auth.guard";
+import { getAuthSession } from "./guards/auth.guard";
 import {
   hasRoleAccess,
   getRoleRedirect,
@@ -37,9 +37,7 @@ export const ProtectedRoute: FC<ProtectedRouteProps> = ({
 
   useEffect(() => {
     setMounted(true);
-    const token = getAuthToken();
-    const user = getAuthUser();
-    const isAuth = !!token && !!user;
+    const { isAuthenticated: isAuth, user } = getAuthSession();
     const role = (user?.role || "guest") as UserRole;
 
     setIsAuthenticated(isAuth);

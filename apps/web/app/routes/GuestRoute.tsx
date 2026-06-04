@@ -7,7 +7,7 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect, useState, type FC, type ReactNode } from "react";
-import { getAuthToken, getAuthUser } from "./guards/auth.guard";
+import { getAuthSession } from "./guards/auth.guard";
 
 export interface GuestRouteProps {
   children: ReactNode;
@@ -22,9 +22,7 @@ export const GuestRoute: FC<GuestRouteProps> = ({
 
   useEffect(() => {
     setMounted(true);
-    const token = getAuthToken();
-    const user = getAuthUser();
-    const isAuth = !!token && !!user;
+    const { isAuthenticated: isAuth } = getAuthSession();
     setIsAuthenticated(isAuth);
 
     if (isAuth) {
