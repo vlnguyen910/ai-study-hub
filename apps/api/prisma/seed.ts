@@ -118,42 +118,36 @@ async function main() {
     { name: 'Data Science', code: 'DS' },
   ];
 
-  const { school, subjects } = await prisma.$transaction(async (tx) => {
-    const school = await tx.schools.upsert({
-      where: {
-        code: process.env.DEFAULT_SCHOOL_CODE || 'FPTU',
-      },
-      update: {
-        name: 'FPT University',
-      },
-      create: {
-        name: 'FPT University',
-        code: process.env.DEFAULT_SCHOOL_CODE || 'FPTU',
-      },
-    });
-
-    const subjects: Array<Awaited<ReturnType<typeof tx.subjects.upsert>>> = [];
-
-    for (const subject of subjectsList) {
-      subjects.push(
-        await tx.subjects.upsert({
-          where: {
-            code: subject.code,
-          },
-          update: {
-            name: subject.name,
-            schoolId: school.id,
-          },
-          create: {
-            ...subject,
-            schoolId: school.id,
-          },
-        }),
-      );
-    }
-
-    return { school, subjects };
+  const school = await prisma.schools.upsert({
+    where: {
+      code: process.env.DEFAULT_SCHOOL_CODE || 'FPTU',
+    },
+    update: {
+      name: 'FPT University',
+    },
+    create: {
+      name: 'FPT University',
+      code: process.env.DEFAULT_SCHOOL_CODE || 'FPTU',
+    },
   });
+
+  const subjects = await Promise.all(
+    subjectsList.map((subject) =>
+      prisma.subjects.upsert({
+        where: {
+          code: subject.code,
+        },
+        update: {
+          name: subject.name,
+          schoolId: school.id,
+        },
+        create: {
+          ...subject,
+          schoolId: school.id,
+        },
+      }),
+    ),
+  );
 
   console.log(`Seeded ${accounts.length} accounts.`);
   console.log(`Ensured school: ${school.name} (${school.code})`);

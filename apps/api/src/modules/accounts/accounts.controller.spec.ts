@@ -61,9 +61,27 @@ describe('AccountsController', () => {
     expect(controller.remove('5')).toBe('removed');
   });
 
-  it('should be restricted to ADMIN role', () => {
-    expect(Reflect.getMetadata(ROLES_KEY, AccountsController)).toEqual([
+  it('should restrict admin endpoints to ADMIN role', () => {
+    expect(Reflect.getMetadata(ROLES_KEY, controller.create)).toEqual([
       UserRole.ADMIN,
+    ]);
+    expect(Reflect.getMetadata(ROLES_KEY, controller.findAll)).toEqual([
+      UserRole.ADMIN,
+    ]);
+    expect(Reflect.getMetadata(ROLES_KEY, controller.ban)).toEqual([
+      UserRole.ADMIN,
+    ]);
+    expect(Reflect.getMetadata(ROLES_KEY, controller.findOne)).toEqual([
+      UserRole.ADMIN,
+    ]);
+  });
+
+  it('should restrict self-service endpoints to USER role', () => {
+    expect(Reflect.getMetadata(ROLES_KEY, controller.update)).toEqual([
+      UserRole.USER,
+    ]);
+    expect(Reflect.getMetadata(ROLES_KEY, controller.remove)).toEqual([
+      UserRole.USER,
     ]);
   });
 });

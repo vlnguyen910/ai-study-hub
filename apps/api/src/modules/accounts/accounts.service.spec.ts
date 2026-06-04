@@ -37,11 +37,12 @@ describe('AccountsService', () => {
 
   it('create stores hashed password and returns success message', async () => {
     const prisma: any = moduleRef.get(PrismaService as any);
+    prisma.accounts.findUnique.mockResolvedValue(null);
     prisma.accounts.create.mockResolvedValue({ id: 'acc-1' });
     const res = await service.create({
       email: 'admin@example.com',
       name: 'Admin User',
-      hashedPassword: 'hashed-password',
+      password: 'Password123!',
       role: 'ADMIN' as any,
     });
 
@@ -49,7 +50,7 @@ describe('AccountsService', () => {
     expect(createArgs.data.email).toBe('admin@example.com');
     expect(createArgs.data.name).toBe('Admin User');
     expect(createArgs.data.role).toBe('ADMIN');
-    expect(createArgs.data.password).toBe('hashed-password');
+    expect(createArgs.data.password).not.toBe('Password123!');
     expect(res).toEqual({ message: 'Account created successfully' });
   });
 
@@ -61,7 +62,7 @@ describe('AccountsService', () => {
       service.create({
         email: 'existing@example.com',
         name: 'Existing',
-        hashedPassword: 'hashed-password',
+        password: 'Password123!',
       } as any),
     ).rejects.toBeInstanceOf(ConflictException);
   });

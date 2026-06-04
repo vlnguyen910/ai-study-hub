@@ -15,6 +15,7 @@ describe('AuthService', () => {
 
   const prismaMock = {
     sessions: {
+      findFirst: jest.fn(),
       upsert: jest.fn(),
       updateMany: jest.fn(),
     },
@@ -86,15 +87,6 @@ describe('AuthService', () => {
       }),
     );
 
-    const createPayload = accountsServiceMock.create.mock.calls[0][0] as {
-      hashedPassword: string;
-    };
-    const passwordMatched = await argon2.verify(
-      createPayload.hashedPassword,
-      'Password123!',
-    );
-    expect(passwordMatched).toBe(true);
-
     expect(prismaMock.sessions.upsert).not.toHaveBeenCalled();
     expect(result).toEqual({
       message: 'Signup successful',
@@ -116,89 +108,86 @@ describe('AuthService', () => {
     ).rejects.toBeInstanceOf(ConflictException);
   });
 
-  //TODO: uncomment and fix this test later =))
-  // it('should sign in successfully with valid credentials', async () => {
-  //   const hashedPassword = await argon2.hash('Password123!');
+  it('should sign in successfully with valid credentials', async () => {
+    const hashedPassword = await argon2.hash('Password123!');
 
-  //   accountsServiceMock.findAccountByEmail.mockResolvedValue({
-  //     id: 'user-1',
-  //     email: 'new-user@example.com',
-  //     name: 'New User',
-  //     password: hashedPassword,
-  //     role: UserRole.USER,
-  //     status: UserStatus.ACTIVE,
-  //   });
-  //   jwtMock.signAsync
-  //     .mockResolvedValueOnce('access-token')
-  //     .mockResolvedValueOnce('refresh-token');
-  //   prismaMock.sessions.upsert.mockResolvedValue({ id: 'session-1' });
+    accountsServiceMock.findAccountByEmail.mockResolvedValue({
+      id: 'user-1',
+      email: 'new-user@example.com',
+      name: 'New User',
+      password: hashedPassword,
+      role: UserRole.USER,
+      status: UserStatus.ACTIVE,
+    });
+    jwtMock.signAsync
+      .mockResolvedValueOnce('access-token')
+      .mockResolvedValueOnce('refresh-token');
+    prismaMock.sessions.upsert.mockResolvedValue({ id: 'session-1' });
 
-  //   const result = await service.signin(
-  //     {
-  //       email: 'new-user@example.com',
-  //       password: 'Password123!',
-  //       deviceId: 'device-1',
-  //     },
-  //     DeviceType.MOBILE,
-  //   );
+    const result = await service.signin(
+      {
+        email: 'new-user@example.com',
+        password: 'Password123!',
+        deviceId: 'device-1',
+      },
+      DeviceType.MOBILE,
+    );
 
-  //   expect(result.data.accessToken).toBe('access-token');
-  //   expect(result.data.refreshToken).toBe('refresh-token');
-  //   expect(jwtMock.signAsync).toHaveBeenNthCalledWith(
-  //     1,
-  //     expect.objectContaining({
-  //       sub: 'user-1',
-  //       email: 'new-user@example.com',
-  //       name: 'New User',
-  //       role: UserRole.USER,
-  //       status: UserStatus.ACTIVE,
-  //       type: JwtTokenType.AccessToken,
-  //       deviceId: 'device-1',
-  //     }),
-  //     { expiresIn: jwtConfigMock.accessTokenExpiresIn },
-  //   );
-  //   expect(jwtMock.signAsync).toHaveBeenNthCalledWith(
-  //     2,
-  //     expect.objectContaining({
-  //       type: JwtTokenType.RefreshToken,
-  //       deviceId: 'device-1',
-  //     }),
-  //     { expiresIn: jwtConfigMock.refreshTokenExpiresIn },
-  //   );
-  //   expect(prismaMock.sessions.upsert).toHaveBeenCalledWith(
-  //     expect.objectContaining({
-  //       where: {
-  //         userId_deviceId: {
-  //           userId: 'user-1',
-  //           deviceId: 'device-1',
-  //         },
-  //       },
-  //       update: expect.objectContaining({
-  //         refreshToken: expect.any(String),
-  //         expiresAt: expect.any(Date),
-  //         isRevoked: false,
-  //       }),
-  //       create: expect.objectContaining({
-  //         userId: 'user-1',
-  //         refreshToken: expect.any(String),
-  //         deviceId: 'device-1',
-  //         deviceType: DeviceType.MOBILE,
-  //         expiresAt: expect.any(Date),
-  //       }),
-  //     }),
-  //   );
+    expect(result.data.accessToken).toBe('access-token');
+    expect(result.data.refreshToken).toBe('refresh-token');
+    expect(jwtMock.signAsync).toHaveBeenNthCalledWith(
+      1,
+      expect.objectContaining({
+        sub: 'user-1',
+        role: UserRole.USER,
+        status: UserStatus.ACTIVE,
+        type: JwtTokenType.AccessToken,
+        deviceId: 'device-1',
+      }),
+      { expiresIn: jwtConfigMock.accessTokenExpiresIn },
+    );
+    expect(jwtMock.signAsync).toHaveBeenNthCalledWith(
+      2,
+      expect.objectContaining({
+        type: JwtTokenType.RefreshToken,
+        deviceId: 'device-1',
+      }),
+      { expiresIn: jwtConfigMock.refreshTokenExpiresIn },
+    );
+    expect(prismaMock.sessions.upsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: {
+          userId_deviceId: {
+            userId: 'user-1',
+            deviceId: 'device-1',
+          },
+        },
+        update: expect.objectContaining({
+          refreshToken: expect.any(String),
+          expiresAt: expect.any(Date),
+          isRevoked: false,
+        }),
+        create: expect.objectContaining({
+          userId: 'user-1',
+          refreshToken: expect.any(String),
+          deviceId: 'device-1',
+          deviceType: DeviceType.MOBILE,
+          expiresAt: expect.any(Date),
+        }),
+      }),
+    );
 
-  //   const sessionUpsertPayload = prismaMock.sessions.upsert.mock
-  //     .calls[0][0] as {
-  //     create: { refreshToken: string };
-  //   };
-  //   expect(
-  //     await argon2.verify(
-  //       sessionUpsertPayload.create.refreshToken,
-  //       'refresh-token',
-  //     ),
-  //   ).toBe(true);
-  // });
+    const sessionUpsertPayload = prismaMock.sessions.upsert.mock
+      .calls[0][0] as {
+      create: { refreshToken: string };
+    };
+    expect(
+      await argon2.verify(
+        sessionUpsertPayload.create.refreshToken,
+        'refresh-token',
+      ),
+    ).toBe(true);
+  });
 
   it('should throw unauthorized exception for missing signin account', async () => {
     accountsServiceMock.findAccountByEmail.mockResolvedValue(null);
@@ -266,32 +255,48 @@ describe('AuthService', () => {
     ).rejects.toBeInstanceOf(UnauthorizedException);
   });
 
-  //TODO: uncomment and fix this test later =))
-  // it('should refresh an access token from refresh token payload', async () => {
-  //   const payload: TokenPayload = {
-  //     sub: 'user-1',
-  //     role: UserRole.USER,
-  //     status: UserStatus.ACTIVE,
-  //     type: JwtTokenType.RefreshToken,
-  //     deviceId: 'device-1',
-  //   };
-  //   jwtMock.signAsync.mockResolvedValue('new-access-token');
+  it('should refresh an access token from refresh token payload', async () => {
+    const payload: TokenPayload = {
+      sub: 'user-1',
+      role: UserRole.USER,
+      status: UserStatus.ACTIVE,
+      type: JwtTokenType.RefreshToken,
+      deviceId: 'device-1',
+    };
+    const hashedRefreshToken = await argon2.hash('refresh-token');
+    prismaMock.sessions.findFirst.mockResolvedValue({
+      id: 'session-1',
+      refreshToken: hashedRefreshToken,
+    });
+    jwtMock.signAsync.mockResolvedValue('new-access-token');
 
-  //   await expect(service.refreshToken(payload)).resolves.toEqual({
-  //     message: 'Token refreshed successfully',
-  //     data: {
-  //       accessToken: 'new-access-token',
-  //     },
-  //   });
-  //   expect(jwtMock.signAsync).toHaveBeenCalledWith(
-  //     expect.objectContaining({
-  //       sub: 'user-1',
-  //       type: JwtTokenType.AccessToken,
-  //       deviceId: 'device-1',
-  //     }),
-  //     { expiresIn: jwtConfigMock.accessTokenExpiresIn },
-  //   );
-  // });
+    await expect(
+      service.refreshToken(payload, 'refresh-token'),
+    ).resolves.toEqual({
+      message: 'Token refreshed successfully',
+      data: {
+        accessToken: 'new-access-token',
+      },
+    });
+    expect(prismaMock.sessions.findFirst).toHaveBeenCalledWith({
+      where: {
+        userId: 'user-1',
+        deviceId: 'device-1',
+        isRevoked: false,
+        expiresAt: {
+          gt: expect.any(Date),
+        },
+      },
+    });
+    expect(jwtMock.signAsync).toHaveBeenCalledWith(
+      expect.objectContaining({
+        sub: 'user-1',
+        type: JwtTokenType.AccessToken,
+        deviceId: 'device-1',
+      }),
+      { expiresIn: jwtConfigMock.accessTokenExpiresIn },
+    );
+  });
 
   it('getExpiryDate handles supported duration formats', () => {
     const privateService = service as unknown as {
