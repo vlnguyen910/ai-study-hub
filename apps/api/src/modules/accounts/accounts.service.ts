@@ -31,7 +31,7 @@ export class AccountsService {
         password: hashedPassword,
         avatarUrl: createAccountDto.avatarUrl ?? '',
         role: createAccountDto.role ?? UserRole.USER,
-        status: createAccountDto.status ?? UserStatus.ACTIVE,
+        status: createAccountDto.status ?? UserStatus.UNVERIFIED,
       },
     });
 

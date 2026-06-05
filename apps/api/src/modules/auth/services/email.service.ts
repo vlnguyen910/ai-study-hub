@@ -23,6 +23,7 @@ export class EmailService {
 
   async sendVerificationCode(input: SendVerificationCodeInput) {
     if (!this.resend) {
+      //this only for development when resend api key is not provided, in production this should never happen
       this.logger.log(
         `Email verification code for ${input.email}: ${input.code}`,
       );
