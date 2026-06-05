@@ -21,6 +21,8 @@ describe('AuthController', () => {
 
   const authServiceMock = {
     signup: jest.fn(),
+    verifyEmail: jest.fn(),
+    resendVerificationCode: jest.fn(),
     signin: jest.fn(),
     logout: jest.fn(),
     refreshToken: jest.fn(),
@@ -81,6 +83,46 @@ describe('AuthController', () => {
       email: 'new-user@example.com',
       name: 'New User',
       password: 'Password123!',
+    });
+  });
+
+  it('should call verify email service', async () => {
+    authServiceMock.verifyEmail.mockResolvedValue({
+      message: 'Email verified successfully',
+      data: null,
+    });
+
+    await expect(
+      controller.verifyEmail({
+        email: 'new-user@example.com',
+        code: '123456',
+      }),
+    ).resolves.toEqual({
+      message: 'Email verified successfully',
+      data: null,
+    });
+    expect(authServiceMock.verifyEmail).toHaveBeenCalledWith({
+      email: 'new-user@example.com',
+      code: '123456',
+    });
+  });
+
+  it('should call resend verification code service', async () => {
+    authServiceMock.resendVerificationCode.mockResolvedValue({
+      message: 'Verification code sent',
+      data: null,
+    });
+
+    await expect(
+      controller.resendVerificationCode({
+        email: 'new-user@example.com',
+      }),
+    ).resolves.toEqual({
+      message: 'Verification code sent',
+      data: null,
+    });
+    expect(authServiceMock.resendVerificationCode).toHaveBeenCalledWith({
+      email: 'new-user@example.com',
     });
   });
 

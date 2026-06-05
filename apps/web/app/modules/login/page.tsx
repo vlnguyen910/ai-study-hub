@@ -5,15 +5,22 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import type { ReactElement } from "react";
 import { Button } from "@repo/ui/button";
+import { signin } from "../auth-api";
+
 export default function LoginPage(): ReactElement {
   const router = useRouter();
   const [formData, setFormData] = useState({ email: "", password: "" });
   const [errors, setErrors] = useState({ email: "", password: "" });
   const [showPassword, setShowPassword] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState("");
+  const [needsVerification, setNeedsVerification] = useState(false);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { id, value } = e.target;
     setFormData((prev) => ({ ...prev, [id]: value }));
+    setSubmitError("");
+    setNeedsVerification(false);
     if (errors[id as keyof typeof errors]) {
       setErrors((prev) => ({ ...prev, [id]: "" }));
     }
@@ -43,10 +50,40 @@ export default function LoginPage(): ReactElement {
     return isValid;
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const getDeviceId = () => {
+    if (typeof window === "undefined") return "web";
+
+    const existing = window.localStorage.getItem("web_device_id");
+    if (existing) return existing;
+
+    const id = window.crypto?.randomUUID?.() ?? `web-${Date.now()}`;
+    window.localStorage.setItem("web_device_id", id);
+    return id;
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (validate()) {
-      console.log("Login form submitted successfully on client:", formData);
+    if (!validate()) {
+      return;
+    }
+
+    setIsSubmitting(true);
+    setSubmitError("");
+    setNeedsVerification(false);
+
+    try {
+      await signin({
+        email: formData.email,
+        password: formData.password,
+        deviceId: getDeviceId(),
+      });
+      router.replace("/");
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Login failed";
+      setSubmitError(message);
+      setNeedsVerification(message.toLowerCase().includes("verification"));
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -270,8 +307,22 @@ export default function LoginPage(): ReactElement {
               className="w-full h-12 bg-blue-600 text-white font-semibold hover:bg-blue-700 rounded mt-2"
               type="submit"
             >
-              Log in
+              {isSubmitting ? "Logging in..." : "Log in"}
             </Button>
+
+            {submitError && (
+              <div className="rounded border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+                {submitError}
+                {needsVerification && (
+                  <Link
+                    href={`/verify-email?email=${encodeURIComponent(formData.email)}`}
+                    className="ml-1 font-semibold text-blue-700 hover:underline"
+                  >
+                    Verify email
+                  </Link>
+                )}
+              </div>
+            )}
 
             <div className="relative my-4">
               <div className="absolute inset-0 flex items-center">

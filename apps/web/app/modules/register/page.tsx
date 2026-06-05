@@ -5,6 +5,8 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import type { ReactElement } from "react";
 import { Button } from "@repo/ui/button";
+import { signup } from "../auth-api";
+
 export default function RegisterPage(): ReactElement {
   const router = useRouter();
   const [formData, setFormData] = useState({
@@ -21,10 +23,13 @@ export default function RegisterPage(): ReactElement {
   });
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState("");
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { id, value } = e.target;
     setFormData((prev) => ({ ...prev, [id]: value }));
+    setSubmitError("");
     if (errors[id as keyof typeof errors]) {
       setErrors((prev) => ({ ...prev, [id]: "" }));
     }
@@ -69,10 +74,28 @@ export default function RegisterPage(): ReactElement {
     return isValid;
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (validate()) {
-      console.log("Register form submitted successfully on client:", formData);
+    if (!validate()) {
+      return;
+    }
+
+    setIsSubmitting(true);
+    setSubmitError("");
+
+    try {
+      await signup({
+        name: formData.name,
+        email: formData.email,
+        password: formData.password,
+      });
+      router.push(`/verify-email?email=${encodeURIComponent(formData.email)}`);
+    } catch (error) {
+      setSubmitError(
+        error instanceof Error ? error.message : "Registration failed",
+      );
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -390,8 +413,14 @@ export default function RegisterPage(): ReactElement {
               className="w-full h-12 bg-blue-600 text-white font-semibold hover:bg-blue-700 rounded mt-2"
               type="submit"
             >
-              Create Account
+              {isSubmitting ? "Creating..." : "Create Account"}
             </Button>
+
+            {submitError && (
+              <div className="rounded border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+                {submitError}
+              </div>
+            )}
           </form>
 
           <p className="text-center text-sm text-gray-600 mt-8">

@@ -9,11 +9,16 @@ import { AccountsService } from '../accounts/accounts.service';
 import { AuthService } from './auth.service';
 import { JwtTokenType } from '../../common/enums/jwt.enum';
 import { TokenPayload } from '../../common/interfaces/auth.interface';
+import { EmailService } from './services/email.service';
+import { VerificationCodeService } from './services/verification-code.service';
 
 describe('AuthService', () => {
   let service: AuthService;
 
   const prismaMock = {
+    accounts: {
+      update: jest.fn(),
+    },
     sessions: {
       findFirst: jest.fn(),
       upsert: jest.fn(),
@@ -29,6 +34,15 @@ describe('AuthService', () => {
 
   const jwtMock = {
     signAsync: jest.fn(),
+  };
+
+  const verificationCodeServiceMock = {
+    issueCode: jest.fn(),
+    verifyCode: jest.fn(),
+  };
+
+  const emailServiceMock = {
+    sendVerificationCode: jest.fn(),
   };
 
   const jwtConfigMock = {
@@ -56,6 +70,14 @@ describe('AuthService', () => {
           useValue: jwtMock,
         },
         {
+          provide: VerificationCodeService,
+          useValue: verificationCodeServiceMock,
+        },
+        {
+          provide: EmailService,
+          useValue: emailServiceMock,
+        },
+        {
           provide: jwtConfiguration.KEY,
           useValue: jwtConfigMock,
         },
@@ -66,10 +88,19 @@ describe('AuthService', () => {
   });
 
   it('should sign up a new account without creating a session', async () => {
-    accountsServiceMock.findAccountByEmail.mockResolvedValue(null);
+    accountsServiceMock.findAccountByEmail
+      .mockResolvedValueOnce(null)
+      .mockResolvedValueOnce({
+        id: 'user-1',
+        email: 'new-user@example.com',
+        name: 'New User',
+        status: UserStatus.UNVERIFIED,
+      });
     accountsServiceMock.create.mockResolvedValue({
       message: 'Account created successfully',
     });
+    verificationCodeServiceMock.issueCode.mockResolvedValue('123456');
+    emailServiceMock.sendVerificationCode.mockResolvedValue(undefined);
 
     const result = await service.signup({
       email: 'new-user@example.com',
@@ -84,12 +115,22 @@ describe('AuthService', () => {
         password: expect.any(String),
         avatarUrl: undefined,
         role: UserRole.USER,
+        status: UserStatus.UNVERIFIED,
       }),
     );
+    expect(verificationCodeServiceMock.issueCode).toHaveBeenCalledWith({
+      accountId: 'user-1',
+      email: 'new-user@example.com',
+    });
+    expect(emailServiceMock.sendVerificationCode).toHaveBeenCalledWith({
+      email: 'new-user@example.com',
+      name: 'New User',
+      code: '123456',
+    });
 
     expect(prismaMock.sessions.upsert).not.toHaveBeenCalled();
     expect(result).toEqual({
-      message: 'Signup successful',
+      message: 'Signup successful. Please verify your email.',
       data: null,
     });
   });
@@ -106,6 +147,68 @@ describe('AuthService', () => {
         password: 'Password123!',
       }),
     ).rejects.toBeInstanceOf(ConflictException);
+  });
+
+  it('should verify email with a valid code and activate the account', async () => {
+    accountsServiceMock.findAccountByEmail.mockResolvedValue({
+      id: 'user-1',
+      email: 'new-user@example.com',
+      name: 'New User',
+      status: UserStatus.UNVERIFIED,
+    });
+    verificationCodeServiceMock.verifyCode.mockResolvedValue('user-1');
+    prismaMock.accounts.update.mockResolvedValue({
+      id: 'user-1',
+      status: UserStatus.ACTIVE,
+    });
+
+    await expect(
+      service.verifyEmail({
+        email: 'new-user@example.com',
+        code: '123456',
+      }),
+    ).resolves.toEqual({
+      message: 'Email verified successfully',
+      data: null,
+    });
+    expect(verificationCodeServiceMock.verifyCode).toHaveBeenCalledWith(
+      'new-user@example.com',
+      '123456',
+    );
+    expect(prismaMock.accounts.update).toHaveBeenCalledWith({
+      where: { id: 'user-1' },
+      data: { status: UserStatus.ACTIVE },
+    });
+  });
+
+  it('should resend verification code for an unverified account', async () => {
+    accountsServiceMock.findAccountByEmail.mockResolvedValue({
+      id: 'user-1',
+      email: 'new-user@example.com',
+      name: 'New User',
+      status: UserStatus.UNVERIFIED,
+    });
+    verificationCodeServiceMock.issueCode.mockResolvedValue('654321');
+    emailServiceMock.sendVerificationCode.mockResolvedValue(undefined);
+
+    await expect(
+      service.resendVerificationCode({
+        email: 'new-user@example.com',
+      }),
+    ).resolves.toEqual({
+      message: 'Verification code sent',
+      data: null,
+    });
+    expect(verificationCodeServiceMock.issueCode).toHaveBeenCalledWith({
+      accountId: 'user-1',
+      email: 'new-user@example.com',
+      enforceCooldown: true,
+    });
+    expect(emailServiceMock.sendVerificationCode).toHaveBeenCalledWith({
+      email: 'new-user@example.com',
+      name: 'New User',
+      code: '654321',
+    });
   });
 
   it('should sign in successfully with valid credentials', async () => {
@@ -224,6 +327,32 @@ describe('AuthService', () => {
         DeviceType.WEB,
       ),
     ).rejects.toBeInstanceOf(UnauthorizedException);
+  });
+
+  it('should reject unverified signin before issuing tokens or sessions', async () => {
+    const hashedPassword = await argon2.hash('Password123!');
+
+    accountsServiceMock.findAccountByEmail.mockResolvedValue({
+      id: 'user-1',
+      email: 'new-user@example.com',
+      name: 'New User',
+      password: hashedPassword,
+      role: UserRole.USER,
+      status: UserStatus.UNVERIFIED,
+    });
+
+    await expect(
+      service.signin(
+        {
+          email: 'new-user@example.com',
+          password: 'Password123!',
+          deviceId: 'device-1',
+        },
+        DeviceType.WEB,
+      ),
+    ).rejects.toBeInstanceOf(UnauthorizedException);
+    expect(jwtMock.signAsync).not.toHaveBeenCalled();
+    expect(prismaMock.sessions.upsert).not.toHaveBeenCalled();
   });
 
   it('should revoke the current device session on logout', async () => {
