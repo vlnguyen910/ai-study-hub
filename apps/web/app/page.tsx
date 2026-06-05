@@ -12,7 +12,13 @@ export default function Home(): ReactElement {
   const [mounted, setMounted] = useState(false);
   const [isLoginOpen, setIsLoginOpen] = useState(false);
   const [isRegisterOpen, setIsRegisterOpen] = useState(false);
-  const { isAuthenticated, user, logout, isLoginPromptOpen, setLoginPromptOpen } = useAuthStore();
+  const {
+    isAuthenticated,
+    user,
+    logout,
+    isLoginPromptOpen,
+    setLoginPromptOpen,
+  } = useAuthStore();
 
   useEffect(() => {
     setMounted(true);
@@ -60,31 +66,62 @@ export default function Home(): ReactElement {
     <div className="min-h-screen bg-white text-gray-900 flex flex-col overflow-x-hidden">
       <header className="flex items-center justify-between px-10 py-4 border-b border-gray-200 bg-white">
         <Link href="/" className="flex items-center gap-2">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M12 3L1 9L12 15L21 10.09V17H23V9L12 3ZM12 12.8L4.08 8.46L12 4.07L19.92 8.46L12 12.8Z" fill="#004ecc" />
+          <svg
+            width="24"
+            height="24"
+            viewBox="0 0 24 24"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <path
+              d="M12 3L1 9L12 15L21 10.09V17H23V9L12 3ZM12 12.8L4.08 8.46L12 4.07L19.92 8.46L12 12.8Z"
+              fill="#004ecc"
+            />
             <path d="M4 14V18H10V14" stroke="#004ecc" strokeWidth="2" />
           </svg>
           <span className="text-xl font-bold text-blue-600">AcademiShare</span>
         </Link>
 
         <nav className="hidden md:flex items-center gap-8">
-          <Link href="/" className="text-gray-900 font-semibold text-sm hover:text-blue-600 transition-all duration-200 py-1 border-b-2 border-blue-600">
+          <Link
+            href="/"
+            className="text-gray-900 font-semibold text-sm hover:text-blue-600 transition-all duration-200 py-1 border-b-2 border-blue-600"
+          >
             Trang ch?
           </Link>
-          <Link href="/library" className="text-gray-500 font-semibold text-sm hover:text-blue-600 transition-all duration-200 py-1 border-b-2 border-transparent hover:border-blue-600">
+          <Link
+            href="/library"
+            className="text-gray-500 font-semibold text-sm hover:text-blue-600 transition-all duration-200 py-1 border-b-2 border-transparent hover:border-blue-600"
+          >
             Thu vi?n
           </Link>
-          <Link href="/community" className="text-gray-500 font-semibold text-sm hover:text-blue-600 transition-all duration-200 py-1 border-b-2 border-transparent hover:border-blue-600">
+          <Link
+            href="/community"
+            className="text-gray-500 font-semibold text-sm hover:text-blue-600 transition-all duration-200 py-1 border-b-2 border-transparent hover:border-blue-600"
+          >
             C?ng d?ng
           </Link>
-          <Link href="/upload" className="text-gray-500 font-semibold text-sm hover:text-blue-600 transition-all duration-200 py-1 border-b-2 border-transparent hover:border-blue-600">
+          <Link
+            href="/upload"
+            className="text-gray-500 font-semibold text-sm hover:text-blue-600 transition-all duration-200 py-1 border-b-2 border-transparent hover:border-blue-600"
+          >
             T?i l�n
           </Link>
         </nav>
 
         <div className="flex items-center gap-4">
-          <button className="text-gray-600 hover:text-black" aria-label="Toggle theme">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <button
+            className="text-gray-600 hover:text-black"
+            aria-label="Toggle theme"
+          >
+            <svg
+              width="20"
+              height="20"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+            >
               <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
             </svg>
           </button>
@@ -92,11 +129,22 @@ export default function Home(): ReactElement {
           {mounted && isAuthenticated && user ? (
             <div className="flex items-center gap-6">
               <Link
-                href={user.role === "admin" ? "/admin" : user.role === "moderator" ? "/moderator" : "/profile"}
+                href={
+                  user.role === "admin"
+                    ? "/admin"
+                    : user.role === "moderator"
+                      ? "/moderator"
+                      : "/profile"
+                }
                 className="text-sm font-bold text-gray-700 hover:text-[#004ac6] transition-colors"
               >
                 Xin ch�o, <span className="text-[#004ac6]">{user.name}</span> (
-                {user.role === "admin" ? "Admin" : user.role === "moderator" ? "KTV" : "H?c vi�n"})
+                {user.role === "admin"
+                  ? "Admin"
+                  : user.role === "moderator"
+                    ? "KTV"
+                    : "H?c vi�n"}
+                )
               </Link>
               <button
                 type="button"
@@ -130,18 +178,36 @@ export default function Home(): ReactElement {
           <div className="flex flex-col gap-6 max-w-xl">
             <h1 className="text-5xl font-bold leading-tight tracking-tight text-gray-900">
               Kho luu tr? t�i li?u{" "}
-              <span className="text-blue-600">h?c thu?t h�ng d?u</span> cho sinh vi�n
+              <span className="text-blue-600">h?c thu?t h�ng d?u</span> cho sinh
+              vi�n
             </h1>
             <p className="text-lg leading-relaxed text-gray-600">
-              N?n t?ng chia s? ki?n th?c to�n di?n, noi b?n c� th? t�m ki?m h�ng tri?u gi�o tr�nh, d? thi v� b�i gi?ng ch?t lu?ng t? c?ng d?ng sinh vi�n uu t�.
+              N?n t?ng chia s? ki?n th?c to�n di?n, noi b?n c� th? t�m ki?m h�ng
+              tri?u gi�o tr�nh, d? thi v� b�i gi?ng ch?t lu?ng t? c?ng d?ng sinh
+              vi�n uu t�.
             </p>
             <div className="flex items-center bg-white border border-gray-300 rounded-xl p-1 shadow-sm mt-4">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-gray-500 mx-3 shrink-0">
+              <svg
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                className="text-gray-500 mx-3 shrink-0"
+              >
                 <circle cx="11" cy="11" r="8" />
                 <line x1="21" y1="21" x2="16.65" y2="16.65" />
               </svg>
-              <input type="text" placeholder="T�m ki?m t�i li?u, kh�a h?c..." className="flex-1 border-none outline-none px-2 py-2 bg-transparent" />
-              <button type="button" className="bg-blue-600 text-white px-6 py-2 rounded-lg font-semibold hover:bg-blue-700 transition-colors">
+              <input
+                type="text"
+                placeholder="T�m ki?m t�i li?u, kh�a h?c..."
+                className="flex-1 border-none outline-none px-2 py-2 bg-transparent"
+              />
+              <button
+                type="button"
+                className="bg-blue-600 text-white px-6 py-2 rounded-lg font-semibold hover:bg-blue-700 transition-colors"
+              >
                 Kh�m ph�
               </button>
             </div>
@@ -151,30 +217,59 @@ export default function Home(): ReactElement {
 
         <section className="flex flex-col items-center gap-10 bg-blue-50 rounded-4xl px-12 py-16">
           <div className="text-center">
-            <h2 className="text-4xl font-bold text-gray-900 mb-3">T�nh nang c?t l�i</h2>
-            <p className="text-lg text-gray-600">Tr?i nghi?m h?c t?p kh�ng gi?i h?n v?i h? sinh th�i c�ng c? hi?n d?i</p>
+            <h2 className="text-4xl font-bold text-gray-900 mb-3">
+              T�nh nang c?t l�i
+            </h2>
+            <p className="text-lg text-gray-600">
+              Tr?i nghi?m h?c t?p kh�ng gi?i h?n v?i h? sinh th�i c�ng c? hi?n
+              d?i
+            </p>
           </div>
           <div className="grid grid-cols-2 gap-6 w-full">
             <div className="bg-white border border-gray-200 rounded-3xl p-8 shadow-sm flex flex-col gap-4 relative overflow-hidden min-h-80">
               <div className="w-12 h-12 bg-blue-50 rounded-lg flex items-center justify-center text-blue-600">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <svg
+                  width="20"
+                  height="20"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                >
                   <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
                   <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
                 </svg>
               </div>
-              <h3 className="text-2xl font-bold text-gray-900">Thu vi?n t�i li?u da d?ng</h3>
-              <p className="text-gray-600">Hon 1,000,000+ t�i li?u du?c ph�n lo?i theo t?ng chuy�n ng�nh v� tru?ng d?i h?c.</p>
+              <h3 className="text-2xl font-bold text-gray-900">
+                Thu vi?n t�i li?u da d?ng
+              </h3>
+              <p className="text-gray-600">
+                Hon 1,000,000+ t�i li?u du?c ph�n lo?i theo t?ng chuy�n ng�nh v�
+                tru?ng d?i h?c.
+              </p>
             </div>
             <div className="bg-blue-600 rounded-3xl p-8 shadow-lg flex flex-col gap-4 relative overflow-hidden min-h-80">
               <div className="w-12 h-12 bg-white rounded-lg flex items-center justify-center text-blue-600">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <svg
+                  width="20"
+                  height="20"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                >
                   <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
                   <polyline points="17 8 12 3 7 8" />
                   <line x1="12" y1="3" x2="12" y2="15" />
                 </svg>
               </div>
-              <h3 className="text-2xl font-bold text-white">��ng g�p & Chia s?</h3>
-              <p className="text-white/90">T?i l�n t�i li?u c?a b?n ch? v?i m?t c� k�o th? v� nh?n di?m thu?ng t? c?ng d?ng.</p>
+              <h3 className="text-2xl font-bold text-white">
+                ��ng g�p & Chia s?
+              </h3>
+              <p className="text-white/90">
+                T?i l�n t�i li?u c?a b?n ch? v?i m?t c� k�o th? v� nh?n di?m
+                thu?ng t? c?ng d?ng.
+              </p>
             </div>
           </div>
         </section>
