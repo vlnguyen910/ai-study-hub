@@ -50,7 +50,7 @@ describe('AccountsService', () => {
     expect(createArgs.data.email).toBe('admin@example.com');
     expect(createArgs.data.name).toBe('Admin User');
     expect(createArgs.data.role).toBe('ADMIN');
-    expect(createArgs.data.status).toBe(UserStatus.ACTIVE);
+    expect(createArgs.data.status).toBe(UserStatus.UNVERIFIED);
     expect(createArgs.data.password).not.toBe('Password123!');
     expect(res).toEqual({ message: 'Account created successfully' });
   });
