@@ -20,7 +20,7 @@ export function PdfPreview({ fileUrl }: Props): React.JSX.Element {
     <div className="flex justify-center">
       <Document
         file={fileUrl}
-        onLoadError={(error) => setError(error.message)}
+        onLoadError={(error: Error) => setError(error.message)}
         loading={<div>Loading PDF...</div>}
       >
         {error ? (
