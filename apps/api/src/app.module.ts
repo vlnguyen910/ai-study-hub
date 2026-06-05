@@ -8,13 +8,24 @@ import { SubjectsModule } from './modules/subjects/subjects.module';
 import { jwtConfiguration } from './config/jwt.config';
 import { PrismaModule } from './prisma/prisma.module';
 import { cookieConfiguration } from './config/cookies.config';
+import {
+  emailVerificationConfiguration,
+  redisConfiguration,
+  resendConfiguration,
+} from './config';
 
 @Module({
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
       cache: true,
-      load: [jwtConfiguration, cookieConfiguration],
+      load: [
+        jwtConfiguration,
+        cookieConfiguration,
+        redisConfiguration,
+        resendConfiguration,
+        emailVerificationConfiguration,
+      ],
     }),
     PrismaModule,
     AccountsModule,

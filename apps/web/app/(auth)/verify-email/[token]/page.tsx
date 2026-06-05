@@ -7,5 +7,5 @@ export default async function Page({
   params: Promise<{ token: string }>;
 }>): Promise<ReactElement> {
   const { token } = await params;
-  return <VerifyEmailPage token={token} />;
+  return <VerifyEmailPage initialEmail={token.includes("@") ? token : ""} />;
 }

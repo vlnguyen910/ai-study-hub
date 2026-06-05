@@ -14,6 +14,8 @@ import type { Response } from 'express';
 import { AuthService } from './auth.service';
 import { SigninDto } from './dto/signin.dto';
 import { SignupDto } from './dto/signup.dto';
+import { VerifyEmailDto } from './dto/verify-email.dto';
+import { ResendVerificationCodeDto } from './dto/resend-verification-code.dto';
 import { Public } from '../../common/decorators/public.decorator';
 import { cookieConfiguration } from '../../config';
 import { DeviceType } from '@prisma/client';
@@ -35,6 +37,24 @@ export class AuthController {
   @Post('signup')
   signup(@Body() signupDto: SignupDto) {
     return this.authService.signup(signupDto);
+  }
+
+  @Version('1')
+  @Public()
+  @HttpCode(HttpStatus.OK)
+  @Post('verify-email')
+  verifyEmail(@Body() verifyEmailDto: VerifyEmailDto) {
+    return this.authService.verifyEmail(verifyEmailDto);
+  }
+
+  @Version('1')
+  @Public()
+  @HttpCode(HttpStatus.OK)
+  @Post('resend-verification-code')
+  resendVerificationCode(
+    @Body() resendVerificationCodeDto: ResendVerificationCodeDto,
+  ) {
+    return this.authService.resendVerificationCode(resendVerificationCodeDto);
   }
 
   @Version('1')

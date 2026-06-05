@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   ConflictException,
   Inject,
   Injectable,
@@ -12,9 +13,13 @@ import { jwtConfiguration } from '../../config';
 import type { ConfigType } from '@nestjs/config';
 import { TokenPayload } from '../../common/interfaces/auth.interface';
 import { JwtTokenType } from '../../common/enums/jwt.enum';
-import { accounts, DeviceType, UserRole } from '@prisma/client';
+import { accounts, DeviceType, UserRole, UserStatus } from '@prisma/client';
 import argon2 from 'argon2';
 import { AccountsService } from '../accounts/accounts.service';
+import { VerifyEmailDto } from './dto/verify-email.dto';
+import { ResendVerificationCodeDto } from './dto/resend-verification-code.dto';
+import { EmailService } from './services/email.service';
+import { VerificationCodeService } from './services/verification-code.service';
 
 @Injectable()
 export class AuthService {
@@ -24,6 +29,8 @@ export class AuthService {
     private readonly jwtConfig: ConfigType<typeof jwtConfiguration>,
     private accountService: AccountsService,
     private prismaService: PrismaService,
+    private verificationCodeService: VerificationCodeService,
+    private emailService: EmailService,
   ) {}
 
   async signup(signupDto: SignupDto) {
@@ -41,10 +48,104 @@ export class AuthService {
       password: signupDto.password,
       avatarUrl: signupDto.avatarUrl,
       role: UserRole.USER,
+      status: UserStatus.UNVERIFIED,
+    });
+
+    const account = await this.accountService.findAccountByEmail(
+      signupDto.email,
+    );
+
+    if (!account) {
+      throw new BadRequestException('Unable to create account');
+    }
+
+    const code = await this.verificationCodeService.issueCode({
+      accountId: account.id,
+      email: account.email,
+    });
+
+    await this.emailService.sendVerificationCode({
+      email: account.email,
+      name: account.name,
+      code,
     });
 
     return {
-      message: 'Signup successful',
+      message: 'Signup successful. Please verify your email.',
+      data: null,
+    };
+  }
+
+  async verifyEmail(verifyEmailDto: VerifyEmailDto) {
+    const account = await this.accountService.findAccountByEmail(
+      verifyEmailDto.email,
+    );
+
+    if (!account) {
+      throw new BadRequestException('Invalid or expired verification code');
+    }
+
+    if (account.status === UserStatus.ACTIVE) {
+      throw new BadRequestException('Email is already verified');
+    }
+
+    if (account.status !== UserStatus.UNVERIFIED) {
+      throw new BadRequestException('Account cannot be verified');
+    }
+
+    const accountId = await this.verificationCodeService.verifyCode(
+      account.email,
+      verifyEmailDto.code,
+    );
+
+    if (accountId !== account.id) {
+      throw new BadRequestException('Invalid or expired verification code');
+    }
+
+    await this.prismaService.accounts.update({
+      where: { id: account.id },
+      data: { status: UserStatus.ACTIVE },
+    });
+
+    return {
+      message: 'Email verified successfully',
+      data: null,
+    };
+  }
+
+  async resendVerificationCode(
+    resendVerificationCodeDto: ResendVerificationCodeDto,
+  ) {
+    const account = await this.accountService.findAccountByEmail(
+      resendVerificationCodeDto.email,
+    );
+
+    if (!account) {
+      throw new BadRequestException('Account cannot be verified');
+    }
+
+    if (account.status === UserStatus.ACTIVE) {
+      throw new BadRequestException('Email is already verified');
+    }
+
+    if (account.status !== UserStatus.UNVERIFIED) {
+      throw new BadRequestException('Account cannot be verified');
+    }
+
+    const code = await this.verificationCodeService.issueCode({
+      accountId: account.id,
+      email: account.email,
+      enforceCooldown: true,
+    });
+
+    await this.emailService.sendVerificationCode({
+      email: account.email,
+      name: account.name,
+      code,
+    });
+
+    return {
+      message: 'Verification code sent',
       data: null,
     };
   }
@@ -65,6 +166,10 @@ export class AuthService {
 
     if (!isMatchPassword) {
       throw new UnauthorizedException('Invalid credentials');
+    }
+
+    if (account.status !== UserStatus.ACTIVE) {
+      throw new UnauthorizedException('Email verification is required');
     }
 
     const tokens = await this.manageUserToken(account, signinDto.deviceId);

@@ -6,6 +6,7 @@ import { jwtConfiguration } from '../../../config';
 import { TokenPayload } from '../../../common/interfaces/auth.interface';
 import { JwtTokenType } from '../../../common/enums/jwt.enum';
 import type { Request } from 'express';
+import { UserStatus } from '@prisma/client';
 
 type RefreshTokenRequest = Request & {
   body?: {
@@ -42,6 +43,10 @@ export class RefreshTokenStrategy extends PassportStrategy(
 
     if (!payload.deviceId || typeof payload.deviceId !== 'string') {
       throw new UnauthorizedException('Invalid token: missing deviceId');
+    }
+
+    if (!payload.status || payload.status !== UserStatus.ACTIVE) {
+      throw new UnauthorizedException('Invalid token: user is not active');
     }
 
     return {

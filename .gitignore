@@ -45,4 +45,5 @@ npm-shrinkwrap.json
 stich/
 .codex/
 .openspec/
-openspec/config.yaml
+openspec/*
+apps/docs/SPEC.md

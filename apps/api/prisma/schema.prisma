@@ -35,7 +35,7 @@ model accounts {
   password  String
   avatarUrl String
   role      UserRole
-  status    UserStatus @default(ACTIVE)
+  status    UserStatus @default(UNVERIFIED)
   createdAt DateTime   @default(now())
   updatedAt DateTime   @updatedAt
   deletedAt DateTime?

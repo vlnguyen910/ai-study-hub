@@ -24,7 +24,10 @@ export const useSignUp = () => {
     },
   });
 
-  const onSubmit = async (values: SignUpFormValues, onSuccess?: () => void) => {
+  const onSubmit = async (
+    values: SignUpFormValues,
+    onSuccess?: (email: string) => void,
+  ) => {
     setIsLoading(true);
     setErrorMessage(null);
 
@@ -33,15 +36,17 @@ export const useSignUp = () => {
         name: values.name,
         email: values.email,
         password: values.password,
-        deviceInfo: "MOBILE",
       };
 
       const response = await signUpService(payload);
 
       if (response.success || response.status_code === 201) {
-        Alert.alert("Thành công", "Đăng ký tài khoản thành công!");
+        Alert.alert(
+          "Thành công",
+          "Vui lòng kiểm tra email để lấy mã xác thực.",
+        );
         if (onSuccess) {
-          onSuccess();
+          onSuccess(values.email);
         }
       } else {
         setErrorMessage(response.message || "Đăng ký thất bại");
@@ -63,7 +68,7 @@ export const useSignUp = () => {
     form,
     isLoading,
     errorMessage,
-    submit: (onSuccess?: () => void) =>
+    submit: (onSuccess?: (email: string) => void) =>
       form.handleSubmit((values) => onSubmit(values, onSuccess))(),
   };
 };

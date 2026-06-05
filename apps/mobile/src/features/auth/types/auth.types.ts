@@ -8,8 +8,16 @@ export interface SignUpPayload {
   name: string;
   email: string;
   password: string;
-  deviceInfo?: "WEB" | "MOBILE";
   avatarUrl?: string;
+}
+
+export interface VerifyEmailPayload {
+  email: string;
+  code: string;
+}
+
+export interface ResendVerificationCodePayload {
+  email: string;
 }
 
 export interface AuthResponseData {

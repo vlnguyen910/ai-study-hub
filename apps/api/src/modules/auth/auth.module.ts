@@ -8,6 +8,8 @@ import { jwtConfiguration } from '../../config';
 import { AccountsModule } from '../accounts/accounts.module';
 import { JwtStrategy } from './strategies/jwt.strategy';
 import { RefreshTokenStrategy } from './strategies/refresh-token.strategy';
+import { EmailService } from './services/email.service';
+import { VerificationCodeService } from './services/verification-code.service';
 
 @Module({
   imports: [
@@ -23,7 +25,13 @@ import { RefreshTokenStrategy } from './strategies/refresh-token.strategy';
     AccountsModule,
   ],
   controllers: [AuthController],
-  providers: [AuthService, JwtStrategy, RefreshTokenStrategy],
+  providers: [
+    AuthService,
+    JwtStrategy,
+    RefreshTokenStrategy,
+    EmailService,
+    VerificationCodeService,
+  ],
   exports: [AuthService, JwtModule, PassportModule],
 })
 export class AuthModule {}

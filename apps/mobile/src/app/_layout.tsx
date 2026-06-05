@@ -64,6 +64,12 @@ export default function RootLayout() {
         }}
       />
       <Stack.Screen
+        name="(templates)/auth-verify-email"
+        options={{
+          title: "Verify Email",
+        }}
+      />
+      <Stack.Screen
         name="(templates)/auth-forgot-password"
         options={{
           title: "Forgot Password",

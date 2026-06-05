@@ -28,5 +28,15 @@ services:
         rs.initiate({_id: \"rs0\", members: [{_id: 0, host: \"mongo:27017\"}]});
       }'"
 
+  redis:
+    image: redis:7-alpine
+    restart: always
+    container_name: redis_study_hub
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+
 volumes:
   mongo_data:
+  redis_data:
