@@ -43,4 +43,6 @@ npm-shrinkwrap.json
 # Custom ignores
 .md/
 stich/
-
+.codex/
+.openspec/
+openspec/config.yaml
