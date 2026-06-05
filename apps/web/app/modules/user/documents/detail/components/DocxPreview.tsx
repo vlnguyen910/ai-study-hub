@@ -19,7 +19,7 @@ export function DocxPreview({ file }: Props): React.JSX.Element {
     let cancelled = false;
     const container = containerRef.current;
 
-    renderAsync(file, container).catch((error) => {
+    renderAsync(file, container).catch((error: unknown) => {
       if (!cancelled) {
         console.error("Failed to render DOCX:", error);
       }

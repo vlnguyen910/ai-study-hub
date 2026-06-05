@@ -406,6 +406,9 @@ importers:
       "@types/react-dom":
         specifier: 19.2.2
         version: 19.2.2(@types/react@19.2.2)
+      "@types/react-pdf":
+        specifier: ^7.0.0
+        version: 7.0.0(@types/react@19.2.2)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
       "@vitejs/plugin-react":
         specifier: ^4.7.0
         version: 4.7.0(vite@5.4.21(@types/node@22.15.3)(lightningcss@1.32.0)(terser@5.47.1))
@@ -4639,6 +4642,13 @@ packages:
       }
     peerDependencies:
       "@types/react": ^19.2.0
+
+  "@types/react-pdf@7.0.0":
+    resolution:
+      {
+        integrity: sha512-G0a+5UiKk3AvEauBP/Js7r9kGZNW3iBbS6kXkH0foGSaKWR6K3ElTe7Y4tlolc2VKbM9udmMxpkbxh/dtR2wXA==,
+      }
+    deprecated: This is a stub types definition. react-pdf provides its own type definitions, so you do not need this installed.
 
   "@types/react@19.2.15":
     resolution:
@@ -17346,6 +17356,14 @@ snapshots:
   "@types/react-dom@19.2.2(@types/react@19.2.2)":
     dependencies:
       "@types/react": 19.2.2
+
+  "@types/react-pdf@7.0.0(@types/react@19.2.2)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)":
+    dependencies:
+      react-pdf: 10.4.1(@types/react@19.2.2)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
+    transitivePeerDependencies:
+      - "@types/react"
+      - react
+      - react-dom
 
   "@types/react@19.2.15":
     dependencies:
