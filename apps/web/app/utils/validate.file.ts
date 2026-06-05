@@ -13,9 +13,14 @@ export const validateFile = (
   const validMime = config.allowedMimeTypes.includes(file.type);
 
   // validate extension
-  const extension = "." + file.name.split(".").pop()?.toLowerCase();
+  const extension = file.name.includes(".")
+    ? `.${file.name.split(".").pop()?.toLowerCase()}`
+    : "";
+  const normalizedAllowedExtensions = config.allowedExtensions.map((ext) =>
+    ext.startsWith(".") ? ext.toLowerCase() : `.${ext.toLowerCase()}`,
+  );
 
-  const validExtension = config.allowedExtensions.includes(extension);
+  const validExtension = normalizedAllowedExtensions.includes(extension);
 
   if (!validMime || !validExtension) {
     return {

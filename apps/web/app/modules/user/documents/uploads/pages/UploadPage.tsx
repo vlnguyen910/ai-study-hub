@@ -1,8 +1,13 @@
-import { FileUploadBox } from "../components/FileUploadBox";
+import FileUploadBox from "../components/FileUploadBox"; // Changed import style
 import { DocumentUploadForm } from "../components/DocumentUploadForm";
 import { Card } from "@/components/ui/Card";
+import type { CloudinaryConfig } from "../components/FileUploadBox"; // Import the configuration type
+import { DEFAULT_UPLOAD_CONFIG } from "@/constants/upload.const";
 
 export default function UploadPage(): React.JSX.Element {
+  // Define default configuration for the upload component
+  const defaultUploadConfig: CloudinaryConfig = DEFAULT_UPLOAD_CONFIG;
+
   return (
     <div className="min-w-0 bg-background">
       <Card className="p-5 shadow-sm shadow-black/5 lg:p-6">
@@ -15,18 +20,11 @@ export default function UploadPage(): React.JSX.Element {
               Chia sẻ tài liệu học tập của bạn với cộng đồng!
             </p>
           </div>
-          <div
-            className="
-          grid
-          grid-cols-1
-          gap-8
-          lg:grid-cols-2
-          lg:items-start
-        "
-          >
+          <div className="grid grid-cols-1 gap-8 lg:grid-cols-2 lg:items-start">
             {/* Left Column */}
             <section className="w-full">
-              <FileUploadBox />
+              {/* Pass the required configuration object */}
+              <FileUploadBox config={defaultUploadConfig} />
             </section>
 
             {/* Right Column */}
