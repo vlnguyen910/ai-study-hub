@@ -1,5 +1,4 @@
 import axios from "axios";
-
 import { APP_CONFIG } from "@/config";
 import { API_ENDPOINTS } from "@/shared/constants";
 import { useAuthStore } from "@/stores/auth/store";
@@ -18,6 +17,7 @@ export const apiClient = axios.create({
   withCredentials: true,
 });
 
+// ✅ Thay thế window.location.href = "/login"
 const handleLogoutAndShowLogin = () => {
   const store = useAuthStore.getState();
   store.logout();
@@ -35,8 +35,12 @@ const refreshAccessToken = async (): Promise<string | null> => {
     refreshTokenPromise = apiClient
       .post(API_ENDPOINTS.AUTH.REFRESH, { refreshToken }, { skipToast: true })
       .then((response) => {
+        // ✅ FIX: interceptor đã unwrap response.data rồi
+        // response ở đây là plain object, không còn là AxiosResponse
         const data = response as unknown as { accessToken?: unknown };
+
         if (!data || typeof data.accessToken !== "string") return null;
+
         return data.accessToken;
       })
       .finally(() => {
@@ -71,17 +75,21 @@ apiClient.interceptors.response.use(
     if (axios.isCancel(error)) return Promise.reject(error);
     if (originalRequest.skipToast) return Promise.reject(error);
 
+    // 401 từ auth endpoint (login sai, v.v.) → logout + mở modal
     if (is401 && isAuthRequest) {
       handleLogoutAndShowLogin();
       return Promise.reject(error);
     }
 
+    // 401 từ request thường → thử refresh token trước
     if (is401 && !isAuthRequest && !originalRequest._retry) {
       originalRequest._retry = true;
 
       try {
         const accessToken = await refreshAccessToken();
+
         if (!accessToken) throw new Error("Failed to refresh access token.");
+
         useAuthStore.getState().setAccessToken(accessToken);
         return apiClient(originalRequest);
       } catch {
