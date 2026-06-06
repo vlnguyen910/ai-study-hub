@@ -1,28 +1,14 @@
-"use client";
-
-import { useEffect, useState } from "react";
-
 import { Button } from "@/components/ui/Button";
-import { Spinner } from "@/components/ui/Spinner";
 
 import { DocumentCard } from "../components/DocumentCard";
 import { DocumentCarousel } from "../components/DocumentCarousel";
 import { DocumentCardSkeleton } from "../components/DocumentSkeleton";
 import { CommentCard } from "../components/CommentCard";
+import { fetchDocuments } from "../../documents/api";
 
-import { MOCK_DOCUMENTS } from "../../../../mockdata/documentMock";
-import { MOCK_COMMENTS } from "../../../../mockdata/commentMock";
-
-export default function HomePage(): React.JSX.Element {
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setLoading(false);
-    }, 1000);
-
-    return () => clearTimeout(timer);
-  }, []);
+export default async function HomePage(): Promise<React.JSX.Element> {
+  const documentsResponse = await fetchDocuments({ page: 1, limit: 10 });
+  const documents = documentsResponse.documents ?? [];
 
   return (
     <div className="min-w-0 bg-background">
@@ -34,29 +20,28 @@ export default function HomePage(): React.JSX.Element {
           <Button variant="ghost">Xem thêm</Button>
         </div>
 
-        {loading && (
-          <div className="mb-4 flex items-center gap-2">
-            <Spinner size="sm" />
-
-            <span className="text-sm text-on-surface-variant">
-              Loading documents...
-            </span>
-          </div>
-        )}
-
         <DocumentCarousel>
-          {loading
+          {documents.length === 0
             ? Array.from({ length: 4 }).map((_, index) => (
                 <DocumentCardSkeleton key={index} />
               ))
-            : MOCK_DOCUMENTS.map((doc) => (
+            : documents.map((doc) => (
                 <DocumentCard
                   id={doc.id}
                   key={doc.id}
                   title={doc.title}
-                  subtitle={doc.subtitle}
-                  coverImage={doc.coverImage}
-                  pageCount={doc.pageCount}
+                  subtitle={
+                    doc.subject?.name
+                      ? `Môn học: ${doc.subject.name}`
+                      : doc.author?.name
+                        ? `Tác giả: ${doc.author.name}`
+                        : "Tài liệu học tập mới"
+                  }
+                  coverImage={
+                    doc.author?.avatarUrl ||
+                    "https://images.unsplash.com/photo-1551288049-bebda4e38f71"
+                  }
+                  pageCount={1}
                 />
               ))}
         </DocumentCarousel>
@@ -73,15 +58,30 @@ export default function HomePage(): React.JSX.Element {
             </div>
 
             <div className="space-y-4">
-              {loading
+              {documents.length === 0
                 ? Array.from({ length: 3 }).map((_, i) => (
                     <div
                       key={i}
                       className="h-32 bg-surface-variant animate-pulse rounded-lg"
                     />
                   ))
-                : MOCK_COMMENTS.slice(0, 4).map((comment) => (
-                    <CommentCard key={comment.id} data={comment} />
+                : documents.slice(0, 4).map((doc, index) => (
+                    <CommentCard
+                      key={doc.id}
+                      data={{
+                        id: doc.id,
+                        avatarUrl: doc.author?.avatarUrl ?? "",
+                        initials: doc.author?.name
+                          ? doc.author.name.slice(0, 2).toUpperCase()
+                          : "AH",
+                        username: doc.author?.name ?? "Người dùng",
+                        title: doc.subject?.name ?? "Tài liệu mới",
+                        subject: doc.subject?.name ?? "Chung",
+                        content: doc.title,
+                        replies: index * 2 + 1,
+                        likes: index * 8 + 4,
+                      }}
+                    />
                   ))}
             </div>
           </div>
@@ -95,14 +95,17 @@ export default function HomePage(): React.JSX.Element {
             </div>
 
             <div className="space-y-4">
-              {MOCK_DOCUMENTS.slice(0, 2).map((doc) => (
+              {documents.slice(0, 2).map((doc) => (
                 <DocumentCard
                   id={doc.id}
                   key={doc.id}
                   title={doc.title}
-                  subtitle={doc.subtitle}
-                  coverImage={doc.coverImage}
-                  pageCount={doc.pageCount}
+                  subtitle={doc.subject?.name ?? "Tài liệu nổi bật"}
+                  coverImage={
+                    doc.author?.avatarUrl ||
+                    "https://images.unsplash.com/photo-1521737604893-d14cc237f11d"
+                  }
+                  pageCount={1}
                   className="max-w-full"
                 />
               ))}
