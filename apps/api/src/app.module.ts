@@ -10,8 +10,8 @@ import { PrismaModule } from './prisma/prisma.module';
 import { cookieConfiguration } from './config/cookies.config';
 import {
   emailVerificationConfiguration,
+  mailConfiguration,
   redisConfiguration,
-  resendConfiguration,
 } from './config';
 
 @Module({
@@ -23,7 +23,7 @@ import {
         jwtConfiguration,
         cookieConfiguration,
         redisConfiguration,
-        resendConfiguration,
+        mailConfiguration,
         emailVerificationConfiguration,
       ],
     }),

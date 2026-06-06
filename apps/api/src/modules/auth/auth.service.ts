@@ -18,7 +18,7 @@ import argon2 from 'argon2';
 import { AccountsService } from '../accounts/accounts.service';
 import { VerifyEmailDto } from './dto/verify-email.dto';
 import { ResendVerificationCodeDto } from './dto/resend-verification-code.dto';
-import { EmailService } from './services/email.service';
+import { MailService } from '../mail/mail.service';
 import { VerificationCodeService } from './services/verification-code.service';
 
 @Injectable()
@@ -30,7 +30,7 @@ export class AuthService {
     private accountService: AccountsService,
     private prismaService: PrismaService,
     private verificationCodeService: VerificationCodeService,
-    private emailService: EmailService,
+    private mailService: MailService,
   ) {}
 
   async signup(signupDto: SignupDto) {
@@ -64,7 +64,7 @@ export class AuthService {
       email: account.email,
     });
 
-    await this.emailService.sendVerificationCode({
+    await this.mailService.sendVerificationCode({
       email: account.email,
       name: account.name,
       code,
@@ -138,7 +138,7 @@ export class AuthService {
       enforceCooldown: true,
     });
 
-    await this.emailService.sendVerificationCode({
+    await this.mailService.sendVerificationCode({
       email: account.email,
       name: account.name,
       code,
