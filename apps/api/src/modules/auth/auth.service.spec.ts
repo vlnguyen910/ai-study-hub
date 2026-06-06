@@ -9,7 +9,7 @@ import { AccountsService } from '../accounts/accounts.service';
 import { AuthService } from './auth.service';
 import { JwtTokenType } from '../../common/enums/jwt.enum';
 import { TokenPayload } from '../../common/interfaces/auth.interface';
-import { EmailService } from './services/email.service';
+import { MailService } from '../mail/mail.service';
 import { VerificationCodeService } from './services/verification-code.service';
 
 describe('AuthService', () => {
@@ -41,7 +41,7 @@ describe('AuthService', () => {
     verifyCode: jest.fn(),
   };
 
-  const emailServiceMock = {
+  const mailServiceMock = {
     sendVerificationCode: jest.fn(),
   };
 
@@ -74,8 +74,8 @@ describe('AuthService', () => {
           useValue: verificationCodeServiceMock,
         },
         {
-          provide: EmailService,
-          useValue: emailServiceMock,
+          provide: MailService,
+          useValue: mailServiceMock,
         },
         {
           provide: jwtConfiguration.KEY,
@@ -100,7 +100,7 @@ describe('AuthService', () => {
       message: 'Account created successfully',
     });
     verificationCodeServiceMock.issueCode.mockResolvedValue('123456');
-    emailServiceMock.sendVerificationCode.mockResolvedValue(undefined);
+    mailServiceMock.sendVerificationCode.mockResolvedValue(undefined);
 
     const result = await service.signup({
       email: 'new-user@example.com',
@@ -122,7 +122,7 @@ describe('AuthService', () => {
       accountId: 'user-1',
       email: 'new-user@example.com',
     });
-    expect(emailServiceMock.sendVerificationCode).toHaveBeenCalledWith({
+    expect(mailServiceMock.sendVerificationCode).toHaveBeenCalledWith({
       email: 'new-user@example.com',
       name: 'New User',
       code: '123456',
@@ -189,7 +189,7 @@ describe('AuthService', () => {
       status: UserStatus.UNVERIFIED,
     });
     verificationCodeServiceMock.issueCode.mockResolvedValue('654321');
-    emailServiceMock.sendVerificationCode.mockResolvedValue(undefined);
+    mailServiceMock.sendVerificationCode.mockResolvedValue(undefined);
 
     await expect(
       service.resendVerificationCode({
@@ -204,7 +204,7 @@ describe('AuthService', () => {
       email: 'new-user@example.com',
       enforceCooldown: true,
     });
-    expect(emailServiceMock.sendVerificationCode).toHaveBeenCalledWith({
+    expect(mailServiceMock.sendVerificationCode).toHaveBeenCalledWith({
       email: 'new-user@example.com',
       name: 'New User',
       code: '654321',
