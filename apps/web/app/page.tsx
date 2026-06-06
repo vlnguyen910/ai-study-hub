@@ -87,25 +87,25 @@ export default function Home(): ReactElement {
             href="/"
             className="text-gray-900 font-semibold text-sm hover:text-blue-600 transition-all duration-200 py-1 border-b-2 border-blue-600"
           >
-            Trang ch?
+            Trang chủ
           </Link>
           <Link
             href="/library"
             className="text-gray-500 font-semibold text-sm hover:text-blue-600 transition-all duration-200 py-1 border-b-2 border-transparent hover:border-blue-600"
           >
-            Thu vi?n
+            Thư viện
           </Link>
           <Link
             href="/community"
             className="text-gray-500 font-semibold text-sm hover:text-blue-600 transition-all duration-200 py-1 border-b-2 border-transparent hover:border-blue-600"
           >
-            C?ng d?ng
+            Cộng đồng
           </Link>
           <Link
             href="/upload"
             className="text-gray-500 font-semibold text-sm hover:text-blue-600 transition-all duration-200 py-1 border-b-2 border-transparent hover:border-blue-600"
           >
-            T?i l�n
+            Tải lên
           </Link>
         </nav>
 
@@ -138,12 +138,12 @@ export default function Home(): ReactElement {
                 }
                 className="text-sm font-bold text-gray-700 hover:text-[#004ac6] transition-colors"
               >
-                Xin ch�o, <span className="text-[#004ac6]">{user.name}</span> (
+                Xin chào, <span className="text-[#004ac6]">{user.name}</span> (
                 {user.role === "admin"
                   ? "Admin"
                   : user.role === "moderator"
                     ? "KTV"
-                    : "H?c vi�n"}
+                    : "Học viên"}
                 )
               </Link>
               <button
@@ -158,7 +158,7 @@ export default function Home(): ReactElement {
                 }}
                 className="text-xs text-red-600 hover:text-red-800 underline transition-colors cursor-pointer font-medium"
               >
-                �ang xu?t
+                Đăng xuất
               </button>
             </div>
           ) : (
@@ -167,7 +167,7 @@ export default function Home(): ReactElement {
               onClick={openLogin}
               className="bg-[#004ac6] hover:bg-[#2c5b9e] text-white font-bold px-7 py-2.5 rounded-full text-sm shadow-sm transition-colors duration-200 cursor-pointer"
             >
-              �ang nh?p
+              Đăng nhập
             </button>
           )}
         </div>
@@ -177,14 +177,14 @@ export default function Home(): ReactElement {
         <section className="grid grid-cols-2 gap-10 items-center">
           <div className="flex flex-col gap-6 max-w-xl">
             <h1 className="text-5xl font-bold leading-tight tracking-tight text-gray-900">
-              Kho luu tr? t�i li?u{" "}
-              <span className="text-blue-600">h?c thu?t h�ng d?u</span> cho sinh
-              vi�n
+              Kho lưu trữ tài liệu{" "}
+              <span className="text-blue-600">học thuật hàng đầu</span> cho sinh
+              viên
             </h1>
             <p className="text-lg leading-relaxed text-gray-600">
-              N?n t?ng chia s? ki?n th?c to�n di?n, noi b?n c� th? t�m ki?m h�ng
-              tri?u gi�o tr�nh, d? thi v� b�i gi?ng ch?t lu?ng t? c?ng d?ng sinh
-              vi�n uu t�.
+              Nền tảng chia sẻ kiến thức toàn diện, nơi bạn có thể tìm kiếm hàng
+              triệu giáo trình, đề thi và bài giảng chất lượng từ cộng đồng sinh
+              viên ưu tú.
             </p>
             <div className="flex items-center bg-white border border-gray-300 rounded-xl p-1 shadow-sm mt-4">
               <svg
@@ -201,14 +201,14 @@ export default function Home(): ReactElement {
               </svg>
               <input
                 type="text"
-                placeholder="T�m ki?m t�i li?u, kh�a h?c..."
+                placeholder="Tìm kiếm tài liệu, khóa học..."
                 className="flex-1 border-none outline-none px-2 py-2 bg-transparent"
               />
               <button
                 type="button"
                 className="bg-blue-600 text-white px-6 py-2 rounded-lg font-semibold hover:bg-blue-700 transition-colors"
               >
-                Kh�m ph�
+                Khám phá
               </button>
             </div>
           </div>
@@ -218,11 +218,11 @@ export default function Home(): ReactElement {
         <section className="flex flex-col items-center gap-10 bg-blue-50 rounded-4xl px-12 py-16">
           <div className="text-center">
             <h2 className="text-4xl font-bold text-gray-900 mb-3">
-              T�nh nang c?t l�i
+              Tính năng cốt lõi
             </h2>
             <p className="text-lg text-gray-600">
-              Tr?i nghi?m h?c t?p kh�ng gi?i h?n v?i h? sinh th�i c�ng c? hi?n
-              d?i
+              Trải nghiệm học tập không giới hạn với hệ sinh thái cùng công cụ
+              hiện đại
             </p>
           </div>
           <div className="grid grid-cols-2 gap-6 w-full">
@@ -241,11 +241,11 @@ export default function Home(): ReactElement {
                 </svg>
               </div>
               <h3 className="text-2xl font-bold text-gray-900">
-                Thu vi?n t�i li?u da d?ng
+                Thư viện tài liệu đa dạng
               </h3>
               <p className="text-gray-600">
-                Hon 1,000,000+ t�i li?u du?c ph�n lo?i theo t?ng chuy�n ng�nh v�
-                tru?ng d?i h?c.
+                Hơn 1,000,000+ tài liệu được phân loại theo từng chuyên ngành và
+                trường đại học.
               </p>
             </div>
             <div className="bg-blue-600 rounded-3xl p-8 shadow-lg flex flex-col gap-4 relative overflow-hidden min-h-80">
@@ -264,11 +264,11 @@ export default function Home(): ReactElement {
                 </svg>
               </div>
               <h3 className="text-2xl font-bold text-white">
-                ��ng g�p & Chia s?
+                Đóng góp và chia sẻ
               </h3>
               <p className="text-white/90">
-                T?i l�n t�i li?u c?a b?n ch? v?i m?t c� k�o th? v� nh?n di?m
-                thu?ng t? c?ng d?ng.
+                Tạo ra tài liệu của bạn chỉ với một vài bước đơn giản và nhận
+                điểm thưởng từ cộng đồng.
               </p>
             </div>
           </div>
