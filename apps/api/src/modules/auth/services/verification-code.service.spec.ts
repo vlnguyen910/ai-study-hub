@@ -1,23 +1,17 @@
 import { BadRequestException, HttpStatus } from '@nestjs/common';
+import { RedisService } from '../../../common/redis/redis.service';
 import { VerificationCodeService } from './verification-code.service';
 
 const redisMock = {
-  get: jest.fn(),
-  set: jest.fn(),
+  getJson: jest.fn(),
+  setJson: jest.fn(),
   del: jest.fn(),
   ttl: jest.fn(),
-  quit: jest.fn(),
 };
-
-jest.mock('ioredis', () => jest.fn().mockImplementation(() => redisMock));
 
 describe('VerificationCodeService', () => {
   let service: VerificationCodeService;
 
-  const redisConfig = {
-    url: 'redis://localhost:6379',
-    keyPrefix: 'test',
-  };
   const verificationConfig = {
     codeLength: 6,
     ttlSeconds: 600,
@@ -27,12 +21,15 @@ describe('VerificationCodeService', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
-    service = new VerificationCodeService(redisConfig, verificationConfig);
+    service = new VerificationCodeService(
+      redisMock as unknown as RedisService,
+      verificationConfig,
+    );
   });
 
   it('issues a hashed verification code with TTL', async () => {
-    redisMock.get.mockResolvedValue(null);
-    redisMock.set.mockResolvedValue('OK');
+    redisMock.getJson.mockResolvedValue(null);
+    redisMock.setJson.mockResolvedValue('OK');
 
     const code = await service.issueCode({
       accountId: 'user-1',
@@ -40,14 +37,13 @@ describe('VerificationCodeService', () => {
     });
 
     expect(code).toMatch(/^\d{6}$/);
-    expect(redisMock.set).toHaveBeenCalledWith(
+    expect(redisMock.setJson).toHaveBeenCalledWith(
       'email-verification:new-user@example.com',
-      expect.any(String),
-      'EX',
+      expect.any(Object),
       600,
     );
 
-    const state = JSON.parse(redisMock.set.mock.calls[0][1] as string) as {
+    const state = redisMock.setJson.mock.calls[0][1] as {
       accountId: string;
       email: string;
       hashedCode: string;
@@ -60,15 +56,13 @@ describe('VerificationCodeService', () => {
   });
 
   it('rejects resend while cooldown is active', async () => {
-    redisMock.get.mockResolvedValue(
-      JSON.stringify({
-        accountId: 'user-1',
-        email: 'new-user@example.com',
-        hashedCode: 'hash',
-        attempts: 0,
-        resendAvailableAt: Date.now() + 60_000,
-      }),
-    );
+    redisMock.getJson.mockResolvedValue({
+      accountId: 'user-1',
+      email: 'new-user@example.com',
+      hashedCode: 'hash',
+      attempts: 0,
+      resendAvailableAt: Date.now() + 60_000,
+    });
 
     await expect(
       service.issueCode({
@@ -77,20 +71,20 @@ describe('VerificationCodeService', () => {
         enforceCooldown: true,
       }),
     ).rejects.toMatchObject({ status: HttpStatus.TOO_MANY_REQUESTS });
-    expect(redisMock.set).not.toHaveBeenCalled();
+    expect(redisMock.setJson).not.toHaveBeenCalled();
   });
 
   it('verifies a valid code and consumes Redis state', async () => {
-    redisMock.get.mockResolvedValueOnce(null);
-    redisMock.set.mockResolvedValue('OK');
+    redisMock.getJson.mockResolvedValueOnce(null);
+    redisMock.setJson.mockResolvedValue('OK');
     const code = await service.issueCode({
       accountId: 'user-1',
       email: 'new-user@example.com',
     });
-    const storedState = redisMock.set.mock.calls[0][1] as string;
+    const storedState = redisMock.setJson.mock.calls[0][1];
 
     jest.clearAllMocks();
-    redisMock.get.mockResolvedValue(storedState);
+    redisMock.getJson.mockResolvedValue(storedState);
     redisMock.del.mockResolvedValue(1);
 
     await expect(
@@ -102,41 +96,38 @@ describe('VerificationCodeService', () => {
   });
 
   it('increments attempts and rejects an invalid code', async () => {
-    redisMock.get.mockResolvedValueOnce(null);
-    redisMock.set.mockResolvedValue('OK');
+    redisMock.getJson.mockResolvedValueOnce(null);
+    redisMock.setJson.mockResolvedValue('OK');
     const code = await service.issueCode({
       accountId: 'user-1',
       email: 'new-user@example.com',
     });
     expect(code).toBeDefined();
-    const storedState = redisMock.set.mock.calls[0][1] as string;
+    const storedState = redisMock.setJson.mock.calls[0][1];
 
     jest.clearAllMocks();
-    redisMock.get.mockResolvedValue(storedState);
+    redisMock.getJson.mockResolvedValue(storedState);
     redisMock.ttl.mockResolvedValue(300);
-    redisMock.set.mockResolvedValue('OK');
+    redisMock.setJson.mockResolvedValue('OK');
 
     await expect(
       service.verifyCode('new-user@example.com', '000000'),
     ).rejects.toBeInstanceOf(BadRequestException);
-    expect(redisMock.set).toHaveBeenCalledWith(
+    expect(redisMock.setJson).toHaveBeenCalledWith(
       'email-verification:new-user@example.com',
-      expect.stringContaining('"attempts":1'),
-      'EX',
+      expect.objectContaining({ attempts: 1 }),
       300,
     );
   });
 
   it('rejects verification after the attempt limit', async () => {
-    redisMock.get.mockResolvedValue(
-      JSON.stringify({
-        accountId: 'user-1',
-        email: 'new-user@example.com',
-        hashedCode: 'hash',
-        attempts: 2,
-        resendAvailableAt: Date.now() - 1,
-      }),
-    );
+    redisMock.getJson.mockResolvedValue({
+      accountId: 'user-1',
+      email: 'new-user@example.com',
+      hashedCode: 'hash',
+      attempts: 2,
+      resendAvailableAt: Date.now() - 1,
+    });
 
     await expect(
       service.verifyCode('new-user@example.com', '123456'),
@@ -144,7 +135,7 @@ describe('VerificationCodeService', () => {
   });
 
   it('rejects missing or expired codes', async () => {
-    redisMock.get.mockResolvedValue(null);
+    redisMock.getJson.mockResolvedValue(null);
 
     await expect(
       service.verifyCode('new-user@example.com', '123456'),
