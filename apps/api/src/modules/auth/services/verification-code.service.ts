@@ -4,17 +4,13 @@ import {
   HttpStatus,
   Inject,
   Injectable,
-  OnModuleDestroy,
   ServiceUnavailableException,
 } from '@nestjs/common';
 import type { ConfigType } from '@nestjs/config';
 import argon2 from 'argon2';
 import { randomInt } from 'crypto';
-import Redis from 'ioredis';
-import {
-  emailVerificationConfiguration,
-  redisConfiguration,
-} from '../../../config';
+import { emailVerificationConfiguration } from '../../../config';
+import { RedisService } from '../../../common/redis/redis.service';
 
 type VerificationState = {
   accountId: string;
@@ -31,27 +27,14 @@ type IssueCodeInput = {
 };
 
 @Injectable()
-export class VerificationCodeService implements OnModuleDestroy {
-  private readonly redis: Redis;
-
+export class VerificationCodeService {
   constructor(
-    @Inject(redisConfiguration.KEY)
-    private readonly redisConfig: ConfigType<typeof redisConfiguration>,
+    private readonly redis: RedisService,
     @Inject(emailVerificationConfiguration.KEY)
     private readonly verificationConfig: ConfigType<
       typeof emailVerificationConfiguration
     >,
-  ) {
-    this.redis = new Redis(redisConfig.url, {
-      keyPrefix: `${redisConfig.keyPrefix}:`,
-      maxRetriesPerRequest: 1,
-      lazyConnect: true,
-    });
-  }
-
-  async onModuleDestroy() {
-    await this.redis.quit();
-  }
+  ) {}
 
   async issueCode(input: IssueCodeInput) {
     const key = this.getKey(input.email);
@@ -110,9 +93,7 @@ export class VerificationCodeService implements OnModuleDestroy {
 
   private async getState(key: string): Promise<VerificationState | null> {
     try {
-      const raw = await this.redis.get(key);
-
-      return raw ? (JSON.parse(raw) as VerificationState) : null;
+      return await this.redis.getJson<VerificationState>(key);
     } catch {
       throw new ServiceUnavailableException(
         'Verification service is unavailable',
@@ -122,12 +103,7 @@ export class VerificationCodeService implements OnModuleDestroy {
 
   private async setState(key: string, state: VerificationState) {
     try {
-      await this.redis.set(
-        key,
-        JSON.stringify(state),
-        'EX',
-        this.verificationConfig.ttlSeconds,
-      );
+      await this.redis.setJson(key, state, this.verificationConfig.ttlSeconds);
     } catch {
       throw new ServiceUnavailableException(
         'Verification service is unavailable',
@@ -142,13 +118,12 @@ export class VerificationCodeService implements OnModuleDestroy {
       return;
     }
 
-    await this.redis.set(
+    await this.redis.setJson(
       key,
-      JSON.stringify({
+      {
         ...state,
         attempts: state.attempts + 1,
-      }),
-      'EX',
+      },
       ttl,
     );
   }

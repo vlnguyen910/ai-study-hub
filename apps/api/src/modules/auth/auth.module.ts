@@ -6,6 +6,7 @@ import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { jwtConfiguration } from '../../config';
 import { AccountsModule } from '../accounts/accounts.module';
+import { RedisModule } from '../../common/redis/redis.module';
 import { JwtStrategy } from './strategies/jwt.strategy';
 import { RefreshTokenStrategy } from './strategies/refresh-token.strategy';
 import { EmailService } from './services/email.service';
@@ -23,6 +24,7 @@ import { VerificationCodeService } from './services/verification-code.service';
       }),
     }),
     AccountsModule,
+    RedisModule,
   ],
   controllers: [AuthController],
   providers: [
