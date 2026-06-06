@@ -1,153 +1,39 @@
 "use client";
 
-import { useEffect, useCallback, useState } from "react";
-
 import { Button } from "@/components/ui/Button";
-import { validateFile } from "@/utils/validate.file";
 
-const CLOUD_NAME = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME || "ddxstobvd";
-const UPLOAD_PRESET =
-  process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET ||
-  "YOUR_UNSIGNED_PRESET_NAME";
-
-export interface CloudinaryConfig {
-  maxFiles: number;
-  maxFileSize: number;
-  allowedMimeTypes: string[];
-  allowedExtensions: string[];
+export interface CloudinaryUploadResult {
+  readonly url: string;
+  readonly publicId: string;
+  readonly bytes: number;
+  readonly format: string;
+  readonly resourceType: string;
 }
 
-export function useFileUpload(initialConfig: CloudinaryConfig) {
-  const [files, setFiles] = useState<File[]>([]);
-  const [uploadedAssets, setUploadedAssets] = useState<
-    Array<{ url: string; publicId: string }>
-  >([]);
-  const [previewUrls, setPreviewUrls] = useState<string[]>([]);
-  const [error, setError] = useState("");
-  const [isUploading, setIsUploading] = useState(false);
-
-  const uploadToCloudinary = useCallback(async (file: File) => {
-    if (!UPLOAD_PRESET || UPLOAD_PRESET === "YOUR_UNSIGNED_PRESET_NAME") {
-      throw new Error(
-        "Cloudinary upload preset is missing. Please set NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET.",
-      );
-    }
-
-    const formData = new FormData();
-    formData.append("file", file);
-    formData.append("upload_preset", UPLOAD_PRESET);
-
-    const response = await fetch(
-      `https://api.cloudinary.com/v1_1/${CLOUD_NAME}/auto/upload`,
-      {
-        method: "POST",
-        body: formData,
-      },
-    );
-
-    if (!response.ok) {
-      const body = await response.text();
-      throw new Error(`Upload failed (${response.status}): ${body}`);
-    }
-
-    const result = await response.json();
-    return { url: result.secure_url, publicId: result.public_id };
-  }, []);
-
-  const handleSelectFiles = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const selectedFiles = Array.from(event.target.files || []);
-
-    if (selectedFiles.length > initialConfig.maxFiles) {
-      setError(`Maximum ${initialConfig.maxFiles} files allowed`);
-      setFiles([]);
-      setPreviewUrls([]);
-      return;
-    }
-
-    const validFiles: File[] = [];
-    for (const file of selectedFiles) {
-      const result = validateFile(file, initialConfig);
-
-      if (!result.valid) {
-        setError(result.error || "Invalid file");
-        setFiles([]);
-        setPreviewUrls([]);
-        return;
-      }
-
-      validFiles.push(file);
-    }
-
-    setFiles(validFiles);
-    setError("");
+export interface FileUploadBoxProps {
+  readonly config: {
+    readonly maxFiles: number;
+    readonly maxFileSize: number;
+    readonly allowedMimeTypes: readonly string[];
+    readonly allowedExtensions: readonly string[];
   };
-
-  useEffect(() => {
-    const nextPreviewUrls = files
-      .filter((file) => file.type.startsWith("image/"))
-      .map((file) => URL.createObjectURL(file));
-
-    setPreviewUrls(nextPreviewUrls);
-
-    return () => {
-      nextPreviewUrls.forEach((url) => URL.revokeObjectURL(url));
-    };
-  }, [files]);
-
-  const handleUploadToCloudinary = useCallback(async () => {
-    if (files.length === 0) {
-      setError("Vui lòng chọn tài liệu để upload.");
-      return;
-    }
-
-    setIsUploading(true);
-    setError("");
-    setUploadedAssets([]);
-
-    try {
-      const results = await Promise.all(
-        files.map((file) => uploadToCloudinary(file)),
-      );
-      setUploadedAssets(results);
-      setError("Upload thành công!");
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Lỗi upload không xác định.");
-    } finally {
-      setIsUploading(false);
-      setFiles([]);
-      setPreviewUrls([]);
-    }
-  }, [files, uploadToCloudinary]);
-
-  return {
-    files,
-    uploadedAssets,
-    previewUrls,
-    error,
-    isUploading,
-    handleSelectFiles,
-    handleUploadToCloudinary,
-    config: initialConfig,
-  };
+  readonly selectedFiles: readonly File[];
+  readonly uploadedFiles: readonly CloudinaryUploadResult[];
+  readonly isUploading: boolean;
+  readonly uploadError?: string;
+  readonly onSelectFiles: (files: FileList | null) => void;
+  readonly onUpload: () => void;
 }
-
-type FileUploadBoxProps = {
-  config: CloudinaryConfig;
-};
 
 export default function FileUploadBox({
   config,
+  selectedFiles,
+  uploadedFiles,
+  isUploading,
+  uploadError,
+  onSelectFiles,
+  onUpload,
 }: FileUploadBoxProps): React.JSX.Element {
-  const {
-    files,
-    uploadedAssets,
-    previewUrls,
-    error,
-    isUploading,
-    handleSelectFiles,
-    handleUploadToCloudinary,
-  } = useFileUpload(config);
-
   return (
     <div className="space-y-4 rounded-xl border border-border bg-surface p-5 shadow-sm">
       <div className="space-y-1">
@@ -174,73 +60,37 @@ export default function FileUploadBox({
         <input
           type="file"
           multiple
-          onChange={handleSelectFiles}
+          onChange={(event) => onSelectFiles(event.target.files)}
           className="hidden"
           accept={config.allowedMimeTypes.join(",")}
         />
       </label>
 
-      {previewUrls.length > 0 ? (
-        <div className="space-y-2">
-          <p className="text-sm font-medium text-on-surface">Ảnh xem trước</p>
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-            {previewUrls.map((url, index) => (
-              <div
-                key={url}
-                className="overflow-hidden rounded-lg border border-outline-variant bg-surface-container"
-              >
-                <img
-                  src={url}
-                  alt={`Preview ${index + 1}`}
-                  className="h-28 w-full object-cover"
-                />
-              </div>
-            ))}
-          </div>
-        </div>
-      ) : null}
-
-      {files.length > 0 ? (
+      {selectedFiles.length > 0 ? (
         <div className="space-y-2">
           <p className="text-sm font-medium text-on-surface">Files đã chọn</p>
           <ul className="space-y-1 text-sm text-on-surface-variant">
-            {files.map((file) => (
+            {selectedFiles.map((file) => (
               <li key={file.name}>{file.name}</li>
             ))}
           </ul>
         </div>
       ) : null}
 
-      {error ? <p className="text-sm text-error">{error}</p> : null}
+      {uploadError ? <p className="text-sm text-error">{uploadError}</p> : null}
 
       <Button
         type="button"
-        onClick={handleUploadToCloudinary}
-        disabled={isUploading}
+        onClick={onUpload}
+        disabled={isUploading || selectedFiles.length === 0}
         className="w-full"
       >
-        {isUploading ? "Đang tải lên..." : "Upload lên Cloudinary"}
+        {isUploading ? "Đang tải lên..." : "Tải lên"}
       </Button>
 
-      {uploadedAssets.length > 0 ? (
-        <div className="space-y-2">
-          <p className="text-sm font-medium text-on-surface">Kết quả upload</p>
-          <ul className="space-y-2 text-sm">
-            {uploadedAssets.map((asset) => (
-              <li key={asset.publicId}>
-                <a
-                  href={asset.url}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="break-all text-primary underline-offset-4 hover:underline"
-                >
-                  {asset.publicId}
-                </a>
-              </li>
-            ))}
-          </ul>
-        </div>
-      ) : null}
+      <p className="text-sm text-on-surface-variant">
+        Đã tải lên thành công {uploadedFiles.length}/{config.maxFiles} tài liệu
+      </p>
     </div>
   );
 }

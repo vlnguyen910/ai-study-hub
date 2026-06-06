@@ -6,7 +6,7 @@ import { DocumentPreview } from "../components/DocumentPreview";
 import { FileInfoCard } from "../components/FileInfoCard";
 import { RelatedDocumentCard } from "../components/RelatedDocumentCard";
 import { AuthorCard } from "../components/AuthorCard";
-import { documentDetailMock } from "@/mockdata/documentDetail";
+import { fetchDocumentById, fetchDocuments } from "../../api";
 
 interface DocumentDetailPageProps {
   readonly params: Promise<{
@@ -18,10 +18,48 @@ export default async function DocumentDetailPage({
   params,
 }: DocumentDetailPageProps): Promise<React.JSX.Element> {
   const { id } = await params;
-
-  const document = {
-    ...documentDetailMock,
-    id,
+  const [document, relatedResponse] = await Promise.all([
+    fetchDocumentById(id),
+    fetchDocuments({ page: 1, limit: 5 }),
+  ]);
+  const relatedDocuments = (relatedResponse.documents ?? []).filter(
+    (item) => item.id !== id,
+  );
+  const description = document.description ?? "";
+  const descriptionBlocks = description
+    .split(/\n+/)
+    .map((line) => line.trim())
+    .filter(Boolean);
+  const previewType = document.format?.toLowerCase() ?? "pdf";
+  const preview = {
+    type:
+      previewType === "doc" || previewType === "docx"
+        ? "docx"
+        : previewType === "txt"
+          ? "txt"
+          : previewType === "png" ||
+              previewType === "jpg" ||
+              previewType === "jpeg"
+            ? "image"
+            : "pdf",
+    fileUrl: document.fileUrl ?? undefined,
+  } as const;
+  const heroData = {
+    id: document.id,
+    title: document.title,
+    author: {
+      avatar:
+        document.author?.name?.slice(0, 2).toUpperCase() ??
+        document.subject?.code?.slice(0, 2).toUpperCase() ??
+        "AH",
+      name: document.author?.name ?? "Tác giả ẩn danh",
+      role: document.subject?.name ?? "Tài liệu học tập",
+    },
+    stats: {
+      views: "N/A",
+      downloads: "N/A",
+      likes: "N/A",
+    },
   };
 
   return (
@@ -34,7 +72,7 @@ export default async function DocumentDetailPage({
         py-8
       "
     >
-      <DocumentHero data={document} />
+      <DocumentHero data={heroData} />
 
       <div
         className="
@@ -46,17 +84,24 @@ export default async function DocumentDetailPage({
       >
         {/* Left */}
         <div className="space-y-6">
-          <DocumentPreview preview={document.preview} />
+          <DocumentPreview preview={preview} />
 
           <Card className="space-y-5 p-6">
             <h2 className="text-xl font-semibold">Mô tả tài liệu</h2>
 
-            <p className="leading-7 text-on-surface-variant">
-              {document.description}
-            </p>
+            <div className="space-y-4 leading-7 text-on-surface-variant">
+              {descriptionBlocks.length > 0 ? (
+                descriptionBlocks.map((block) => <p key={block}>{block}</p>)
+              ) : (
+                <p>Chưa có mô tả cho tài liệu này.</p>
+              )}
+            </div>
 
             <div className="flex flex-wrap gap-2">
-              {document.tags.map((tag) => (
+              {(document.subject?.name
+                ? [document.subject.name, document.subject.code]
+                : ["Tài liệu học tập"]
+              ).map((tag) => (
                 <span
                   key={tag}
                   className="
@@ -108,49 +153,38 @@ export default async function DocumentDetailPage({
             </div>
 
             <div className="space-y-5">
-              {document.comments.map((comment) => (
-                <div key={comment.id} className="flex gap-4">
-                  <div
-                    className="
-                      flex
-                      h-10
-                      w-10
-                      items-center
-                      justify-center
-                      rounded-full
-                      bg-slate-300
-                      text-sm
-                      font-medium
-                    "
-                  >
-                    {comment.author.charAt(0)}
-                  </div>
-
-                  <div className="space-y-2">
-                    <h4 className="font-medium">{comment.author}</h4>
-
-                    <p className="text-sm text-on-surface-variant">
-                      {comment.content}
-                    </p>
-                  </div>
-                </div>
-              ))}
+              <p className="text-sm text-on-surface-variant">
+                Bình luận đang được đồng bộ từ API ở bước tiếp theo.
+              </p>
             </div>
           </Card>
         </div>
 
         {/* Right */}
         <aside className="space-y-6">
-          <FileInfoCard data={document.fileInfo} />
+          <FileInfoCard
+            data={{
+              format: document.format?.toUpperCase() ?? "N/A",
+              size: document.sizeInBytes
+                ? `${(document.sizeInBytes / (1024 * 1024)).toFixed(1)} MB`
+                : "N/A",
+              pages: 1,
+              language: document.subject?.name ?? "Tiếng Việt",
+            }}
+          />
 
           <Card className="space-y-4 p-5">
             <h3 className="text-lg font-semibold">Tài liệu liên quan</h3>
 
             <div className="space-y-4">
-              {document.relatedDocuments.map((relatedDocument) => (
+              {relatedDocuments.map((relatedDocument) => (
                 <RelatedDocumentCard
                   key={relatedDocument.id}
-                  document={relatedDocument}
+                  document={{
+                    title: relatedDocument.title,
+                    author: relatedDocument.author?.name ?? "Ẩn danh",
+                    rating: relatedDocument.subject?.name ?? "Tài liệu",
+                  }}
                 />
               ))}
             </div>
@@ -160,7 +194,13 @@ export default async function DocumentDetailPage({
             </Button>
           </Card>
 
-          <AuthorCard author={document.author} />
+          <AuthorCard
+            author={{
+              avatar: document.author?.name?.slice(0, 2).toUpperCase() ?? "AH",
+              name: document.author?.name ?? "Tác giả ẩn danh",
+              role: document.subject?.name ?? "Tài liệu học tập",
+            }}
+          />
         </aside>
       </div>
     </main>
