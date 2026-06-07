@@ -1,4 +1,4 @@
-import { IsNotEmpty, IsString, MinLength, ValidateIf } from 'class-validator';
+import { IsNotEmpty, IsString, MinLength } from 'class-validator';
 
 export class ResetPasswordDto {
   @IsNotEmpty()
@@ -8,9 +8,4 @@ export class ResetPasswordDto {
   @IsString()
   @MinLength(8)
   password!: string;
-
-  @ValidateIf((dto: ResetPasswordDto) => dto.confirmPassword !== undefined)
-  @IsString()
-  @MinLength(8)
-  confirmPassword?: string;
 }

@@ -272,7 +272,6 @@ export default function ProfilePage(): ReactElement {
       await changePassword({
         currentPassword: values.currentPassword,
         newPassword: values.newPassword,
-        confirmPassword: values.confirmPassword,
       });
       setStatusMessage("Cập nhật mật khẩu thành công.");
       resetPasswordForm({
