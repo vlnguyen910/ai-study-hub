@@ -3,6 +3,7 @@ import type { ConfigType } from '@nestjs/config';
 import nodemailer, { type Transporter } from 'nodemailer';
 import { mailConfiguration } from '../../config';
 import { accounts } from '@prisma/client';
+import { NodeEnv } from '../../common/enums';
 
 type VerificationEmailAccount = Pick<accounts, 'email' | 'name'>;
 
@@ -21,7 +22,9 @@ export class MailService {
   async sendVerificationCode(account: VerificationEmailAccount, token: string) {
     if (!this.transporter) {
       this.logger.log(
-        `Email verification link for ${account.email}: ${this.mailConfig.frontendUrl}/${token}`,
+        process.env.NODE_ENV === NodeEnv.Development
+          ? `Email verification link for ${account.email}: ${this.mailConfig.frontendUrl}/verify-email/${token}`
+          : 'Email transporter is not configured. Skipping sending verification email.',
       );
       return;
     }
@@ -34,7 +37,7 @@ export class MailService {
         `Hi ${account.name},`,
         '',
         `Click the link below to verify your email address and complete your registration:`,
-        `${this.mailConfig.frontendUrl}/${token}`,
+        `${this.mailConfig.frontendUrl}/verify-email/${token}`,
         '',
         'If you did not create an account, please ignore this email.',
         '',
