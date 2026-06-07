@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { InputField } from "@/components/ui/InputField";
 import { userRouterConfig } from "../../../routes/user/user.routes";
+import { changePassword } from "../../auth-api";
 
 const profileSchema = z.object({
   fullName: z.string().trim().min(1, "Họ tên không được để trống"),
@@ -22,6 +23,10 @@ const profileSchema = z.object({
 
 const passwordSchema = z
   .object({
+    currentPassword: z
+      .string()
+      .trim()
+      .min(8, "Mật khẩu hiện tại phải có ít nhất 8 ký tự"),
     newPassword: z
       .string()
       .trim()
@@ -141,6 +146,7 @@ export default function ProfilePage(): ReactElement {
     INITIAL_PROFILE.avatarUrl,
   );
   const [statusMessage, setStatusMessage] = useState("");
+  const [passwordErrorMessage, setPasswordErrorMessage] = useState("");
   const [profile, setProfile] = useState<ProfileState>({
     fullName: INITIAL_PROFILE.fullName,
     email: INITIAL_PROFILE.email,
@@ -166,6 +172,7 @@ export default function ProfilePage(): ReactElement {
   >({
     resolver: zodResolver(passwordSchema),
     defaultValues: {
+      currentPassword: "",
       newPassword: "",
       confirmPassword: "",
     },
@@ -258,12 +265,26 @@ export default function ProfilePage(): ReactElement {
     });
   });
 
-  const onSavePassword = handlePasswordSubmit(() => {
-    setStatusMessage("Cập nhật mật khẩu thành công.");
-    resetPasswordForm({
-      newPassword: "",
-      confirmPassword: "",
-    });
+  const onSavePassword = handlePasswordSubmit(async (values) => {
+    setPasswordErrorMessage("");
+
+    try {
+      await changePassword({
+        currentPassword: values.currentPassword,
+        newPassword: values.newPassword,
+        confirmPassword: values.confirmPassword,
+      });
+      setStatusMessage("Cập nhật mật khẩu thành công.");
+      resetPasswordForm({
+        currentPassword: "",
+        newPassword: "",
+        confirmPassword: "",
+      });
+    } catch (error) {
+      setPasswordErrorMessage(
+        error instanceof Error ? error.message : "Không thể cập nhật mật khẩu.",
+      );
+    }
   });
 
   const inputClassName = isProfileEditing
@@ -517,6 +538,23 @@ export default function ProfilePage(): ReactElement {
             <form className="space-y-6" onSubmit={onSavePassword} noValidate>
               <div className="grid gap-5 md:grid-cols-2">
                 <Controller
+                  name="currentPassword"
+                  control={passwordControl}
+                  render={({ field }) => (
+                    <InputField
+                      name={field.name}
+                      value={field.value}
+                      onChange={field.onChange}
+                      onBlur={field.onBlur}
+                      label="Mật khẩu hiện tại"
+                      placeholder="••••••••"
+                      type="password"
+                      errorText={passwordErrors.currentPassword?.message}
+                    />
+                  )}
+                />
+
+                <Controller
                   name="newPassword"
                   control={passwordControl}
                   render={({ field }) => (
@@ -550,6 +588,12 @@ export default function ProfilePage(): ReactElement {
                   )}
                 />
               </div>
+
+              {passwordErrorMessage ? (
+                <p className="rounded-xl bg-error-container px-4 py-3 font-label-sm text-label-sm text-on-error-container">
+                  {passwordErrorMessage}
+                </p>
+              ) : null}
 
               <div className="flex justify-end">
                 <Button

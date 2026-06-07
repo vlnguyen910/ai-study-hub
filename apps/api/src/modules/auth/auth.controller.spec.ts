@@ -29,6 +29,7 @@ describe('AuthController', () => {
     resendVerificationEmail: jest.fn(),
     forgotPassword: jest.fn(),
     resetPassword: jest.fn(),
+    changePassword: jest.fn(),
     signin: jest.fn(),
     logout: jest.fn(),
     refreshToken: jest.fn(),
@@ -197,6 +198,29 @@ describe('AuthController', () => {
     expect(authServiceMock.resetPassword).toHaveBeenCalledWith({
       token: 'password-reset-token',
       password: 'NewPassword123!',
+      confirmPassword: 'NewPassword123!',
+    });
+  });
+
+  it('should call change password service with authenticated user', async () => {
+    authServiceMock.changePassword.mockResolvedValue({
+      message: 'Password changed successfully',
+      data: null,
+    });
+
+    await expect(
+      controller.changePassword(userPayload, {
+        currentPassword: 'Password123!',
+        newPassword: 'NewPassword123!',
+        confirmPassword: 'NewPassword123!',
+      }),
+    ).resolves.toEqual({
+      message: 'Password changed successfully',
+      data: null,
+    });
+    expect(authServiceMock.changePassword).toHaveBeenCalledWith(userPayload, {
+      currentPassword: 'Password123!',
+      newPassword: 'NewPassword123!',
       confirmPassword: 'NewPassword123!',
     });
   });

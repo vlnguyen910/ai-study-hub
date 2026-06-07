@@ -530,6 +530,139 @@ describe('AuthService', () => {
     expect(prismaMock.sessions.updateMany).not.toHaveBeenCalled();
   });
 
+  it('should change password and revoke other active sessions', async () => {
+    const currentPasswordHash = await argon2.hash('Password123!');
+    const userPayload: TokenPayload = {
+      sub: 'user-1',
+      role: UserRole.USER,
+      status: UserStatus.ACTIVE,
+      type: JwtTokenType.AccessToken,
+      deviceId: 'current-device',
+    };
+    prismaMock.accounts.findUnique.mockResolvedValue({
+      id: 'user-1',
+      email: 'new-user@example.com',
+      name: 'New User',
+      password: currentPasswordHash,
+      role: UserRole.USER,
+      status: UserStatus.ACTIVE,
+    });
+    prismaMock.accounts.update.mockResolvedValue({ id: 'user-1' });
+    prismaMock.sessions.updateMany.mockResolvedValue({ count: 2 });
+
+    await expect(
+      service.changePassword(userPayload, {
+        currentPassword: 'Password123!',
+        newPassword: 'NewPassword123!',
+        confirmPassword: 'NewPassword123!',
+      }),
+    ).resolves.toEqual({
+      message: 'Password changed successfully',
+      data: null,
+    });
+    expect(prismaMock.accounts.update).toHaveBeenCalledWith({
+      where: { id: 'user-1' },
+      data: { password: expect.any(String) },
+    });
+    expect(
+      await argon2.verify(
+        prismaMock.accounts.update.mock.calls[0][0].data.password,
+        'NewPassword123!',
+      ),
+    ).toBe(true);
+    expect(prismaMock.sessions.updateMany).toHaveBeenCalledWith({
+      where: {
+        userId: 'user-1',
+        deviceId: {
+          not: 'current-device',
+        },
+        isRevoked: false,
+      },
+      data: {
+        isRevoked: true,
+      },
+    });
+  });
+
+  it('should reject change password when current password is invalid', async () => {
+    const currentPasswordHash = await argon2.hash('Password123!');
+    const userPayload: TokenPayload = {
+      sub: 'user-1',
+      role: UserRole.USER,
+      status: UserStatus.ACTIVE,
+      type: JwtTokenType.AccessToken,
+      deviceId: 'current-device',
+    };
+    prismaMock.accounts.findUnique.mockResolvedValue({
+      id: 'user-1',
+      password: currentPasswordHash,
+      status: UserStatus.ACTIVE,
+    });
+
+    await expect(
+      service.changePassword(userPayload, {
+        currentPassword: 'WrongPassword!',
+        newPassword: 'NewPassword123!',
+        confirmPassword: 'NewPassword123!',
+      }),
+    ).rejects.toBeInstanceOf(UnauthorizedException);
+    expect(prismaMock.accounts.update).not.toHaveBeenCalled();
+    expect(prismaMock.sessions.updateMany).not.toHaveBeenCalled();
+  });
+
+  it('should reject change password when confirmation mismatches', async () => {
+    const userPayload: TokenPayload = {
+      sub: 'user-1',
+      role: UserRole.USER,
+      status: UserStatus.ACTIVE,
+      type: JwtTokenType.AccessToken,
+      deviceId: 'current-device',
+    };
+
+    await expect(
+      service.changePassword(userPayload, {
+        currentPassword: 'Password123!',
+        newPassword: 'NewPassword123!',
+        confirmPassword: 'DifferentPassword123!',
+      }),
+    ).rejects.toEqual(
+      expect.objectContaining({
+        message: 'Passwords do not match',
+      }),
+    );
+    expect(prismaMock.accounts.findUnique).not.toHaveBeenCalled();
+  });
+
+  it('should reject change password when new password matches current password', async () => {
+    const currentPasswordHash = await argon2.hash('Password123!');
+    const userPayload: TokenPayload = {
+      sub: 'user-1',
+      role: UserRole.USER,
+      status: UserStatus.ACTIVE,
+      type: JwtTokenType.AccessToken,
+      deviceId: 'current-device',
+    };
+    prismaMock.accounts.findUnique.mockResolvedValue({
+      id: 'user-1',
+      password: currentPasswordHash,
+      status: UserStatus.ACTIVE,
+    });
+
+    await expect(
+      service.changePassword(userPayload, {
+        currentPassword: 'Password123!',
+        newPassword: 'Password123!',
+        confirmPassword: 'Password123!',
+      }),
+    ).rejects.toEqual(
+      expect.objectContaining({
+        message: 'New password must be different from current password',
+      }),
+    );
+    expect(prismaMock.accounts.update).not.toHaveBeenCalled();
+    expect(prismaMock.sessions.updateMany).not.toHaveBeenCalled();
+  });
+
   it('should sign in successfully with valid credentials', async () => {
     const hashedPassword = await argon2.hash('Password123!');
 
