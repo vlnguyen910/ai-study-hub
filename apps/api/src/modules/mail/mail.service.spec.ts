@@ -1,4 +1,5 @@
 import { Logger } from '@nestjs/common';
+import type { accounts } from '@prisma/client';
 import nodemailer from 'nodemailer';
 import { MailService } from './mail.service';
 
@@ -37,11 +38,13 @@ describe('MailService', () => {
       frontendUrl: 'http://localhost:3000/verify-email',
     });
 
-    await service.sendVerificationCode({
-      email: 'new-user@example.com',
-      name: 'New User',
-      code: '123456',
-    });
+    await service.sendVerificationCode(
+      {
+        email: 'new-user@example.com',
+        name: 'New User',
+      } as accounts,
+      '123456',
+    );
 
     expect(mockCreateTransport).toHaveBeenCalledWith({
       host: 'sandbox.smtp.mailtrap.io',
@@ -75,11 +78,13 @@ describe('MailService', () => {
       frontendUrl: 'http://localhost:3000/verify-email',
     });
 
-    await service.sendVerificationCode({
-      email: 'new-user@example.com',
-      name: 'New User',
-      code: '123456',
-    });
+    await service.sendVerificationCode(
+      {
+        email: 'new-user@example.com',
+        name: 'New User',
+      } as accounts,
+      '123456',
+    );
 
     expect(mockCreateTransport).not.toHaveBeenCalled();
     expect(mockSendMail).not.toHaveBeenCalled();
