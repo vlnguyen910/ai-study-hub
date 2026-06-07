@@ -110,6 +110,10 @@ export class AuthService {
       throw new BadRequestException('Email is already verified');
     }
 
+    if (account.status !== UserStatus.UNVERIFIED) {
+      throw new BadRequestException('Account cannot be verified');
+    }
+
     await this.prismaService.accounts.update({
       where: { id: account.id },
       data: { status: UserStatus.ACTIVE },
