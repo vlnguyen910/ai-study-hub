@@ -189,7 +189,6 @@ describe('AuthController', () => {
       controller.resetPassword({
         token: 'password-reset-token',
         password: 'NewPassword123!',
-        confirmPassword: 'NewPassword123!',
       }),
     ).resolves.toEqual({
       message: 'Password reset successfully',
@@ -198,7 +197,6 @@ describe('AuthController', () => {
     expect(authServiceMock.resetPassword).toHaveBeenCalledWith({
       token: 'password-reset-token',
       password: 'NewPassword123!',
-      confirmPassword: 'NewPassword123!',
     });
   });
 
@@ -212,7 +210,6 @@ describe('AuthController', () => {
       controller.changePassword(userPayload, {
         currentPassword: 'Password123!',
         newPassword: 'NewPassword123!',
-        confirmPassword: 'NewPassword123!',
       }),
     ).resolves.toEqual({
       message: 'Password changed successfully',
@@ -221,7 +218,6 @@ describe('AuthController', () => {
     expect(authServiceMock.changePassword).toHaveBeenCalledWith(userPayload, {
       currentPassword: 'Password123!',
       newPassword: 'NewPassword123!',
-      confirmPassword: 'NewPassword123!',
     });
   });
 

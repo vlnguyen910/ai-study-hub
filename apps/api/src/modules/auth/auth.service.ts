@@ -221,13 +221,6 @@ export class AuthService {
   }
 
   async resetPassword(resetPasswordDto: ResetPasswordDto) {
-    if (
-      resetPasswordDto.confirmPassword !== undefined &&
-      resetPasswordDto.password !== resetPasswordDto.confirmPassword
-    ) {
-      throw new BadRequestException('Passwords do not match');
-    }
-
     const accountId = await this.authTokenService.getSubjectId(
       PASSWORD_RESET_TOKEN_PREFIX,
       resetPasswordDto.token,
@@ -283,13 +276,6 @@ export class AuthService {
     userPayload: TokenPayload,
     changePasswordDto: ChangePasswordDto,
   ) {
-    if (
-      changePasswordDto.confirmPassword !== undefined &&
-      changePasswordDto.newPassword !== changePasswordDto.confirmPassword
-    ) {
-      throw new BadRequestException('Passwords do not match');
-    }
-
     const account = await this.prismaService.accounts.findUnique({
       where: {
         id: userPayload.sub,

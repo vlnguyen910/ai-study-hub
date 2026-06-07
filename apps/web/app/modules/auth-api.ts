@@ -96,7 +96,6 @@ export const forgotPassword = async (payload: { email: string }) => {
 export const resetPassword = async (payload: {
   token: string;
   password: string;
-  confirmPassword: string;
 }) => {
   try {
     return unwrap<null>(
@@ -110,7 +109,6 @@ export const resetPassword = async (payload: {
 export const changePassword = async (payload: {
   currentPassword: string;
   newPassword: string;
-  confirmPassword: string;
 }) => {
   try {
     return unwrap<null>(

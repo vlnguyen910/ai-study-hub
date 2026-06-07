@@ -473,7 +473,6 @@ describe('AuthService', () => {
       service.resetPassword({
         token,
         password: 'NewPassword123!',
-        confirmPassword: 'NewPassword123!',
       }),
     ).resolves.toEqual({
       message: 'Password reset successfully',
@@ -519,7 +518,6 @@ describe('AuthService', () => {
       service.resetPassword({
         token: 'invalid-token',
         password: 'NewPassword123!',
-        confirmPassword: 'NewPassword123!',
       }),
     ).rejects.toEqual(
       expect.objectContaining({
@@ -554,7 +552,6 @@ describe('AuthService', () => {
       service.changePassword(userPayload, {
         currentPassword: 'Password123!',
         newPassword: 'NewPassword123!',
-        confirmPassword: 'NewPassword123!',
       }),
     ).resolves.toEqual({
       message: 'Password changed successfully',
@@ -603,34 +600,10 @@ describe('AuthService', () => {
       service.changePassword(userPayload, {
         currentPassword: 'WrongPassword!',
         newPassword: 'NewPassword123!',
-        confirmPassword: 'NewPassword123!',
       }),
     ).rejects.toBeInstanceOf(UnauthorizedException);
     expect(prismaMock.accounts.update).not.toHaveBeenCalled();
     expect(prismaMock.sessions.updateMany).not.toHaveBeenCalled();
-  });
-
-  it('should reject change password when confirmation mismatches', async () => {
-    const userPayload: TokenPayload = {
-      sub: 'user-1',
-      role: UserRole.USER,
-      status: UserStatus.ACTIVE,
-      type: JwtTokenType.AccessToken,
-      deviceId: 'current-device',
-    };
-
-    await expect(
-      service.changePassword(userPayload, {
-        currentPassword: 'Password123!',
-        newPassword: 'NewPassword123!',
-        confirmPassword: 'DifferentPassword123!',
-      }),
-    ).rejects.toEqual(
-      expect.objectContaining({
-        message: 'Passwords do not match',
-      }),
-    );
-    expect(prismaMock.accounts.findUnique).not.toHaveBeenCalled();
   });
 
   it('should reject change password when new password matches current password', async () => {
@@ -652,7 +625,6 @@ describe('AuthService', () => {
       service.changePassword(userPayload, {
         currentPassword: 'Password123!',
         newPassword: 'Password123!',
-        confirmPassword: 'Password123!',
       }),
     ).rejects.toEqual(
       expect.objectContaining({

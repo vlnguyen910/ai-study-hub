@@ -66,7 +66,6 @@ export default function ResetPasswordPage(): ReactElement {
         await resetPassword({
           token,
           password: formData.password,
-          confirmPassword: formData.confirmPassword,
         });
         setFormData({ password: "", confirmPassword: "" });
         setSubmitted(true);
