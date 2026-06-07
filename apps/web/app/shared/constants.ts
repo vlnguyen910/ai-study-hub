@@ -23,4 +23,8 @@ export const API_ENDPOINTS = {
     APPROVE: (id: string) => `/api/v1/documents/${id}/approve`,
     REJECT: (id: string) => `/api/v1/documents/${id}/reject`,
   },
+  SUBJECTS: {
+    BASE: "/api/v1/subjects",
+    DETAIL: (id: string) => `/api/v1/subjects/${id}`,
+  },
 } as const;
