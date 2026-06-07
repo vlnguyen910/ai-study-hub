@@ -20,10 +20,12 @@ export class MailService {
   }
 
   async sendVerificationCode(account: VerificationEmailAccount, token: string) {
+    const verificationUrl = this.buildVerificationUrl(token);
+
     if (!this.transporter) {
       this.logger.log(
         process.env.NODE_ENV === NodeEnv.Development
-          ? `Email verification link for ${account.email}: ${this.mailConfig.frontendUrl}/verify-email/${token}`
+          ? `Email verification link for ${account.email}: ${verificationUrl}`
           : 'Email transporter is not configured. Skipping sending verification email.',
       );
       return;
@@ -37,7 +39,7 @@ export class MailService {
         `Hi ${account.name},`,
         '',
         `Click the link below to verify your email address and complete your registration:`,
-        `${this.mailConfig.frontendUrl}/verify-email/${token}`,
+        verificationUrl,
         '',
         'If you did not create an account, please ignore this email.',
         '',
@@ -61,5 +63,11 @@ export class MailService {
         pass: this.mailConfig.smtpPassword,
       },
     });
+  }
+
+  private buildVerificationUrl(token: string) {
+    return new URL(`/verify-email/${token}`, this.mailConfig.frontendUrl)
+      .toString()
+      .replace(/\/$/, '');
   }
 }
