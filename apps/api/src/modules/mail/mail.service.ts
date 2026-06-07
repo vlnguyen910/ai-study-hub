@@ -4,11 +4,7 @@ import nodemailer, { type Transporter } from 'nodemailer';
 import { mailConfiguration } from '../../config';
 import { accounts } from '@prisma/client';
 
-type VerificationEmail = {
-  email: string;
-  name: string;
-  code: string;
-};
+type VerificationEmailAccount = Pick<accounts, 'email' | 'name'>;
 
 @Injectable()
 export class MailService {
@@ -22,7 +18,7 @@ export class MailService {
     this.transporter = this.createTransporter();
   }
 
-  async sendVerificationCode(account: accounts, token: string) {
+  async sendVerificationCode(account: VerificationEmailAccount, token: string) {
     if (!this.transporter) {
       this.logger.log(`Email verification code for ${account.email}: ${token}`);
       return;
@@ -36,7 +32,7 @@ export class MailService {
         `Hi ${account.name},`,
         '',
         `Click the link below to verify your email address and complete your registration:`,
-        `${this.mailConfig.frontendUrl}?token=${token}`,
+        `${this.mailConfig.frontendUrl}/${token}`,
         '',
         'If you did not create an account, please ignore this email.',
         '',

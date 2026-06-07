@@ -15,7 +15,6 @@ import { AuthService } from './auth.service';
 import { SigninDto } from './dto/signin.dto';
 import { SignupDto } from './dto/signup.dto';
 import { VerifyEmailDto } from './dto/verify-email.dto';
-import { ResendVerificationCodeDto } from './dto/resend-verification-code.dto';
 import { Public } from '../../common/decorators/public.decorator';
 import { cookieConfiguration } from '../../config';
 import { DeviceType } from '@prisma/client';
@@ -23,6 +22,7 @@ import { User } from '../../common/decorators';
 import { TokenPayload } from '../../common/interfaces/auth.interface';
 import { RefreshTokenGuard } from '../../common/guards/refresh-token.guard';
 import { JwtAuthGuard } from '../../common/guards/jwt.guard';
+import { EmailVerificationGuard } from '../../common/guards/email-verification.guard';
 
 @Controller('auth')
 export class AuthController {
@@ -35,27 +35,47 @@ export class AuthController {
   @Version('1')
   @Public()
   @Post('signup')
-  signup(@Body() signupDto: SignupDto) {
-    return this.authService.signup(signupDto);
+  async signup(
+    @Body() signupDto: SignupDto,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    const result = await this.authService.signup(signupDto);
+
+    res.cookie('accessToken', result.data.accessToken, {
+      httpOnly: this.cookieConfig.httpOnly,
+      secure: this.cookieConfig.secure,
+      sameSite: this.cookieConfig.sameSite,
+      maxAge: this.cookieConfig.accessTokenMaxAge,
+    });
+
+    return {
+      message: result.message,
+      data: null,
+    };
   }
 
   @Version('1')
   @Public()
   @HttpCode(HttpStatus.OK)
   @Post('verify-email')
-  verifyEmail(@Body() verifyEmailDto: VerifyEmailDto) {
-    return this.authService.verifyEmail(verifyEmailDto);
+  async verifyEmail(
+    @Body() verifyEmailDto: VerifyEmailDto,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    const result = await this.authService.verifyEmail(verifyEmailDto);
+
+    res.clearCookie('accessToken');
+
+    return result;
   }
 
-  // @Version('1')
-  // @Public()
-  // @HttpCode(HttpStatus.OK)
-  // @Post('resend-verification-code')
-  // resendVerificationCode(
-  //   @Body() resendVerificationCodeDto: ResendVerificationCodeDto,
-  // ) {
-  //   return this.authService.resendVerificationCode(resendVerificationCodeDto);
-  // }
+  @Version('1')
+  @UseGuards(EmailVerificationGuard)
+  @HttpCode(HttpStatus.OK)
+  @Post('resend-verification-email')
+  resendVerificationEmail(@User() user: TokenPayload) {
+    return this.authService.resendVerificationEmail(user.sub);
+  }
 
   @Version('1')
   @Public()

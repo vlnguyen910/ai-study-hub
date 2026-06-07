@@ -1,11 +1,11 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Alert,
+  ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
   Text,
-  TextInput,
   View,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
@@ -13,26 +13,68 @@ import { router, useLocalSearchParams } from "expo-router";
 import { Button, Card, PageShell } from "@/components";
 import {
   AuthServiceError,
-  resendVerificationCodeService,
+  resendVerificationEmailService,
   verifyEmailService,
 } from "../services/auth.service";
 
 export function AuthVerifyEmailScreen() {
-  const params = useLocalSearchParams<{ email?: string }>();
-  const [email, setEmail] = useState(params.email ?? "");
-  const [code, setCode] = useState("");
+  const params = useLocalSearchParams<{ token?: string }>();
+  const token = Array.isArray(params.token) ? params.token[0] : params.token;
   const [isVerifying, setIsVerifying] = useState(false);
   const [isResending, setIsResending] = useState(false);
+  const [verificationMessage, setVerificationMessage] = useState("");
+
+  useEffect(() => {
+    if (!token) return;
+
+    const verifyToken = async () => {
+      setIsVerifying(true);
+
+      try {
+        await verifyEmailService({ token });
+        setVerificationMessage("Email đã được xác thực.");
+        Alert.alert("Thành công", "Email đã được xác thực.", [
+          {
+            text: "Đăng nhập",
+            onPress: () => router.replace("/(templates)/auth-login" as never),
+          },
+        ]);
+      } catch (error) {
+        const message =
+          error instanceof AuthServiceError
+            ? error.message
+            : "Xác thực email thất bại";
+        setVerificationMessage(message);
+        Alert.alert("Lỗi", message);
+      } finally {
+        setIsVerifying(false);
+      }
+    };
+
+    void verifyToken();
+  }, [token]);
+
+  const handleOpenLogin = () => {
+    router.replace("/(templates)/auth-login" as never);
+  };
 
   const handleVerify = async () => {
+    if (!token) {
+      Alert.alert(
+        "Kiểm tra email",
+        "Vui lòng bấm liên kết xác thực trong email mới nhất.",
+      );
+      return;
+    }
+
     setIsVerifying(true);
 
     try {
-      await verifyEmailService({ email, code });
+      await verifyEmailService({ token });
       Alert.alert("Thành công", "Email đã được xác thực.", [
         {
           text: "Đăng nhập",
-          onPress: () => router.replace("/(templates)/auth-login" as never),
+          onPress: handleOpenLogin,
         },
       ]);
     } catch (error) {
@@ -50,13 +92,13 @@ export function AuthVerifyEmailScreen() {
     setIsResending(true);
 
     try {
-      await resendVerificationCodeService({ email });
-      Alert.alert("Đã gửi", "Mã xác thực mới đã được gửi đến email.");
+      await resendVerificationEmailService();
+      Alert.alert("Đã gửi", "Email xác thực mới đã được gửi.");
     } catch (error) {
       const message =
         error instanceof AuthServiceError
           ? error.message
-          : "Không thể gửi lại mã xác thực";
+          : "Không thể gửi lại email xác thực";
       Alert.alert("Lỗi", message);
     } finally {
       setIsResending(false);
@@ -86,44 +128,27 @@ export function AuthVerifyEmailScreen() {
                 Xác thực email
               </Text>
               <Text className="text-sm font-medium text-outline text-center leading-5">
-                Nhập mã xác thực đã được gửi đến email của bạn.
+                Bấm liên kết xác thực trong email mới nhất của bạn.
               </Text>
             </View>
 
             <View className="gap-4">
-              <View>
-                <Text className="text-xs font-bold text-on-background mb-1.5">
-                  Email
-                </Text>
-                <View className="border border-outline-variant bg-white px-3 py-2.5 rounded-xl">
-                  <TextInput
-                    className="text-base text-on-background p-0"
-                    placeholder="example@email.com"
-                    placeholderTextColor="#737686"
-                    keyboardType="email-address"
-                    autoCapitalize="none"
-                    autoCorrect={false}
-                    value={email}
-                    onChangeText={setEmail}
-                  />
+              {isVerifying ? (
+                <View className="items-center gap-3 py-2">
+                  <ActivityIndicator color="#004ac6" />
+                  <Text className="text-sm font-medium text-outline">
+                    Đang xác thực email...
+                  </Text>
                 </View>
-              </View>
+              ) : null}
 
-              <View>
-                <Text className="text-xs font-bold text-on-background mb-1.5">
-                  Mã xác thực
-                </Text>
+              {verificationMessage ? (
                 <View className="border border-outline-variant bg-white px-3 py-2.5 rounded-xl">
-                  <TextInput
-                    className="text-base text-on-background p-0"
-                    placeholder="123456"
-                    placeholderTextColor="#737686"
-                    keyboardType="number-pad"
-                    value={code}
-                    onChangeText={setCode}
-                  />
+                  <Text className="text-sm font-medium text-on-background text-center">
+                    {verificationMessage}
+                  </Text>
                 </View>
-              </View>
+              ) : null}
 
               <Button
                 variant="primary"
@@ -131,7 +156,7 @@ export function AuthVerifyEmailScreen() {
                 loading={isVerifying}
                 onPress={handleVerify}
               >
-                Xác thực email
+                Kiểm tra liên kết
               </Button>
 
               <Button
@@ -140,7 +165,11 @@ export function AuthVerifyEmailScreen() {
                 loading={isResending}
                 onPress={handleResend}
               >
-                Gửi lại mã
+                Gửi lại email
+              </Button>
+
+              <Button variant="ghost" fullWidth onPress={handleOpenLogin}>
+                Quay lại đăng nhập
               </Button>
             </View>
           </Card>

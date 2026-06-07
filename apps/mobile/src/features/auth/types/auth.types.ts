@@ -12,12 +12,7 @@ export interface SignUpPayload {
 }
 
 export interface VerifyEmailPayload {
-  email: string;
-  code: string;
-}
-
-export interface ResendVerificationCodePayload {
-  email: string;
+  token: string;
 }
 
 export interface AuthResponseData {

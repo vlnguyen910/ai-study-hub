@@ -43,7 +43,7 @@ export const useSignUp = () => {
       if (response.success || response.status_code === 201) {
         Alert.alert(
           "Thành công",
-          "Vui lòng kiểm tra email để lấy mã xác thực.",
+          "Vui lòng kiểm tra email và bấm liên kết xác thực mới nhất.",
         );
         if (onSuccess) {
           onSuccess(values.email);

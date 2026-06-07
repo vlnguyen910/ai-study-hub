@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import type { ReactElement } from "react";
+import { useRouter } from "next/navigation";
 import { apiClient } from "@/lib/axios";
 import { API_ENDPOINTS } from "@/shared/constants";
 import { getOrCreateDeviceId } from "@/utils";
@@ -17,6 +18,7 @@ export default function RegisterModal({
   onClose,
   onOpenLogin,
 }: RegisterModalProps): ReactElement | null {
+  const router = useRouter();
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -106,7 +108,7 @@ export default function RegisterModal({
       });
       resetForm();
       onClose();
-      onOpenLogin();
+      router.push("/verify-email-pending");
     } catch (error: unknown) {
       const axiosError = error as {
         response?: { status?: number; data?: { message?: string } };
