@@ -10,6 +10,7 @@ import { RedisModule } from '../../common/redis/redis.module';
 import { MailModule } from '../mail/mail.module';
 import { JwtStrategy } from './strategies/jwt.strategy';
 import { RefreshTokenStrategy } from './strategies/refresh-token.strategy';
+import { EmailVerificationStrategy } from './strategies/email-verification.strategy';
 
 @Module({
   imports: [
@@ -27,7 +28,12 @@ import { RefreshTokenStrategy } from './strategies/refresh-token.strategy';
     MailModule,
   ],
   controllers: [AuthController],
-  providers: [AuthService, JwtStrategy, RefreshTokenStrategy],
+  providers: [
+    AuthService,
+    JwtStrategy,
+    RefreshTokenStrategy,
+    EmailVerificationStrategy,
+  ],
   exports: [AuthService, JwtModule, PassportModule],
 })
 export class AuthModule {}

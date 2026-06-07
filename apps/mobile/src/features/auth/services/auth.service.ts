@@ -2,7 +2,6 @@ import axios, { type AxiosInstance } from "axios";
 import { apiClient } from "@/services";
 import type {
   AuthResponse,
-  ResendVerificationCodePayload,
   SignInPayload,
   SignUpPayload,
   VerifyEmailPayload,
@@ -104,14 +103,12 @@ export const verifyEmailService = async (
   }
 };
 
-export const resendVerificationCodeService = async (
-  payload: ResendVerificationCodePayload,
+export const resendVerificationEmailService = async (
   client: ApiClient = apiClient,
 ): Promise<AuthResponse> => {
   try {
     const response = await client.post<AuthResponse>(
-      "/api/v1/auth/resend-verification-code",
-      payload,
+      "/api/v1/auth/resend-verification-email",
     );
     return response.data;
   } catch (error) {

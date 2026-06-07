@@ -3,9 +3,10 @@ import { JwtService } from '@nestjs/jwt';
 import { Test, TestingModule } from '@nestjs/testing';
 import argon2 from 'argon2';
 import { createHash } from 'node:crypto';
+import { v4 as uuidv4 } from 'uuid';
 import { DeviceType, UserRole, UserStatus } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
-import { jwtConfiguration } from '../../config';
+import { emailVerificationConfiguration, jwtConfiguration } from '../../config';
 import { AccountsService } from '../accounts/accounts.service';
 import { AuthService } from './auth.service';
 import { JwtTokenType } from '../../common/enums/jwt.enum';
@@ -16,6 +17,8 @@ import { RedisService } from '../../common/redis/redis.service';
 jest.mock('uuid', () => ({
   v4: jest.fn(() => 'email-verification-token'),
 }));
+
+const mockedUuidV4 = uuidv4 as jest.MockedFunction<typeof uuidv4>;
 
 describe('AuthService', () => {
   let service: AuthService;
@@ -45,6 +48,7 @@ describe('AuthService', () => {
     get: jest.fn(),
     set: jest.fn(),
     del: jest.fn(),
+    ttl: jest.fn(),
   };
 
   const mailServiceMock = {
@@ -55,6 +59,13 @@ describe('AuthService', () => {
     secret: 'test-secret',
     accessTokenExpiresIn: '15m',
     refreshTokenExpiresIn: '7d',
+  };
+
+  const emailVerificationConfigMock = {
+    codeLength: 6,
+    ttlSeconds: 10 * 60,
+    resendCooldownSeconds: 60,
+    maxAttempts: 5,
   };
 
   beforeEach(async () => {
@@ -87,6 +98,10 @@ describe('AuthService', () => {
           provide: jwtConfiguration.KEY,
           useValue: jwtConfigMock,
         },
+        {
+          provide: emailVerificationConfiguration.KEY,
+          useValue: emailVerificationConfigMock,
+        },
       ],
     }).compile();
 
@@ -100,6 +115,7 @@ describe('AuthService', () => {
         id: 'user-1',
         email: 'new-user@example.com',
         name: 'New User',
+        role: UserRole.USER,
         status: UserStatus.UNVERIFIED,
       });
     accountsServiceMock.create.mockResolvedValue({
@@ -107,6 +123,7 @@ describe('AuthService', () => {
     });
     mailServiceMock.sendVerificationCode.mockResolvedValue(undefined);
     redisServiceMock.set.mockResolvedValue('OK');
+    jwtMock.signAsync.mockResolvedValue('verification-access-token');
 
     const result = await service.signup({
       email: 'new-user@example.com',
@@ -129,6 +146,7 @@ describe('AuthService', () => {
         id: 'user-1',
         email: 'new-user@example.com',
         name: 'New User',
+        role: UserRole.USER,
         status: UserStatus.UNVERIFIED,
       },
       expect.any(String),
@@ -136,9 +154,14 @@ describe('AuthService', () => {
     const token = mailServiceMock.sendVerificationCode.mock.calls[0][1];
     const hashedToken = createHash('sha256').update(token).digest('hex');
     expect(redisServiceMock.set).toHaveBeenCalledWith(
-      `verification_code:${hashedToken}`,
+      `verify_email:${hashedToken}`,
       'user-1',
-      15 * 60,
+      emailVerificationConfigMock.ttlSeconds,
+    );
+    expect(redisServiceMock.set).toHaveBeenCalledWith(
+      'verify_email_user:user-1',
+      hashedToken,
+      emailVerificationConfigMock.ttlSeconds,
     );
     expect(redisServiceMock.set.mock.calls[0][0]).not.toContain(token);
     expect(mailServiceMock.sendVerificationCode).not.toHaveBeenCalledWith({
@@ -147,9 +170,21 @@ describe('AuthService', () => {
     });
 
     expect(prismaMock.sessions.upsert).not.toHaveBeenCalled();
+    expect(jwtMock.signAsync).toHaveBeenCalledWith(
+      expect.objectContaining({
+        sub: 'user-1',
+        role: UserRole.USER,
+        status: UserStatus.UNVERIFIED,
+        type: JwtTokenType.EmailVerification,
+        deviceId: 'email-verification',
+      }),
+      { expiresIn: jwtConfigMock.accessTokenExpiresIn },
+    );
     expect(result).toEqual({
       message: 'Signup successful. Please verify your email.',
-      data: null,
+      data: {
+        accessToken: 'verification-access-token',
+      },
     });
   });
 
@@ -193,15 +228,108 @@ describe('AuthService', () => {
       data: null,
     });
     expect(redisServiceMock.get).toHaveBeenCalledWith(
-      `verification_code:${hashedToken}`,
+      `verify_email:${hashedToken}`,
     );
     expect(prismaMock.accounts.update).toHaveBeenCalledWith({
       where: { id: 'user-1' },
       data: { status: UserStatus.ACTIVE },
     });
     expect(redisServiceMock.del).toHaveBeenCalledWith(
-      `verification_code:${hashedToken}`,
+      `verify_email:${hashedToken}`,
     );
+    expect(redisServiceMock.del).toHaveBeenCalledWith(
+      'verify_email_user:user-1',
+    );
+    expect(redisServiceMock.del).toHaveBeenCalledWith(
+      'verify_email_cooldown:user-1',
+    );
+  });
+
+  it('should rotate verification email token on resend', async () => {
+    (mockedUuidV4 as jest.Mock).mockReturnValueOnce('new-verification-token');
+    const newHashedToken = createHash('sha256')
+      .update('new-verification-token')
+      .digest('hex');
+
+    accountsServiceMock.findOne.mockResolvedValue({
+      id: 'user-1',
+      email: 'new-user@example.com',
+      name: 'New User',
+      role: UserRole.USER,
+      status: UserStatus.UNVERIFIED,
+    });
+    redisServiceMock.get
+      .mockResolvedValueOnce(null)
+      .mockResolvedValueOnce('old-hashed-token');
+    redisServiceMock.del.mockResolvedValue(1);
+    redisServiceMock.set.mockResolvedValue('OK');
+    mailServiceMock.sendVerificationCode.mockResolvedValue(undefined);
+
+    await expect(service.resendVerificationEmail('user-1')).resolves.toEqual({
+      message: 'Verification email sent',
+      data: null,
+    });
+    expect(redisServiceMock.get).toHaveBeenNthCalledWith(
+      1,
+      'verify_email_cooldown:user-1',
+    );
+    expect(redisServiceMock.get).toHaveBeenNthCalledWith(
+      2,
+      'verify_email_user:user-1',
+    );
+    expect(redisServiceMock.del).toHaveBeenCalledWith(
+      'verify_email:old-hashed-token',
+    );
+    expect(redisServiceMock.set).toHaveBeenCalledWith(
+      `verify_email:${newHashedToken}`,
+      'user-1',
+      emailVerificationConfigMock.ttlSeconds,
+    );
+    expect(redisServiceMock.set).toHaveBeenCalledWith(
+      'verify_email_user:user-1',
+      newHashedToken,
+      emailVerificationConfigMock.ttlSeconds,
+    );
+    expect(redisServiceMock.set).toHaveBeenCalledWith(
+      'verify_email_cooldown:user-1',
+      '1',
+      emailVerificationConfigMock.resendCooldownSeconds,
+    );
+    expect(mailServiceMock.sendVerificationCode).toHaveBeenCalledWith(
+      expect.objectContaining({ id: 'user-1' }),
+      'new-verification-token',
+    );
+  });
+
+  it('should return success without sending mail when resend account is already verified', async () => {
+    accountsServiceMock.findOne.mockResolvedValue({
+      id: 'user-1',
+      status: UserStatus.ACTIVE,
+    });
+
+    await expect(service.resendVerificationEmail('user-1')).resolves.toEqual({
+      message: 'Email is already verified',
+      data: null,
+    });
+    expect(mailServiceMock.sendVerificationCode).not.toHaveBeenCalled();
+    expect(redisServiceMock.set).not.toHaveBeenCalled();
+  });
+
+  it('should enforce resend verification cooldown', async () => {
+    accountsServiceMock.findOne.mockResolvedValue({
+      id: 'user-1',
+      status: UserStatus.UNVERIFIED,
+    });
+    redisServiceMock.get.mockResolvedValueOnce('1');
+    redisServiceMock.ttl.mockResolvedValue(42);
+
+    await expect(service.resendVerificationEmail('user-1')).rejects.toEqual(
+      expect.objectContaining({
+        message:
+          'Please wait 42 seconds before requesting another verification email',
+      }),
+    );
+    expect(mailServiceMock.sendVerificationCode).not.toHaveBeenCalled();
   });
 
   it('should sign in successfully with valid credentials', async () => {

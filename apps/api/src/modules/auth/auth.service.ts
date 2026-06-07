@@ -1,6 +1,8 @@
 import {
   BadRequestException,
   ConflictException,
+  HttpException,
+  HttpStatus,
   Inject,
   Injectable,
   UnauthorizedException,
@@ -9,7 +11,7 @@ import { JwtService, JwtSignOptions } from '@nestjs/jwt';
 import { PrismaService } from '../../prisma/prisma.service';
 import { SigninDto } from './dto/signin.dto';
 import { SignupDto } from './dto/signup.dto';
-import { jwtConfiguration } from '../../config';
+import { emailVerificationConfiguration, jwtConfiguration } from '../../config';
 import type { ConfigType } from '@nestjs/config';
 import { createHash } from 'node:crypto';
 import { TokenPayload } from '../../common/interfaces/auth.interface';
@@ -18,10 +20,19 @@ import { accounts, DeviceType, UserRole, UserStatus } from '@prisma/client';
 import argon2 from 'argon2';
 import { AccountsService } from '../accounts/accounts.service';
 import { VerifyEmailDto } from './dto/verify-email.dto';
-import { ResendVerificationCodeDto } from './dto/resend-verification-code.dto';
 import { MailService } from '../mail/mail.service';
 import { v4 as uuidv4 } from 'uuid';
 import { RedisService } from '../../common/redis/redis.service';
+
+const VERIFY_EMAIL_TOKEN_PREFIX = 'verify_email';
+const VERIFY_EMAIL_USER_PREFIX = 'verify_email_user';
+const VERIFY_EMAIL_COOLDOWN_PREFIX = 'verify_email_cooldown';
+const EMAIL_VERIFICATION_DEVICE_ID = 'email-verification';
+
+type VerificationAccount = Pick<
+  accounts,
+  'id' | 'email' | 'name' | 'role' | 'status'
+>;
 
 @Injectable()
 export class AuthService {
@@ -29,6 +40,10 @@ export class AuthService {
     private jwtService: JwtService,
     @Inject(jwtConfiguration.KEY)
     private readonly jwtConfig: ConfigType<typeof jwtConfiguration>,
+    @Inject(emailVerificationConfiguration.KEY)
+    private readonly emailVerificationConfig: ConfigType<
+      typeof emailVerificationConfiguration
+    >,
     private accountService: AccountsService,
     private prismaService: PrismaService,
     private mailService: MailService,
@@ -65,23 +80,20 @@ export class AuthService {
       throw new BadRequestException('Unable to create account');
     }
 
-    const token = uuidv4();
-    await this.mailService.sendVerificationCode(account, token);
-
-    const hashedToken = this.hashToken(token);
-    const cacheKey = `verification_code:${hashedToken}`;
-
-    await this.redisService.set(cacheKey, account.id, 15 * 60); // Store for 15 minutes
+    await this.issueVerificationEmail(account);
+    const accessToken = await this.generateEmailVerificationToken(account);
 
     return {
       message: 'Signup successful. Please verify your email.',
-      data: null,
+      data: {
+        accessToken,
+      },
     };
   }
 
   async verifyEmail(verifyEmailDto: VerifyEmailDto) {
     const hashedToken = this.hashToken(verifyEmailDto.token);
-    const cacheKey = `verification_code:${hashedToken}`;
+    const cacheKey = this.verificationTokenKey(hashedToken);
     const accountId = await this.redisService.get(cacheKey);
 
     if (!accountId) {
@@ -104,6 +116,8 @@ export class AuthService {
     });
 
     await this.redisService.del(cacheKey);
+    await this.redisService.del(this.verificationUserKey(account.id));
+    await this.redisService.del(this.verificationCooldownKey(account.id));
 
     return {
       message: 'Email verified successfully',
@@ -111,42 +125,45 @@ export class AuthService {
     };
   }
 
-  // async resendVerificationCode(
-  //   resendVerificationCodeDto: ResendVerificationCodeDto,
-  // ) {
-  //   const account = await this.accountService.findAccountByEmail(
-  //     resendVerificationCodeDto.email,
-  //   );
+  async resendVerificationEmail(userId: string) {
+    const account = await this.accountService.findOne(userId);
 
-  //   if (!account) {
-  //     throw new BadRequestException('Account cannot be verified');
-  //   }
+    if (!account) {
+      throw new BadRequestException('Account cannot be verified');
+    }
 
-  //   if (account.status === UserStatus.ACTIVE) {
-  //     throw new BadRequestException('Email is already verified');
-  //   }
+    if (account.status === UserStatus.ACTIVE) {
+      return {
+        message: 'Email is already verified',
+        data: null,
+      };
+    }
 
-  //   if (account.status !== UserStatus.UNVERIFIED) {
-  //     throw new BadRequestException('Account cannot be verified');
-  //   }
+    if (account.status !== UserStatus.UNVERIFIED) {
+      throw new BadRequestException('Account cannot be verified');
+    }
 
-  //   const code = await this.verificationCodeService.issueCode({
-  //     accountId: account.id,
-  //     email: account.email,
-  //     enforceCooldown: true,
-  //   });
+    await this.assertVerificationCooldown(account.id);
+    const oldHashedToken = await this.redisService.get(
+      this.verificationUserKey(account.id),
+    );
 
-  //   await this.mailService.sendVerificationCode({
-  //     email: account.email,
-  //     name: account.name,
-  //     code,
-  //   });
+    if (oldHashedToken) {
+      await this.redisService.del(this.verificationTokenKey(oldHashedToken));
+    }
 
-  //   return {
-  //     message: 'Verification code sent',
-  //     data: null,
-  //   };
-  // }
+    await this.issueVerificationEmail(account);
+    await this.redisService.set(
+      this.verificationCooldownKey(account.id),
+      '1',
+      this.emailVerificationConfig.resendCooldownSeconds,
+    );
+
+    return {
+      message: 'Verification email sent',
+      data: null,
+    };
+  }
 
   async signin(signinDto: SigninDto, deviceType: DeviceType) {
     const account = await this.accountService.findAccountByEmail(
@@ -287,6 +304,71 @@ export class AuthService {
     ]);
 
     return { accessToken, refreshToken };
+  }
+
+  private async generateEmailVerificationToken(account: VerificationAccount) {
+    const tokenPayload: TokenPayload = {
+      sub: account.id,
+      role: account.role,
+      status: UserStatus.UNVERIFIED,
+      type: JwtTokenType.EmailVerification,
+      deviceId: EMAIL_VERIFICATION_DEVICE_ID,
+    };
+
+    return this.generateToken(
+      tokenPayload,
+      JwtTokenType.EmailVerification,
+      this.jwtConfig.accessTokenExpiresIn,
+    );
+  }
+
+  private async issueVerificationEmail(account: VerificationAccount) {
+    const token = uuidv4();
+    const hashedToken = this.hashToken(token);
+
+    await this.redisService.set(
+      this.verificationTokenKey(hashedToken),
+      account.id,
+      this.emailVerificationConfig.ttlSeconds,
+    );
+    await this.redisService.set(
+      this.verificationUserKey(account.id),
+      hashedToken,
+      this.emailVerificationConfig.ttlSeconds,
+    );
+    await this.mailService.sendVerificationCode(account, token);
+  }
+
+  private async assertVerificationCooldown(userId: string) {
+    const cooldownKey = this.verificationCooldownKey(userId);
+    const cooldown = await this.redisService.get(cooldownKey);
+
+    if (!cooldown) {
+      return;
+    }
+
+    const secondsRemaining = await this.redisService.ttl(cooldownKey);
+    const waitSeconds =
+      secondsRemaining > 0
+        ? secondsRemaining
+        : this.emailVerificationConfig.resendCooldownSeconds;
+
+    throw new HttpException(
+      `Please wait ${waitSeconds} seconds before requesting another verification email`,
+      HttpStatus.TOO_MANY_REQUESTS,
+    );
+  }
+
+  private verificationTokenKey(hashedToken: string) {
+    return `${VERIFY_EMAIL_TOKEN_PREFIX}:${hashedToken}`;
+  }
+
+  private verificationUserKey(userId: string) {
+    return `${VERIFY_EMAIL_USER_PREFIX}:${userId}`;
+  }
+
+  private verificationCooldownKey(userId: string) {
+    return `${VERIFY_EMAIL_COOLDOWN_PREFIX}:${userId}`;
   }
 
   private async generateToken(

@@ -59,7 +59,7 @@ export const signin = async (payload: {
   }
 };
 
-export const verifyEmail = async (payload: { email: string; code: string }) => {
+export const verifyEmail = async (payload: { token: string }) => {
   try {
     return unwrap<null>(
       await client.post("/api/v1/auth/verify-email", payload),
@@ -69,12 +69,14 @@ export const verifyEmail = async (payload: { email: string; code: string }) => {
   }
 };
 
-export const resendVerificationCode = async (payload: { email: string }) => {
+export const resendVerificationEmail = async () => {
   try {
     return unwrap<null>(
-      await client.post("/api/v1/auth/resend-verification-code", payload),
+      await client.post("/api/v1/auth/resend-verification-email"),
     );
   } catch (error) {
-    throw new Error(getErrorMessage(error, "Could not resend code"));
+    throw new Error(
+      getErrorMessage(error, "Could not resend verification email"),
+    );
   }
 };

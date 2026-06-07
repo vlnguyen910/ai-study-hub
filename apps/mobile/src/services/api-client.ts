@@ -9,6 +9,7 @@ export const getApiBaseUrl = (): string => {
 
 export const apiClient: AxiosInstance = axios.create({
   baseURL: getApiBaseUrl(),
+  withCredentials: true,
   headers: {
     "Content-Type": "application/json",
     Accept: "application/json",
