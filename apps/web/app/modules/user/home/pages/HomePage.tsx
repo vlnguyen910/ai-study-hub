@@ -7,8 +7,14 @@ import { CommentCard } from "../components/CommentCard";
 import { fetchDocuments } from "../../documents/api";
 
 export default async function HomePage(): Promise<React.JSX.Element> {
-  const documentsResponse = await fetchDocuments({ page: 1, limit: 10 });
-  const documents = documentsResponse.documents ?? [];
+  let documents: Awaited<ReturnType<typeof fetchDocuments>>["documents"] = [];
+
+  try {
+    const documentsResponse = await fetchDocuments({ page: 1, limit: 10 });
+    documents = documentsResponse.documents ?? [];
+  } catch {
+    documents = [];
+  }
 
   return (
     <div className="min-w-0 bg-background">
