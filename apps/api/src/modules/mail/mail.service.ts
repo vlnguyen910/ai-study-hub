@@ -20,7 +20,9 @@ export class MailService {
 
   async sendVerificationCode(account: VerificationEmailAccount, token: string) {
     if (!this.transporter) {
-      this.logger.log(`Email verification code for ${account.email}: ${token}`);
+      this.logger.log(
+        `Email verification link for ${account.email}: ${this.mailConfig.frontendUrl}/${token}`,
+      );
       return;
     }
 
