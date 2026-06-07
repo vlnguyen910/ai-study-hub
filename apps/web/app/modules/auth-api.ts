@@ -106,3 +106,17 @@ export const resetPassword = async (payload: {
     throw new Error(getErrorMessage(error, "Could not reset password"));
   }
 };
+
+export const changePassword = async (payload: {
+  currentPassword: string;
+  newPassword: string;
+  confirmPassword: string;
+}) => {
+  try {
+    return unwrap<null>(
+      await client.post("/api/v1/auth/change-password", payload),
+    );
+  } catch (error) {
+    throw new Error(getErrorMessage(error, "Could not change password"));
+  }
+};

@@ -25,6 +25,7 @@ import { MailService } from '../mail/mail.service';
 import { AuthTokenService } from './services/auth-token.service';
 import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
+import { ChangePasswordDto } from './dto/change-password.dto';
 
 const VERIFY_EMAIL_TOKEN_PREFIX = 'verify_email';
 const VERIFY_EMAIL_USER_PREFIX = 'verify_email_user';
@@ -274,6 +275,73 @@ export class AuthService {
 
     return {
       message: 'Password reset successfully',
+      data: null,
+    };
+  }
+
+  async changePassword(
+    userPayload: TokenPayload,
+    changePasswordDto: ChangePasswordDto,
+  ) {
+    if (
+      changePasswordDto.confirmPassword !== undefined &&
+      changePasswordDto.newPassword !== changePasswordDto.confirmPassword
+    ) {
+      throw new BadRequestException('Passwords do not match');
+    }
+
+    const account = await this.prismaService.accounts.findUnique({
+      where: {
+        id: userPayload.sub,
+        status: UserStatus.ACTIVE,
+      },
+    });
+
+    if (!account) {
+      throw new UnauthorizedException('Invalid user');
+    }
+
+    const isCurrentPasswordValid = await argon2.verify(
+      account.password,
+      changePasswordDto.currentPassword,
+    );
+
+    if (!isCurrentPasswordValid) {
+      throw new UnauthorizedException('Invalid current password');
+    }
+
+    const isSamePassword = await argon2.verify(
+      account.password,
+      changePasswordDto.newPassword,
+    );
+
+    if (isSamePassword) {
+      throw new BadRequestException(
+        'New password must be different from current password',
+      );
+    }
+
+    const hashedPassword = await argon2.hash(changePasswordDto.newPassword);
+
+    await this.prismaService.accounts.update({
+      where: { id: account.id },
+      data: { password: hashedPassword },
+    });
+    await this.prismaService.sessions.updateMany({
+      where: {
+        userId: account.id,
+        deviceId: {
+          not: userPayload.deviceId,
+        },
+        isRevoked: false,
+      },
+      data: {
+        isRevoked: true,
+      },
+    });
+
+    return {
+      message: 'Password changed successfully',
       data: null,
     };
   }
