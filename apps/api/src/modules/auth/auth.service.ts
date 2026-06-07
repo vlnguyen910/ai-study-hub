@@ -11,6 +11,7 @@ import { SigninDto } from './dto/signin.dto';
 import { SignupDto } from './dto/signup.dto';
 import { jwtConfiguration } from '../../config';
 import type { ConfigType } from '@nestjs/config';
+import { createHash } from 'node:crypto';
 import { TokenPayload } from '../../common/interfaces/auth.interface';
 import { JwtTokenType } from '../../common/enums/jwt.enum';
 import { accounts, DeviceType, UserRole, UserStatus } from '@prisma/client';
@@ -33,6 +34,10 @@ export class AuthService {
     private mailService: MailService,
     private readonly redisService: RedisService,
   ) {}
+
+  private hashToken(token: string) {
+    return createHash('sha256').update(token).digest('hex');
+  }
 
   async signup(signupDto: SignupDto) {
     const existingAccount = await this.accountService.findAccountByEmail(
@@ -63,7 +68,8 @@ export class AuthService {
     const token = uuidv4();
     await this.mailService.sendVerificationCode(account, token);
 
-    const cacheKey = `verification_code:${token}`;
+    const hashedToken = this.hashToken(token);
+    const cacheKey = `verification_code:${hashedToken}`;
 
     await this.redisService.set(cacheKey, account.id, 15 * 60); // Store for 15 minutes
 
@@ -74,7 +80,8 @@ export class AuthService {
   }
 
   async verifyEmail(verifyEmailDto: VerifyEmailDto) {
-    const cacheKey = `verification_code:${verifyEmailDto.token}`;
+    const hashedToken = this.hashToken(verifyEmailDto.token);
+    const cacheKey = `verification_code:${hashedToken}`;
     const accountId = await this.redisService.get(cacheKey);
 
     if (!accountId) {
@@ -95,6 +102,8 @@ export class AuthService {
       where: { id: account.id },
       data: { status: UserStatus.ACTIVE },
     });
+
+    await this.redisService.del(cacheKey);
 
     return {
       message: 'Email verified successfully',

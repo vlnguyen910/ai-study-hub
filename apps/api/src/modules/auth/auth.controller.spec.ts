@@ -8,6 +8,10 @@ import { cookieConfiguration } from '../../config';
 import { JwtTokenType } from '../../common/enums/jwt.enum';
 import { TokenPayload } from '../../common/interfaces/auth.interface';
 
+jest.mock('uuid', () => ({
+  v4: jest.fn(() => 'email-verification-token'),
+}));
+
 describe('AuthController', () => {
   let controller: AuthController;
 
@@ -22,7 +26,6 @@ describe('AuthController', () => {
   const authServiceMock = {
     signup: jest.fn(),
     verifyEmail: jest.fn(),
-    resendVerificationCode: jest.fn(),
     signin: jest.fn(),
     logout: jest.fn(),
     refreshToken: jest.fn(),
@@ -94,35 +97,14 @@ describe('AuthController', () => {
 
     await expect(
       controller.verifyEmail({
-        email: 'new-user@example.com',
-        code: '123456',
+        token: 'email-verification-token',
       }),
     ).resolves.toEqual({
       message: 'Email verified successfully',
       data: null,
     });
     expect(authServiceMock.verifyEmail).toHaveBeenCalledWith({
-      email: 'new-user@example.com',
-      code: '123456',
-    });
-  });
-
-  it('should call resend verification code service', async () => {
-    authServiceMock.resendVerificationCode.mockResolvedValue({
-      message: 'Verification code sent',
-      data: null,
-    });
-
-    await expect(
-      controller.resendVerificationCode({
-        email: 'new-user@example.com',
-      }),
-    ).resolves.toEqual({
-      message: 'Verification code sent',
-      data: null,
-    });
-    expect(authServiceMock.resendVerificationCode).toHaveBeenCalledWith({
-      email: 'new-user@example.com',
+      token: 'email-verification-token',
     });
   });
 
