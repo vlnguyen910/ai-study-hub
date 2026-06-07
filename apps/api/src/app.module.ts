@@ -11,6 +11,7 @@ import { cookieConfiguration } from './config/cookies.config';
 import {
   emailVerificationConfiguration,
   mailConfiguration,
+  passwordRecoveryConfiguration,
   redisConfiguration,
 } from './config';
 
@@ -25,6 +26,7 @@ import {
         redisConfiguration,
         mailConfiguration,
         emailVerificationConfiguration,
+        passwordRecoveryConfiguration,
       ],
     }),
     PrismaModule,

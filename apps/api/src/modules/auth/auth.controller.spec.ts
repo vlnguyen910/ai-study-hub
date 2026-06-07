@@ -27,6 +27,8 @@ describe('AuthController', () => {
     signup: jest.fn(),
     verifyEmail: jest.fn(),
     resendVerificationEmail: jest.fn(),
+    forgotPassword: jest.fn(),
+    resetPassword: jest.fn(),
     signin: jest.fn(),
     logout: jest.fn(),
     refreshToken: jest.fn(),
@@ -155,6 +157,48 @@ describe('AuthController', () => {
     expect(authServiceMock.resendVerificationEmail).toHaveBeenCalledWith(
       'user-1',
     );
+  });
+
+  it('should call forgot password service', async () => {
+    authServiceMock.forgotPassword.mockResolvedValue({
+      message:
+        'If an account exists for this email, a password reset link has been sent.',
+      data: null,
+    });
+
+    await expect(
+      controller.forgotPassword({ email: 'new-user@example.com' }),
+    ).resolves.toEqual({
+      message:
+        'If an account exists for this email, a password reset link has been sent.',
+      data: null,
+    });
+    expect(authServiceMock.forgotPassword).toHaveBeenCalledWith({
+      email: 'new-user@example.com',
+    });
+  });
+
+  it('should call reset password service', async () => {
+    authServiceMock.resetPassword.mockResolvedValue({
+      message: 'Password reset successfully',
+      data: null,
+    });
+
+    await expect(
+      controller.resetPassword({
+        token: 'password-reset-token',
+        password: 'NewPassword123!',
+        confirmPassword: 'NewPassword123!',
+      }),
+    ).resolves.toEqual({
+      message: 'Password reset successfully',
+      data: null,
+    });
+    expect(authServiceMock.resetPassword).toHaveBeenCalledWith({
+      token: 'password-reset-token',
+      password: 'NewPassword123!',
+      confirmPassword: 'NewPassword123!',
+    });
   });
 
   it('sets access token cookie and returns refresh token on web signin', async () => {

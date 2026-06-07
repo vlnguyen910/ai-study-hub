@@ -1,8 +1,6 @@
 import {
   BadRequestException,
   ConflictException,
-  HttpException,
-  HttpStatus,
   Inject,
   Injectable,
   UnauthorizedException,
@@ -11,9 +9,12 @@ import { JwtService, JwtSignOptions } from '@nestjs/jwt';
 import { PrismaService } from '../../prisma/prisma.service';
 import { SigninDto } from './dto/signin.dto';
 import { SignupDto } from './dto/signup.dto';
-import { emailVerificationConfiguration, jwtConfiguration } from '../../config';
+import {
+  emailVerificationConfiguration,
+  jwtConfiguration,
+  passwordRecoveryConfiguration,
+} from '../../config';
 import type { ConfigType } from '@nestjs/config';
-import { createHash } from 'node:crypto';
 import { TokenPayload } from '../../common/interfaces/auth.interface';
 import { JwtTokenType } from '../../common/enums/jwt.enum';
 import { accounts, DeviceType, UserRole, UserStatus } from '@prisma/client';
@@ -21,13 +22,19 @@ import argon2 from 'argon2';
 import { AccountsService } from '../accounts/accounts.service';
 import { VerifyEmailDto } from './dto/verify-email.dto';
 import { MailService } from '../mail/mail.service';
-import { v4 as uuidv4 } from 'uuid';
-import { RedisService } from '../../common/redis/redis.service';
+import { AuthTokenService } from './services/auth-token.service';
+import { ForgotPasswordDto } from './dto/forgot-password.dto';
+import { ResetPasswordDto } from './dto/reset-password.dto';
 
 const VERIFY_EMAIL_TOKEN_PREFIX = 'verify_email';
 const VERIFY_EMAIL_USER_PREFIX = 'verify_email_user';
 const VERIFY_EMAIL_COOLDOWN_PREFIX = 'verify_email_cooldown';
+const PASSWORD_RESET_TOKEN_PREFIX = 'password_reset';
+const PASSWORD_RESET_USER_PREFIX = 'password_reset_user';
+const PASSWORD_RESET_COOLDOWN_PREFIX = 'password_reset_cooldown';
 const EMAIL_VERIFICATION_DEVICE_ID = 'email-verification';
+const PASSWORD_RESET_SUCCESS_MESSAGE =
+  'If an account exists for this email, a password reset link has been sent.';
 
 type VerificationAccount = Pick<
   accounts,
@@ -44,15 +51,15 @@ export class AuthService {
     private readonly emailVerificationConfig: ConfigType<
       typeof emailVerificationConfiguration
     >,
+    @Inject(passwordRecoveryConfiguration.KEY)
+    private readonly passwordRecoveryConfig: ConfigType<
+      typeof passwordRecoveryConfiguration
+    >,
     private accountService: AccountsService,
     private prismaService: PrismaService,
     private mailService: MailService,
-    private readonly redisService: RedisService,
+    private readonly authTokenService: AuthTokenService,
   ) {}
-
-  private hashToken(token: string) {
-    return createHash('sha256').update(token).digest('hex');
-  }
 
   async signup(signupDto: SignupDto) {
     const existingAccount = await this.accountService.findAccountByEmail(
@@ -92,9 +99,10 @@ export class AuthService {
   }
 
   async verifyEmail(verifyEmailDto: VerifyEmailDto) {
-    const hashedToken = this.hashToken(verifyEmailDto.token);
-    const cacheKey = this.verificationTokenKey(hashedToken);
-    const accountId = await this.redisService.get(cacheKey);
+    const accountId = await this.authTokenService.getSubjectId(
+      VERIFY_EMAIL_TOKEN_PREFIX,
+      verifyEmailDto.token,
+    );
 
     if (!accountId) {
       throw new BadRequestException('Invalid or expired verification token');
@@ -119,9 +127,15 @@ export class AuthService {
       data: { status: UserStatus.ACTIVE },
     });
 
-    await this.redisService.del(cacheKey);
-    await this.redisService.del(this.verificationUserKey(account.id));
-    await this.redisService.del(this.verificationCooldownKey(account.id));
+    await this.authTokenService.invalidateToken(
+      {
+        tokenPrefix: VERIFY_EMAIL_TOKEN_PREFIX,
+        subjectPrefix: VERIFY_EMAIL_USER_PREFIX,
+        cooldownPrefix: VERIFY_EMAIL_COOLDOWN_PREFIX,
+      },
+      account.id,
+      verifyEmailDto.token,
+    );
 
     return {
       message: 'Email verified successfully',
@@ -148,23 +162,118 @@ export class AuthService {
     }
 
     await this.assertVerificationCooldown(account.id);
-    const oldHashedToken = await this.redisService.get(
-      this.verificationUserKey(account.id),
-    );
-
-    if (oldHashedToken) {
-      await this.redisService.del(this.verificationTokenKey(oldHashedToken));
-    }
-
     await this.issueVerificationEmail(account);
-    await this.redisService.set(
-      this.verificationCooldownKey(account.id),
-      '1',
+    await this.authTokenService.setCooldown(
+      VERIFY_EMAIL_COOLDOWN_PREFIX,
+      account.id,
       this.emailVerificationConfig.resendCooldownSeconds,
     );
 
     return {
       message: 'Verification email sent',
+      data: null,
+    };
+  }
+
+  async forgotPassword(forgotPasswordDto: ForgotPasswordDto) {
+    const account = await this.accountService.findAccountByEmail(
+      forgotPasswordDto.email,
+    );
+
+    if (!account || account.status !== UserStatus.ACTIVE) {
+      return {
+        message: PASSWORD_RESET_SUCCESS_MESSAGE,
+        data: null,
+      };
+    }
+
+    await this.authTokenService.assertCooldown(
+      PASSWORD_RESET_COOLDOWN_PREFIX,
+      account.id,
+      this.passwordRecoveryConfig.resendCooldownSeconds,
+      (waitSeconds) =>
+        `Please wait ${waitSeconds} seconds before requesting another password reset email`,
+    );
+
+    const { token } = await this.authTokenService.rotateToken({
+      tokenPrefix: PASSWORD_RESET_TOKEN_PREFIX,
+      subjectPrefix: PASSWORD_RESET_USER_PREFIX,
+      subjectId: account.id,
+      ttlSeconds: this.passwordRecoveryConfig.ttlSeconds,
+    });
+
+    await this.mailService.sendPasswordResetLink(
+      account,
+      token,
+      this.passwordRecoveryConfig.ttlSeconds,
+    );
+    await this.authTokenService.setCooldown(
+      PASSWORD_RESET_COOLDOWN_PREFIX,
+      account.id,
+      this.passwordRecoveryConfig.resendCooldownSeconds,
+    );
+
+    return {
+      message: PASSWORD_RESET_SUCCESS_MESSAGE,
+      data: null,
+    };
+  }
+
+  async resetPassword(resetPasswordDto: ResetPasswordDto) {
+    if (
+      resetPasswordDto.confirmPassword !== undefined &&
+      resetPasswordDto.password !== resetPasswordDto.confirmPassword
+    ) {
+      throw new BadRequestException('Passwords do not match');
+    }
+
+    const accountId = await this.authTokenService.getSubjectId(
+      PASSWORD_RESET_TOKEN_PREFIX,
+      resetPasswordDto.token,
+    );
+
+    if (!accountId) {
+      throw new BadRequestException('Invalid or expired reset token');
+    }
+
+    const account = await this.prismaService.accounts.findUnique({
+      where: {
+        id: accountId,
+        status: UserStatus.ACTIVE,
+      },
+    });
+
+    if (!account) {
+      throw new BadRequestException('Invalid or expired reset token');
+    }
+
+    const hashedPassword = await argon2.hash(resetPasswordDto.password);
+
+    await this.prismaService.accounts.update({
+      where: { id: account.id },
+      data: { password: hashedPassword },
+    });
+    await this.authTokenService.invalidateToken(
+      {
+        tokenPrefix: PASSWORD_RESET_TOKEN_PREFIX,
+        subjectPrefix: PASSWORD_RESET_USER_PREFIX,
+        cooldownPrefix: PASSWORD_RESET_COOLDOWN_PREFIX,
+      },
+      account.id,
+      resetPasswordDto.token,
+    );
+    await this.prismaService.sessions.updateMany({
+      where: {
+        userId: account.id,
+        isRevoked: false,
+      },
+      data: {
+        isRevoked: true,
+      },
+    });
+
+    return {
+      message: 'Password reset successfully',
       data: null,
     };
   }
@@ -327,52 +436,23 @@ export class AuthService {
   }
 
   private async issueVerificationEmail(account: VerificationAccount) {
-    const token = uuidv4();
-    const hashedToken = this.hashToken(token);
-
-    await this.redisService.set(
-      this.verificationTokenKey(hashedToken),
-      account.id,
-      this.emailVerificationConfig.ttlSeconds,
-    );
-    await this.redisService.set(
-      this.verificationUserKey(account.id),
-      hashedToken,
-      this.emailVerificationConfig.ttlSeconds,
-    );
+    const { token } = await this.authTokenService.rotateToken({
+      tokenPrefix: VERIFY_EMAIL_TOKEN_PREFIX,
+      subjectPrefix: VERIFY_EMAIL_USER_PREFIX,
+      subjectId: account.id,
+      ttlSeconds: this.emailVerificationConfig.ttlSeconds,
+    });
     await this.mailService.sendVerificationCode(account, token);
   }
 
   private async assertVerificationCooldown(userId: string) {
-    const cooldownKey = this.verificationCooldownKey(userId);
-    const cooldown = await this.redisService.get(cooldownKey);
-
-    if (!cooldown) {
-      return;
-    }
-
-    const secondsRemaining = await this.redisService.ttl(cooldownKey);
-    const waitSeconds =
-      secondsRemaining > 0
-        ? secondsRemaining
-        : this.emailVerificationConfig.resendCooldownSeconds;
-
-    throw new HttpException(
-      `Please wait ${waitSeconds} seconds before requesting another verification email`,
-      HttpStatus.TOO_MANY_REQUESTS,
+    await this.authTokenService.assertCooldown(
+      VERIFY_EMAIL_COOLDOWN_PREFIX,
+      userId,
+      this.emailVerificationConfig.resendCooldownSeconds,
+      (waitSeconds) =>
+        `Please wait ${waitSeconds} seconds before requesting another verification email`,
     );
-  }
-
-  private verificationTokenKey(hashedToken: string) {
-    return `${VERIFY_EMAIL_TOKEN_PREFIX}:${hashedToken}`;
-  }
-
-  private verificationUserKey(userId: string) {
-    return `${VERIFY_EMAIL_USER_PREFIX}:${userId}`;
-  }
-
-  private verificationCooldownKey(userId: string) {
-    return `${VERIFY_EMAIL_COOLDOWN_PREFIX}:${userId}`;
   }
 
   private async generateToken(

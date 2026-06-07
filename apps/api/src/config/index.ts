@@ -4,3 +4,4 @@ export * from './cookies.config';
 export * from './redis.config';
 export * from './mail.config';
 export * from './email-verification.config';
+export * from './password-recovery.config';

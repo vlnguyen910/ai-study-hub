@@ -10,17 +10,41 @@ import {
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { Button, Card, PageShell } from "@/components";
+import { forgotPasswordService } from "../services/auth.service";
 
 export function AuthForgotPasswordScreen() {
   const [email, setEmail] = useState("");
+  const [error, setError] = useState("");
+  const [submittedEmail, setSubmittedEmail] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
-  const handleSendCode = () => {
-    if (!email) return;
+  const handleSendCode = async () => {
+    const normalizedEmail = email.trim();
+
+    if (!normalizedEmail) {
+      setError("Vui lòng nhập email.");
+      return;
+    }
+
+    if (!/\S+@\S+\.\S+/.test(normalizedEmail)) {
+      setError("Email không hợp lệ.");
+      return;
+    }
+
+    setError("");
     setIsLoading(true);
-    setTimeout(() => {
+    try {
+      await forgotPasswordService({ email: normalizedEmail });
+      setSubmittedEmail(normalizedEmail);
+    } catch (error) {
+      setError(
+        error instanceof Error
+          ? error.message
+          : "Không thể gửi liên kết đặt lại mật khẩu.",
+      );
+    } finally {
       setIsLoading(false);
-    }, 1500);
+    }
   };
 
   return (
@@ -52,8 +76,8 @@ export function AuthForgotPasswordScreen() {
               Quên mật khẩu
             </Text>
             <Text className="text-sm font-medium text-outline text-center leading-5 px-2">
-              Vui lòng nhập địa chỉ email đã đăng ký. Chúng tôi sẽ gửi một mã
-              xác nhận để bạn có thể đặt lại mật khẩu mới.
+              Vui lòng nhập địa chỉ email đã đăng ký. Chúng tôi sẽ gửi một liên
+              kết để bạn đặt lại mật khẩu mới.
             </Text>
           </View>
 
@@ -80,22 +104,45 @@ export function AuthForgotPasswordScreen() {
                     autoCapitalize="none"
                     autoCorrect={false}
                     value={email}
-                    onChangeText={setEmail}
+                    onChangeText={(value) => {
+                      setEmail(value);
+                      if (error) {
+                        setError("");
+                      }
+                    }}
                   />
                 </View>
+                {error ? (
+                  <Text className="text-xs font-medium text-error mt-2">
+                    {error}
+                  </Text>
+                ) : null}
               </View>
+
+              {submittedEmail ? (
+                <View className="rounded-xl border border-primary-fixed-dim bg-[#eef3ff] p-4">
+                  <Text className="text-sm font-semibold text-on-background">
+                    Kiểm tra hộp thư của bạn
+                  </Text>
+                  <Text className="text-xs font-medium text-outline mt-1 leading-5">
+                    Nếu tài khoản tồn tại, liên kết đặt lại mật khẩu đã được gửi
+                    đến {submittedEmail}.
+                  </Text>
+                </View>
+              ) : null}
 
               {/* Submit Button */}
               <Button
                 variant="primary"
                 fullWidth
                 loading={isLoading}
+                disabled={isLoading}
                 onPress={handleSendCode}
                 rightIcon={
                   <Ionicons name="paper-plane" size={16} color="#ffffff" />
                 }
               >
-                Gửi mã xác nhận
+                Gửi liên kết đặt lại
               </Button>
 
               {/* Contact Support Link */}

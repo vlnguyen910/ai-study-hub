@@ -4,13 +4,16 @@ import { useState } from "react";
 import Link from "next/link";
 import type { ReactElement } from "react";
 import { Button } from "@repo/ui/button";
+import { forgotPassword } from "../auth-api";
 
 export default function ForgotPasswordPage(): ReactElement {
   const [email, setEmail] = useState("");
   const [error, setError] = useState("");
+  const [apiError, setApiError] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
 
-  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
     if (!email) {
@@ -24,7 +27,21 @@ export default function ForgotPasswordPage(): ReactElement {
     }
 
     setError("");
-    setSubmitted(true);
+    setApiError("");
+    setIsSubmitting(true);
+
+    try {
+      await forgotPassword({ email });
+      setSubmitted(true);
+    } catch (error) {
+      setApiError(
+        error instanceof Error
+          ? error.message
+          : "Could not send password reset link",
+      );
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -83,7 +100,10 @@ export default function ForgotPasswordPage(): ReactElement {
                 <Button
                   appName="web"
                   className="w-full h-12 bg-blue-600 text-white font-semibold hover:bg-blue-700 rounded"
-                  onClick={() => setSubmitted(false)}
+                  onClick={() => {
+                    setApiError("");
+                    setSubmitted(false);
+                  }}
                 >
                   Send again
                 </Button>
@@ -128,12 +148,19 @@ export default function ForgotPasswordPage(): ReactElement {
                 ) : null}
               </div>
 
+              {apiError ? (
+                <div className="rounded border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+                  {apiError}
+                </div>
+              ) : null}
+
               <Button
                 appName="web"
                 className="w-full h-12 bg-blue-600 text-white font-semibold hover:bg-blue-700 rounded mt-2"
                 type="submit"
+                disabled={isSubmitting}
               >
-                Send reset link
+                {isSubmitting ? "Sending..." : "Send reset link"}
               </Button>
 
               <div className="text-center text-sm text-gray-600">

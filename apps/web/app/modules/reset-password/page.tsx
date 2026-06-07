@@ -2,15 +2,21 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { useParams } from "next/navigation";
 import type { ReactElement } from "react";
 import { Button } from "@repo/ui/button";
+import { resetPassword } from "../auth-api";
 
 export default function ResetPasswordPage(): ReactElement {
+  const params = useParams<{ token?: string | string[] }>();
+  const token = Array.isArray(params.token) ? params.token[0] : params.token;
   const [formData, setFormData] = useState({
     password: "",
     confirmPassword: "",
   });
   const [errors, setErrors] = useState({ password: "", confirmPassword: "" });
+  const [apiError, setApiError] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
 
   const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -45,12 +51,57 @@ export default function ResetPasswordPage(): ReactElement {
     return isValid;
   };
 
-  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+
+    if (!token) {
+      setApiError("Invalid password reset link.");
+      return;
+    }
+
     if (validate()) {
-      setSubmitted(true);
+      setApiError("");
+      setIsSubmitting(true);
+      try {
+        await resetPassword({
+          token,
+          password: formData.password,
+          confirmPassword: formData.confirmPassword,
+        });
+        setFormData({ password: "", confirmPassword: "" });
+        setSubmitted(true);
+      } catch (error) {
+        setApiError(
+          error instanceof Error ? error.message : "Could not reset password",
+        );
+      } finally {
+        setIsSubmitting(false);
+      }
     }
   };
+
+  if (!token && !submitted) {
+    return (
+      <div className="min-h-screen bg-gray-100 flex flex-col">
+        <div className="flex-1 flex items-center justify-center p-8">
+          <div className="w-full max-w-md bg-white rounded-lg shadow p-12 flex flex-col gap-6">
+            <h1 className="text-2xl font-bold text-center text-gray-900">
+              Reset password
+            </h1>
+            <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+              Invalid password reset link.
+            </div>
+            <Link
+              href="/forgot-password"
+              className="inline-flex h-12 w-full items-center justify-center rounded bg-blue-600 px-4 text-sm font-semibold text-white hover:bg-blue-700"
+            >
+              Request new link
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-100 flex flex-col">
@@ -165,12 +216,19 @@ export default function ResetPasswordPage(): ReactElement {
                 ) : null}
               </div>
 
+              {apiError ? (
+                <div className="rounded border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+                  {apiError}
+                </div>
+              ) : null}
+
               <Button
                 appName="web"
                 type="submit"
                 className="w-full h-12 bg-blue-600 text-white font-semibold hover:bg-blue-700 rounded mt-2"
+                disabled={isSubmitting}
               >
-                Update password
+                {isSubmitting ? "Updating..." : "Update password"}
               </Button>
 
               <div className="text-center text-sm text-gray-600">

@@ -6,13 +6,18 @@ import { createHash } from 'node:crypto';
 import { v4 as uuidv4 } from 'uuid';
 import { DeviceType, UserRole, UserStatus } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
-import { emailVerificationConfiguration, jwtConfiguration } from '../../config';
+import {
+  emailVerificationConfiguration,
+  jwtConfiguration,
+  passwordRecoveryConfiguration,
+} from '../../config';
 import { AccountsService } from '../accounts/accounts.service';
 import { AuthService } from './auth.service';
 import { JwtTokenType } from '../../common/enums/jwt.enum';
 import { TokenPayload } from '../../common/interfaces/auth.interface';
 import { MailService } from '../mail/mail.service';
 import { RedisService } from '../../common/redis/redis.service';
+import { AuthTokenService } from './services/auth-token.service';
 
 jest.mock('uuid', () => ({
   v4: jest.fn(() => 'email-verification-token'),
@@ -25,6 +30,7 @@ describe('AuthService', () => {
 
   const prismaMock = {
     accounts: {
+      findUnique: jest.fn(),
       update: jest.fn(),
     },
     sessions: {
@@ -53,6 +59,7 @@ describe('AuthService', () => {
 
   const mailServiceMock = {
     sendVerificationCode: jest.fn(),
+    sendPasswordResetLink: jest.fn(),
   };
 
   const jwtConfigMock = {
@@ -68,12 +75,18 @@ describe('AuthService', () => {
     maxAttempts: 5,
   };
 
+  const passwordRecoveryConfigMock = {
+    ttlSeconds: 10 * 60,
+    resendCooldownSeconds: 60,
+  };
+
   beforeEach(async () => {
     jest.clearAllMocks();
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         AuthService,
+        AuthTokenService,
         {
           provide: PrismaService,
           useValue: prismaMock,
@@ -101,6 +114,10 @@ describe('AuthService', () => {
         {
           provide: emailVerificationConfiguration.KEY,
           useValue: emailVerificationConfigMock,
+        },
+        {
+          provide: passwordRecoveryConfiguration.KEY,
+          useValue: passwordRecoveryConfigMock,
         },
       ],
     }).compile();
@@ -330,6 +347,187 @@ describe('AuthService', () => {
       }),
     );
     expect(mailServiceMock.sendVerificationCode).not.toHaveBeenCalled();
+  });
+
+  it('should send a password reset link for an active account', async () => {
+    (mockedUuidV4 as jest.Mock).mockReturnValueOnce('password-reset-token');
+    const hashedToken = createHash('sha256')
+      .update('password-reset-token')
+      .digest('hex');
+    accountsServiceMock.findAccountByEmail.mockResolvedValue({
+      id: 'user-1',
+      email: 'new-user@example.com',
+      name: 'New User',
+      password: 'hashed-password',
+      role: UserRole.USER,
+      status: UserStatus.ACTIVE,
+    });
+    redisServiceMock.get
+      .mockResolvedValueOnce(null)
+      .mockResolvedValueOnce('old-reset-token');
+    redisServiceMock.del.mockResolvedValue(1);
+    redisServiceMock.set.mockResolvedValue('OK');
+    mailServiceMock.sendPasswordResetLink.mockResolvedValue(undefined);
+
+    await expect(
+      service.forgotPassword({ email: 'new-user@example.com' }),
+    ).resolves.toEqual({
+      message:
+        'If an account exists for this email, a password reset link has been sent.',
+      data: null,
+    });
+    expect(redisServiceMock.get).toHaveBeenNthCalledWith(
+      1,
+      'password_reset_cooldown:user-1',
+    );
+    expect(redisServiceMock.get).toHaveBeenNthCalledWith(
+      2,
+      'password_reset_user:user-1',
+    );
+    expect(redisServiceMock.del).toHaveBeenCalledWith(
+      'password_reset:old-reset-token',
+    );
+    expect(redisServiceMock.set).toHaveBeenCalledWith(
+      `password_reset:${hashedToken}`,
+      'user-1',
+      passwordRecoveryConfigMock.ttlSeconds,
+    );
+    expect(redisServiceMock.set).toHaveBeenCalledWith(
+      'password_reset_user:user-1',
+      hashedToken,
+      passwordRecoveryConfigMock.ttlSeconds,
+    );
+    expect(redisServiceMock.set).toHaveBeenCalledWith(
+      'password_reset_cooldown:user-1',
+      '1',
+      passwordRecoveryConfigMock.resendCooldownSeconds,
+    );
+    expect(mailServiceMock.sendPasswordResetLink).toHaveBeenCalledWith(
+      expect.objectContaining({
+        id: 'user-1',
+        email: 'new-user@example.com',
+      }),
+      'password-reset-token',
+      passwordRecoveryConfigMock.ttlSeconds,
+    );
+  });
+
+  it('should not reveal whether forgot-password email exists', async () => {
+    accountsServiceMock.findAccountByEmail.mockResolvedValue(null);
+
+    await expect(
+      service.forgotPassword({ email: 'missing@example.com' }),
+    ).resolves.toEqual({
+      message:
+        'If an account exists for this email, a password reset link has been sent.',
+      data: null,
+    });
+    expect(mailServiceMock.sendPasswordResetLink).not.toHaveBeenCalled();
+    expect(redisServiceMock.set).not.toHaveBeenCalled();
+  });
+
+  it('should enforce password reset cooldown for active accounts', async () => {
+    accountsServiceMock.findAccountByEmail.mockResolvedValue({
+      id: 'user-1',
+      email: 'new-user@example.com',
+      name: 'New User',
+      password: 'hashed-password',
+      role: UserRole.USER,
+      status: UserStatus.ACTIVE,
+    });
+    redisServiceMock.get.mockResolvedValueOnce('1');
+    redisServiceMock.ttl.mockResolvedValue(42);
+
+    await expect(
+      service.forgotPassword({ email: 'new-user@example.com' }),
+    ).rejects.toEqual(
+      expect.objectContaining({
+        message:
+          'Please wait 42 seconds before requesting another password reset email',
+      }),
+    );
+    expect(mailServiceMock.sendPasswordResetLink).not.toHaveBeenCalled();
+  });
+
+  it('should reset password, invalidate token, and revoke active sessions', async () => {
+    const token = 'password-reset-token';
+    const hashedToken = createHash('sha256').update(token).digest('hex');
+
+    redisServiceMock.get.mockResolvedValue('user-1');
+    prismaMock.accounts.findUnique.mockResolvedValue({
+      id: 'user-1',
+      email: 'new-user@example.com',
+      name: 'New User',
+      password: 'old-hashed-password',
+      role: UserRole.USER,
+      status: UserStatus.ACTIVE,
+    });
+    prismaMock.accounts.update.mockResolvedValue({
+      id: 'user-1',
+      status: UserStatus.ACTIVE,
+    });
+    prismaMock.sessions.updateMany.mockResolvedValue({ count: 2 });
+    redisServiceMock.del.mockResolvedValue(1);
+
+    await expect(
+      service.resetPassword({
+        token,
+        password: 'NewPassword123!',
+        confirmPassword: 'NewPassword123!',
+      }),
+    ).resolves.toEqual({
+      message: 'Password reset successfully',
+      data: null,
+    });
+    expect(redisServiceMock.get).toHaveBeenCalledWith(
+      `password_reset:${hashedToken}`,
+    );
+    expect(prismaMock.accounts.update).toHaveBeenCalledWith({
+      where: { id: 'user-1' },
+      data: { password: expect.any(String) },
+    });
+    expect(
+      await argon2.verify(
+        prismaMock.accounts.update.mock.calls[0][0].data.password,
+        'NewPassword123!',
+      ),
+    ).toBe(true);
+    expect(redisServiceMock.del).toHaveBeenCalledWith(
+      `password_reset:${hashedToken}`,
+    );
+    expect(redisServiceMock.del).toHaveBeenCalledWith(
+      'password_reset_user:user-1',
+    );
+    expect(redisServiceMock.del).toHaveBeenCalledWith(
+      'password_reset_cooldown:user-1',
+    );
+    expect(prismaMock.sessions.updateMany).toHaveBeenCalledWith({
+      where: {
+        userId: 'user-1',
+        isRevoked: false,
+      },
+      data: {
+        isRevoked: true,
+      },
+    });
+  });
+
+  it('should reject invalid password reset tokens', async () => {
+    redisServiceMock.get.mockResolvedValue(null);
+
+    await expect(
+      service.resetPassword({
+        token: 'invalid-token',
+        password: 'NewPassword123!',
+        confirmPassword: 'NewPassword123!',
+      }),
+    ).rejects.toEqual(
+      expect.objectContaining({
+        message: 'Invalid or expired reset token',
+      }),
+    );
+    expect(prismaMock.accounts.update).not.toHaveBeenCalled();
+    expect(prismaMock.sessions.updateMany).not.toHaveBeenCalled();
   });
 
   it('should sign in successfully with valid credentials', async () => {
