@@ -2,8 +2,9 @@ import { Inject, Injectable, Logger } from '@nestjs/common';
 import type { ConfigType } from '@nestjs/config';
 import nodemailer, { type Transporter } from 'nodemailer';
 import { mailConfiguration } from '../../config';
+import { accounts } from '@prisma/client';
 
-type SendVerificationCodeInput = {
+type VerificationEmail = {
   email: string;
   name: string;
   code: string;
@@ -21,23 +22,26 @@ export class MailService {
     this.transporter = this.createTransporter();
   }
 
-  async sendVerificationCode(input: SendVerificationCodeInput) {
+  async sendVerificationCode(account: accounts, token: string) {
     if (!this.transporter) {
-      this.logger.log(
-        `Email verification code for ${input.email}: ${input.code}`,
-      );
+      this.logger.log(`Email verification code for ${account.email}: ${token}`);
       return;
     }
 
     await this.transporter.sendMail({
       from: `"${this.mailConfig.fromName}" <${this.mailConfig.fromEmail}>`,
-      to: input.email,
+      to: account.email,
       subject: 'Verify your AI Study Hub email',
       text: [
-        `Hi ${input.name},`,
+        `Hi ${account.name},`,
         '',
-        `Your AI Study Hub verification code is ${input.code}.`,
-        'This code expires soon. If you did not create an account, ignore this email.',
+        `Click the link below to verify your email address and complete your registration:`,
+        `${this.mailConfig.frontendUrl}?token=${token}`,
+        '',
+        'If you did not create an account, please ignore this email.',
+        '',
+        'Best regards,',
+        'The AI Study Hub Team',
       ].join('\n'),
     });
   }

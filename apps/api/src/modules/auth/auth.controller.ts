@@ -47,15 +47,15 @@ export class AuthController {
     return this.authService.verifyEmail(verifyEmailDto);
   }
 
-  @Version('1')
-  @Public()
-  @HttpCode(HttpStatus.OK)
-  @Post('resend-verification-code')
-  resendVerificationCode(
-    @Body() resendVerificationCodeDto: ResendVerificationCodeDto,
-  ) {
-    return this.authService.resendVerificationCode(resendVerificationCodeDto);
-  }
+  // @Version('1')
+  // @Public()
+  // @HttpCode(HttpStatus.OK)
+  // @Post('resend-verification-code')
+  // resendVerificationCode(
+  //   @Body() resendVerificationCodeDto: ResendVerificationCodeDto,
+  // ) {
+  //   return this.authService.resendVerificationCode(resendVerificationCodeDto);
+  // }
 
   @Version('1')
   @Public()

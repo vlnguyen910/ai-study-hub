@@ -34,6 +34,7 @@ describe('MailService', () => {
       smtpSecure: false,
       fromEmail: 'noreply@example.com',
       fromName: 'AI Study Hub',
+      frontendUrl: 'http://localhost:3000/verify-email',
     });
 
     await service.sendVerificationCode({
@@ -71,6 +72,7 @@ describe('MailService', () => {
       smtpSecure: false,
       fromEmail: 'noreply@example.com',
       fromName: 'AI Study Hub',
+      frontendUrl: 'http://localhost:3000/verify-email',
     });
 
     await service.sendVerificationCode({
