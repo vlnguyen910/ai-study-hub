@@ -19,7 +19,8 @@ import { AccountsService } from '../accounts/accounts.service';
 import { VerifyEmailDto } from './dto/verify-email.dto';
 import { ResendVerificationCodeDto } from './dto/resend-verification-code.dto';
 import { MailService } from '../mail/mail.service';
-import { VerificationCodeService } from './services/verification-code.service';
+import { v4 as uuidv4 } from 'uuid';
+import { RedisService } from '../../common/redis/redis.service';
 
 @Injectable()
 export class AuthService {
@@ -29,8 +30,8 @@ export class AuthService {
     private readonly jwtConfig: ConfigType<typeof jwtConfiguration>,
     private accountService: AccountsService,
     private prismaService: PrismaService,
-    private verificationCodeService: VerificationCodeService,
     private mailService: MailService,
+    private readonly redisService: RedisService,
   ) {}
 
   async signup(signupDto: SignupDto) {
@@ -59,16 +60,12 @@ export class AuthService {
       throw new BadRequestException('Unable to create account');
     }
 
-    const code = await this.verificationCodeService.issueCode({
-      accountId: account.id,
-      email: account.email,
-    });
+    const token = uuidv4();
+    await this.mailService.sendVerificationCode(account, token);
 
-    await this.mailService.sendVerificationCode({
-      email: account.email,
-      name: account.name,
-      code,
-    });
+    const cacheKey = `verification_code:${token}`;
+
+    await this.redisService.set(cacheKey, account.id, 15 * 60); // Store for 15 minutes
 
     return {
       message: 'Signup successful. Please verify your email.',
@@ -77,29 +74,21 @@ export class AuthService {
   }
 
   async verifyEmail(verifyEmailDto: VerifyEmailDto) {
-    const account = await this.accountService.findAccountByEmail(
-      verifyEmailDto.email,
-    );
+    const cacheKey = `verification_code:${verifyEmailDto.token}`;
+    const accountId = await this.redisService.get(cacheKey);
+
+    if (!accountId) {
+      throw new BadRequestException('Invalid or expired verification token');
+    }
+
+    const account = await this.accountService.findOne(accountId);
 
     if (!account) {
-      throw new BadRequestException('Invalid or expired verification code');
+      throw new BadRequestException('Account cannot be verified');
     }
 
     if (account.status === UserStatus.ACTIVE) {
       throw new BadRequestException('Email is already verified');
-    }
-
-    if (account.status !== UserStatus.UNVERIFIED) {
-      throw new BadRequestException('Account cannot be verified');
-    }
-
-    const accountId = await this.verificationCodeService.verifyCode(
-      account.email,
-      verifyEmailDto.code,
-    );
-
-    if (accountId !== account.id) {
-      throw new BadRequestException('Invalid or expired verification code');
     }
 
     await this.prismaService.accounts.update({
@@ -113,42 +102,42 @@ export class AuthService {
     };
   }
 
-  async resendVerificationCode(
-    resendVerificationCodeDto: ResendVerificationCodeDto,
-  ) {
-    const account = await this.accountService.findAccountByEmail(
-      resendVerificationCodeDto.email,
-    );
+  // async resendVerificationCode(
+  //   resendVerificationCodeDto: ResendVerificationCodeDto,
+  // ) {
+  //   const account = await this.accountService.findAccountByEmail(
+  //     resendVerificationCodeDto.email,
+  //   );
 
-    if (!account) {
-      throw new BadRequestException('Account cannot be verified');
-    }
+  //   if (!account) {
+  //     throw new BadRequestException('Account cannot be verified');
+  //   }
 
-    if (account.status === UserStatus.ACTIVE) {
-      throw new BadRequestException('Email is already verified');
-    }
+  //   if (account.status === UserStatus.ACTIVE) {
+  //     throw new BadRequestException('Email is already verified');
+  //   }
 
-    if (account.status !== UserStatus.UNVERIFIED) {
-      throw new BadRequestException('Account cannot be verified');
-    }
+  //   if (account.status !== UserStatus.UNVERIFIED) {
+  //     throw new BadRequestException('Account cannot be verified');
+  //   }
 
-    const code = await this.verificationCodeService.issueCode({
-      accountId: account.id,
-      email: account.email,
-      enforceCooldown: true,
-    });
+  //   const code = await this.verificationCodeService.issueCode({
+  //     accountId: account.id,
+  //     email: account.email,
+  //     enforceCooldown: true,
+  //   });
 
-    await this.mailService.sendVerificationCode({
-      email: account.email,
-      name: account.name,
-      code,
-    });
+  //   await this.mailService.sendVerificationCode({
+  //     email: account.email,
+  //     name: account.name,
+  //     code,
+  //   });
 
-    return {
-      message: 'Verification code sent',
-      data: null,
-    };
-  }
+  //   return {
+  //     message: 'Verification code sent',
+  //     data: null,
+  //   };
+  // }
 
   async signin(signinDto: SigninDto, deviceType: DeviceType) {
     const account = await this.accountService.findAccountByEmail(

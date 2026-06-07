@@ -22,4 +22,5 @@ export const mailConfiguration = registerAs('mail', () => ({
   smtpSecure: parseBoolean(process.env.MAILTRAP_SMTP_SECURE, false),
   fromEmail: process.env.MAILTRAP_FROM_EMAIL || 'noreply@ai-study-hub.local',
   fromName: process.env.MAILTRAP_FROM_NAME || 'AI Study Hub',
+  frontendUrl: process.env.FRONTEND_URL || 'http://localhost:3000/verify-email',
 }));
