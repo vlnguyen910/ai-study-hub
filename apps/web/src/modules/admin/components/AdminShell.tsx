@@ -4,8 +4,8 @@ import { useRouter } from "next/navigation";
 import type { ReactNode } from "react";
 
 import { SideNav } from "@/components/layout/SideNav";
-import { ROUTE_PATHS } from "../../../routes/router.const";
-import { useAuthStore } from "../../../stores/auth/store";
+import { ROUTE_PATHS } from "@/routes/router.const";
+import { useAuthStore } from "@/stores/auth/store";
 import { ADMIN_NAV_ITEMS } from "@/constants/nav.const";
 import { UserInfo } from "@/components/ui/UserInfo";
 

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { getLoginRedirectHref } from "../app/lib/axios";
+import { getLoginRedirectHref } from "../src/lib/axios";
 
 describe("auth redirect helpers", () => {
   it("builds login redirect URLs for protected pages", () => {

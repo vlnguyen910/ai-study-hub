@@ -13,7 +13,7 @@ This folder manages:
 ## Folder Structure
 
 ```
-app/routes/
+src/routes/
 ├── routes.const.ts        # ROUTE_PATHS constant with all routes
 ├── ProtectedRoute.tsx     # Client-side route protection component
 ├── index.ts               # Central export point
@@ -362,7 +362,7 @@ These can be used to:
 1. Add to `ROUTE_PATHS.PROTECTED_ROUTES` in `routes.const.ts`
 2. Add to `USER_PROTECTED_ROUTES` in `user/user.routes.ts`
 3. Add config to `userRouterConfig`
-4. Create page in `app/modules/`
+4. Create page in `src/modules/`
 5. Wrap with `<ProtectedRoute>` or implement in middleware
 
 ### To Add an Admin Route
@@ -395,9 +395,9 @@ expect(
 
 ## Related Files
 
-- `app/types/index.ts` - User type definitions
-- `app/config/index.ts` - App configuration
-- `app/modules/` - Page components
+- `src/types/index.ts` - User type definitions
+- `src/config/index.ts` - App configuration
+- `src/modules/` - Page components
 - `middleware.ts` - Server-side route protection (if implemented)
 
 ## Future Enhancements

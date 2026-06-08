@@ -6,7 +6,7 @@ export default defineConfig({
   plugins: [react()],
   resolve: {
     alias: {
-      "@": path.resolve(__dirname, "./app"),
+      "@": path.resolve(__dirname, "./src"),
     },
   },
   test: {
@@ -22,8 +22,8 @@ export default defineConfig({
         functions: 80,
         statements: 80,
       },
-      include: ["app/**/*.{ts,tsx}"],
-      exclude: ["app/**/layout.tsx"],
+      include: ["src/**/*.{ts,tsx}"],
+      exclude: ["src/app/**/layout.tsx"],
     },
   },
 });
