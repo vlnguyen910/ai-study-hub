@@ -1,29 +1,42 @@
-import { Card } from "@/components/ui/Card";
+import Link from "next/link";
+import type { LibraryDocument } from "@/types/document.type";
+import { formatDate } from "@/utils";
 
 interface Props {
-  readonly document: any;
+  readonly document: LibraryDocument;
 }
 
+/**
+ * Compact card for documents related by subject, shown in the detail sidebar.
+ * Links to the same detail route so the user can navigate between documents
+ * without returning to the library listing.
+ */
 export function RelatedDocumentCard({ document }: Props): React.JSX.Element {
   return (
-    <Card className="flex gap-4 p-4">
-      <div
-        className="
-          h-20
-          w-16
-          shrink-0
-          rounded-md
-          bg-slate-300
-        "
-      />
+    <Link href={`/documents/${document.id}`} className="group block">
+      <div className="flex gap-3 rounded-xl border border-outline-variant/60 p-3 transition-colors hover:bg-surface-container-low">
+        {/* Icon placeholder — format is not part of the list payload */}
+        <div className="flex h-12 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10">
+          <span className="material-symbols-outlined text-xl text-primary">
+            draft
+          </span>
+        </div>
 
-      <div className="space-y-2">
-        <h4 className="line-clamp-2 text-sm font-semibold">{document.title}</h4>
+        <div className="min-w-0 space-y-1">
+          <h4 className="line-clamp-2 text-sm font-semibold text-on-surface group-hover:text-primary transition-colors">
+            {document.title}
+          </h4>
 
-        <p className="text-xs text-on-surface-variant">{document.author}</p>
+          <p className="text-xs text-on-surface-variant">
+            {document.author.name}
+          </p>
 
-        <p className="text-xs">⭐ {document.rating}</p>
+          {/* Upload date */}
+          <p className="text-xs text-on-surface-variant/70">
+            {formatDate(document.createdAt)}
+          </p>
+        </div>
       </div>
-    </Card>
+    </Link>
   );
 }

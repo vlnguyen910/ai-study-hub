@@ -1,279 +1,296 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { Controller, useForm } from "react-hook-form";
+/**
+ * DocumentUploadForm
+ *
+ * Handles the metadata form and the full two-phase submit:
+ *   Phase 1 – Upload the file to Cloudinary (unsigned preset).
+ *   Phase 2 – POST /api/v1/documents with Cloudinary result + form values.
+ *
+ * Both phases run inside a single loading state triggered by one button,
+ * so the user experiences a single action: fill → click → done.
+ *
+ * Props:
+ *  - selectedFile  — the File held by the parent (UploadPage); required
+ *                    before the submit buttons become active.
+ *  - isSubmitting  — forwarded from this component back to the parent so
+ *                    FileUploadBox can disable itself during upload.
+ *  - onSubmittingChange — callback so the parent can mirror the loading state.
+ *  - onSuccess     — called after the document record is created; the parent
+ *                    shows the success banner and resets shared state.
+ *
+ * Subjects come from GET /api/v1/subjects (real API, not mock data).
+ * "Trường học" is read-only — it is derived from the subject on the backend.
+ */
 
+import { useEffect, useState, useCallback } from "react";
 import { Button } from "@/components/ui/Button";
 import { InputField } from "@/components/ui/InputField";
-import { Card } from "@/components/ui/Card";
-import { Switch } from "@/components/ui/Switch";
-import { Toast } from "@/components/ui/Toast";
-import { DEFAULT_UPLOAD_CONFIG } from "@/constants/upload.const";
-import { apiClient } from "@/lib/axios";
+import { fetchSubjects, createDocument } from "@/apis/document.api";
+import type { Subject } from "@/types/document.type";
 
-import FileUploadBox, { type CloudinaryUploadResult } from "./FileUploadBox";
+const CLOUD_NAME = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME ?? "ddxstobvd";
+const UPLOAD_PRESET = process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET ?? "";
 
-type UploadFormValues = {
-  title: string;
-  description: string;
-  isPublic: boolean;
-  uploadedFiles: CloudinaryUploadResult[];
-};
+// ── Internal Cloudinary helper ────────────────────────────────────────────────
 
-type CloudinaryResult = {
-  secure_url: string;
-  public_id: string;
+interface CloudinaryResult {
+  url: string;
+  publicId: string;
   bytes: number;
   format: string;
-  resource_type: string;
-};
+  resourceType: string;
+}
 
-const CLOUD_NAME = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME || "ddxstobvd";
-const UPLOAD_PRESET =
-  process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET ||
-  "YOUR_UNSIGNED_PRESET_NAME";
-
-async function uploadToCloudinary(file: File): Promise<CloudinaryUploadResult> {
-  if (!UPLOAD_PRESET || UPLOAD_PRESET === "YOUR_UNSIGNED_PRESET_NAME") {
-    throw new Error(
-      "Cloudinary upload preset is missing. Please set NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET.",
-    );
-  }
-
+async function uploadToCloudinary(file: File): Promise<CloudinaryResult> {
   const formData = new FormData();
   formData.append("file", file);
   formData.append("upload_preset", UPLOAD_PRESET);
 
-  const response = await fetch(
+  const res = await fetch(
     `https://api.cloudinary.com/v1_1/${CLOUD_NAME}/auto/upload`,
-    {
-      method: "POST",
-      body: formData,
-    },
+    { method: "POST", body: formData },
   );
 
-  if (!response.ok) {
-    const body = await response.text();
-    throw new Error(`Upload failed (${response.status}): ${body}`);
+  if (!res.ok) {
+    const body = await res.text();
+    throw new Error(`Cloudinary upload thất bại (${res.status}): ${body}`);
   }
 
-  const result = (await response.json()) as CloudinaryResult;
+  const data = await res.json();
   return {
-    url: result.secure_url,
-    publicId: result.public_id,
-    bytes: result.bytes,
-    format: result.format,
-    resourceType: result.resource_type,
+    url: data.secure_url as string,
+    publicId: data.public_id as string,
+    bytes: data.bytes as number,
+    format: data.format as string,
+    resourceType: data.resource_type as string,
   };
 }
 
-export function DocumentUploadForm(): React.JSX.Element {
-  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
-  const [isUploading, setIsUploading] = useState(false);
-  const [uploadError, setUploadError] = useState("");
-  const [toastMessage, setToastMessage] = useState<string | null>(null);
+// ── Props ─────────────────────────────────────────────────────────────────────
 
-  const {
-    control,
-    handleSubmit,
-    setValue,
-    watch,
-    formState: { errors, isSubmitting },
-  } = useForm<UploadFormValues>({
-    defaultValues: {
-      title: "",
-      description: "",
-      isPublic: true,
-      uploadedFiles: [],
+interface Props {
+  /** File selected in FileUploadBox, managed by the parent. */
+  selectedFile: File | null;
+  /** Lift the submitting state up so FileUploadBox can disable itself. */
+  onSubmittingChange: (isSubmitting: boolean) => void;
+  /** Called after the document is saved successfully. */
+  onSuccess: () => void;
+}
+
+// ── Component ─────────────────────────────────────────────────────────────────
+
+export function DocumentUploadForm({
+  selectedFile,
+  onSubmittingChange,
+  onSuccess,
+}: Props): React.JSX.Element {
+  // Form values
+  const [title, setTitle] = useState("");
+  const [subjectId, setSubjectId] = useState("");
+  const [description, setDescription] = useState("");
+
+  // Subjects from API
+  const [subjects, setSubjects] = useState<Subject[]>([]);
+  const [subjectsLoading, setSubjectsLoading] = useState(true);
+
+  useEffect(() => {
+    fetchSubjects(100)
+      .then((res) => setSubjects(res.subjects))
+      .catch(() => {
+        /* non-critical — dropdown degrades gracefully to empty */
+      })
+      .finally(() => setSubjectsLoading(false));
+  }, []);
+
+  // Submit state
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+
+  // ── Submit handler ────────────────────────────────────────────────────────
+
+  const handleSubmit = useCallback(
+    async (isPublic: boolean) => {
+      // Client-side guards
+      if (!selectedFile) {
+        setSubmitError("Vui lòng chọn tệp tài liệu trước.");
+        return;
+      }
+      if (!title.trim()) {
+        setSubmitError("Vui lòng nhập tên tài liệu.");
+        return;
+      }
+      if (!UPLOAD_PRESET) {
+        setSubmitError(
+          "Chưa cấu hình Cloudinary preset. Liên hệ quản trị viên.",
+        );
+        return;
+      }
+
+      setIsSubmitting(true);
+      onSubmittingChange(true);
+      setSubmitError(null);
+
+      try {
+        // Phase 1 — upload file to Cloudinary
+        const cloudResult = await uploadToCloudinary(selectedFile);
+
+        // Phase 2 — create document record in the API
+        await createDocument({
+          title: title.trim(),
+          description: description.trim() || undefined,
+          fileUrl: cloudResult.url,
+          publicId: cloudResult.publicId,
+          sizeInBytes: cloudResult.bytes,
+          format: cloudResult.format,
+          resourceType: cloudResult.resourceType,
+          subjectId: subjectId || undefined,
+          isPublic,
+        });
+
+        // Reset form on success
+        setTitle("");
+        setSubjectId("");
+        setDescription("");
+        onSuccess();
+      } catch (err) {
+        setSubmitError(
+          err instanceof Error
+            ? err.message
+            : "Đã xảy ra lỗi. Vui lòng thử lại.",
+        );
+      } finally {
+        setIsSubmitting(false);
+        onSubmittingChange(false);
+      }
     },
-  });
+    [
+      selectedFile,
+      title,
+      description,
+      subjectId,
+      onSubmittingChange,
+      onSuccess,
+    ],
+  );
 
-  const uploadedFiles = watch("uploadedFiles");
-  const isPublic = watch("isPublic");
-  const uploadedCount = uploadedFiles?.length ?? 0;
+  // ── Render ────────────────────────────────────────────────────────────────
 
-  const fileCountText = useMemo(() => {
-    return `Đã tải lên thành công ${uploadedCount}/5 tài liệu`;
-  }, [uploadedCount]);
-
-  const handleSelectFiles = (files: FileList | null) => {
-    const nextFiles = Array.from(files || []).slice(
-      0,
-      DEFAULT_UPLOAD_CONFIG.maxFiles,
-    );
-    setSelectedFiles(nextFiles);
-    setUploadError("");
-  };
-
-  const handleUpload = async () => {
-    if (selectedFiles.length === 0) {
-      setUploadError("Vui lòng chọn tài liệu để upload.");
-      setToastMessage("Chưa có file nào được chọn.");
-      return;
-    }
-
-    setIsUploading(true);
-    setUploadError("");
-    setToastMessage("Đang upload ...");
-
-    try {
-      const results = await Promise.all(
-        selectedFiles.map((file) => uploadToCloudinary(file)),
-      );
-
-      setValue("uploadedFiles", results, {
-        shouldDirty: true,
-        shouldTouch: true,
-        shouldValidate: true,
-      });
-      setSelectedFiles([]);
-      setToastMessage(
-        `Upload thành công ${results.length}/${DEFAULT_UPLOAD_CONFIG.maxFiles} tài liệu.`,
-      );
-    } catch (error) {
-      const message =
-        error instanceof Error ? error.message : "Lỗi upload không xác định.";
-      setUploadError(message);
-      setToastMessage(message);
-    } finally {
-      setIsUploading(false);
-    }
-  };
-
-  const onSubmit = async (values: UploadFormValues) => {
-    const payloads = values.uploadedFiles.map((file) => ({
-      title: values.title,
-      description: values.description,
-      fileUrl: file.url,
-      publicId: file.publicId,
-      sizeInBytes: file.bytes,
-      format: file.format,
-      resourceType: file.resourceType,
-      isPublic: values.isPublic,
-    }));
-
-    await Promise.all(
-      payloads.map((payload) => apiClient.post("/api/v1/documents", payload)),
-    );
-
-    setValue("uploadedFiles", [], {
-      shouldDirty: true,
-      shouldTouch: true,
-      shouldValidate: true,
-    });
-    setToastMessage(`Đã công khai ${payloads.length} tài liệu thành công.`);
-  };
+  const canSubmit = Boolean(selectedFile) && !isSubmitting;
 
   return (
-    <form
-      onSubmit={handleSubmit(onSubmit)}
-      className="
-        w-full
-        max-w-4xl
-        space-y-6
+    <form onSubmit={(e) => e.preventDefault()} className="space-y-5" noValidate>
+      {/* Title */}
+      <InputField
+        label="Tên tài liệu"
+        placeholder="Ví dụ: Đề cương Giải tích 1 - K65"
+        value={title}
+        onChange={(e) => setTitle(e.target.value)}
+        required
+        disabled={isSubmitting}
+      />
 
-      "
-    >
-      <Card className="space-y-5 p-5 shadow-sm shadow-black/5 lg:p-6">
-        {toastMessage ? (
-          <div className="mb-4">
-            <Toast message={toastMessage} />
-          </div>
-        ) : null}
+      {/* Subject + School */}
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        {/* Subject — populated from GET /api/v1/subjects */}
+        <label className="block">
+          <span className="mb-1 block text-xs font-medium text-on-surface-variant">
+            Môn học
+          </span>
+          <select
+            value={subjectId}
+            onChange={(e) => setSubjectId(e.target.value)}
+            disabled={subjectsLoading || isSubmitting}
+            className="
+              w-full rounded-xl border border-outline bg-surface
+              py-2 pl-3 pr-8 text-sm text-on-surface
+              focus:border-2 focus:border-primary focus:outline-none
+              disabled:cursor-not-allowed disabled:opacity-50
+            "
+          >
+            <option value="">Chọn môn học</option>
+            {subjects.map((s) => (
+              <option key={s.id} value={s.id}>
+                {s.name}
+              </option>
+            ))}
+          </select>
+        </label>
 
-        <div className="grid grid-cols-1 gap-8 lg:grid-cols-2 lg:items-start">
-          <section className="w-full">
-            <FileUploadBox
-              config={DEFAULT_UPLOAD_CONFIG}
-              selectedFiles={selectedFiles}
-              uploadedFiles={uploadedFiles}
-              isUploading={isUploading}
-              uploadError={uploadError}
-              onSelectFiles={handleSelectFiles}
-              onUpload={handleUpload}
-            />
-          </section>
+        {/*
+         * "Trường học" is not part of CreateDocumentDto — the backend
+         * derives it from the chosen subject. Shown as read-only context.
+         */}
+        <InputField
+          label="Trường học"
+          value="ĐH FPT (mặc định)"
+          readOnly
+          className="cursor-not-allowed opacity-60"
+        />
+      </div>
 
-          <section className="w-full space-y-6">
-            <div>
-              <Controller
-                control={control}
-                name="title"
-                rules={{ required: "Vui lòng nhập tên tài liệu" }}
-                render={({ field }) => (
-                  <InputField
-                    label="Tên tài liệu"
-                    placeholder="Ví dụ: Tổng hợp kiến thức ReactJS"
-                    value={field.value}
-                    onChange={field.onChange}
-                    errorText={errors.title?.message}
-                  />
-                )}
-              />
-            </div>
+      {/* Description */}
+      <label className="block">
+        <span className="mb-1 block text-xs font-medium text-on-surface-variant">
+          Mô tả chi tiết
+        </span>
+        <textarea
+          placeholder="Tóm tắt nội dung tài liệu để người khác dễ tìm thấy..."
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
+          rows={4}
+          disabled={isSubmitting}
+          className="
+            w-full resize-none rounded-xl border border-outline bg-surface
+            p-3 text-sm text-on-surface placeholder:text-on-surface-variant/60
+            focus:border-2 focus:border-primary focus:outline-none
+            disabled:cursor-not-allowed disabled:opacity-50
+          "
+        />
+      </label>
 
-            <div>
-              <Controller
-                control={control}
-                name="description"
-                render={({ field }) => (
-                  <InputField
-                    label="Mô tả chi tiết"
-                    placeholder="Mô tả nội dung tài liệu, nguồn tham khảo hoặc thông tin hữu ích..."
-                    value={field.value}
-                    onChange={field.onChange}
-                    errorText={errors.description?.message}
-                  />
-                )}
-              />
-            </div>
+      {/* No-file hint */}
+      {!selectedFile ? (
+        <p className="flex items-center gap-1 text-sm text-on-surface-variant">
+          <span className="material-symbols-outlined text-[16px]">info</span>
+          Chọn tệp bên trái trước, sau đó nhấn lưu.
+        </p>
+      ) : null}
 
-            <div className="flex items-center justify-between rounded-xl border border-outline-variant bg-surface px-4 py-3">
-              <div className="space-y-1">
-                <p className="text-sm font-medium text-on-surface">
-                  Công khai tài liệu
-                </p>
-                <p className="text-xs text-on-surface-variant">
-                  Bật để tài liệu hiển thị cho mọi người.
-                </p>
-              </div>
-
-              <Controller
-                control={control}
-                name="isPublic"
-                render={({ field }) => (
-                  <Switch checked={field.value} onChange={field.onChange} />
-                )}
-              />
-            </div>
-
-            <p className="text-sm text-on-surface-variant">
-              Trạng thái hiển thị: {isPublic ? "Công khai" : "Riêng tư"}
-            </p>
-
-            <div className="flex flex-col-reverse gap-3 pt-4 sm:flex-row sm:justify-end">
-              <Button
-                type="button"
-                variant="secondary"
-                className="w-full sm:w-auto"
-              >
-                Lưu nháp
-              </Button>
-
-              <Button
-                type="submit"
-                variant="primary"
-                className="w-full sm:w-auto"
-                disabled={uploadedCount === 0 || isSubmitting}
-              >
-                Công khai tài liệu
-              </Button>
-            </div>
-
-            <p className="text-sm text-on-surface-variant">{fileCountText}</p>
-          </section>
+      {/* Submit error */}
+      {submitError ? (
+        <div className="flex items-start gap-2 rounded-xl border border-error/40 bg-error-container/30 p-3 text-sm text-error">
+          <span className="material-symbols-outlined shrink-0 text-[18px]">
+            error
+          </span>
+          {submitError}
         </div>
-      </Card>
+      ) : null}
+
+      {/* Action buttons */}
+      <div className="flex flex-col-reverse gap-3 pt-1 sm:flex-row sm:justify-end">
+        {/* Draft — isPublic: false → saved as ACTIVE (private) */}
+        <Button
+          type="button"
+          variant="outline"
+          className="w-full sm:w-auto"
+          disabled={!canSubmit}
+          onClick={() => handleSubmit(false)}
+        >
+          {isSubmitting ? "Đang lưu..." : "Lưu nháp"}
+        </Button>
+
+        {/* Publish — isPublic: true → PENDING (awaiting moderation) */}
+        <Button
+          type="button"
+          variant="primary"
+          className="w-full sm:w-auto"
+          disabled={!canSubmit}
+          onClick={() => handleSubmit(true)}
+        >
+          {isSubmitting ? "Đang tải lên..." : "Công khai tài liệu"}
+        </Button>
+      </div>
     </form>
   );
 }
