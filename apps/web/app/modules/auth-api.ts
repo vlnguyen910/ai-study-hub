@@ -1,5 +1,9 @@
 import axios from "axios";
 import { APP_CONFIG } from "@/config";
+import { apiClient } from "@/lib/axios";
+import { normalizeUserRole } from "@/lib/auth";
+import { API_ENDPOINTS } from "@/shared/constants";
+import type { User } from "@/types";
 
 type ApiEnvelope<T> = {
   success?: boolean;
@@ -116,5 +120,36 @@ export const changePassword = async (payload: {
     );
   } catch (error) {
     throw new Error(getErrorMessage(error, "Could not change password"));
+  }
+};
+
+type CurrentUserResponse = {
+  id: string;
+  email: string;
+  name: string;
+  avatarUrl?: string | null;
+  role: string;
+  status: string;
+  createdAt: string;
+};
+
+export const mapCurrentUser = (account: CurrentUserResponse): User => ({
+  id: account.id,
+  email: account.email,
+  name: account.name,
+  role: normalizeUserRole(account.role),
+  avatar: account.avatarUrl || undefined,
+  createdAt: new Date(account.createdAt),
+});
+
+export const getCurrentUser = async (): Promise<User> => {
+  try {
+    const account = await apiClient.get<unknown, CurrentUserResponse>(
+      API_ENDPOINTS.AUTH.ME,
+      { skipToast: true },
+    );
+    return mapCurrentUser(account);
+  } catch (error) {
+    throw new Error(getErrorMessage(error, "Could not fetch current user"));
   }
 };

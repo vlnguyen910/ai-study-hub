@@ -30,6 +30,7 @@ describe('AuthController', () => {
     forgotPassword: jest.fn(),
     resetPassword: jest.fn(),
     changePassword: jest.fn(),
+    getCurrentUser: jest.fn(),
     signin: jest.fn(),
     logout: jest.fn(),
     refreshToken: jest.fn(),
@@ -219,6 +220,31 @@ describe('AuthController', () => {
       currentPassword: 'Password123!',
       newPassword: 'NewPassword123!',
     });
+  });
+
+  it('should return the current authenticated user', async () => {
+    authServiceMock.getCurrentUser.mockResolvedValue({
+      message: 'Current user retrieved successfully',
+      data: {
+        id: 'user-1',
+        email: 'new-user@example.com',
+        name: 'New User',
+        avatarUrl: '',
+        role: UserRole.USER,
+        status: UserStatus.ACTIVE,
+        createdAt: new Date('2026-06-08T00:00:00.000Z'),
+      },
+    });
+
+    await expect(controller.me(userPayload)).resolves.toEqual({
+      message: 'Current user retrieved successfully',
+      data: expect.objectContaining({
+        id: 'user-1',
+        email: 'new-user@example.com',
+        name: 'New User',
+      }),
+    });
+    expect(authServiceMock.getCurrentUser).toHaveBeenCalledWith(userPayload);
   });
 
   it('sets access token cookie and returns refresh token on web signin', async () => {

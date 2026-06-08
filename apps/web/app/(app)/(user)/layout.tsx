@@ -1,4 +1,5 @@
 import { UserShell } from "@/modules/user/components/UserShell";
+import { ProtectedRoute } from "@/routes/ProtectedRoute";
 import type { ReactNode } from "react";
 
 export default function UserLayout({
@@ -7,11 +8,13 @@ export default function UserLayout({
   readonly children: ReactNode;
 }): React.JSX.Element {
   return (
-    <UserShell
-      title="Không gian học tập"
-      subtitle="Quản lý tài liệu và đóng góp của bạn"
-    >
-      {children}
-    </UserShell>
+    <ProtectedRoute>
+      <UserShell
+        title="Không gian học tập"
+        subtitle="Quản lý tài liệu và đóng góp của bạn"
+      >
+        {children}
+      </UserShell>
+    </ProtectedRoute>
   );
 }

@@ -1,9 +1,12 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import type { FC, ReactNode } from "react";
+import { useEffect, useRef, type FC, type ReactNode } from "react";
 
 import { SideNav } from "@/components/layout/SideNav";
+import { apiClient } from "@/lib/axios";
+import { getCurrentUser } from "@/modules/auth-api";
+import { API_ENDPOINTS } from "@/shared/constants";
 import { ROUTE_PATHS } from "../../../routes/router.const";
 import { useAuthStore } from "../../../stores/auth/store";
 import { USER_NAV_ITEMS } from "@/constants/nav.const";
@@ -21,11 +24,43 @@ export const UserShell: FC<UserShellProps> = ({
   subtitle,
 }) => {
   const router = useRouter();
-  const { logout } = useAuthStore();
+  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
+  const logout = useAuthStore((state) => state.logout);
+  const setUser = useAuthStore((state) => state.setUser);
+  const hasFetchedUserRef = useRef(false);
 
-  const handleLogout = () => {
-    logout();
-    router.push(ROUTE_PATHS.AUTH_ROUTES.LOGIN);
+  useEffect(() => {
+    if (!isAuthenticated || hasFetchedUserRef.current) {
+      return;
+    }
+
+    let isMounted = true;
+    hasFetchedUserRef.current = true;
+
+    getCurrentUser()
+      .then((user) => {
+        if (isMounted && useAuthStore.getState().isAuthenticated) {
+          setUser(user);
+        }
+      })
+      .catch(() => {
+        hasFetchedUserRef.current = false;
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [isAuthenticated, setUser]);
+
+  const handleLogout = async () => {
+    try {
+      await apiClient.post(API_ENDPOINTS.AUTH.LOGOUT, null, {
+        skipToast: true,
+      });
+    } finally {
+      logout();
+      router.replace(ROUTE_PATHS.AUTH_ROUTES.LOGIN);
+    }
   };
 
   const navItems = USER_NAV_ITEMS.map((item) =>

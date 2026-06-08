@@ -93,7 +93,7 @@ export const getAuthRedirect = (
 
   // If authenticated and trying to access auth routes, redirect to home
   if (isAuthenticated && isAuthRoute(pathname)) {
-    return "/";
+    return "/home";
   }
 
   return null;
