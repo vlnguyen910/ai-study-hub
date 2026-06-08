@@ -1,11 +1,13 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
+  approveDocument,
   createDocument,
   deleteDocument,
   fetchDocumentDetail,
   fetchDocuments,
   fetchMyDocuments,
+  rejectDocument,
   updateDocument,
 } from "../src/apis/document.api";
 import { apiClient } from "../src/lib/axios";
@@ -104,6 +106,30 @@ describe("document api helpers", () => {
 
     expect(clientMock.patch).toHaveBeenCalledWith(
       "/api/v1/documents/doc-1",
+      payload,
+    );
+  });
+
+  it("approves pending document metadata", async () => {
+    const response = { id: "doc-1", status: "ACTIVE" };
+    clientMock.post.mockResolvedValue(response);
+
+    await expect(approveDocument("doc-1")).resolves.toBe(response);
+
+    expect(clientMock.post).toHaveBeenCalledWith(
+      "/api/v1/documents/doc-1/approve",
+    );
+  });
+
+  it("rejects pending document metadata with a reason", async () => {
+    const payload = { rejectionReason: "Thiếu mô tả rõ ràng." };
+    const response = { id: "doc-1", status: "REJECTED" };
+    clientMock.post.mockResolvedValue(response);
+
+    await expect(rejectDocument("doc-1", payload)).resolves.toBe(response);
+
+    expect(clientMock.post).toHaveBeenCalledWith(
+      "/api/v1/documents/doc-1/reject",
       payload,
     );
   });

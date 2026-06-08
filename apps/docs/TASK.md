@@ -4,11 +4,12 @@ Updated: 2026-06-08
 
 ## Current Position
 
-The project is currently in **Phase 3 completion / Phase 4 readiness**.
+The project is currently in **Phase 4 completion / Admin MVP hardening readiness**.
 
 - API auth/account/subject/document metadata is mostly implemented.
-- Web and Mobile still have several mock/template screens.
-- Dedicated moderation approve/reject endpoints are not implemented.
+- Web document and moderator review flows use real APIs; Admin Web still has mock/local-state screens.
+- Mobile still has several template/mock screens.
+- Dedicated moderation approve/reject endpoints are implemented.
 - File upload/download and AI/RAG phases are not ready to start yet.
 
 ## Priority 0 - Spec and Contract Cleanup
@@ -31,22 +32,22 @@ The project is currently in **Phase 3 completion / Phase 4 readiness**.
 
 ## Priority 2 - Implement Phase 4 Moderation Workflow
 
-- [ ] Add backend endpoint to approve a pending document.
-- [ ] Add backend endpoint to reject a pending document with `rejectionReason`.
-- [ ] Restrict approve/reject actions to `MODERATOR` and `ADMIN`.
-- [ ] On approve, set:
+- [x] Add backend endpoint to approve a pending document.
+- [x] Add backend endpoint to reject a pending document with `rejectionReason`.
+- [x] Restrict approve/reject actions to `MODERATOR` and `ADMIN`.
+- [x] On approve, set:
   - `status = ACTIVE`
   - `reviewedById`
   - `reviewedAt`
-- [ ] On reject, set:
+- [x] On reject, set:
   - `status = REJECTED`
   - `reviewedById`
   - `reviewedAt`
   - `rejectionReason`
-- [ ] Add tests for approve/reject success, forbidden users, invalid status transitions and visibility after approval/rejection.
-- [ ] Connect Web Moderator documents list to `GET /documents?status=PENDING`.
-- [ ] Connect Web Moderator detail page to `GET /documents/:id`.
-- [ ] Connect Web Moderator approve/reject buttons to the new API endpoints.
+- [x] Add tests for approve/reject success, forbidden users, invalid status transitions and visibility after approval/rejection.
+- [x] Connect Web Moderator documents list to `GET /documents?status=PENDING`.
+- [x] Connect Web Moderator detail page to `GET /documents/:id`.
+- [x] Connect Web Moderator approve/reject buttons to the new API endpoints.
 
 ## Priority 3 - Admin MVP Hardening
 
@@ -94,8 +95,8 @@ Do not start implementation until file upload and document lifecycle are stable.
 
 ## Recommended Next Sprint
 
-1. Implement backend moderation approve/reject endpoints with tests.
-2. Connect Web Moderator list/detail/actions to real API.
-3. Connect Admin Users page to real account APIs.
-4. Align Web auth token strategy with the documented hybrid cookie/refresh-token contract.
+1. Connect Admin Users page to real account APIs.
+2. Connect Admin user detail/read action to `GET /accounts/:id`.
+3. Connect Admin ban action to `PATCH /accounts/:accountId/ban`.
+4. Decide Admin create account UI versus documented API-only workflow.
 5. Run focused API tests, Web typecheck, and Mobile typecheck.

@@ -28,6 +28,9 @@ export interface LibraryDocument {
   isPublic: boolean;
   createdAt: string;
   updatedAt: string;
+  reviewedById?: string | null;
+  reviewedAt?: string | null;
+  rejectionReason?: string | null;
   author: DocumentAuthor;
   subject: DocumentSubject | null;
 }
@@ -83,6 +86,10 @@ export interface UpdateDocumentPayload {
   isPublic?: boolean;
 }
 
+export interface RejectDocumentPayload {
+  rejectionReason: string;
+}
+
 export interface ListDocumentsQuery {
   page?: number;
   limit?: number;
@@ -106,6 +113,11 @@ export interface DocumentDetail {
   format: string;
   sizeInBytes: number;
   createdAt: string;
+  status?: DocumentStatus;
+  isPublic?: boolean;
+  reviewedById?: string | null;
+  reviewedAt?: string | null;
+  rejectionReason?: string | null;
   author: {
     id: string;
     name: string;
