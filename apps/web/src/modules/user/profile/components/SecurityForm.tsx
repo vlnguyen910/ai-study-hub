@@ -5,12 +5,9 @@
  *
  * Password-change section.
  *
- * Note: the backend does not yet expose a change-password endpoint separate
- * from the accounts update route. This form is UI-complete and validates
- * client-side; the submit handler will be wired to the API once the endpoint
- * is available (see APP_CONFIG.features.enableComments for a parallel pattern).
+ * Calls the authenticated POST /api/v1/auth/change-password endpoint.
  *
- * The "Hủy bỏ" button resets both fields to empty.
+ * The "Hủy bỏ" button resets all password fields to empty.
  * The "Lưu thay đổi" button submits the form.
  */
 
@@ -22,11 +19,16 @@ import { z } from "zod";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { InputField } from "@/components/ui/InputField";
+import { changePassword } from "@/modules/auth-api";
 
 // ── Validation schema ─────────────────────────────────────────────────────────
 
 const schema = z
   .object({
+    currentPassword: z
+      .string()
+      .trim()
+      .min(8, "Mật khẩu hiện tại phải có ít nhất 8 ký tự"),
     newPassword: z
       .string()
       .trim()
@@ -47,8 +49,10 @@ type FormValues = z.infer<typeof schema>;
 
 export function SecurityForm(): React.JSX.Element {
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   // Show/hide password toggles
+  const [showCurrent, setShowCurrent] = useState(false);
   const [showNew, setShowNew] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
 
@@ -59,20 +63,41 @@ export function SecurityForm(): React.JSX.Element {
     formState: { errors, isSubmitting, isDirty },
   } = useForm<FormValues>({
     resolver: zodResolver(schema),
-    defaultValues: { newPassword: "", confirmPassword: "" },
+    defaultValues: {
+      currentPassword: "",
+      newPassword: "",
+      confirmPassword: "",
+    },
   });
 
-  const onSubmit = handleSubmit(async () => {
-    /*
-     * TODO: wire to PATCH /api/v1/accounts/:id (or a dedicated
-     *       change-password endpoint) once the backend supports it.
-     */
-    setStatusMessage("Chức năng đổi mật khẩu đang được phát triển.");
+  const onSubmit = handleSubmit(async (values) => {
+    setStatusMessage(null);
+    setErrorMessage(null);
+
+    try {
+      await changePassword({
+        currentPassword: values.currentPassword,
+        newPassword: values.newPassword,
+      });
+      reset({
+        currentPassword: "",
+        newPassword: "",
+        confirmPassword: "",
+      });
+      setStatusMessage("Cập nhật mật khẩu thành công.");
+    } catch (error) {
+      setErrorMessage(
+        error instanceof Error
+          ? error.message
+          : "Không thể cập nhật mật khẩu. Vui lòng thử lại.",
+      );
+    }
   });
 
   const handleCancel = () => {
-    reset({ newPassword: "", confirmPassword: "" });
+    reset({ currentPassword: "", newPassword: "", confirmPassword: "" });
     setStatusMessage(null);
+    setErrorMessage(null);
   };
 
   return (
@@ -89,7 +114,38 @@ export function SecurityForm(): React.JSX.Element {
       </div>
 
       <form onSubmit={onSubmit} noValidate className="space-y-5">
-        <div className="grid gap-5 md:grid-cols-2">
+        <div className="grid gap-5 md:grid-cols-3">
+          {/* Current password */}
+          <Controller
+            name="currentPassword"
+            control={control}
+            render={({ field }) => (
+              <InputField
+                {...field}
+                label="Mật khẩu hiện tại"
+                placeholder="••••••••"
+                type={showCurrent ? "text" : "password"}
+                errorText={errors.currentPassword?.message}
+                rightIcon={
+                  <button
+                    type="button"
+                    onClick={() => setShowCurrent((v) => !v)}
+                    className="text-on-surface-variant"
+                    aria-label={
+                      showCurrent
+                        ? "Ẩn mật khẩu hiện tại"
+                        : "Hiện mật khẩu hiện tại"
+                    }
+                  >
+                    <span className="material-symbols-outlined text-[18px]">
+                      {showCurrent ? "visibility_off" : "visibility"}
+                    </span>
+                  </button>
+                }
+              />
+            )}
+          />
+
           {/* New password */}
           <Controller
             name="newPassword"
@@ -147,8 +203,14 @@ export function SecurityForm(): React.JSX.Element {
 
         {/* Status message */}
         {statusMessage ? (
-          <p className="rounded-xl bg-surface-container-low px-4 py-3 text-sm text-on-surface-variant">
+          <p className="rounded-xl bg-secondary-container px-4 py-3 text-sm text-on-secondary-container">
             {statusMessage}
+          </p>
+        ) : null}
+
+        {errorMessage ? (
+          <p className="rounded-xl bg-error-container px-4 py-3 text-sm text-error">
+            {errorMessage}
           </p>
         ) : null}
 
