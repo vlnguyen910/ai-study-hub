@@ -102,16 +102,18 @@ export function DocumentTable({
 }: Props): React.JSX.Element {
   // Client-side search filter applied on top of the current server page
   const [searchTerm, setSearchTerm] = useState("");
+  const normalizedSearchTerm = searchTerm.trim();
+  const isSearching = normalizedSearchTerm.length > 0;
 
   const visibleDocuments = useMemo(() => {
-    const term = searchTerm.trim().toLowerCase();
+    const term = normalizedSearchTerm.toLowerCase();
     if (!term) return documents;
     return documents.filter(
       (d) =>
         d.title.toLowerCase().includes(term) ||
         (d.subject?.name.toLowerCase().includes(term) ?? false),
     );
-  }, [documents, searchTerm]);
+  }, [documents, normalizedSearchTerm]);
 
   // Build Table rows from visible documents
   const tableRows: TableRow[] = visibleDocuments.map((doc) => {
@@ -192,7 +194,11 @@ export function DocumentTable({
           <h2 className="text-lg font-bold text-on-surface">
             Danh sách tài liệu
           </h2>
-          {pagination ? (
+          {isSearching ? (
+            <p className="text-xs text-on-surface-variant">
+              {visibleDocuments.length} tài liệu trên trang này
+            </p>
+          ) : pagination ? (
             <p className="text-xs text-on-surface-variant">
               {visibleDocuments.length} / {pagination.total} tài liệu
             </p>
@@ -259,7 +265,7 @@ export function DocumentTable({
       </div>
 
       {/* Pagination */}
-      {pagination && pagination.totalPages > 1 && !isLoading ? (
+      {pagination && pagination.totalPages > 1 && !isLoading && !isSearching ? (
         <div className="mt-5 flex flex-col gap-3 border-t border-outline-variant pt-5 sm:flex-row sm:items-center sm:justify-between">
           <p className="text-xs text-on-surface-variant">
             Hiển thị {visibleDocuments.length} trong tổng số {pagination.total}{" "}
