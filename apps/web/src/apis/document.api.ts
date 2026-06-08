@@ -12,6 +12,7 @@ import type {
   DocumentsListResponse,
   LibraryDocument,
   ListDocumentsQuery,
+  RejectDocumentPayload,
   SubjectsListResponse,
   UpdateDocumentPayload,
 } from "@/types/document.type";
@@ -104,6 +105,22 @@ export const updateDocument = async (
 ): Promise<DocumentDetail> => {
   const result = await apiClient.patch(
     API_ENDPOINTS.DOCUMENTS.DETAIL(id),
+    payload,
+  );
+  return result as unknown as DocumentDetail;
+};
+
+export const approveDocument = async (id: string): Promise<DocumentDetail> => {
+  const result = await apiClient.post(API_ENDPOINTS.DOCUMENTS.APPROVE(id));
+  return result as unknown as DocumentDetail;
+};
+
+export const rejectDocument = async (
+  id: string,
+  payload: RejectDocumentPayload,
+): Promise<DocumentDetail> => {
+  const result = await apiClient.post(
+    API_ENDPOINTS.DOCUMENTS.REJECT(id),
     payload,
   );
   return result as unknown as DocumentDetail;

@@ -29,10 +29,10 @@ Spec này đã được đối chiếu với codebase hiện tại ngày 2026-06
 - Auth: signup tạo account `UNVERIFIED`, gửi link verify email bằng token Redis SHA-256, signin chỉ cấp session/token cho account `ACTIVE`, forgot/reset/change password đã có backend.
 - Mail: `MailModule` dùng Nodemailer SMTP qua cấu hình `MAILTRAP_SMTP_*`; khi thiếu SMTP credentials thì log link trong development hoặc bỏ qua gửi mail ở môi trường khác.
 - Database: MongoDB qua Prisma với models `accounts`, `sessions`, `schools`, `subjects`, `documents`; Redis dùng cho token/cooldown của email verification và password recovery.
-- Web: Next.js App Router, route groups cho auth/app/admin/moderator, shared UI components, Zustand auth store, Axios clients. Auth helpers và một số document public API helpers đã có, nhưng nhiều trang Admin/Moderator/User vẫn dùng mock/local state.
+- Web: Next.js App Router, route groups cho auth/app/admin/moderator, shared UI components, Zustand auth store, Axios clients. Auth helpers, public/user document helpers và Moderator document review đã dùng API thật; Admin vẫn còn mock/local state.
 - Mobile: Expo Router, NativeWind, auth service đã gọi `/api/v1/auth/mobile-signin`; document service mới có create metadata cơ bản; nhiều màn hình document/profile/moderator vẫn là template/mock.
-- Current phase: API đang ở cuối Phase 3 và mới chạm Phase 4. Product tổng thể chưa đạt Current MVP DoD vì Web/Mobile còn mock và chưa có dedicated approve/reject endpoints.
-- Chưa có: binary file upload, Cloudinary/storage integration, download endpoint/count, dedicated moderation approve/reject endpoints, full-text/tag search, AI extraction/summary/keywords/chat/quiz/duplicate detection.
+- Current phase: API đã hoàn thành Phase 4 moderation cơ bản cho tài liệu; Product tổng thể chưa đạt Current MVP DoD vì Admin Web và một số Mobile screens còn mock/template.
+- Chưa có: binary file upload, Cloudinary/storage integration, download endpoint/count, full-text/tag search, AI extraction/summary/keywords/chat/quiz/duplicate detection.
 
 ---
 
@@ -88,8 +88,8 @@ Spec này đã được đối chiếu với codebase hiện tại ngày 2026-06
 - Có route public/auth/app/admin/moderator.
 - Có route auth: forgot password, reset password, verify email token link.
 - Có helper auth API cho signup/signin/verify/resend/forgot/reset/change password.
-- Có helper document API cho public list/detail.
-- Nhiều trang Web hiện dùng mock data hoặc module UI riêng, chưa đồng bộ hoàn toàn với API.
+- Có helper document API cho public/user document workflows và moderator approve/reject.
+- Admin Web và một số module UI riêng vẫn chưa đồng bộ hoàn toàn với API.
 
 ### Mobile Application
 
@@ -110,7 +110,6 @@ Spec này đã được đối chiếu với codebase hiện tại ngày 2026-06
 - Tags/categories riêng trong database.
 - `PRIVATE`, `SHARED_LINK`, `PUBLIC` visibility enum.
 - Dedicated workflow `PROCESSING -> PENDING_REVIEW -> APPROVED/REJECTED`.
-- Dedicated approve/reject endpoints cho Moderator/Admin.
 - AI content extraction.
 - AI Summary.
 - AI Keywords.
@@ -706,9 +705,9 @@ Behavior:
 - Only author can update.
 - Supports updating `title`, `description`, `isPublic`, `subjectId`.
 
-Known gap:
+Moderation transition:
 
-- Changing `isPublic` does not currently reset status to `PENDING`.
+- Changing `isPublic` from `false` to `true` resets status to `PENDING`.
 
 ### `DELETE /documents/:id`
 
@@ -719,9 +718,30 @@ Behavior:
 - Only author can delete.
 - Soft deletes document by setting `status = DELETED` and `deletedAt`.
 
-Known gap:
+### `POST /documents/:id/approve`
 
-- No dedicated approve/reject/review endpoints yet.
+Requires JWT with `MODERATOR` or `ADMIN` role.
+
+Behavior:
+
+- Only `PENDING` documents can be approved.
+- Sets `status = ACTIVE`.
+- Sets `reviewedById` and `reviewedAt`.
+- Clears `rejectionReason`.
+
+### `POST /documents/:id/reject`
+
+Requires JWT with `MODERATOR` or `ADMIN` role.
+
+Request body:
+
+- `rejectionReason`
+
+Behavior:
+
+- Only `PENDING` documents can be rejected.
+- Sets `status = REJECTED`.
+- Sets `reviewedById`, `reviewedAt`, and `rejectionReason`.
 
 ---
 
@@ -749,7 +769,7 @@ Known gap:
 
 ### Current Gaps
 
-- Public library should be audited to ensure all visible document data comes from real API, not mock data.
+- Continue expanding real API coverage for remaining non-document Web modules.
 - Web auth implementation should be aligned with the chosen hybrid cookie + refresh-token store strategy.
 
 ## Authenticated Web
@@ -763,14 +783,13 @@ Known gap:
 ### Expected Behavior
 
 - Protected routes should require authenticated user state.
-- My documents should consume `GET /documents/me`.
-- Upload form should create document metadata through `POST /documents`.
+- My documents consumes `GET /documents/me`.
+- Upload form creates document metadata through `POST /documents`.
 - Profile should consume account detail/update APIs or a dedicated profile API.
 
 ### Current Gaps
 
-- My Documents still uses local mock data.
-- Some user document pages are UI-first and not fully connected to API.
+- Profile and some non-document user surfaces still need full API integration.
 
 ## Moderator Web
 
@@ -783,13 +802,13 @@ Known gap:
 
 ### Current Behavior
 
-- Pages exist and use moderator module components/mock data.
+- Documents list uses `GET /documents?status=PENDING`.
+- Document detail uses `GET /documents/:id`.
+- Approve/reject buttons call the dedicated review endpoints.
 
 ### Expected Behavior
 
-- Documents list should use `GET /documents?status=PENDING`.
-- Detail page should use `GET /documents/:id`.
-- Approve/reject actions require new backend endpoints.
+- Add richer moderation queue filters/search when product requires it.
 
 ## Admin Web
 
@@ -918,15 +937,15 @@ Current status: Subject/status/author filters implemented. Search by title/tags 
 
 ### US-018 View Pending Documents
 
-Current status: API visibility allows Moderator to list pending/rejected documents. Web Moderator pages exist with mock data.
+Current status: Implemented through document visibility rules and Web Moderator list integration.
 
 ### US-019 Approve Document
 
-Current status: Not implemented as dedicated endpoint.
+Current status: Implemented as a dedicated endpoint for Moderator/Admin.
 
 ### US-020 Reject Document
 
-Current status: Not implemented as dedicated endpoint, but schema fields exist.
+Current status: Implemented as a dedicated endpoint for Moderator/Admin with `rejectionReason`.
 
 ## Phase 5 - File Upload and Delivery
 
@@ -983,14 +1002,14 @@ Current status: Not implemented.
 - Phase 1: Implemented with minor client-contract cleanup remaining.
 - Phase 2: Mostly implemented. Admin account management is intentionally scoped to create/list/detail/ban for MVP; user update/delete remain self-service routes.
 - Phase 3: Mostly implemented for metadata workflows.
-- Phase 4: Partial visibility support only; schema has review fields, but approve/reject endpoints are missing.
+- Phase 4: Basic document moderation workflow is implemented for pending list/detail and approve/reject.
 - Phase 5-7: Not started.
 
 ### Product Phase
 
-The product is currently in **Phase 3 completion / Phase 4 readiness**.
+The product is currently in **Phase 4 completion / Admin MVP hardening readiness**.
 
-The next practical milestone should be **MVP hardening plus Phase 4 Moderation Workflow**, not AI. The reason is that core document lifecycle and real API integration for Web/Mobile are still incomplete.
+The next practical milestone should be **Admin MVP hardening plus auth client completion**, not AI. The reason is that Admin Web and auth client alignment still need completion before file upload and AI/RAG.
 
 ---
 
@@ -1063,7 +1082,7 @@ AI features should only be considered MVP-complete when:
 - Add integration/contract tests for auth token/session flows after the token-link verification changes.
 - Add document visibility tests for Guest/User/Moderator/Admin.
 - Add account banning signin tests if not already covered.
-- Add dedicated moderation approve/reject tests when endpoints are implemented.
+- Keep dedicated moderation approve/reject tests updated as moderation rules evolve.
 - Add subject duplicate-code tests if coverage is incomplete.
 - Add Web tests for protected/guest route behavior.
 - Add Mobile service tests for auth endpoints and document service.

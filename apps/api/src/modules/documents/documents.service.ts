@@ -10,6 +10,7 @@ import {
   CreateDocumentDto,
   UpdateDocumentDto,
   ListDocumentsQueryDto,
+  RejectDocumentDto,
 } from './dto';
 import { SubjectsService } from '../subjects';
 import { TokenPayload } from '../../common/interfaces/auth.interface';
@@ -81,6 +82,27 @@ export class DocumentsService {
     }
 
     return visibilityFilters;
+  }
+
+  private async findReviewableDocument(id: string) {
+    const existingDocument = await this.prismaService.documents.findUnique({
+      where: {
+        id,
+        status: {
+          not: DocumentStatus.DELETED,
+        },
+      },
+    });
+
+    if (!existingDocument) {
+      throw new NotFoundException(`Document with ID ${id} not found`);
+    }
+
+    if (existingDocument.status !== DocumentStatus.PENDING) {
+      throw new BadRequestException('Only pending documents can be reviewed');
+    }
+
+    return existingDocument;
   }
 
   async create(createDocumentDto: CreateDocumentDto, authorId: string) {
@@ -234,6 +256,11 @@ export class DocumentsService {
         publicId: true,
         format: true,
         sizeInBytes: true,
+        status: true,
+        isPublic: true,
+        reviewedById: true,
+        reviewedAt: true,
+        rejectionReason: true,
         createdAt: true,
         author: {
           select: {
@@ -328,6 +355,82 @@ export class DocumentsService {
 
     return {
       message: 'Document updated successfully',
+      data: document,
+    };
+  }
+
+  async approve(id: string, reviewerId: string) {
+    await this.findReviewableDocument(id);
+
+    const document = await this.prismaService.documents.update({
+      where: { id },
+      data: {
+        status: DocumentStatus.ACTIVE,
+        reviewedById: reviewerId,
+        reviewedAt: new Date(),
+        rejectionReason: null,
+      },
+      include: {
+        author: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            avatarUrl: true,
+          },
+        },
+        subject: {
+          select: {
+            id: true,
+            name: true,
+            code: true,
+          },
+        },
+      },
+    });
+
+    return {
+      message: 'Document approved successfully',
+      data: document,
+    };
+  }
+
+  async reject(
+    id: string,
+    rejectDocumentDto: RejectDocumentDto,
+    reviewerId: string,
+  ) {
+    await this.findReviewableDocument(id);
+
+    const document = await this.prismaService.documents.update({
+      where: { id },
+      data: {
+        status: DocumentStatus.REJECTED,
+        reviewedById: reviewerId,
+        reviewedAt: new Date(),
+        rejectionReason: rejectDocumentDto.rejectionReason,
+      },
+      include: {
+        author: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            avatarUrl: true,
+          },
+        },
+        subject: {
+          select: {
+            id: true,
+            name: true,
+            code: true,
+          },
+        },
+      },
+    });
+
+    return {
+      message: 'Document rejected successfully',
       data: document,
     };
   }
