@@ -13,6 +13,7 @@ import type {
   LibraryDocument,
   ListDocumentsQuery,
   SubjectsListResponse,
+  UpdateDocumentPayload,
 } from "@/types/document.type";
 
 /**
@@ -32,6 +33,7 @@ export const fetchDocuments = async (
       limit: params.limit ?? 12,
       ...(params.subjectId ? { subjectId: params.subjectId } : {}),
       ...(params.authorId ? { authorId: params.authorId } : {}),
+      ...(params.status ? { status: params.status } : {}),
     },
   });
   // Double-cast required: the interceptor unwraps response.data.data at runtime,
@@ -69,6 +71,8 @@ export const fetchMyDocuments = async (
     params: {
       page: params.page ?? 1,
       limit: params.limit ?? 10,
+      ...(params.subjectId ? { subjectId: params.subjectId } : {}),
+      ...(params.status ? { status: params.status } : {}),
     },
   });
   return result as unknown as DocumentsListResponse;
@@ -92,6 +96,17 @@ export const createDocument = async (
  */
 export const deleteDocument = async (id: string): Promise<void> => {
   await apiClient.delete(API_ENDPOINTS.DOCUMENTS.DETAIL(id));
+};
+
+export const updateDocument = async (
+  id: string,
+  payload: UpdateDocumentPayload,
+): Promise<DocumentDetail> => {
+  const result = await apiClient.patch(
+    API_ENDPOINTS.DOCUMENTS.DETAIL(id),
+    payload,
+  );
+  return result as unknown as DocumentDetail;
 };
 
 export const fetchSubjects = async (

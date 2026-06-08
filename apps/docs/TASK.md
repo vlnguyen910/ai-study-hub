@@ -20,14 +20,14 @@ The project is currently in **Phase 3 completion / Phase 4 readiness**.
 
 ## Priority 1 - Finish Phase 3 Product Integration
 
-- [ ] Implement document publication transition: changing a private document to public should set status to `PENDING`.
-- [ ] Web public library: ensure all visible document lists/details use real `GET /documents` and `GET /documents/:id`.
-- [ ] Web My Documents: replace local mock data with `GET /documents/me`.
-- [ ] Web document upload: submit metadata through `POST /documents`.
-- [ ] Web document edit/delete: call `PATCH /documents/:id` and `DELETE /documents/:id`.
-- [ ] Mobile documents: add list/detail/update/delete service methods for the current Documents API.
-- [ ] Mobile documents: connect list/detail/upload screens to real services where backend support exists.
-- [ ] Add focused Web/Mobile service tests for document API clients.
+- [x] Implement document publication transition: changing a private document to public should set status to `PENDING`.
+- [x] Web public library: ensure all visible document lists/details use real `GET /documents` and `GET /documents/:id`.
+- [x] Web My Documents: replace local mock data with `GET /documents/me`.
+- [x] Web document upload: submit metadata through `POST /documents`.
+- [x] Web document edit/delete: call `PATCH /documents/:id` and `DELETE /documents/:id`.
+- [x] Mobile documents: add list/detail/update/delete service methods for the current Documents API.
+- [x] Mobile documents: connect list/detail/upload screens to real services where backend support exists.
+- [x] Add focused Web/Mobile service tests for document API clients.
 
 ## Priority 2 - Implement Phase 4 Moderation Workflow
 
@@ -94,8 +94,8 @@ Do not start implementation until file upload and document lifecycle are stable.
 
 ## Recommended Next Sprint
 
-1. Implement Web auth token strategy alignment.
-2. Connect Web My Documents to real API.
-3. Implement backend moderation approve/reject endpoints with tests.
-4. Connect Web Moderator list/detail/actions to real API.
+1. Implement backend moderation approve/reject endpoints with tests.
+2. Connect Web Moderator list/detail/actions to real API.
+3. Connect Admin Users page to real account APIs.
+4. Align Web auth token strategy with the documented hybrid cookie/refresh-token contract.
 5. Run focused API tests, Web typecheck, and Mobile typecheck.

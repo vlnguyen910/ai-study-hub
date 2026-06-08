@@ -84,8 +84,12 @@ interface Props {
   readonly onPageChange: (page: number) => void;
   /** Called with the document ID when the delete button is clicked. */
   readonly onDelete: (id: string) => Promise<void>;
+  /** Opens the edit dialog for a document row. */
+  readonly onEdit: (document: LibraryDocument) => void;
   /** ID of the document currently being deleted (disables its row buttons). */
   readonly deletingId: string | null;
+  /** ID of the document currently being edited/saved. */
+  readonly savingId: string | null;
 }
 
 // ── Component ─────────────────────────────────────────────────────────────────
@@ -98,7 +102,9 @@ export function DocumentTable({
   skeletonCount,
   onPageChange,
   onDelete,
+  onEdit,
   deletingId,
+  savingId,
 }: Props): React.JSX.Element {
   // Client-side search filter applied on top of the current server page
   const [searchTerm, setSearchTerm] = useState("");
@@ -158,12 +164,19 @@ export function DocumentTable({
 
         /* ── Actions ── */
         <div key="actions" className="flex justify-end gap-2">
-          <Button type="button" variant="ghost" size="sm" className="px-3">
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            className="px-3"
+            onClick={() => onEdit(doc)}
+            disabled={savingId === doc.id || deletingId === doc.id}
+          >
             <span className="flex items-center gap-1">
               <span className="material-symbols-outlined text-[16px]">
                 edit
               </span>
-              Sửa
+              {savingId === doc.id ? "Đang lưu..." : "Sửa"}
             </span>
           </Button>
           <Button
@@ -172,7 +185,7 @@ export function DocumentTable({
             size="sm"
             className="px-3 text-error hover:bg-error-container hover:text-error"
             onClick={() => onDelete(doc.id)}
-            disabled={deletingId === doc.id}
+            disabled={deletingId === doc.id || savingId === doc.id}
           >
             <span className="flex items-center gap-1">
               <span className="material-symbols-outlined text-[16px]">

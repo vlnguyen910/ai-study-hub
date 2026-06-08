@@ -87,7 +87,7 @@ export function DocumentUploadScreen() {
   };
 
   const onSubmit = async (values: DocumentUploadFormOutput) => {
-    await createDocument({
+    const document = await createDocument({
       title: values.title,
       description: values.description?.trim() || undefined,
       fileUrl: sampleFileUrl,
@@ -95,9 +95,14 @@ export function DocumentUploadScreen() {
       sizeInBytes: 2 * 1024 * 1024,
       format: values.fileName.split(".").pop()?.toLowerCase() || "pdf",
       resourceType: "document",
+      isPublic: true,
     });
 
-    router.push("/(templates)/document-detail" as never);
+    router.push(
+      document?.id
+        ? (`/(templates)/document-detail?id=${document.id}` as never)
+        : ("/(templates)/document-detail" as never),
+    );
   };
 
   return (

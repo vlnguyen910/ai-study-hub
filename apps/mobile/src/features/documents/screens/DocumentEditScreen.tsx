@@ -1,10 +1,17 @@
-import { useEffect } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { MaterialIcons } from "@expo/vector-icons";
-import { router } from "expo-router";
-import { Pressable, ScrollView, Text, View } from "react-native";
+import { router, useLocalSearchParams } from "expo-router";
+import {
+  ActivityIndicator,
+  Alert,
+  Pressable,
+  ScrollView,
+  Text,
+  View,
+} from "react-native";
 import { Button, Card, PageShell } from "@/components";
 import { DocumentCategorySelector } from "../components/DocumentCategorySelector";
 import { DocumentTextField } from "../components/DocumentTextField";
@@ -12,8 +19,12 @@ import { DocumentUploadField } from "../components/DocumentUploadField";
 import type {
   DocumentCategoryOption,
   DocumentCategoryValue,
-  DocumentUploadFormValues,
 } from "../types/document.types";
+import {
+  deleteDocument,
+  fetchDocumentDetail,
+  updateDocument,
+} from "../services/documents.service";
 
 const categoryOptions: readonly DocumentCategoryOption[] = [
   { label: "Khoa học máy tính", value: "cs" },
@@ -32,15 +43,18 @@ const documentEditSchema = z.object({
 type DocumentEditInput = z.input<typeof documentEditSchema>;
 type DocumentEditOutput = z.output<typeof documentEditSchema>;
 
-const sampleExisting = {
-  fileName: "Baocao_NghienCuu_AI_v2.pdf",
-  title: "Báo cáo Nghiên cứu Trí tuệ Nhân tạo Toàn diện 2024",
-  category: "cs" as DocumentCategoryValue,
-  description:
-    "Tài liệu tổng hợp các xu hướng mới nhất về Học máy và ứng dụng của AI trong công nghiệp.",
-};
-
 export function DocumentEditScreen() {
+  const params = useLocalSearchParams<{ id?: string }>();
+  const documentId = useMemo(() => {
+    const value = params.id;
+    return Array.isArray(value) ? value[0] : value;
+  }, [params.id]);
+  const [isLoading, setIsLoading] = useState(Boolean(documentId));
+  const [error, setError] = useState<string | null>(
+    documentId ? null : "Thiếu mã tài liệu để chỉnh sửa.",
+  );
+  const [isDeleting, setIsDeleting] = useState(false);
+
   const {
     control,
     handleSubmit,
@@ -58,28 +72,69 @@ export function DocumentEditScreen() {
   });
 
   useEffect(() => {
-    // populate with existing data (would come from API in real app)
-    setValue("fileName", sampleExisting.fileName, { shouldValidate: false });
-    setValue("title", sampleExisting.title, { shouldValidate: false });
-    setValue("category", sampleExisting.category, { shouldValidate: false });
-    setValue("description", sampleExisting.description, {
-      shouldValidate: false,
-    });
-  }, [setValue]);
+    if (!documentId) return;
+
+    let mounted = true;
+    setIsLoading(true);
+    setError(null);
+
+    fetchDocumentDetail(documentId)
+      .then((document) => {
+        if (!mounted) return;
+        setValue("fileName", document.publicId || document.title, {
+          shouldValidate: false,
+        });
+        setValue("title", document.title, { shouldValidate: false });
+        setValue("category", "cs", { shouldValidate: false });
+        setValue("description", document.description ?? "", {
+          shouldValidate: false,
+        });
+      })
+      .catch(() => {
+        if (mounted) setError("Không thể tải tài liệu để chỉnh sửa.");
+      })
+      .finally(() => {
+        if (mounted) setIsLoading(false);
+      });
+
+    return () => {
+      mounted = false;
+    };
+  }, [documentId, setValue]);
 
   const fileName = watch("fileName");
 
   const handleClearFile = () =>
     setValue("fileName", "", { shouldValidate: true });
 
-  const onUpdate = () => {
-    // save and navigate back to detail
-    router.push("/(templates)/document-detail" as never);
+  const onUpdate = async (values: DocumentEditOutput) => {
+    if (!documentId) return;
+
+    await updateDocument(documentId, {
+      title: values.title,
+      description: values.description?.trim() || undefined,
+    });
+
+    router.push(`/(templates)/document-detail?id=${documentId}` as never);
   };
 
   const onDelete = () => {
-    // destructive action -- navigate back to library or previous
-    router.back();
+    if (!documentId) return;
+
+    Alert.alert("Xóa tài liệu", "Bạn có chắc chắn muốn xóa tài liệu này?", [
+      { text: "Hủy", style: "cancel" },
+      {
+        text: "Xóa",
+        style: "destructive",
+        onPress: () => {
+          setIsDeleting(true);
+          deleteDocument(documentId)
+            .then(() => router.replace("/library" as never))
+            .catch(() => setError("Xóa tài liệu thất bại. Vui lòng thử lại."))
+            .finally(() => setIsDeleting(false));
+        },
+      },
+    ]);
   };
 
   return (
@@ -101,119 +156,133 @@ export function DocumentEditScreen() {
           </View>
         </View>
 
-        <ScrollView
-          className="flex-1"
-          contentContainerStyle={{
-            paddingHorizontal: 16,
-            paddingTop: 20,
-            paddingBottom: 32,
-          }}
-          keyboardShouldPersistTaps="handled"
-          showsVerticalScrollIndicator={false}
-        >
-          <View className="gap-2">
-            <Text className="text-3xl font-bold tracking-tight text-on-surface">
-              Chỉnh sửa tài liệu
-            </Text>
-            <Text className="text-base leading-6 text-on-surface-variant">
-              Cập nhật thông tin tài liệu
+        {isLoading ? (
+          <View className="flex-1 items-center justify-center gap-3 px-6">
+            <ActivityIndicator />
+            <Text className="text-sm text-on-surface-variant">
+              Đang tải tài liệu...
             </Text>
           </View>
+        ) : error && !documentId ? (
+          <View className="flex-1 items-center justify-center px-6">
+            <Text className="text-center text-sm leading-6 text-error">
+              {error}
+            </Text>
+          </View>
+        ) : (
+          <ScrollView
+            className="flex-1"
+            contentContainerStyle={{
+              paddingHorizontal: 16,
+              paddingTop: 20,
+              paddingBottom: 32,
+            }}
+            keyboardShouldPersistTaps="handled"
+            showsVerticalScrollIndicator={false}
+          >
+            <View className="gap-2">
+              <Text className="text-3xl font-bold tracking-tight text-on-surface">
+                Chỉnh sửa tài liệu
+              </Text>
+              <Text className="text-base leading-6 text-on-surface-variant">
+                Cập nhật thông tin tài liệu
+              </Text>
+            </View>
 
-          <Card className="mt-6 rounded-2xl p-5">
-            <View className="gap-5">
-              <Controller
-                control={control}
-                name="fileName"
-                render={({ field }) => (
-                  <DocumentUploadField
-                    fileName={field.value ?? null}
-                    onPickSample={() =>
-                      setValue("fileName", sampleExisting.fileName, {
-                        shouldValidate: true,
-                      })
-                    }
-                    onClear={handleClearFile}
-                    errorMessage={errors.fileName?.message}
-                  />
-                )}
-              />
+            <Card className="mt-6 rounded-2xl p-5">
+              <View className="gap-5">
+                <Controller
+                  control={control}
+                  name="fileName"
+                  render={({ field }) => (
+                    <DocumentUploadField
+                      fileName={field.value ?? null}
+                      onPickSample={() => {}}
+                      onClear={handleClearFile}
+                      errorMessage={errors.fileName?.message}
+                    />
+                  )}
+                />
 
-              <Controller
-                control={control}
-                name="title"
-                render={({ field }) => (
-                  <DocumentTextField
-                    label="Tiêu đề tài liệu"
-                    placeholder="Nhập tiêu đề..."
-                    value={field.value}
-                    onChangeText={field.onChange}
-                    errorMessage={errors.title?.message}
-                  />
-                )}
-              />
+                <Controller
+                  control={control}
+                  name="title"
+                  render={({ field }) => (
+                    <DocumentTextField
+                      label="Tiêu đề tài liệu"
+                      placeholder="Nhập tiêu đề..."
+                      value={field.value}
+                      onChangeText={field.onChange}
+                      errorMessage={errors.title?.message}
+                    />
+                  )}
+                />
 
-              <Controller
-                control={control}
-                name="category"
-                render={({ field }) => (
-                  <DocumentCategorySelector
-                    value={field.value}
-                    options={categoryOptions}
-                    onChange={(value: DocumentCategoryValue) =>
-                      field.onChange(value)
-                    }
-                    errorMessage={errors.category?.message}
-                  />
-                )}
-              />
+                <Controller
+                  control={control}
+                  name="category"
+                  render={({ field }) => (
+                    <DocumentCategorySelector
+                      value={field.value}
+                      options={categoryOptions}
+                      onChange={(value: DocumentCategoryValue) =>
+                        field.onChange(value)
+                      }
+                      errorMessage={errors.category?.message}
+                    />
+                  )}
+                />
 
-              <Controller
-                control={control}
-                name="description"
-                render={({ field }) => (
-                  <DocumentTextField
-                    label="Mô tả (Không bắt buộc)"
-                    placeholder="Tóm tắt ngắn gọn nội dung..."
-                    value={field.value ?? ""}
-                    onChangeText={field.onChange}
-                    multiline
-                    errorMessage={errors.description?.message}
-                  />
-                )}
-              />
+                <Controller
+                  control={control}
+                  name="description"
+                  render={({ field }) => (
+                    <DocumentTextField
+                      label="Mô tả (Không bắt buộc)"
+                      placeholder="Tóm tắt ngắn gọn nội dung..."
+                      value={field.value ?? ""}
+                      onChangeText={field.onChange}
+                      multiline
+                      errorMessage={errors.description?.message}
+                    />
+                  )}
+                />
 
-              <View className="flex-row gap-4 pt-1">
-                <View className="flex-1">
-                  <Button
-                    variant="outline"
-                    fullWidth
-                    onPress={() => router.back()}
-                  >
-                    Hủy
-                  </Button>
-                </View>
-                <View className="flex-1">
-                  <Button
-                    fullWidth
-                    loading={isSubmitting}
-                    onPress={handleSubmit(onUpdate)}
-                  >
-                    Cập nhật
-                  </Button>
+                <View className="flex-row gap-4 pt-1">
+                  <View className="flex-1">
+                    <Button
+                      variant="outline"
+                      fullWidth
+                      onPress={() => router.back()}
+                    >
+                      Hủy
+                    </Button>
+                  </View>
+                  <View className="flex-1">
+                    <Button
+                      fullWidth
+                      loading={isSubmitting}
+                      onPress={handleSubmit(onUpdate)}
+                    >
+                      Cập nhật
+                    </Button>
+                  </View>
                 </View>
               </View>
+            </Card>
+
+            <View className="flex-1" />
+
+            <View className="flex-col gap-4 mt-8 pb-8">
+              {error ? (
+                <Text className="text-sm leading-6 text-error">{error}</Text>
+              ) : null}
+              <Button variant="outline" loading={isDeleting} onPress={onDelete}>
+                {isDeleting ? "Đang xóa..." : "Xóa tài liệu này"}
+              </Button>
             </View>
-          </Card>
-
-          <View className="flex-1" />
-
-          <View className="flex-col gap-4 mt-8 pb-8">
-            <Button variant="outline" onPress={onDelete}>
-              Xóa tài liệu này
-            </Button>
-          </View>
-        </ScrollView>
+          </ScrollView>
+        )}
       </View>
     </PageShell>
   );
