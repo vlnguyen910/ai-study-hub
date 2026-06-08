@@ -125,6 +125,42 @@ describe('AuthService', () => {
     service = module.get<AuthService>(AuthService);
   });
 
+  it('should return the current authenticated user without password', async () => {
+    const createdAt = new Date('2026-06-08T00:00:00.000Z');
+    accountsServiceMock.findOne.mockResolvedValue({
+      id: 'user-1',
+      email: 'new-user@example.com',
+      name: 'New User',
+      avatarUrl: 'https://example.com/avatar.png',
+      role: UserRole.USER,
+      status: UserStatus.ACTIVE,
+      createdAt,
+    });
+
+    const result = await service.getCurrentUser({
+      sub: 'user-1',
+      role: UserRole.USER,
+      status: UserStatus.ACTIVE,
+      type: JwtTokenType.AccessToken,
+      deviceId: 'device-1',
+    });
+
+    expect(accountsServiceMock.findOne).toHaveBeenCalledWith('user-1');
+    expect(result).toEqual({
+      message: 'Current user retrieved successfully',
+      data: {
+        id: 'user-1',
+        email: 'new-user@example.com',
+        name: 'New User',
+        avatarUrl: 'https://example.com/avatar.png',
+        role: UserRole.USER,
+        status: UserStatus.ACTIVE,
+        createdAt,
+      },
+    });
+    expect(result.data).not.toHaveProperty('password');
+  });
+
   it('should sign up a new account without creating a session', async () => {
     accountsServiceMock.findAccountByEmail
       .mockResolvedValueOnce(null)

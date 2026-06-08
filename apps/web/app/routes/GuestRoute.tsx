@@ -26,7 +26,7 @@ export const GuestRoute: FC<GuestRouteProps> = ({
     setIsAuthenticated(isAuth);
 
     if (isAuth) {
-      router.replace("/");
+      router.replace("/home");
     }
   }, [router]);
 

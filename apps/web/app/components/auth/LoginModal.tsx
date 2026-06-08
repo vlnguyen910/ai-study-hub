@@ -2,10 +2,12 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import type { ReactElement } from "react";
 import { Button } from "@repo/ui/button";
 import { buildUserFromRefreshToken, extractRefreshToken } from "@/lib/auth";
 import { apiClient } from "@/lib/axios";
+import { ROUTE_PATHS } from "@/routes/router.const";
 import { API_ENDPOINTS } from "@/shared/constants";
 import { useAuthStore } from "@/stores/auth/store";
 import { getOrCreateDeviceId } from "@/utils";
@@ -21,6 +23,7 @@ export default function LoginModal({
   onClose,
   onOpenRegister,
 }: LoginModalProps): ReactElement | null {
+  const router = useRouter();
   const [formData, setFormData] = useState({ email: "", password: "" });
   const [errors, setErrors] = useState({
     email: "",
@@ -103,6 +106,7 @@ export default function LoginModal({
       setAuth(null, user.role, user, refreshToken);
       resetForm();
       onClose();
+      router.push(ROUTE_PATHS.PROTECTED_ROUTES.HOME);
     } catch (error: unknown) {
       const axiosError = error as { response?: { status?: number } };
       if (axiosError?.response?.status === 401) {

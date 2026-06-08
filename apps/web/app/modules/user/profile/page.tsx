@@ -1,8 +1,6 @@
 "use client";
 
 import { useMemo, useRef, useState } from "react";
-import Link from "next/link";
-import { usePathname } from "next/navigation";
 import type { ReactElement } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -11,7 +9,6 @@ import { Avatar } from "@/components/ui/Avatar";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { InputField } from "@/components/ui/InputField";
-import { userRouterConfig } from "../../../routes/user/user.routes";
 import { changePassword } from "../../auth-api";
 
 const profileSchema = z.object({
@@ -64,15 +61,6 @@ const INITIAL_PROFILE = {
     "https://lh3.googleusercontent.com/aida-public/AB6AXuD0YFN3ifIJ2LVG2ZbOx_5NZkBNNmPOveXmlUMn5l0tZCG5xA4SviBqCueZI6YbC3q2GqOITU201dRcinyo-J_7fggH1JezfUGZ-AWVovFXAehNHoro99qVn9yYmj8eKfBqiG4rjLCE7vYZt8kovz_lKXneHUGvB2BxBfvIzgrseFjrqaAUMeEiXFhEv9oWNvnaS_Zu0svxVRheeEBnwTN7U1YG8pWxnB8BPS6nB0_lH2d4FYd4sLSElpXyUtKFGKfPgPehZ7EYcMpC",
 } as const;
 
-const PROFILE_NAV_ITEMS = [
-  userRouterConfig.PROFILE,
-  userRouterConfig.SETTINGS,
-  userRouterConfig.FAVORITES,
-  userRouterConfig.MY_DOCUMENTS,
-  userRouterConfig.MY_UPLOADS,
-  userRouterConfig.CHANGE_PASSWORD,
-] as const;
-
 function getInitials(name: string): string {
   return name
     .split(/\s+/)
@@ -82,61 +70,7 @@ function getInitials(name: string): string {
     .join("");
 }
 
-function ProfileSidebar({ pathname }: { pathname: string }): ReactElement {
-  return (
-    <aside className="hidden lg:block w-72 shrink-0">
-      <Card className="sticky top-6 p-5 shadow-sm shadow-black/5">
-        <div className="mb-6">
-          <p className="font-label-sm text-label-sm uppercase tracking-[0.18em] text-on-surface-variant">
-            Tài khoản
-          </p>
-          <h2 className="mt-1 font-headline-md text-headline-md font-bold text-primary">
-            AI Study Hub
-          </h2>
-        </div>
-
-        <nav className="space-y-2">
-          {PROFILE_NAV_ITEMS.map((item) => {
-            const isActive =
-              pathname === item.path || pathname.startsWith(`${item.path}/`);
-
-            return (
-              <Link
-                key={item.path}
-                href={item.path}
-                className={`flex items-center justify-between rounded-2xl px-4 py-3 font-label-md text-label-md transition-colors ${
-                  isActive
-                    ? "bg-secondary-container text-on-secondary-container"
-                    : "text-on-surface-variant hover:bg-surface-container-low"
-                }`}
-              >
-                <span>{item.title}</span>
-                {isActive ? (
-                  <span className="material-symbols-outlined text-[18px]">
-                    chevron_right
-                  </span>
-                ) : null}
-              </Link>
-            );
-          })}
-        </nav>
-
-        <div className="mt-6 border-t border-outline-variant pt-5">
-          <Link
-            href="/"
-            className="flex items-center gap-2 rounded-2xl px-4 py-3 font-label-md text-label-md text-on-surface-variant transition-colors hover:bg-surface-container-low"
-          >
-            <span className="material-symbols-outlined text-[18px]">home</span>
-            Về trang chủ
-          </Link>
-        </div>
-      </Card>
-    </aside>
-  );
-}
-
 export default function ProfilePage(): ReactElement {
-  const pathname = usePathname();
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [isProfileEditing, setIsProfileEditing] = useState(false);
   const [savedAvatarUrl, setSavedAvatarUrl] = useState<string>(
@@ -292,10 +226,8 @@ export default function ProfilePage(): ReactElement {
 
   return (
     <div className="min-h-screen bg-surface text-on-surface">
-      <div className="mx-auto flex max-w-7xl gap-6 px-4 py-6 sm:px-6 lg:px-8">
-        <ProfileSidebar pathname={pathname} />
-
-        <main className="flex-1 space-y-6">
+      <div className="mx-auto max-w-7xl px-0 py-0">
+        <main className="space-y-6">
           <Card className="p-6 shadow-sm shadow-black/5 lg:p-8">
             <div className="flex flex-col gap-2">
               <p className="font-label-sm text-label-sm uppercase tracking-[0.18em] text-on-surface-variant">

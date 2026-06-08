@@ -62,6 +62,27 @@ export class AuthService {
     private readonly authTokenService: AuthTokenService,
   ) {}
 
+  async getCurrentUser(userPayload: TokenPayload) {
+    const account = await this.accountService.findOne(userPayload.sub);
+
+    if (!account) {
+      throw new UnauthorizedException('Invalid user');
+    }
+
+    return {
+      message: 'Current user retrieved successfully',
+      data: {
+        id: account.id,
+        email: account.email,
+        name: account.name,
+        avatarUrl: account.avatarUrl,
+        role: account.role,
+        status: account.status,
+        createdAt: account.createdAt,
+      },
+    };
+  }
+
   async signup(signupDto: SignupDto) {
     const existingAccount = await this.accountService.findAccountByEmail(
       signupDto.email,

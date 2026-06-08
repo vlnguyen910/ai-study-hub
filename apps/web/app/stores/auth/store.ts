@@ -18,6 +18,7 @@ interface AuthState {
     refreshToken?: string | null,
   ) => void;
   setAccessToken: (accessToken: string | null) => void;
+  setUser: (user: User | null) => void;
   logout: () => void;
   setLoginPromptOpen: (open: boolean) => void;
 }
@@ -44,6 +45,13 @@ export const useAuthStore = create<AuthState>()(
           ...state,
           accessToken,
           isAuthenticated: Boolean(accessToken || state.user),
+        })),
+      setUser: (user) =>
+        set((state) => ({
+          ...state,
+          user,
+          role: user?.role ?? state.role,
+          isAuthenticated: Boolean(state.accessToken || user),
         })),
       logout: () => {
         set({

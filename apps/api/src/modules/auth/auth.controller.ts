@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Get,
   HttpCode,
   HttpStatus,
   Inject,
@@ -94,6 +95,13 @@ export class AuthController {
   @Post('reset-password')
   resetPassword(@Body() resetPasswordDto: ResetPasswordDto) {
     return this.authService.resetPassword(resetPasswordDto);
+  }
+
+  @Version('1')
+  @UseGuards(JwtAuthGuard)
+  @Get('me')
+  me(@User() user: TokenPayload) {
+    return this.authService.getCurrentUser(user);
   }
 
   @Version('1')
