@@ -4,7 +4,7 @@ import Link from "next/link";
 import type { FC } from "react";
 
 import { useAuthStore } from "@/stores/auth/store";
-import { ROUTE_PATHS } from "../../routes";
+import { ROUTE_PATHS } from "@/routes";
 
 export const UserInfo: FC = () => {
   const user = useAuthStore((state) => state.user);

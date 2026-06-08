@@ -1,14 +1,14 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import ForgotPasswordPage from "../app/modules/forgot-password/page";
-import ResetPasswordPage from "../app/modules/reset-password/page";
-import LoginPage from "../app/login/page";
-import RegisterPage from "../app/register/page";
-import { UserShell } from "../app/modules/user/components/UserShell";
-import { useAuthStore } from "../app/stores/auth/store";
-import VerifyEmailPendingPage from "../app/verify-email-pending/page";
-import VerifyEmailPage from "../app/verify-email/[token]/page";
+import ForgotPasswordPage from "../src/modules/forgot-password/page";
+import ResetPasswordPage from "../src/modules/reset-password/page";
+import LoginPage from "../src/app/(auth)/login/page";
+import RegisterPage from "../src/app/(auth)/register/page";
+import { UserShell } from "../src/modules/user/components/UserShell";
+import { useAuthStore } from "../src/stores/auth/store";
+import VerifyEmailPendingPage from "../src/app/(auth)/verify-email-pending/page";
+import VerifyEmailPage from "../src/app/(auth)/verify-email/[token]/page";
 import { navigationMocks } from "./setup";
 
 const apiClientMock = vi.hoisted(() => ({

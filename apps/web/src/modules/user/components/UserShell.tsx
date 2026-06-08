@@ -7,8 +7,8 @@ import { SideNav } from "@/components/layout/SideNav";
 import { apiClient } from "@/lib/axios";
 import { getCurrentUser } from "@/modules/auth-api";
 import { API_ENDPOINTS } from "@/shared/constants";
-import { ROUTE_PATHS } from "../../../routes/router.const";
-import { useAuthStore } from "../../../stores/auth/store";
+import { ROUTE_PATHS } from "@/routes/router.const";
+import { useAuthStore } from "@/stores/auth/store";
 import { USER_NAV_ITEMS } from "@/constants/nav.const";
 import { UserInfo } from "@/components/ui/UserInfo";
 

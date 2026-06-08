@@ -9,7 +9,7 @@ import { Card } from "@/components/ui/Card";
 import { InputField } from "@/components/ui/InputField";
 import { Pagination } from "@/components/ui/Pagination";
 import { Table, type TableRow } from "@/components/ui/Table";
-import { userRouterConfig } from "../../../routes/user/user.routes";
+import { userRouterConfig } from "@/routes/user/user.routes";
 
 type DocumentRow = {
   title: string;
