@@ -13,7 +13,7 @@
  * isPublic=true  → "Công khai tài liệu" (PENDING, awaiting moderation)
  */
 
-import { useCallback, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import { validateFile } from "@/utils/validate.file";
 import { createDocument } from "@/apis/document.api";
 import { DEFAULT_UPLOAD_CONFIG } from "@/constants/upload.const";
@@ -56,6 +56,7 @@ export function useDocumentUpload() {
   });
 
   // Submit state
+  const isSubmittingRef = useRef(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [isSuccess, setIsSuccess] = useState(false);
@@ -120,6 +121,10 @@ export function useDocumentUpload() {
    */
   const handleSubmit = useCallback(
     async (isPublic: boolean) => {
+      if (isSubmittingRef.current) {
+        return;
+      }
+
       // ── Client-side validation ───────────────────────────────────────────
       if (!selectedFile) {
         setSubmitError("Vui lòng chọn tệp tài liệu.");
@@ -136,6 +141,7 @@ export function useDocumentUpload() {
         return;
       }
 
+      isSubmittingRef.current = true;
       setIsSubmitting(true);
       setSubmitError(null);
 
@@ -183,6 +189,7 @@ export function useDocumentUpload() {
             : "Đã xảy ra lỗi. Vui lòng thử lại.",
         );
       } finally {
+        isSubmittingRef.current = false;
         setIsSubmitting(false);
       }
     },

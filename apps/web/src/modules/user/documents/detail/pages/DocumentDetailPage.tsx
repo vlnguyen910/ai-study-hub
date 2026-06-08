@@ -134,11 +134,16 @@ export default function DocumentDetailPage(): React.JSX.Element {
         // ── 1. Fetch the primary document ──────────────────────────────────
         const doc = await fetchDocumentDetail(id);
         setDocument(doc);
+        setRelatedDocuments([]);
 
         // ── 2. Fetch related documents (same subject, excluding current) ───
         // Only runs when the document belongs to a subject; falls back to
         // empty array so the sidebar degrades gracefully.
-        if (doc.subject?.id) {
+        if (!doc.subject?.id) {
+          return;
+        }
+
+        try {
           const relatedResponse = await fetchDocuments({
             subjectId: doc.subject.id,
             limit: 4,
@@ -149,6 +154,8 @@ export default function DocumentDetailPage(): React.JSX.Element {
             .slice(0, 3); // cap at 3 items in the sidebar
 
           setRelatedDocuments(filtered);
+        } catch (relatedError) {
+          console.error("Could not load related documents", relatedError);
         }
       } catch {
         setError("Không thể tải tài liệu. Vui lòng thử lại.");

@@ -67,7 +67,7 @@ interface Props {
 // ── Component ─────────────────────────────────────────────────────────────────
 
 export function PersonalInfoForm({ user }: Props): React.JSX.Element {
-  const { setAuth, accessToken, role, refreshToken } = useAuthStore();
+  const setUser = useAuthStore((state) => state.setUser);
 
   // ── Edit mode ────────────────────────────────────────────────────────────────
   const [isEditing, setIsEditing] = useState(false);
@@ -125,15 +125,10 @@ export function PersonalInfoForm({ user }: Props): React.JSX.Element {
       await updateProfile(user.id, { name: values.name });
 
       // Update the auth store so the SideNav reflects the change immediately
-      setAuth(
-        accessToken ?? null,
-        role ?? "student",
-        {
-          ...user,
-          name: values.name,
-        },
-        refreshToken ?? null,
-      );
+      setUser({
+        ...user,
+        name: values.name,
+      });
 
       setIsEditing(false);
       setStatusMessage("Cập nhật hồ sơ thành công.");
