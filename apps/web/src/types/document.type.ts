@@ -76,11 +76,19 @@ export interface CreateDocumentPayload {
   isPublic: boolean;
 }
 
+export interface UpdateDocumentPayload {
+  title?: string;
+  description?: string;
+  subjectId?: string;
+  isPublic?: boolean;
+}
+
 export interface ListDocumentsQuery {
   page?: number;
   limit?: number;
   subjectId?: string;
   authorId?: string;
+  status?: DocumentStatus;
 }
 
 /**
