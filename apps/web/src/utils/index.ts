@@ -83,3 +83,16 @@ export const formatNumber = (num: number): string => {
 export const formatDate = (date: Date | string): string => {
   return new Date(date).toLocaleDateString("vi-VN");
 };
+
+/**
+ * Converts a raw byte count into a human-readable string (KB / MB / GB).
+ * Handles undefined/null gracefully — returns "—" when size is unknown.
+ */
+export const formatFileSize = (bytes: number | null | undefined): string => {
+  if (bytes == null || bytes <= 0) return "—";
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  if (bytes < 1024 * 1024 * 1024)
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+  return `${(bytes / (1024 * 1024 * 1024)).toFixed(1)} GB`;
+};

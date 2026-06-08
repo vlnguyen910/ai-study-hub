@@ -7,6 +7,7 @@ import { ROUTE_PATHS } from "../router.const";
 
 export const USER_PROTECTED_ROUTES = [
   ROUTE_PATHS.PROTECTED_ROUTES.HOME,
+  ROUTE_PATHS.PROTECTED_ROUTES.LIBRARY,
   ROUTE_PATHS.PROTECTED_ROUTES.PROFILE,
   ROUTE_PATHS.PROTECTED_ROUTES.SETTINGS,
   ROUTE_PATHS.PROTECTED_ROUTES.UPLOADS,
@@ -19,6 +20,12 @@ export const userRouterConfig = {
   HOME: {
     path: ROUTE_PATHS.PROTECTED_ROUTES.HOME,
     title: "Trang chủ",
+    public: false,
+    requiresAuth: true,
+  },
+  LIBRARY: {
+    path: ROUTE_PATHS.PROTECTED_ROUTES.LIBRARY,
+    title: "Thư viện",
     public: false,
     requiresAuth: true,
   },

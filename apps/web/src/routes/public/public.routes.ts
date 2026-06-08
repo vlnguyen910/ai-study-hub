@@ -7,7 +7,6 @@ import { ROUTE_PATHS } from "../router.const";
 
 export const PUBLIC_ROUTES = [
   ROUTE_PATHS.HOME,
-  ROUTE_PATHS.LIBRARY,
   ROUTE_PATHS.STYLE_GUIDE,
   ROUTE_PATHS.ABOUT,
   ROUTE_PATHS.TERMS,
@@ -18,12 +17,6 @@ export const publicRouterConfig = {
   HOME: {
     path: ROUTE_PATHS.HOME,
     title: "Trang chủ",
-    public: true,
-    requiresAuth: false,
-  },
-  LIBRARY: {
-    path: ROUTE_PATHS.LIBRARY,
-    title: "Thư viện",
     public: true,
     requiresAuth: false,
   },
