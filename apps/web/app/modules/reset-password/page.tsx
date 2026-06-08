@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import type { ReactElement } from "react";
 import { Button } from "@repo/ui/button";
+import { BackButton } from "@/components/ui/BackButton";
 import { resetPassword } from "../auth-api";
 
 export default function ResetPasswordPage(): ReactElement {
@@ -84,6 +85,10 @@ export default function ResetPasswordPage(): ReactElement {
       <div className="min-h-screen bg-gray-100 flex flex-col">
         <div className="flex-1 flex items-center justify-center p-8">
           <div className="w-full max-w-md bg-white rounded-lg shadow p-12 flex flex-col gap-6">
+            <BackButton
+              fallbackHref="/forgot-password"
+              className="self-start"
+            />
             <h1 className="text-2xl font-bold text-center text-gray-900">
               Reset password
             </h1>
@@ -106,6 +111,11 @@ export default function ResetPasswordPage(): ReactElement {
     <div className="min-h-screen bg-gray-100 flex flex-col">
       <div className="flex-1 flex items-center justify-center p-8">
         <div className="w-full max-w-md bg-white rounded-lg shadow p-12 flex flex-col">
+          <BackButton
+            fallbackHref="/forgot-password"
+            className="mb-6 self-start"
+          />
+
           <div className="flex items-center justify-center gap-2 text-2xl font-bold text-blue-600 mb-6">
             <svg
               width="24"
@@ -153,10 +163,10 @@ export default function ResetPasswordPage(): ReactElement {
               </div>
 
               <Link
-                href="/"
+                href="/login"
                 className="inline-flex h-12 w-full items-center justify-center rounded bg-blue-600 px-4 text-sm font-semibold text-white hover:bg-blue-700"
               >
-                Continue to home
+                Continue to sign in
               </Link>
             </div>
           ) : (

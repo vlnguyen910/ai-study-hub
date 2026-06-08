@@ -17,11 +17,33 @@ export const apiClient = axios.create({
   withCredentials: true,
 });
 
-// ✅ Thay thế window.location.href = "/login"
-const handleLogoutAndShowLogin = () => {
+const isAuthPage = (pathname: string): boolean =>
+  pathname === "/login" ||
+  pathname === "/register" ||
+  pathname === "/forgot-password" ||
+  pathname === "/verify-email-pending" ||
+  pathname.startsWith("/reset-password") ||
+  pathname.startsWith("/verify-email/");
+
+export const getLoginRedirectHref = (pathname: string, search = ""): string => {
+  if (!pathname || pathname === "/" || isAuthPage(pathname)) {
+    return "/login";
+  }
+
+  return `/login?redirect=${encodeURIComponent(`${pathname}${search}`)}`;
+};
+
+const handleLogoutAndRedirectToLogin = () => {
   const store = useAuthStore.getState();
   store.logout();
-  store.setLoginPromptOpen(true);
+
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  window.location.assign(
+    getLoginRedirectHref(window.location.pathname, window.location.search),
+  );
 };
 
 let refreshTokenPromise: Promise<string | null> | null = null;
@@ -75,9 +97,8 @@ apiClient.interceptors.response.use(
     if (axios.isCancel(error)) return Promise.reject(error);
     if (originalRequest.skipToast) return Promise.reject(error);
 
-    // 401 từ auth endpoint (login sai, v.v.) → logout + mở modal
+    // 401 từ auth endpoint (login sai, v.v.) → để page tự hiện lỗi form
     if (is401 && isAuthRequest) {
-      handleLogoutAndShowLogin();
       return Promise.reject(error);
     }
 
@@ -93,13 +114,13 @@ apiClient.interceptors.response.use(
         useAuthStore.getState().setAccessToken(accessToken);
         return apiClient(originalRequest);
       } catch {
-        handleLogoutAndShowLogin();
+        handleLogoutAndRedirectToLogin();
         return Promise.reject(error);
       }
     }
 
     if (is401 && !isAuthRequest) {
-      handleLogoutAndShowLogin();
+      handleLogoutAndRedirectToLogin();
     }
 
     return Promise.reject(error);

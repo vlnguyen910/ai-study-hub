@@ -5,62 +5,14 @@ import { useEffect, useState, type ReactElement } from "react";
 import { apiClient } from "@/lib/axios";
 import { API_ENDPOINTS } from "@/shared/constants";
 import { useAuthStore } from "@/stores";
-import LoginModal from "./components/auth/LoginModal";
-import RegisterModal from "./components/auth/RegisterModal";
 
 export default function Home(): ReactElement {
   const [mounted, setMounted] = useState(false);
-  const [isLoginOpen, setIsLoginOpen] = useState(false);
-  const [isRegisterOpen, setIsRegisterOpen] = useState(false);
-  const {
-    isAuthenticated,
-    user,
-    logout,
-    isLoginPromptOpen,
-    setLoginPromptOpen,
-  } = useAuthStore();
+  const { isAuthenticated, user, logout } = useAuthStore();
 
   useEffect(() => {
     setMounted(true);
   }, []);
-
-  useEffect(() => {
-    if (isLoginPromptOpen) {
-      setIsLoginOpen(true);
-      setLoginPromptOpen(false);
-    }
-  }, [isLoginPromptOpen, setLoginPromptOpen]);
-
-  useEffect(() => {
-    const isOpen = isLoginOpen || isRegisterOpen;
-    if (!isOpen) return;
-
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
-        setIsLoginOpen(false);
-        setIsRegisterOpen(false);
-      }
-    };
-
-    document.addEventListener("keydown", handleKeyDown);
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-
-    return () => {
-      document.removeEventListener("keydown", handleKeyDown);
-      document.body.style.overflow = previousOverflow;
-    };
-  }, [isLoginOpen, isRegisterOpen]);
-
-  const openLogin = () => {
-    setIsRegisterOpen(false);
-    setIsLoginOpen(true);
-  };
-
-  const openRegister = () => {
-    setIsLoginOpen(false);
-    setIsRegisterOpen(true);
-  };
 
   return (
     <div className="min-h-screen bg-white text-gray-900 flex flex-col overflow-x-hidden">
@@ -150,10 +102,11 @@ export default function Home(): ReactElement {
                 type="button"
                 onClick={async () => {
                   try {
-                    await apiClient.post(API_ENDPOINTS.AUTH.LOGOUT);
+                    await apiClient.post(API_ENDPOINTS.AUTH.LOGOUT, null, {
+                      skipToast: true,
+                    });
                   } finally {
                     logout();
-                    window.location.reload();
                   }
                 }}
                 className="text-xs text-red-600 hover:text-red-800 underline transition-colors cursor-pointer font-medium"
@@ -162,13 +115,20 @@ export default function Home(): ReactElement {
               </button>
             </div>
           ) : (
-            <button
-              type="button"
-              onClick={openLogin}
-              className="bg-[#004ac6] hover:bg-[#2c5b9e] text-white font-bold px-7 py-2.5 rounded-full text-sm shadow-sm transition-colors duration-200 cursor-pointer"
-            >
-              Đăng nhập
-            </button>
+            <div className="flex items-center gap-3">
+              <Link
+                href="/register"
+                className="text-sm font-bold text-gray-600 transition-colors hover:text-[#004ac6]"
+              >
+                Đăng ký
+              </Link>
+              <Link
+                href="/login"
+                className="bg-[#004ac6] hover:bg-[#2c5b9e] text-white font-bold px-7 py-2.5 rounded-full text-sm shadow-sm transition-colors duration-200 cursor-pointer"
+              >
+                Đăng nhập
+              </Link>
+            </div>
           )}
         </div>
       </header>
@@ -274,17 +234,6 @@ export default function Home(): ReactElement {
           </div>
         </section>
       </main>
-
-      <LoginModal
-        isOpen={isLoginOpen}
-        onClose={() => setIsLoginOpen(false)}
-        onOpenRegister={openRegister}
-      />
-      <RegisterModal
-        isOpen={isRegisterOpen}
-        onClose={() => setIsRegisterOpen(false)}
-        onOpenLogin={openLogin}
-      />
     </div>
   );
 }

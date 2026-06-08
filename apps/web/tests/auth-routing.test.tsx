@@ -1,9 +1,14 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+import ForgotPasswordPage from "../app/modules/forgot-password/page";
+import ResetPasswordPage from "../app/modules/reset-password/page";
 import LoginPage from "../app/login/page";
+import RegisterPage from "../app/register/page";
 import { UserShell } from "../app/modules/user/components/UserShell";
 import { useAuthStore } from "../app/stores/auth/store";
+import VerifyEmailPendingPage from "../app/verify-email-pending/page";
+import VerifyEmailPage from "../app/verify-email/[token]/page";
 import { navigationMocks } from "./setup";
 
 const apiClientMock = vi.hoisted(() => ({
@@ -36,6 +41,7 @@ describe("web auth routing", () => {
     vi.clearAllMocks();
     navigationMocks.pathname.mockReturnValue("/");
     navigationMocks.searchParams.mockReturnValue(new URLSearchParams());
+    navigationMocks.params.mockReturnValue({});
     apiClientMock.get.mockResolvedValue({
       id: "user-1",
       email: "student@example.com",
@@ -86,6 +92,45 @@ describe("web auth routing", () => {
     });
   });
 
+  it("submits register without confirmPassword and redirects to verify pending", async () => {
+    apiClientMock.post.mockResolvedValue({ data: null });
+
+    render(<RegisterPage />);
+
+    fireEvent.change(screen.getByLabelText("Họ tên"), {
+      target: { value: "Nguyen Student" },
+    });
+    fireEvent.change(screen.getByLabelText("Email"), {
+      target: { value: "student@example.com" },
+    });
+    fireEvent.change(screen.getByLabelText("Mật khẩu"), {
+      target: { value: "Password123!" },
+    });
+    fireEvent.change(screen.getByLabelText("Xác nhận mật khẩu"), {
+      target: { value: "Password123!" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Đăng ký" }));
+
+    await waitFor(() => {
+      expect(apiClientMock.post).toHaveBeenCalledWith(
+        "/api/v1/auth/signup",
+        expect.objectContaining({
+          name: "Nguyen Student",
+          email: "student@example.com",
+          password: "Password123!",
+          deviceId: expect.any(String),
+        }),
+      );
+      expect(navigationMocks.router.push).toHaveBeenCalledWith(
+        "/verify-email-pending",
+      );
+    });
+
+    expect(apiClientMock.post.mock.calls[0][1]).not.toHaveProperty(
+      "confirmPassword",
+    );
+  });
+
   it("hydrates and displays the current user in the shared sidebar", async () => {
     useAuthStore.getState().setAuth(null, "student", undefined, "refresh");
 
@@ -133,5 +178,30 @@ describe("web auth routing", () => {
       expect(navigationMocks.router.replace).toHaveBeenCalledWith("/login");
     });
     expect(useAuthStore.getState().isAuthenticated).toBe(false);
+  });
+
+  it("renders back buttons on auth pages", async () => {
+    apiClientMock.post.mockResolvedValue({ refreshToken: makeRefreshToken() });
+    apiClientMock.get.mockResolvedValue({ data: null });
+
+    const pages = [
+      <LoginPage key="login" />,
+      <RegisterPage key="register" />,
+      <ForgotPasswordPage key="forgot" />,
+      <ResetPasswordPage key="reset" />,
+      <VerifyEmailPendingPage key="pending" />,
+      <VerifyEmailPage
+        key="verify"
+        params={Promise.reject(new Error("Invalid token"))}
+      />,
+    ];
+
+    for (const page of pages) {
+      const { unmount } = render(page);
+      expect(
+        screen.getByRole("button", { name: /Quay lại/i }),
+      ).toBeInTheDocument();
+      unmount();
+    }
   });
 });
