@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { CheckCircle2, XCircle } from "lucide-react";
 import type { ReactElement } from "react";
+import { BackButton } from "@/components/ui/BackButton";
 import { verifyEmail } from "@/modules/auth-api";
 
 type VerifyEmailPageProps = {
@@ -68,6 +69,8 @@ export default function VerifyEmailPage({
   return (
     <main className="min-h-screen bg-slate-50 px-4 py-10">
       <section className="mx-auto flex min-h-[70vh] w-full max-w-md flex-col items-center justify-center gap-5 text-center">
+        <BackButton fallbackHref="/" className="self-start" />
+
         <div
           className={`flex h-14 w-14 items-center justify-center rounded-full ${
             isSuccess
@@ -90,10 +93,10 @@ export default function VerifyEmailPage({
         <p className="text-sm leading-6 text-slate-600">{message}</p>
 
         <Link
-          href="/"
+          href="/login"
           className="inline-flex h-11 items-center justify-center rounded-md bg-[#004ac6] px-5 text-sm font-semibold text-white transition-colors hover:bg-[#2c5b9e]"
         >
-          Continue
+          Continue to sign in
         </Link>
       </section>
     </main>

@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import type { ReactElement } from "react";
 import { Button } from "@repo/ui/button";
+import { BackButton } from "@/components/ui/BackButton";
 import { forgotPassword } from "../auth-api";
 
 export default function ForgotPasswordPage(): ReactElement {
@@ -48,6 +49,8 @@ export default function ForgotPasswordPage(): ReactElement {
     <div className="min-h-screen bg-gray-100 flex flex-col">
       <div className="flex-1 flex items-center justify-center p-8">
         <div className="w-full max-w-md bg-white rounded-lg shadow p-12 flex flex-col">
+          <BackButton fallbackHref="/" className="mb-6 self-start" />
+
           <div className="flex items-center justify-center gap-2 text-2xl font-bold text-blue-600 mb-6">
             <svg
               width="24"
@@ -108,10 +111,10 @@ export default function ForgotPasswordPage(): ReactElement {
                   Send again
                 </Button>
                 <Link
-                  href="/"
+                  href="/login"
                   className="inline-flex h-12 items-center justify-center rounded border border-gray-300 px-4 text-sm font-semibold text-gray-700 hover:bg-gray-50"
                 >
-                  Back to home
+                  Back to sign in
                 </Link>
               </div>
             </div>
@@ -166,7 +169,7 @@ export default function ForgotPasswordPage(): ReactElement {
               <div className="text-center text-sm text-gray-600">
                 Remembered your password?{" "}
                 <Link
-                  href="/"
+                  href="/login"
                   className="text-blue-600 hover:underline font-medium"
                 >
                   Sign in

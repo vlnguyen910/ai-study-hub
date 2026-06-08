@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { MailCheck } from "lucide-react";
 import type { ReactElement } from "react";
+import { BackButton } from "@/components/ui/BackButton";
 import { resendVerificationEmail } from "@/modules/auth-api";
 
 export default function VerifyEmailPendingPage(): ReactElement {
@@ -37,6 +38,8 @@ export default function VerifyEmailPendingPage(): ReactElement {
   return (
     <main className="min-h-screen bg-slate-50 px-4 py-10">
       <section className="mx-auto flex min-h-[70vh] w-full max-w-md flex-col justify-center gap-6">
+        <BackButton fallbackHref="/" className="self-start" />
+
         <div className="flex flex-col items-center gap-3 text-center">
           <div className="flex h-14 w-14 items-center justify-center rounded-full bg-blue-50 text-blue-700">
             <MailCheck size={28} aria-hidden="true" />

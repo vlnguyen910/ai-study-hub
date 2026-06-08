@@ -13,6 +13,7 @@ export const navigationMocks = {
     replace: vi.fn(),
   },
   searchParams: vi.fn(() => new URLSearchParams()),
+  params: vi.fn(() => ({})),
 };
 
 Object.assign(globalThis, { navigationMocks });
@@ -42,4 +43,10 @@ vi.mock("next/navigation", () => ({
         navigationMocks: typeof navigationMocks;
       }
     ).navigationMocks.searchParams(),
+  useParams: () =>
+    (
+      globalThis as typeof globalThis & {
+        navigationMocks: typeof navigationMocks;
+      }
+    ).navigationMocks.params(),
 }));

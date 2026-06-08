@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useState, type FormEvent, type ReactElement } from "react";
 
+import { BackButton } from "@/components/ui/BackButton";
 import { buildUserFromRefreshToken, extractRefreshToken } from "@/lib/auth";
 import { apiClient } from "@/lib/axios";
 import { ROUTE_PATHS } from "@/routes/router.const";
@@ -75,13 +76,18 @@ export default function LoginPage(): ReactElement {
   return (
     <main className="min-h-screen bg-surface text-on-surface">
       <div className="mx-auto flex min-h-screen w-full max-w-md flex-col justify-center px-4 py-10">
-        <Link
-          href={ROUTE_PATHS.HOME}
-          className="mb-8 inline-flex items-center gap-2 self-start font-headline-sm text-headline-sm font-bold text-primary"
-        >
-          <span className="material-symbols-outlined text-[24px]">school</span>
-          AI Study Hub
-        </Link>
+        <div className="mb-6 flex items-center justify-between gap-4">
+          <BackButton fallbackHref={ROUTE_PATHS.HOME} />
+          <Link
+            href={ROUTE_PATHS.HOME}
+            className="inline-flex items-center gap-2 font-headline-sm text-headline-sm font-bold text-primary"
+          >
+            <span className="material-symbols-outlined text-[24px]">
+              school
+            </span>
+            AI Study Hub
+          </Link>
+        </div>
 
         <section className="rounded-2xl border border-outline-variant bg-surface-container-lowest p-6 shadow-sm shadow-black/5 sm:p-8">
           <div className="mb-8">
@@ -143,6 +149,16 @@ export default function LoginPage(): ReactElement {
           >
             Quên mật khẩu?
           </Link>
+
+          <p className="mt-5 font-label-sm text-label-sm text-on-surface-variant">
+            Chưa có tài khoản?{" "}
+            <Link
+              href={ROUTE_PATHS.AUTH_ROUTES.REGISTER}
+              className="font-medium text-primary hover:underline"
+            >
+              Đăng ký
+            </Link>
+          </p>
         </section>
       </div>
     </main>
