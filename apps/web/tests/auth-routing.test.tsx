@@ -20,11 +20,11 @@ vi.mock("@/lib/axios", () => ({
   apiClient: apiClientMock,
 }));
 
-const makeRefreshToken = () => {
+const makeRefreshToken = (role = "USER") => {
   const payload = Buffer.from(
     JSON.stringify({
       sub: "user-1",
-      role: "USER",
+      role,
       status: "ACTIVE",
       type: "refreshToken",
       deviceId: "device-1",
@@ -89,6 +89,46 @@ describe("web auth routing", () => {
 
     await waitFor(() => {
       expect(navigationMocks.router.replace).toHaveBeenCalledWith("/uploads");
+    });
+  });
+
+  it("redirects admins to /admin after successful login by default", async () => {
+    apiClientMock.post.mockResolvedValue({
+      refreshToken: makeRefreshToken("ADMIN"),
+    });
+
+    render(<LoginPage />);
+
+    fireEvent.change(screen.getByLabelText("Email"), {
+      target: { value: "admin@example.com" },
+    });
+    fireEvent.change(screen.getByLabelText("Mật khẩu"), {
+      target: { value: "Password123!" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Đăng nhập" }));
+
+    await waitFor(() => {
+      expect(navigationMocks.router.replace).toHaveBeenCalledWith("/admin");
+    });
+  });
+
+  it("redirects moderators to /moderator after successful login by default", async () => {
+    apiClientMock.post.mockResolvedValue({
+      refreshToken: makeRefreshToken("MODERATOR"),
+    });
+
+    render(<LoginPage />);
+
+    fireEvent.change(screen.getByLabelText("Email"), {
+      target: { value: "moderator@example.com" },
+    });
+    fireEvent.change(screen.getByLabelText("Mật khẩu"), {
+      target: { value: "Password123!" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Đăng nhập" }));
+
+    await waitFor(() => {
+      expect(navigationMocks.router.replace).toHaveBeenCalledWith("/moderator");
     });
   });
 

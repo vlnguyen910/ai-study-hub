@@ -16,6 +16,7 @@ export const API_ENDPOINTS = {
   ACCOUNTS: {
     BASE: "/api/v1/accounts",
     DETAIL: (id: string) => `/api/v1/accounts/${id}`,
+    BAN: (id: string) => `/api/v1/accounts/${id}/ban`,
   },
   DOCUMENTS: {
     BASE: "/api/v1/documents",

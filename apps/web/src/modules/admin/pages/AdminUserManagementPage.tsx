@@ -8,14 +8,20 @@ import { Pagination } from "@/components/ui/Pagination";
 import { SearchInput } from "@/components/ui/SearchInput";
 import { SelectField } from "@/components/ui/SelectField";
 import { Table, type TableRow } from "@/components/ui/Table";
-import { useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import {
+  banAdminAccount,
+  createAdminAccount,
+  fetchAdminAccountDetail,
+  fetchAdminAccounts,
+  type AdminAccount,
+} from "../api";
 import {
   AdminCard,
   AdminIconAction,
   AdminSelect,
   MaterialIcon,
 } from "../components/AdminPrimitives";
-import { mockUsers } from "../mockData";
 import type { AdminUser, AdminUserRole, AdminUserStatus } from "../types";
 
 const userColumns = [
@@ -29,57 +35,96 @@ const userColumns = [
 ] as const;
 
 const roleLabels: Record<AdminUserRole, string> = {
-  admin: "Quản trị viên",
-  moderator: "Kiểm duyệt viên",
-  user: "Người dùng",
-  guest: "Khách",
+  ADMIN: "Quản trị viên",
+  MODERATOR: "Kiểm duyệt viên",
+  USER: "Người dùng",
 };
 
 const statusLabels: Record<AdminUserStatus, string> = {
-  active: "Đang hoạt động",
-  inactive: "Không hoạt động",
-  suspended: "Tạm khóa",
+  ACTIVE: "Đang hoạt động",
+  UNVERIFIED: "Chưa xác thực",
+  BANNED: "Đã khóa",
+  DELETED: "Đã xóa",
 };
 
 const statusTone: Record<
   AdminUserStatus,
   "success" | "warning" | "error" | "neutral"
 > = {
-  active: "success",
-  inactive: "neutral",
-  suspended: "error",
+  ACTIVE: "success",
+  UNVERIFIED: "warning",
+  BANNED: "error",
+  DELETED: "neutral",
 };
 
 interface UserDraft {
   readonly name: string;
   readonly email: string;
+  readonly password: string;
+  readonly avatarUrl: string;
   readonly role: AdminUserRole;
-  readonly status: AdminUserStatus;
+  readonly status: Exclude<AdminUserStatus, "DELETED">;
 }
 
 const emptyDraft: UserDraft = {
   name: "",
   email: "",
-  role: "user",
-  status: "active",
+  password: "",
+  avatarUrl: "",
+  role: "USER",
+  status: "UNVERIFIED",
 };
 
 const pageSize = 6;
 
+const formatDate = (value?: string): string => {
+  if (!value) {
+    return "Chưa có dữ liệu";
+  }
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return value;
+  }
+
+  return new Intl.DateTimeFormat("vi-VN", {
+    dateStyle: "short",
+    timeStyle: "short",
+  }).format(date);
+};
+
+const getErrorMessage = (error: unknown, fallback: string): string => {
+  if (error instanceof Error) {
+    return error.message;
+  }
+
+  return fallback;
+};
+
+const mapAccountToUser = (account: AdminAccount): AdminUser => ({
+  id: account.id,
+  name: account.name,
+  email: account.email,
+  avatarUrl: account.avatarUrl,
+  role: account.role,
+  status: account.status,
+  createdAt: formatDate(account.createdAt),
+  updatedAt: account.updatedAt ? formatDate(account.updatedAt) : undefined,
+  lastLogin: "Chưa có dữ liệu",
+});
+
 const roleLabelsMap: Record<"all" | AdminUserRole, string> = {
   all: "Tất cả vai trò",
-  admin: "Quản trị viên",
-  moderator: "Kiểm duyệt viên",
-  user: "Người dùng",
-  guest: "Khách",
+  ADMIN: "Quản trị viên",
+  MODERATOR: "Kiểm duyệt viên",
+  USER: "Người dùng",
 };
 
 const roleValuesMap: Record<string, "all" | AdminUserRole> = {
   "Tất cả vai trò": "all",
-  "Quản trị viên": "admin",
-  "Kiểm duyệt viên": "moderator",
-  "Người dùng": "user",
-  Khách: "guest",
+  "Quản trị viên": "ADMIN",
+  "Kiểm duyệt viên": "MODERATOR",
+  "Người dùng": "USER",
 };
 
 const roleOptionsList = Object.values(roleLabelsMap);
@@ -88,39 +133,40 @@ const editableRoleOptions: readonly {
   readonly label: string;
   readonly value: AdminUserRole;
 }[] = [
-  { label: "Quản trị viên", value: "admin" },
-  { label: "Kiểm duyệt viên", value: "moderator" },
-  { label: "Người dùng", value: "user" },
-  { label: "Khách", value: "guest" },
+  { label: "Kiểm duyệt viên", value: "MODERATOR" },
+  { label: "Người dùng", value: "USER" },
+  { label: "Quản trị viên", value: "ADMIN" },
 ];
 
 const statusLabelsMap: Record<"all" | AdminUserStatus, string> = {
   all: "Tất cả trạng thái",
-  active: "Đang hoạt động",
-  inactive: "Không hoạt động",
-  suspended: "Tạm khóa",
+  ACTIVE: "Đang hoạt động",
+  UNVERIFIED: "Chưa xác thực",
+  BANNED: "Đã khóa",
+  DELETED: "Đã xóa",
 };
 
 const statusValuesMap: Record<string, "all" | AdminUserStatus> = {
   "Tất cả trạng thái": "all",
-  "Đang hoạt động": "active",
-  "Không hoạt động": "inactive",
-  "Tạm khóa": "suspended",
+  "Đang hoạt động": "ACTIVE",
+  "Chưa xác thực": "UNVERIFIED",
+  "Đã khóa": "BANNED",
+  "Đã xóa": "DELETED",
 };
 
 const statusOptionsList = Object.values(statusLabelsMap);
 
 const editableStatusOptions: readonly {
   readonly label: string;
-  readonly value: AdminUserStatus;
+  readonly value: Exclude<AdminUserStatus, "DELETED">;
 }[] = [
-  { label: "Đang hoạt động", value: "active" },
-  { label: "Không hoạt động", value: "inactive" },
-  { label: "Tạm khóa", value: "suspended" },
+  { label: "Chưa xác thực", value: "UNVERIFIED" },
+  { label: "Đang hoạt động", value: "ACTIVE" },
+  { label: "Đã khóa", value: "BANNED" },
 ];
 
 export default function AdminUserManagementPage(): React.JSX.Element {
-  const [users, setUsers] = useState<AdminUser[]>(mockUsers);
+  const [users, setUsers] = useState<AdminUser[]>([]);
   const [query, setQuery] = useState("");
   const [roleFilter, setRoleFilter] = useState<"all" | AdminUserRole>("all");
   const [statusFilter, setStatusFilter] = useState<"all" | AdminUserStatus>(
@@ -128,10 +174,35 @@ export default function AdminUserManagementPage(): React.JSX.Element {
   );
   const [currentPage, setCurrentPage] = useState(1);
   const [formOpen, setFormOpen] = useState(false);
-  const [editingUser, setEditingUser] = useState<AdminUser | null>(null);
   const [viewUser, setViewUser] = useState<AdminUser | null>(null);
-  const [deleteUser, setDeleteUser] = useState<AdminUser | null>(null);
+  const [banUser, setBanUser] = useState<AdminUser | null>(null);
   const [draft, setDraft] = useState<UserDraft>(emptyDraft);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
+  const [isDetailLoading, setIsDetailLoading] = useState(false);
+  const [isBanning, setIsBanning] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
+  const [formErrorMessage, setFormErrorMessage] = useState("");
+
+  const loadUsers = useCallback(async () => {
+    setIsLoading(true);
+    setErrorMessage("");
+
+    try {
+      const accounts = await fetchAdminAccounts();
+      setUsers(accounts.map(mapAccountToUser));
+    } catch (error) {
+      setErrorMessage(
+        getErrorMessage(error, "Không thể tải danh sách người dùng."),
+      );
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    void loadUsers();
+  }, [loadUsers]);
 
   const filteredUsers = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase();
@@ -164,80 +235,83 @@ export default function AdminUserManagementPage(): React.JSX.Element {
   };
 
   const handleOpenAdd = () => {
-    setEditingUser(null);
     setDraft(emptyDraft);
+    setFormErrorMessage("");
     setFormOpen(true);
   };
 
-  const handleOpenEdit = (user: AdminUser) => {
-    setEditingUser(user);
-    setDraft({
-      name: user.name,
-      email: user.email,
-      role: user.role,
-      status: user.status,
-    });
-    setFormOpen(true);
-  };
+  const handleOpenDetail = async (user: AdminUser) => {
+    setIsDetailLoading(true);
+    setErrorMessage("");
 
-  const handleSaveUser = () => {
-    if (!draft.name.trim() || !draft.email.trim()) {
-      return;
-    }
-
-    if (editingUser) {
-      setUsers((current) =>
-        current.map((user) =>
-          user.id === editingUser.id
-            ? {
-                ...user,
-                name: draft.name.trim(),
-                email: draft.email.trim(),
-                role: draft.role,
-                status: draft.status,
-              }
-            : user,
-        ),
+    try {
+      const account = await fetchAdminAccountDetail(user.id);
+      setViewUser(mapAccountToUser(account));
+    } catch (error) {
+      setErrorMessage(
+        getErrorMessage(error, "Không thể tải chi tiết tài khoản."),
       );
-      setEditingUser(null);
-      setFormOpen(false);
+    } finally {
+      setIsDetailLoading(false);
+    }
+  };
+
+  const handleSaveUser = async () => {
+    if (
+      !draft.name.trim() ||
+      !draft.email.trim() ||
+      draft.password.trim().length < 8
+    ) {
+      setFormErrorMessage(
+        "Vui lòng nhập tên, email và mật khẩu ít nhất 8 ký tự.",
+      );
       return;
     }
 
-    const nextNumber =
-      Math.max(
-        ...users.map((user) => Number(user.id.replace("USR-", ""))),
-        1000,
-      ) + 1;
+    setIsSaving(true);
+    setFormErrorMessage("");
 
-    setUsers((current) => [
-      {
-        id: `USR-${nextNumber}`,
+    try {
+      await createAdminAccount({
         name: draft.name.trim(),
         email: draft.email.trim(),
+        password: draft.password,
+        avatarUrl: draft.avatarUrl.trim() || undefined,
         role: draft.role,
         status: draft.status,
-        createdAt: "26/05/2026",
-        lastLogin: "Chưa đăng nhập",
-      },
-      ...current,
-    ]);
-    setDraft(emptyDraft);
-    setFormOpen(false);
-    setCurrentPage(1);
+      });
+      setDraft(emptyDraft);
+      setFormOpen(false);
+      setCurrentPage(1);
+      await loadUsers();
+    } catch (error) {
+      setFormErrorMessage(getErrorMessage(error, "Không thể tạo tài khoản."));
+    } finally {
+      setIsSaving(false);
+    }
   };
 
-  const handleDeactivateUser = (user: AdminUser) => {
-    setUsers((current) =>
-      current.map((item) =>
-        item.id === user.id
-          ? {
-              ...item,
-              status: item.status === "inactive" ? "active" : "inactive",
-            }
-          : item,
-      ),
-    );
+  const handleBanUser = async () => {
+    if (!banUser) {
+      return;
+    }
+
+    setIsBanning(true);
+    setErrorMessage("");
+
+    try {
+      await banAdminAccount(banUser.id);
+      setUsers((current) =>
+        current.map((user) =>
+          user.id === banUser.id ? { ...user, status: "BANNED" } : user,
+        ),
+      );
+      setBanUser(null);
+    } catch (error) {
+      setErrorMessage(getErrorMessage(error, "Không thể khóa tài khoản."));
+    } finally {
+      setIsBanning(false);
+    }
   };
 
   const rows: TableRow[] = visibleUsers.map((user) => ({
@@ -263,7 +337,7 @@ export default function AdminUserManagementPage(): React.JSX.Element {
       >
         {user.email}
       </span>,
-      <Badge key="role" tone={user.role === "admin" ? "warning" : "neutral"}>
+      <Badge key="role" tone={user.role === "ADMIN" ? "warning" : "neutral"}>
         {roleLabels[user.role]}
       </Badge>,
       <Badge key="status" tone={statusTone[user.status]}>
@@ -279,28 +353,12 @@ export default function AdminUserManagementPage(): React.JSX.Element {
         <AdminIconAction
           icon="visibility"
           label={`Xem ${user.name}`}
-          onClick={() => setViewUser(user)}
+          onClick={() => void handleOpenDetail(user)}
         />
         <AdminIconAction
-          icon="edit"
-          label={`Sửa ${user.name}`}
-          onClick={() => handleOpenEdit(user)}
-          tone="primary"
-        />
-        <AdminIconAction
-          icon={user.status === "inactive" ? "toggle_on" : "block"}
-          label={
-            user.status === "inactive"
-              ? `Kích hoạt ${user.name}`
-              : `Ngưng kích hoạt ${user.name}`
-          }
-          onClick={() => handleDeactivateUser(user)}
-          tone="tertiary"
-        />
-        <AdminIconAction
-          icon="delete"
-          label={`Xóa ${user.name}`}
-          onClick={() => setDeleteUser(user)}
+          icon="block"
+          label={`Khóa ${user.name}`}
+          onClick={() => setBanUser(user)}
           tone="error"
         />
       </div>,
@@ -326,6 +384,12 @@ export default function AdminUserManagementPage(): React.JSX.Element {
           Thêm người dùng
         </Button>
       </div>
+
+      {errorMessage ? (
+        <div className="mb-6 rounded border border-error/30 bg-error-container px-4 py-3 font-label-sm text-label-sm text-error">
+          {errorMessage}
+        </div>
+      ) : null}
 
       <Card className="mb-6 p-4">
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(320px,1fr)_220px_220px_auto] lg:items-end">
@@ -360,6 +424,9 @@ export default function AdminUserManagementPage(): React.JSX.Element {
             options={statusOptionsList}
             value={statusLabelsMap[statusFilter]}
           />
+          <Button onClick={handleResetFilters} variant="outline">
+            Xóa lọc
+          </Button>
         </div>
       </Card>
 
@@ -377,7 +444,17 @@ export default function AdminUserManagementPage(): React.JSX.Element {
             Trang {currentPage}/{totalPages}
           </Badge>
         </div>
-        <Table columns={userColumns} rows={rows} />
+        {isLoading ? (
+          <div className="p-6 font-body-md text-body-md text-on-surface-variant">
+            Đang tải danh sách người dùng...
+          </div>
+        ) : rows.length > 0 ? (
+          <Table columns={userColumns} rows={rows} />
+        ) : (
+          <div className="p-6 font-body-md text-body-md text-on-surface-variant">
+            Không có tài khoản phù hợp.
+          </div>
+        )}
         <div className="flex flex-col gap-3 border-t border-outline-variant p-4 sm:flex-row sm:items-center sm:justify-between">
           <p className="font-label-sm text-label-sm text-on-surface-variant tracking-normal">
             Hiển thị {visibleUsers.length} trên {filteredUsers.length} người
@@ -394,11 +471,12 @@ export default function AdminUserManagementPage(): React.JSX.Element {
       {formOpen ? (
         <UserFormDialog
           draft={draft}
-          editingUser={editingUser}
+          errorMessage={formErrorMessage}
+          isSaving={isSaving}
           onCancel={() => {
             setFormOpen(false);
-            setEditingUser(null);
             setDraft(emptyDraft);
+            setFormErrorMessage("");
           }}
           onChange={setDraft}
           onSave={handleSaveUser}
@@ -409,24 +487,26 @@ export default function AdminUserManagementPage(): React.JSX.Element {
         <UserDetailDialog onClose={() => setViewUser(null)} user={viewUser} />
       ) : null}
 
+      {isDetailLoading ? (
+        <div className="fixed inset-0 z-[70] flex items-center justify-center bg-inverse-surface/20 px-4 py-8">
+          <div className="rounded border border-outline-variant bg-surface-container-lowest px-5 py-3 font-label-md text-label-md text-on-surface">
+            Đang tải chi tiết...
+          </div>
+        </div>
+      ) : null}
+
       <AdminConfirmDialog
-        confirmLabel="Xóa"
+        confirmLabel={isBanning ? "Đang khóa..." : "Khóa"}
         description={
-          deleteUser
-            ? `Tài khoản ${deleteUser.name} sẽ bị xóa khỏi danh sách.`
+          banUser
+            ? `Tài khoản ${banUser.name} sẽ chuyển sang trạng thái đã khóa.`
             : ""
         }
-        onCancel={() => setDeleteUser(null)}
-        onConfirm={() => {
-          if (deleteUser) {
-            setUsers((current) =>
-              current.filter((user) => user.id !== deleteUser.id),
-            );
-            setDeleteUser(null);
-          }
-        }}
-        open={deleteUser !== null}
-        title="Xóa người dùng"
+        disabled={isBanning}
+        onCancel={() => setBanUser(null)}
+        onConfirm={() => void handleBanUser()}
+        open={banUser !== null}
+        title="Khóa người dùng"
       />
     </div>
   );
@@ -434,18 +514,24 @@ export default function AdminUserManagementPage(): React.JSX.Element {
 
 function UserFormDialog({
   draft,
-  editingUser,
+  errorMessage,
+  isSaving,
   onCancel,
   onChange,
   onSave,
 }: {
   readonly draft: UserDraft;
-  readonly editingUser: AdminUser | null;
+  readonly errorMessage: string;
+  readonly isSaving: boolean;
   readonly onCancel: () => void;
   readonly onChange: (draft: UserDraft) => void;
   readonly onSave: () => void;
 }): React.JSX.Element {
-  const canSave = draft.name.trim().length > 0 && draft.email.trim().length > 0;
+  const canSave =
+    draft.name.trim().length > 0 &&
+    draft.email.trim().length > 0 &&
+    draft.password.trim().length >= 8 &&
+    !isSaving;
 
   return (
     <div className="fixed inset-0 z-[80] flex items-center justify-center bg-inverse-surface/35 px-4 py-8">
@@ -459,10 +545,10 @@ function UserFormDialog({
         <div className="mb-6 flex items-start justify-between gap-4">
           <div>
             <h2 className="text-xl font-semibold tracking-normal text-on-surface">
-              {editingUser ? "Chỉnh sửa người dùng" : "Thêm người dùng"}
+              Thêm người dùng
             </h2>
             <p className="font-label-sm text-label-sm text-on-surface-variant tracking-normal">
-              {editingUser?.id ?? "Tài khoản mới"}
+              Tài khoản mới
             </p>
           </div>
           <button
@@ -474,6 +560,11 @@ function UserFormDialog({
             <MaterialIcon name="close" />
           </button>
         </div>
+        {errorMessage ? (
+          <p className="mb-4 rounded border border-error/30 bg-error-container px-4 py-3 font-label-sm text-label-sm text-error">
+            {errorMessage}
+          </p>
+        ) : null}
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <InputField
             label="Tên"
@@ -492,6 +583,24 @@ function UserFormDialog({
             type="email"
             value={draft.email}
           />
+          <InputField
+            label="Mật khẩu"
+            minLength={8}
+            onChange={(event) =>
+              onChange({ ...draft, password: event.target.value })
+            }
+            required
+            type="password"
+            value={draft.password}
+          />
+          <InputField
+            label="Avatar URL"
+            onChange={(event) =>
+              onChange({ ...draft, avatarUrl: event.target.value })
+            }
+            type="url"
+            value={draft.avatarUrl}
+          />
           <AdminSelect
             label="Vai trò"
             onChange={(value) => onChange({ ...draft, role: value })}
@@ -506,11 +615,11 @@ function UserFormDialog({
           />
         </div>
         <div className="mt-6 flex justify-end gap-3 border-t border-outline-variant pt-4">
-          <Button onClick={onCancel} variant="ghost">
+          <Button disabled={isSaving} onClick={onCancel} variant="ghost">
             Hủy
           </Button>
           <Button disabled={!canSave} onClick={onSave}>
-            {editingUser ? "Lưu thay đổi" : "Tạo người dùng"}
+            {isSaving ? "Đang tạo..." : "Tạo người dùng"}
           </Button>
         </div>
       </div>
@@ -556,7 +665,12 @@ function UserDetailDialog({
           <DetailItem label="Vai trò" value={roleLabels[user.role]} />
           <DetailItem label="Trạng thái" value={statusLabels[user.status]} />
           <DetailItem label="Ngày tạo" value={user.createdAt} />
+          <DetailItem
+            label="Cập nhật gần nhất"
+            value={user.updatedAt ?? "Chưa có dữ liệu"}
+          />
           <DetailItem label="Đăng nhập gần nhất" value={user.lastLogin} />
+          <DetailItem label="Avatar" value={user.avatarUrl ?? "Chưa có"} />
         </div>
       </div>
     </div>
@@ -566,6 +680,7 @@ function UserDetailDialog({
 function AdminConfirmDialog({
   confirmLabel,
   description,
+  disabled,
   onCancel,
   onConfirm,
   open,
@@ -573,6 +688,7 @@ function AdminConfirmDialog({
 }: {
   readonly confirmLabel: string;
   readonly description: string;
+  readonly disabled?: boolean;
   readonly onCancel: () => void;
   readonly onConfirm: () => void;
   readonly open: boolean;
@@ -587,6 +703,7 @@ function AdminConfirmDialog({
       <button
         aria-label="Đóng hộp thoại xác nhận"
         className="absolute inset-0"
+        disabled={disabled}
         onClick={onCancel}
         type="button"
       />
@@ -605,11 +722,12 @@ function AdminConfirmDialog({
           </div>
         </div>
         <div className="flex justify-end gap-3 border-t border-outline-variant pt-4">
-          <Button onClick={onCancel} variant="ghost">
+          <Button disabled={disabled} onClick={onCancel} variant="ghost">
             Hủy
           </Button>
           <button
-            className="rounded bg-error px-6 py-2 font-label-md text-label-md text-on-error transition-opacity hover:opacity-90"
+            className="rounded bg-error px-6 py-2 font-label-md text-label-md text-on-error transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
+            disabled={disabled}
             onClick={onConfirm}
             type="button"
           >
@@ -633,7 +751,7 @@ function DetailItem({
       <p className="font-label-sm text-label-sm text-on-surface-variant tracking-normal">
         {label}
       </p>
-      <p className="mt-1 font-label-md text-label-md text-on-surface tracking-normal">
+      <p className="mt-1 break-words font-label-md text-label-md text-on-surface tracking-normal">
         {value}
       </p>
     </div>
