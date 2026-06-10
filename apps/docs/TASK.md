@@ -51,12 +51,28 @@ The project is currently in **Phase 4 completion / Admin MVP hardening readiness
 
 ## Priority 3 - Admin MVP Hardening
 
-- [ ] Connect Admin Users page to `GET /accounts`.
-- [ ] Connect Admin user detail/read action to `GET /accounts/:id`.
-- [ ] Connect Admin ban action to `PATCH /accounts/:accountId/ban`.
-- [ ] Implement or defer Admin create account UI using `POST /accounts`.
-- [ ] Add or document Admin subject management workflow.
-- [ ] Add tests for Admin API clients and critical UI states.
+- [x] Add auth route, checking token if role = MODERATOR redirect to moderator page and if role = ADMIN redirect to admin page.
+- [x] Connect Admin Users page to `GET /accounts`.
+- [x] Connect Admin user detail/read action to `GET /accounts/:id`.
+- [x] Connect Admin ban action to `PATCH /accounts/:accountId/ban`.
+- [x] Implement or defer Admin create account UI using `POST /accounts`.
+- [x] Add or document Admin subject management workflow.
+- [x] Add tests for Admin API clients and critical UI states.
+- [ ] Add filter accounts by createdDate, default will show the newest account created
+- [ ] Admin only create moderator account, and it will be default status is `ACTIVE`
+- [ ] On UI, banned users will hile ban action
+- [ ] Add bussiness rule admin account can not be banned and admin account will hide from user account management list
+- [ ] Hide ID from account management, Last Login Date
+
+### Admin Subject Management Workflow
+
+For the current Admin MVP hardening pass, subject management is API-only.
+
+- Admin can create a subject with `POST /api/v1/subjects`.
+- Admin can update a subject with `PATCH /api/v1/subjects/:id`.
+- Admin can delete a subject with `DELETE /api/v1/subjects/:id`.
+- Subject listing and detail remain public through `GET /api/v1/subjects` and `GET /api/v1/subjects/:id`.
+- The Web Admin subject-management UI is deferred until after the users page is stable against real account APIs.
 
 ## Priority 4 - Auth Client Completion
 

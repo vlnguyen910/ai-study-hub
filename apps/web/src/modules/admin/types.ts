@@ -39,16 +39,18 @@ export interface SystemServiceStatus {
   readonly latency: string;
 }
 
-export type AdminUserRole = "admin" | "moderator" | "user" | "guest";
-export type AdminUserStatus = "active" | "inactive" | "suspended";
+export type AdminUserRole = "ADMIN" | "MODERATOR" | "USER";
+export type AdminUserStatus = "UNVERIFIED" | "ACTIVE" | "BANNED" | "DELETED";
 
 export interface AdminUser {
   readonly id: string;
   readonly name: string;
   readonly email: string;
+  readonly avatarUrl?: string | null;
   readonly role: AdminUserRole;
   readonly status: AdminUserStatus;
   readonly createdAt: string;
+  readonly updatedAt?: string;
   readonly lastLogin: string;
 }
 

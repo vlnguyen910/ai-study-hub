@@ -10,11 +10,24 @@ import { apiClient } from "@/lib/axios";
 import { ROUTE_PATHS } from "@/routes/router.const";
 import { API_ENDPOINTS } from "@/shared/constants";
 import { useAuthStore } from "@/stores/auth/store";
+import type { UserRole } from "@/types";
 import { getOrCreateDeviceId } from "@/utils";
 
-const getSafeRedirect = (value: string | null): string => {
+const getDefaultRedirectForRole = (role: UserRole): string => {
+  if (role === "admin") {
+    return ROUTE_PATHS.ADMIN_ROUTES.DASHBOARD;
+  }
+
+  if (role === "moderator") {
+    return ROUTE_PATHS.MODERATOR_ROUTES.DASHBOARD;
+  }
+
+  return ROUTE_PATHS.PROTECTED_ROUTES.HOME;
+};
+
+const getSafeRedirect = (value: string | null, role: UserRole): string => {
   if (!value || !value.startsWith("/") || value.startsWith("//")) {
-    return ROUTE_PATHS.PROTECTED_ROUTES.HOME;
+    return getDefaultRedirectForRole(role);
   }
 
   return value;
@@ -61,7 +74,7 @@ export default function LoginPageClient(): ReactElement {
       }
 
       setAuth(null, user.role, user, refreshToken);
-      router.replace(getSafeRedirect(searchParams.get("redirect")));
+      router.replace(getSafeRedirect(searchParams.get("redirect"), user.role));
     } catch (error) {
       setErrorMessage(
         error instanceof Error
