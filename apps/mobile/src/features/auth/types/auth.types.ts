@@ -19,9 +19,18 @@ export interface ForgotPasswordPayload {
   email: string;
 }
 
-export interface AuthResponseData {
-  accessToken: string;
+export interface ResetPasswordPayload {
+  token: string;
+  password: string;
+}
+
+export interface RefreshTokenPayload {
   refreshToken: string;
+}
+
+export interface AuthResponseData {
+  accessToken?: string;
+  refreshToken?: string;
 }
 
 export interface AuthResponse {

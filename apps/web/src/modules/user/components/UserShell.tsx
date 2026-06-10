@@ -4,9 +4,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useRef, type FC, type ReactNode } from "react";
 
 import { SideNav } from "@/components/layout/SideNav";
-import { apiClient } from "@/lib/axios";
-import { getCurrentUser } from "@/modules/auth-api";
-import { API_ENDPOINTS } from "@/shared/constants";
+import { getCurrentUser, logoutCurrentSession } from "@/modules/auth-api";
 import { ROUTE_PATHS } from "@/routes/router.const";
 import { useAuthStore } from "@/stores/auth/store";
 import { USER_NAV_ITEMS } from "@/constants/nav.const";
@@ -54,9 +52,7 @@ export const UserShell: FC<UserShellProps> = ({
 
   const handleLogout = async () => {
     try {
-      await apiClient.post(API_ENDPOINTS.AUTH.LOGOUT, null, {
-        skipToast: true,
-      });
+      await logoutCurrentSession();
     } finally {
       logout();
       router.replace(ROUTE_PATHS.AUTH_ROUTES.LOGIN);
