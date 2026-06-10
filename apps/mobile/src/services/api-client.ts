@@ -1,5 +1,11 @@
 import axios, { type AxiosInstance } from "axios";
-import { getAccessToken } from "../utils/storage";
+import { API_ENDPOINTS } from "../constants/endpoints";
+import {
+  getAccessToken,
+  getRefreshToken,
+  removeTokens,
+  saveAccessToken,
+} from "../utils/storage";
 
 export const getApiBaseUrl = (): string => {
   return (
@@ -16,17 +22,78 @@ export const apiClient: AxiosInstance = axios.create({
   },
 });
 
-// Interceptor to inject Access Token into every request
-apiClient.interceptors.request.use(
-  async (config) => {
-    const token = await getAccessToken();
-    if (token && config.headers) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
+export const installAuthInterceptors = (client: AxiosInstance): void => {
+  client.interceptors.request.use(
+    async (config) => {
+      const token = await getAccessToken();
+      if (token && config.headers) {
+        config.headers.Authorization = `Bearer ${token}`;
+      }
 
-    return config;
-  },
-  (error) => {
-    return Promise.reject(error);
-  },
-);
+      return config;
+    },
+    (error) => {
+      return Promise.reject(error);
+    },
+  );
+
+  client.interceptors.response.use(
+    (response) => response,
+    async (error) => {
+      if (!axios.isAxiosError(error)) {
+        return Promise.reject(error);
+      }
+
+      const originalRequest = error.config;
+      const is401 = error.response?.status === 401;
+      const isRefreshRequest = originalRequest?.url?.includes(
+        API_ENDPOINTS.AUTH.REFRESH,
+      );
+
+      if (!originalRequest || !is401 || isRefreshRequest) {
+        return Promise.reject(error);
+      }
+
+      const requestWithRetry = originalRequest as typeof originalRequest & {
+        _retry?: boolean;
+      };
+
+      if (requestWithRetry._retry) {
+        return Promise.reject(error);
+      }
+
+      requestWithRetry._retry = true;
+
+      const refreshToken = await getRefreshToken();
+
+      if (!refreshToken) {
+        await removeTokens();
+        return Promise.reject(error);
+      }
+
+      try {
+        const response = await client.post(API_ENDPOINTS.AUTH.REFRESH, {
+          refreshToken,
+        });
+        const accessToken = response.data?.data?.accessToken;
+
+        if (typeof accessToken !== "string" || accessToken.length === 0) {
+          throw new Error("Refresh response did not include an access token.");
+        }
+
+        await saveAccessToken(accessToken);
+
+        if (requestWithRetry.headers) {
+          requestWithRetry.headers.Authorization = `Bearer ${accessToken}`;
+        }
+
+        return client(requestWithRetry);
+      } catch (refreshError) {
+        await removeTokens();
+        return Promise.reject(refreshError);
+      }
+    },
+  );
+};
+
+installAuthInterceptors(apiClient);

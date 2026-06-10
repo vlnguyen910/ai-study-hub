@@ -44,7 +44,7 @@ export const useSignIn = () => {
       const response = await signInService(payload);
 
       if (response.success || response.status_code === 200) {
-        if (response.data) {
+        if (response.data?.accessToken && response.data.refreshToken) {
           await saveTokens(
             response.data.accessToken,
             response.data.refreshToken,

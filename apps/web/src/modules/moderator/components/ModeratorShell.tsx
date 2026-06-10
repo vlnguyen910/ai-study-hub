@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import type { ReactNode } from "react";
 
 import { SideNav } from "@/components/layout/SideNav";
+import { logoutCurrentSession } from "@/modules/auth-api";
 import { ROUTE_PATHS } from "@/routes/router.const";
 import { useAuthStore } from "@/stores/auth/store";
 import { MODERATOR_NAV_ITEMS } from "@/constants/nav.const";
@@ -17,9 +18,13 @@ export function ModeratorShell({
   const router = useRouter();
   const { logout } = useAuthStore();
 
-  const handleLogout = () => {
-    logout();
-    router.push(ROUTE_PATHS.AUTH_ROUTES.LOGIN);
+  const handleLogout = async () => {
+    try {
+      await logoutCurrentSession();
+    } finally {
+      logout();
+      router.replace(ROUTE_PATHS.AUTH_ROUTES.LOGIN);
+    }
   };
 
   const navItems = MODERATOR_NAV_ITEMS.map((item) =>

@@ -17,6 +17,14 @@ export const saveTokens = async (accessToken: string, refreshToken: string) => {
   }
 };
 
+export const saveAccessToken = async (accessToken: string) => {
+  try {
+    await SecureStore.setItemAsync(ACCESS_TOKEN_KEY, accessToken);
+  } catch (error) {
+    console.error("Error saving access token:", error);
+  }
+};
+
 export const getAccessToken = async () => {
   try {
     return await SecureStore.getItemAsync(ACCESS_TOKEN_KEY);
