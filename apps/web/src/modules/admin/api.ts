@@ -15,6 +15,11 @@ export interface AdminAccount {
   readonly updatedAt?: string;
 }
 
+export interface FetchAdminAccountsParams {
+  readonly createdFrom?: string;
+  readonly createdTo?: string;
+}
+
 export interface CreateAdminAccountPayload {
   readonly email: string;
   readonly name: string;
@@ -24,8 +29,15 @@ export interface CreateAdminAccountPayload {
   readonly status?: AdminAccountStatus;
 }
 
-export const fetchAdminAccounts = async (): Promise<AdminAccount[]> => {
-  return apiClient.get<unknown, AdminAccount[]>(API_ENDPOINTS.ACCOUNTS.BASE);
+export const fetchAdminAccounts = async (
+  params: FetchAdminAccountsParams = {},
+): Promise<AdminAccount[]> => {
+  return apiClient.get<unknown, AdminAccount[]>(API_ENDPOINTS.ACCOUNTS.BASE, {
+    params: {
+      ...(params.createdFrom ? { createdFrom: params.createdFrom } : {}),
+      ...(params.createdTo ? { createdTo: params.createdTo } : {}),
+    },
+  });
 };
 
 export const fetchAdminAccountDetail = async (

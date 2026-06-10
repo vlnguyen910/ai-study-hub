@@ -1,5 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { UserStatus } from '@prisma/client';
+import { UserRole, UserStatus } from '@prisma/client';
 import { ConflictException, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { AccountsService } from './accounts.service';
@@ -55,6 +55,24 @@ describe('AccountsService', () => {
     expect(res).toEqual({ message: 'Account created successfully' });
   });
 
+  it('createModerator forces moderator role and active status', async () => {
+    const prisma: any = moduleRef.get(PrismaService as any);
+    prisma.accounts.findUnique.mockResolvedValue(null);
+    prisma.accounts.create.mockResolvedValue({ id: 'acc-1' });
+
+    await service.createModerator({
+      email: 'moderator@example.com',
+      name: 'Moderator User',
+      password: 'Password123!',
+      role: UserRole.ADMIN,
+      status: UserStatus.BANNED,
+    });
+
+    const createArgs = prisma.accounts.create.mock.calls[0][0];
+    expect(createArgs.data.role).toBe(UserRole.MODERATOR);
+    expect(createArgs.data.status).toBe(UserStatus.ACTIVE);
+  });
+
   it('throws ConflictException when email already exists', async () => {
     const prisma: any = moduleRef.get(PrismaService as any);
     prisma.accounts.findUnique.mockResolvedValue({ id: 'existing' });
@@ -68,13 +86,18 @@ describe('AccountsService', () => {
     ).rejects.toBeInstanceOf(ConflictException);
   });
 
-  it('findAll calls prisma findMany with a public select', async () => {
+  it('findAll calls prisma findMany with admin-safe filters and newest ordering', async () => {
     const prisma: any = moduleRef.get(PrismaService as any);
     prisma.accounts.findMany.mockResolvedValue([{ id: 1 }]);
     const res = await service.findAll();
     expect(res).toEqual([{ id: 1 }]);
     expect(prisma.accounts.findMany).toHaveBeenCalledWith(
       expect.objectContaining({
+        where: expect.objectContaining({
+          status: { not: UserStatus.DELETED },
+          role: { not: UserRole.ADMIN },
+        }),
+        orderBy: { createdAt: 'desc' },
         select: expect.objectContaining({
           id: true,
           email: true,
@@ -82,6 +105,27 @@ describe('AccountsService', () => {
           avatarUrl: true,
           role: true,
           status: true,
+        }),
+      }),
+    );
+  });
+
+  it('findAll applies created date range filters', async () => {
+    const prisma: any = moduleRef.get(PrismaService as any);
+    prisma.accounts.findMany.mockResolvedValue([]);
+
+    await service.findAll({
+      createdFrom: '2026-06-01',
+      createdTo: '2026-06-10',
+    });
+
+    expect(prisma.accounts.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          createdAt: {
+            gte: new Date('2026-06-01'),
+            lt: new Date('2026-06-11'),
+          },
         }),
       }),
     );
@@ -116,6 +160,20 @@ describe('AccountsService', () => {
     expect(res).toEqual({ message: 'Account is already banned' });
   });
 
+  it('ban throws ConflictException for admin accounts', async () => {
+    const prisma: any = moduleRef.get(PrismaService as any);
+    prisma.accounts.findUnique.mockResolvedValue({
+      id: 'admin-1',
+      role: UserRole.ADMIN,
+      status: UserStatus.ACTIVE,
+    });
+
+    await expect(service.ban('admin-1')).rejects.toBeInstanceOf(
+      ConflictException,
+    );
+    expect(prisma.accounts.update).not.toHaveBeenCalled();
+  });
+
   it('ban throws NotFoundException when account does not exist', async () => {
     const prisma: any = moduleRef.get(PrismaService as any);
     prisma.accounts.findUnique.mockResolvedValue(null);
@@ -134,7 +192,10 @@ describe('AccountsService', () => {
     expect(res).toEqual(account);
     expect(prisma.accounts.findUnique).toHaveBeenCalledWith(
       expect.objectContaining({
-        where: expect.objectContaining({ id: 'acc-1' }),
+        where: expect.objectContaining({
+          id: 'acc-1',
+          role: { not: UserRole.ADMIN },
+        }),
       }),
     );
   });

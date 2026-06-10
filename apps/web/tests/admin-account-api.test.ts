@@ -29,7 +29,28 @@ describe("admin account api helpers", () => {
 
     await expect(fetchAdminAccounts()).resolves.toBe(response);
 
-    expect(clientMock.get).toHaveBeenCalledWith("/api/v1/accounts");
+    expect(clientMock.get).toHaveBeenCalledWith("/api/v1/accounts", {
+      params: {},
+    });
+  });
+
+  it("fetches admin accounts with created date filters", async () => {
+    const response = [{ id: "acc-1" }];
+    clientMock.get.mockResolvedValue(response);
+
+    await expect(
+      fetchAdminAccounts({
+        createdFrom: "2026-06-01",
+        createdTo: "2026-06-10",
+      }),
+    ).resolves.toBe(response);
+
+    expect(clientMock.get).toHaveBeenCalledWith("/api/v1/accounts", {
+      params: {
+        createdFrom: "2026-06-01",
+        createdTo: "2026-06-10",
+      },
+    });
   });
 
   it("fetches admin account detail", async () => {

@@ -9,6 +9,7 @@ describe('AccountsController', () => {
   let controller: AccountsController;
   const accountsServiceMock = {
     create: jest.fn().mockReturnValue('created'),
+    createModerator: jest.fn().mockReturnValue('created'),
     findAll: jest.fn().mockResolvedValue([]),
     ban: jest.fn().mockReturnValue({ message: 'Account banned successfully' }),
     findOne: jest.fn().mockReturnValue('one'),
@@ -17,6 +18,8 @@ describe('AccountsController', () => {
   };
 
   beforeEach(async () => {
+    jest.clearAllMocks();
+
     const module: TestingModule = await Test.createTestingModule({
       controllers: [AccountsController],
       providers: [
@@ -40,12 +43,14 @@ describe('AccountsController', () => {
 
   it('should call create', () => {
     expect(controller.create({} as any)).toBe('created');
-    expect(accountsServiceMock.create).toHaveBeenCalled();
+    expect(accountsServiceMock.createModerator).toHaveBeenCalled();
   });
 
   it('should call findAll', async () => {
-    await expect(controller.findAll()).resolves.toEqual([]);
-    expect(accountsServiceMock.findAll).toHaveBeenCalled();
+    const query = { createdFrom: '2026-06-01' };
+
+    await expect(controller.findAll(query)).resolves.toEqual([]);
+    expect(accountsServiceMock.findAll).toHaveBeenCalledWith(query);
   });
 
   it('should call ban', () => {
