@@ -19,18 +19,15 @@ import {
 import {
   AdminCard,
   AdminIconAction,
-  AdminSelect,
   MaterialIcon,
 } from "../components/AdminPrimitives";
 import type { AdminUser, AdminUserRole, AdminUserStatus } from "../types";
 
 const userColumns = [
-  { key: "id", label: "ID", sortable: true },
   { key: "name", label: "Tên", sortable: true },
   { key: "email", label: "Email" },
   { key: "role", label: "Vai trò" },
   { key: "status", label: "Trạng thái" },
-  { key: "lastLogin", label: "Đăng nhập gần nhất" },
   { key: "actions", label: "Thao tác", align: "center" as const },
 ] as const;
 
@@ -62,8 +59,6 @@ interface UserDraft {
   readonly email: string;
   readonly password: string;
   readonly avatarUrl: string;
-  readonly role: AdminUserRole;
-  readonly status: Exclude<AdminUserStatus, "DELETED">;
 }
 
 const emptyDraft: UserDraft = {
@@ -71,8 +66,6 @@ const emptyDraft: UserDraft = {
   email: "",
   password: "",
   avatarUrl: "",
-  role: "USER",
-  status: "UNVERIFIED",
 };
 
 const pageSize = 6;
@@ -129,15 +122,6 @@ const roleValuesMap: Record<string, "all" | AdminUserRole> = {
 
 const roleOptionsList = Object.values(roleLabelsMap);
 
-const editableRoleOptions: readonly {
-  readonly label: string;
-  readonly value: AdminUserRole;
-}[] = [
-  { label: "Kiểm duyệt viên", value: "MODERATOR" },
-  { label: "Người dùng", value: "USER" },
-  { label: "Quản trị viên", value: "ADMIN" },
-];
-
 const statusLabelsMap: Record<"all" | AdminUserStatus, string> = {
   all: "Tất cả trạng thái",
   ACTIVE: "Đang hoạt động",
@@ -156,15 +140,6 @@ const statusValuesMap: Record<string, "all" | AdminUserStatus> = {
 
 const statusOptionsList = Object.values(statusLabelsMap);
 
-const editableStatusOptions: readonly {
-  readonly label: string;
-  readonly value: Exclude<AdminUserStatus, "DELETED">;
-}[] = [
-  { label: "Chưa xác thực", value: "UNVERIFIED" },
-  { label: "Đang hoạt động", value: "ACTIVE" },
-  { label: "Đã khóa", value: "BANNED" },
-];
-
 export default function AdminUserManagementPage(): React.JSX.Element {
   const [users, setUsers] = useState<AdminUser[]>([]);
   const [query, setQuery] = useState("");
@@ -177,6 +152,8 @@ export default function AdminUserManagementPage(): React.JSX.Element {
   const [viewUser, setViewUser] = useState<AdminUser | null>(null);
   const [banUser, setBanUser] = useState<AdminUser | null>(null);
   const [draft, setDraft] = useState<UserDraft>(emptyDraft);
+  const [createdFrom, setCreatedFrom] = useState("");
+  const [createdTo, setCreatedTo] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [isDetailLoading, setIsDetailLoading] = useState(false);
@@ -189,8 +166,15 @@ export default function AdminUserManagementPage(): React.JSX.Element {
     setErrorMessage("");
 
     try {
-      const accounts = await fetchAdminAccounts();
-      setUsers(accounts.map(mapAccountToUser));
+      const accounts = await fetchAdminAccounts({
+        createdFrom: createdFrom || undefined,
+        createdTo: createdTo || undefined,
+      });
+      setUsers(
+        accounts
+          .filter((account) => account.role !== "ADMIN")
+          .map(mapAccountToUser),
+      );
     } catch (error) {
       setErrorMessage(
         getErrorMessage(error, "Không thể tải danh sách người dùng."),
@@ -198,7 +182,7 @@ export default function AdminUserManagementPage(): React.JSX.Element {
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [createdFrom, createdTo]);
 
   useEffect(() => {
     void loadUsers();
@@ -210,7 +194,6 @@ export default function AdminUserManagementPage(): React.JSX.Element {
     return users.filter((user) => {
       const matchesQuery =
         normalizedQuery.length === 0 ||
-        user.id.toLowerCase().includes(normalizedQuery) ||
         user.name.toLowerCase().includes(normalizedQuery) ||
         user.email.toLowerCase().includes(normalizedQuery);
       const matchesRole = roleFilter === "all" || user.role === roleFilter;
@@ -231,6 +214,8 @@ export default function AdminUserManagementPage(): React.JSX.Element {
     setQuery("");
     setRoleFilter("all");
     setStatusFilter("all");
+    setCreatedFrom("");
+    setCreatedTo("");
     setCurrentPage(1);
   };
 
@@ -277,8 +262,8 @@ export default function AdminUserManagementPage(): React.JSX.Element {
         email: draft.email.trim(),
         password: draft.password,
         avatarUrl: draft.avatarUrl.trim() || undefined,
-        role: draft.role,
-        status: draft.status,
+        role: "MODERATOR",
+        status: "ACTIVE",
       });
       setDraft(emptyDraft);
       setFormOpen(false);
@@ -314,56 +299,50 @@ export default function AdminUserManagementPage(): React.JSX.Element {
     }
   };
 
-  const rows: TableRow[] = visibleUsers.map((user) => ({
-    id: user.id,
-    cells: [
-      <span
-        className="font-label-sm text-label-sm text-on-surface-variant tracking-normal"
-        key="id"
-      >
-        {user.id}
-      </span>,
-      <div className="min-w-40" key="name">
-        <p className="font-label-md text-label-md text-on-surface tracking-normal">
-          {user.name}
-        </p>
-        <p className="font-label-sm text-label-sm text-on-surface-variant tracking-normal">
-          Tạo ngày {user.createdAt}
-        </p>
-      </div>,
-      <span
-        className="font-body-md text-sm text-on-surface-variant"
-        key="email"
-      >
-        {user.email}
-      </span>,
-      <Badge key="role" tone={user.role === "ADMIN" ? "warning" : "neutral"}>
-        {roleLabels[user.role]}
-      </Badge>,
-      <Badge key="status" tone={statusTone[user.status]}>
-        {statusLabels[user.status]}
-      </Badge>,
-      <span
-        className="font-label-sm text-label-sm text-on-surface-variant tracking-normal"
-        key="lastLogin"
-      >
-        {user.lastLogin}
-      </span>,
-      <div className="flex justify-center gap-1" key="actions">
-        <AdminIconAction
-          icon="visibility"
-          label={`Xem ${user.name}`}
-          onClick={() => void handleOpenDetail(user)}
-        />
-        <AdminIconAction
-          icon="block"
-          label={`Khóa ${user.name}`}
-          onClick={() => setBanUser(user)}
-          tone="error"
-        />
-      </div>,
-    ],
-  }));
+  const rows: TableRow[] = visibleUsers.map((user) => {
+    const canBanUser = user.role !== "ADMIN" && user.status === "ACTIVE";
+
+    return {
+      id: user.id,
+      cells: [
+        <div className="min-w-40" key="name">
+          <p className="font-label-md text-label-md text-on-surface tracking-normal">
+            {user.name}
+          </p>
+          <p className="font-label-sm text-label-sm text-on-surface-variant tracking-normal">
+            Tạo ngày {user.createdAt}
+          </p>
+        </div>,
+        <span
+          className="font-body-md text-sm text-on-surface-variant"
+          key="email"
+        >
+          {user.email}
+        </span>,
+        <Badge key="role" tone={user.role === "ADMIN" ? "warning" : "neutral"}>
+          {roleLabels[user.role]}
+        </Badge>,
+        <Badge key="status" tone={statusTone[user.status]}>
+          {statusLabels[user.status]}
+        </Badge>,
+        <div className="flex justify-center gap-1" key="actions">
+          <AdminIconAction
+            icon="visibility"
+            label={`Xem ${user.name}`}
+            onClick={() => void handleOpenDetail(user)}
+          />
+          {canBanUser ? (
+            <AdminIconAction
+              icon="block"
+              label={`Khóa ${user.name}`}
+              onClick={() => setBanUser(user)}
+              tone="error"
+            />
+          ) : null}
+        </div>,
+      ],
+    };
+  });
 
   return (
     <div className="relative">
@@ -381,7 +360,7 @@ export default function AdminUserManagementPage(): React.JSX.Element {
           onClick={handleOpenAdd}
         >
           <MaterialIcon className="text-[18px]" name="person_add" />
-          Thêm người dùng
+          Thêm kiểm duyệt viên
         </Button>
       </div>
 
@@ -392,7 +371,7 @@ export default function AdminUserManagementPage(): React.JSX.Element {
       ) : null}
 
       <Card className="mb-6 p-4">
-        <div className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(320px,1fr)_220px_220px_auto] lg:items-end">
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(280px,1fr)_180px_180px_180px_180px_auto] lg:items-end">
           <SearchInput
             label="Tìm kiếm"
             onChange={(event) => {
@@ -423,6 +402,24 @@ export default function AdminUserManagementPage(): React.JSX.Element {
             }}
             options={statusOptionsList}
             value={statusLabelsMap[statusFilter]}
+          />
+          <InputField
+            label="Tạo từ ngày"
+            onChange={(event) => {
+              setCreatedFrom(event.target.value);
+              setCurrentPage(1);
+            }}
+            type="date"
+            value={createdFrom}
+          />
+          <InputField
+            label="Tạo đến ngày"
+            onChange={(event) => {
+              setCreatedTo(event.target.value);
+              setCurrentPage(1);
+            }}
+            type="date"
+            value={createdTo}
           />
           <Button onClick={handleResetFilters} variant="outline">
             Xóa lọc
@@ -548,7 +545,7 @@ function UserFormDialog({
               Thêm người dùng
             </h2>
             <p className="font-label-sm text-label-sm text-on-surface-variant tracking-normal">
-              Tài khoản mới
+              Tài khoản kiểm duyệt viên mới
             </p>
           </div>
           <button
@@ -601,25 +598,13 @@ function UserFormDialog({
             type="url"
             value={draft.avatarUrl}
           />
-          <AdminSelect
-            label="Vai trò"
-            onChange={(value) => onChange({ ...draft, role: value })}
-            options={editableRoleOptions}
-            value={draft.role}
-          />
-          <AdminSelect
-            label="Trạng thái"
-            onChange={(value) => onChange({ ...draft, status: value })}
-            options={editableStatusOptions}
-            value={draft.status}
-          />
         </div>
         <div className="mt-6 flex justify-end gap-3 border-t border-outline-variant pt-4">
           <Button disabled={isSaving} onClick={onCancel} variant="ghost">
             Hủy
           </Button>
           <Button disabled={!canSave} onClick={onSave}>
-            {isSaving ? "Đang tạo..." : "Tạo người dùng"}
+            {isSaving ? "Đang tạo..." : "Tạo kiểm duyệt viên"}
           </Button>
         </div>
       </div>
@@ -649,7 +634,7 @@ function UserDetailDialog({
               {user.name}
             </h2>
             <p className="font-label-sm text-label-sm text-on-surface-variant tracking-normal">
-              {user.id} · {user.email}
+              {user.email}
             </p>
           </div>
           <button
@@ -669,7 +654,6 @@ function UserDetailDialog({
             label="Cập nhật gần nhất"
             value={user.updatedAt ?? "Chưa có dữ liệu"}
           />
-          <DetailItem label="Đăng nhập gần nhất" value={user.lastLogin} />
           <DetailItem label="Avatar" value={user.avatarUrl ?? "Chưa có"} />
         </div>
       </div>

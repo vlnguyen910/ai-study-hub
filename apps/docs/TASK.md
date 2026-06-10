@@ -58,11 +58,11 @@ The project is currently in **Phase 4 completion / Admin MVP hardening readiness
 - [x] Implement or defer Admin create account UI using `POST /accounts`.
 - [x] Add or document Admin subject management workflow.
 - [x] Add tests for Admin API clients and critical UI states.
-- [ ] Add filter accounts by createdDate, default will show the newest account created
-- [ ] Admin only create moderator account, and it will be default status is `ACTIVE`
-- [ ] On UI, banned users will hile ban action
-- [ ] Add bussiness rule admin account can not be banned and admin account will hide from user account management list
-- [ ] Hide ID from account management, Last Login Date
+- [x] Add filter accounts by createdDate, default will show the newest account created
+- [x] Admin only create moderator account, and it will be default status is `ACTIVE`
+- [x] On UI, banned users will hile ban action
+- [x] Add bussiness rule admin account can not be banned and admin account will hide from user account management list
+- [x] Hide ID from account management, Last Login Date
 
 ### Admin Subject Management Workflow
 

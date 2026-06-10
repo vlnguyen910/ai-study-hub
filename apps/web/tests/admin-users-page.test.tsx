@@ -23,6 +23,14 @@ const account = {
   updatedAt: "2026-06-09T00:00:00.000Z",
 };
 
+const bannedAccount = {
+  ...account,
+  id: "acc-2",
+  email: "banned@example.com",
+  name: "Banned Student",
+  status: "BANNED" as const,
+};
+
 describe("AdminUserManagementPage", () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -44,7 +52,12 @@ describe("AdminUserManagementPage", () => {
     ).toBeInTheDocument();
     expect(await screen.findByText("Nguyen Student")).toBeInTheDocument();
     expect(screen.getByText("student@example.com")).toBeInTheDocument();
-    expect(adminApiMock.fetchAdminAccounts).toHaveBeenCalledTimes(1);
+    expect(screen.queryByText("ID")).not.toBeInTheDocument();
+    expect(screen.queryByText("Đăng nhập gần nhất")).not.toBeInTheDocument();
+    expect(adminApiMock.fetchAdminAccounts).toHaveBeenCalledWith({
+      createdFrom: undefined,
+      createdTo: undefined,
+    });
   });
 
   it("shows an empty state when no accounts match", async () => {
@@ -68,14 +81,19 @@ describe("AdminUserManagementPage", () => {
         "acc-1",
       );
     });
-    expect(screen.getByText("acc-1 · student@example.com")).toBeInTheDocument();
+    expect(screen.getAllByText("student@example.com")).toHaveLength(2);
+    expect(
+      screen.queryByText("acc-1 · student@example.com"),
+    ).not.toBeInTheDocument();
   });
 
-  it("creates an account through the admin API", async () => {
+  it("creates a moderator account through the admin API", async () => {
     render(<AdminUserManagementPage />);
 
     await screen.findByText("Nguyen Student");
-    fireEvent.click(screen.getByRole("button", { name: "Thêm người dùng" }));
+    fireEvent.click(
+      screen.getByRole("button", { name: "Thêm kiểm duyệt viên" }),
+    );
     fireEvent.change(screen.getByLabelText("Tên*"), {
       target: { value: "New Moderator" },
     });
@@ -85,7 +103,9 @@ describe("AdminUserManagementPage", () => {
     fireEvent.change(screen.getByLabelText("Mật khẩu*"), {
       target: { value: "Password123!" },
     });
-    fireEvent.click(screen.getByRole("button", { name: "Tạo người dùng" }));
+    fireEvent.click(
+      screen.getByRole("button", { name: "Tạo kiểm duyệt viên" }),
+    );
 
     await waitFor(() => {
       expect(adminApiMock.createAdminAccount).toHaveBeenCalledWith({
@@ -93,8 +113,8 @@ describe("AdminUserManagementPage", () => {
         email: "moderator@example.com",
         password: "Password123!",
         avatarUrl: undefined,
-        role: "USER",
-        status: "UNVERIFIED",
+        role: "MODERATOR",
+        status: "ACTIVE",
       });
     });
   });
@@ -111,5 +131,53 @@ describe("AdminUserManagementPage", () => {
     await waitFor(() => {
       expect(adminApiMock.banAdminAccount).toHaveBeenCalledWith("acc-1");
     });
+  });
+
+  it("hides the ban action for banned accounts", async () => {
+    adminApiMock.fetchAdminAccounts.mockResolvedValue([bannedAccount]);
+
+    render(<AdminUserManagementPage />);
+
+    expect(await screen.findByText("Banned Student")).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Khóa Banned Student" }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("reloads accounts with created date filters", async () => {
+    render(<AdminUserManagementPage />);
+
+    await screen.findByText("Nguyen Student");
+    fireEvent.change(screen.getByLabelText("Tạo từ ngày"), {
+      target: { value: "2026-06-01" },
+    });
+    fireEvent.change(screen.getByLabelText("Tạo đến ngày"), {
+      target: { value: "2026-06-10" },
+    });
+
+    await waitFor(() => {
+      expect(adminApiMock.fetchAdminAccounts).toHaveBeenLastCalledWith({
+        createdFrom: "2026-06-01",
+        createdTo: "2026-06-10",
+      });
+    });
+  });
+
+  it("filters admin accounts defensively from the management list", async () => {
+    adminApiMock.fetchAdminAccounts.mockResolvedValue([
+      account,
+      {
+        ...account,
+        id: "admin-1",
+        email: "admin@example.com",
+        name: "Hidden Admin",
+        role: "ADMIN" as const,
+      },
+    ]);
+
+    render(<AdminUserManagementPage />);
+
+    expect(await screen.findByText("Nguyen Student")).toBeInTheDocument();
+    expect(screen.queryByText("Hidden Admin")).not.toBeInTheDocument();
   });
 });

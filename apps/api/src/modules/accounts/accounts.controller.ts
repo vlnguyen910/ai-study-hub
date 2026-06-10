@@ -8,11 +8,13 @@ import {
   Delete,
   Version,
   UseGuards,
+  Query,
 } from '@nestjs/common';
 import { UserRole } from '@prisma/client';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { AccountsService } from './accounts.service';
 import { CreateAccountDto } from './dto/create-account.dto';
+import { ListAccountsQueryDto } from './dto/list-accounts-query.dto';
 import { UpdateAccountDto } from './dto/update-account.dto';
 import { ParseMongoIdPipe } from '../../common/pipes/parse-mongoid.pipe';
 import { RolesGuard } from '../../common/guards/roles.guard';
@@ -29,14 +31,14 @@ export class AccountsController {
   @Version('1')
   @Post()
   create(@Body() createAccountDto: CreateAccountDto) {
-    return this.accountsService.create(createAccountDto);
+    return this.accountsService.createModerator(createAccountDto);
   }
 
   @Roles(UserRole.ADMIN)
   @Version('1')
   @Get()
-  findAll() {
-    return this.accountsService.findAll();
+  findAll(@Query() query: ListAccountsQueryDto) {
+    return this.accountsService.findAll(query);
   }
 
   @Roles(UserRole.ADMIN)
