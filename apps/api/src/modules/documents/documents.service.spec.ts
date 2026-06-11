@@ -714,6 +714,37 @@ describe('DocumentsService', () => {
     );
   });
 
+  it('update resets pending review to active when author makes a pending public document private', async () => {
+    const existing = {
+      id: '507f1f77bcf86cd799439011',
+      authorId: 'u1',
+      status: DocumentStatus.PENDING,
+      isPublic: true,
+    };
+    const updated = {
+      id: '507f1f77bcf86cd799439011',
+      isPublic: false,
+      status: DocumentStatus.ACTIVE,
+    };
+    prismaMock.documents.findUnique.mockResolvedValueOnce(existing);
+    prismaMock.documents.update.mockResolvedValue(updated);
+
+    await service.update(
+      '507f1f77bcf86cd799439011',
+      { isPublic: false } as any,
+      'u1',
+    );
+
+    expect(prismaMock.documents.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: {
+          isPublic: false,
+          status: DocumentStatus.ACTIVE,
+        },
+      }),
+    );
+  });
+
   it('approve activates a pending document and persists reviewer metadata', async () => {
     const existing = {
       id: '507f1f77bcf86cd799439011',
