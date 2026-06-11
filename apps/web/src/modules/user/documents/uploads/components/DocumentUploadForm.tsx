@@ -8,16 +8,13 @@
  *   Phase 2 – POST /api/v1/documents with Cloudinary result + form values.
  *
  * Both phases run inside a single loading state triggered by one button,
- * so the user experiences a single action: fill → click → done.
+ * so the user experiences a single action: fill → toggle → click → done.
  *
  * Props:
- *  - selectedFile  — the File held by the parent (UploadPage); required
- *                    before the submit buttons become active.
- *  - isSubmitting  — forwarded from this component back to the parent so
- *                    FileUploadBox can disable itself during upload.
- *  - onSubmittingChange — callback so the parent can mirror the loading state.
- *  - onSuccess     — called after the document record is created; the parent
- *                    shows the success banner and resets shared state.
+ *  - selectedFile        — the File held by the parent (UploadPage); required
+ *                          before the submit button becomes active.
+ *  - onSubmittingChange  — callback so the parent can mirror the loading state.
+ *  - onSuccess           — called after the document record is created.
  *
  * Subjects come from GET /api/v1/subjects (real API, not mock data).
  * "Trường học" is read-only — it is derived from the subject on the backend.
@@ -90,6 +87,9 @@ export function DocumentUploadForm({
   const [subjectId, setSubjectId] = useState("");
   const [description, setDescription] = useState("");
 
+  // Visibility toggle — replaces the two-button draft/publish pattern
+  const [isPublic, setIsPublic] = useState(false);
+
   // Subjects from API
   const [subjects, setSubjects] = useState<Subject[]>([]);
   const [subjectsLoading, setSubjectsLoading] = useState(true);
@@ -109,70 +109,68 @@ export function DocumentUploadForm({
 
   // ── Submit handler ────────────────────────────────────────────────────────
 
-  const handleSubmit = useCallback(
-    async (isPublic: boolean) => {
-      // Client-side guards
-      if (!selectedFile) {
-        setSubmitError("Vui lòng chọn tệp tài liệu trước.");
-        return;
-      }
-      if (!title.trim()) {
-        setSubmitError("Vui lòng nhập tên tài liệu.");
-        return;
-      }
-      if (!UPLOAD_PRESET) {
-        setSubmitError(
-          "Chưa cấu hình Cloudinary preset. Liên hệ quản trị viên.",
-        );
-        return;
-      }
+  const handleSubmit = useCallback(async () => {
+    // Client-side guards
+    if (!selectedFile) {
+      setSubmitError("Vui lòng chọn tệp tài liệu trước.");
+      return;
+    }
+    if (!title.trim()) {
+      setSubmitError("Vui lòng nhập tên tài liệu.");
+      return;
+    }
+    if (!UPLOAD_PRESET) {
+      setSubmitError("Chưa cấu hình Cloudinary preset. Liên hệ quản trị viên.");
+      return;
+    }
 
-      setIsSubmitting(true);
-      onSubmittingChange(true);
-      setSubmitError(null);
+    setIsSubmitting(true);
+    onSubmittingChange(true);
+    setSubmitError(null);
 
-      try {
-        // Phase 1 — upload file to Cloudinary
-        const cloudResult = await uploadToCloudinary(selectedFile);
+    try {
+      // Phase 1 — upload file to Cloudinary
+      const cloudResult = await uploadToCloudinary(selectedFile);
+      console.log("✅ Cloudinary done, isPublic =", isPublic);
 
-        // Phase 2 — create document record in the API
-        await createDocument({
-          title: title.trim(),
-          description: description.trim() || undefined,
-          fileUrl: cloudResult.url,
-          publicId: cloudResult.publicId,
-          sizeInBytes: cloudResult.bytes,
-          format: cloudResult.format,
-          resourceType: cloudResult.resourceType,
-          subjectId: subjectId || undefined,
-          isPublic,
-        });
+      // Phase 2 — create document record in the API
+      await createDocument({
+        title: title.trim(),
+        description: description.trim() || undefined,
+        fileUrl: cloudResult.url,
+        publicId: cloudResult.publicId,
+        sizeInBytes: cloudResult.bytes,
+        format: cloudResult.format,
+        resourceType: cloudResult.resourceType,
+        subjectId: subjectId || undefined,
+        isPublic,
+      });
 
-        // Reset form on success
-        setTitle("");
-        setSubjectId("");
-        setDescription("");
-        onSuccess();
-      } catch (err) {
-        setSubmitError(
-          err instanceof Error
-            ? err.message
-            : "Đã xảy ra lỗi. Vui lòng thử lại.",
-        );
-      } finally {
-        setIsSubmitting(false);
-        onSubmittingChange(false);
-      }
-    },
-    [
-      selectedFile,
-      title,
-      description,
-      subjectId,
-      onSubmittingChange,
-      onSuccess,
-    ],
-  );
+      console.log("✅ createDocument done");
+
+      // Reset form on success
+      setTitle("");
+      setSubjectId("");
+      setDescription("");
+      setIsPublic(false);
+      onSuccess();
+    } catch (err) {
+      setSubmitError(
+        err instanceof Error ? err.message : "Đã xảy ra lỗi. Vui lòng thử lại.",
+      );
+    } finally {
+      setIsSubmitting(false);
+      onSubmittingChange(false);
+    }
+  }, [
+    selectedFile,
+    title,
+    description,
+    subjectId,
+    isPublic,
+    onSubmittingChange,
+    onSuccess,
+  ]);
 
   // ── Render ────────────────────────────────────────────────────────────────
 
@@ -249,6 +247,44 @@ export function DocumentUploadForm({
         />
       </label>
 
+      {/* Visibility toggle */}
+      <div className="flex items-center justify-between rounded-xl border border-outline bg-surface-variant/40 px-4 py-3">
+        <div className="flex flex-col gap-0.5">
+          <span className="text-sm font-medium text-on-surface">
+            Công khai tài liệu
+          </span>
+          <span className="text-xs text-on-surface-variant">
+            {isPublic
+              ? "Mọi người có thể tìm và xem tài liệu này sau khi được duyệt."
+              : "Chỉ mình bạn thấy tài liệu này."}
+          </span>
+        </div>
+
+        {/* Toggle switch */}
+        <button
+          type="button"
+          role="switch"
+          aria-checked={isPublic}
+          aria-label="Công khai tài liệu"
+          disabled={isSubmitting}
+          onClick={() => setIsPublic((prev) => !prev)}
+          className={`
+            relative h-6 w-11 shrink-0 rounded-full transition-colors duration-200
+            focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary
+            disabled:cursor-not-allowed disabled:opacity-50
+            ${isPublic ? "bg-primary" : "bg-outline"}
+          `}
+        >
+          <span
+            className={`
+              pointer-events-none absolute top-0.5 left-0.5 h-5 w-5 rounded-full
+              bg-white shadow-sm transition-transform duration-200
+              ${isPublic ? "translate-x-5" : "translate-x-0"}
+            `}
+          />
+        </button>
+      </div>
+
       {/* No-file hint */}
       {!selectedFile ? (
         <p className="flex items-center gap-1 text-sm text-on-surface-variant">
@@ -267,28 +303,22 @@ export function DocumentUploadForm({
         </div>
       ) : null}
 
-      {/* Action buttons */}
+      {/* Action button */}
       <div className="flex flex-col-reverse gap-3 pt-1 sm:flex-row sm:justify-end">
-        {/* Draft — isPublic: false → saved as ACTIVE (private) */}
         <Button
           type="button"
-          variant="outline"
+          variant={isPublic ? "primary" : "outline"}
           className="w-full sm:w-auto"
           disabled={!canSubmit}
-          onClick={() => handleSubmit(false)}
+          onClick={handleSubmit}
         >
-          {isSubmitting ? "Đang lưu..." : "Lưu nháp"}
-        </Button>
-
-        {/* Publish — isPublic: true → PENDING (awaiting moderation) */}
-        <Button
-          type="button"
-          variant="primary"
-          className="w-full sm:w-auto"
-          disabled={!canSubmit}
-          onClick={() => handleSubmit(true)}
-        >
-          {isSubmitting ? "Đang tải lên..." : "Công khai tài liệu"}
+          {isSubmitting
+            ? isPublic
+              ? "Đang tải lên..."
+              : "Đang lưu..."
+            : isPublic
+              ? "Công khai tài liệu"
+              : "Chỉ mình tôi"}
         </Button>
       </div>
     </form>
