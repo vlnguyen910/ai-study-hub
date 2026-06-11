@@ -25,21 +25,15 @@ import { Button } from "@/components/ui/Button";
 import { InputField } from "@/components/ui/InputField";
 import { fetchSubjects, createDocument } from "@/apis/document.api";
 import type { Subject } from "@/types/document.type";
+import {
+  buildCloudinaryUploadResult,
+  type CloudinaryUploadResult,
+} from "../utils/cloudinary-upload-result";
 
 const CLOUD_NAME = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME ?? "ddxstobvd";
 const UPLOAD_PRESET = process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET ?? "";
 
-// ── Internal Cloudinary helper ────────────────────────────────────────────────
-
-interface CloudinaryResult {
-  url: string;
-  publicId: string;
-  bytes: number;
-  format: string;
-  resourceType: string;
-}
-
-async function uploadToCloudinary(file: File): Promise<CloudinaryResult> {
+async function uploadToCloudinary(file: File): Promise<CloudinaryUploadResult> {
   const formData = new FormData();
   formData.append("file", file);
   formData.append("upload_preset", UPLOAD_PRESET);
@@ -55,13 +49,7 @@ async function uploadToCloudinary(file: File): Promise<CloudinaryResult> {
   }
 
   const data = await res.json();
-  return {
-    url: data.secure_url as string,
-    publicId: data.public_id as string,
-    bytes: data.bytes as number,
-    format: data.format as string,
-    resourceType: data.resource_type as string,
-  };
+  return buildCloudinaryUploadResult(data, file);
 }
 
 // ── Props ─────────────────────────────────────────────────────────────────────
