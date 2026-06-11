@@ -9,6 +9,7 @@ import { Button, Card, PageShell } from "@/components";
 import { DocumentCategorySelector } from "../components/DocumentCategorySelector";
 import { DocumentTextField } from "../components/DocumentTextField";
 import { DocumentUploadField } from "../components/DocumentUploadField";
+import { createDocument } from "../services/documents.service";
 import type {
   DocumentCategoryOption,
   DocumentCategoryValue,
@@ -32,6 +33,7 @@ type DocumentUploadFormInput = z.input<typeof documentUploadSchema>;
 type DocumentUploadFormOutput = z.output<typeof documentUploadSchema>;
 
 const sampleFileName = "data-structures-guide.pdf";
+const sampleFileUrl = "https://example.com/uploads/data-structures-guide.pdf";
 
 const relatedDocuments = [
   {
@@ -84,8 +86,23 @@ export function DocumentUploadScreen() {
     setValue("fileName", "", { shouldValidate: true });
   };
 
-  const onSubmit = () => {
-    router.push("/(templates)/document-detail" as never);
+  const onSubmit = async (values: DocumentUploadFormOutput) => {
+    const document = await createDocument({
+      title: values.title,
+      description: values.description?.trim() || undefined,
+      fileUrl: sampleFileUrl,
+      publicId: `mobile-${Date.now()}`,
+      sizeInBytes: 2 * 1024 * 1024,
+      format: values.fileName.split(".").pop()?.toLowerCase() || "pdf",
+      resourceType: "document",
+      isPublic: true,
+    });
+
+    router.push(
+      document?.id
+        ? (`/(templates)/document-detail?id=${document.id}` as never)
+        : ("/(templates)/document-detail" as never),
+    );
   };
 
   return (

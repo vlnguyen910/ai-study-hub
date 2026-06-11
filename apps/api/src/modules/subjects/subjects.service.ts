@@ -26,8 +26,23 @@ export class SubjectsService {
       );
     }
 
+    // For mvp we will hardcode the schoolId to the default school
+    const hardCodedSchoolId = await this.prismaService.schools.findFirst({
+      where: { code: process.env.DEFAULT_SCHOOL_CODE || 'FPTU' },
+      select: { id: true },
+    });
+
+    if (!hardCodedSchoolId) {
+      throw new NotFoundException(
+        `Default school with code ${process.env.DEFAULT_SCHOOL_CODE || 'FPTU'} not found`,
+      );
+    }
+
     const subject = await this.prismaService.subjects.create({
-      data: createSubjectDto,
+      data: {
+        ...createSubjectDto,
+        schoolId: hardCodedSchoolId!.id,
+      },
     });
 
     return {

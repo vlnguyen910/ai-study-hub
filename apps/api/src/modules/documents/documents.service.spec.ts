@@ -635,6 +635,7 @@ describe('DocumentsService', () => {
       id: '507f1f77bcf86cd799439011',
       authorId: 'u1',
       status: DocumentStatus.ACTIVE,
+      isPublic: false,
     };
     const updated = { id: '507f1f77bcf86cd799439011', title: 'Updated' };
     prismaMock.documents.findUnique.mockResolvedValueOnce(existing);
@@ -647,11 +648,206 @@ describe('DocumentsService', () => {
     );
 
     expect(prismaMock.documents.findUnique).toHaveBeenCalled();
-    expect(prismaMock.documents.update).toHaveBeenCalled();
+    expect(prismaMock.documents.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: { title: 'Updated' },
+      }),
+    );
     expect(res).toEqual({
       message: 'Document updated successfully',
       data: updated,
     });
+  });
+
+  it('update sets status to PENDING when author publishes a private document', async () => {
+    const existing = {
+      id: '507f1f77bcf86cd799439011',
+      authorId: 'u1',
+      status: DocumentStatus.ACTIVE,
+      isPublic: false,
+    };
+    const updated = {
+      id: '507f1f77bcf86cd799439011',
+      isPublic: true,
+      status: DocumentStatus.PENDING,
+    };
+    prismaMock.documents.findUnique.mockResolvedValueOnce(existing);
+    prismaMock.documents.update.mockResolvedValue(updated);
+
+    await service.update(
+      '507f1f77bcf86cd799439011',
+      { isPublic: true } as any,
+      'u1',
+    );
+
+    expect(prismaMock.documents.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: {
+          isPublic: true,
+          status: DocumentStatus.PENDING,
+        },
+      }),
+    );
+  });
+
+  it('update preserves status when isPublic does not change from private to public', async () => {
+    const existing = {
+      id: '507f1f77bcf86cd799439011',
+      authorId: 'u1',
+      status: DocumentStatus.PENDING,
+      isPublic: true,
+    };
+    const updated = { id: '507f1f77bcf86cd799439011', title: 'Updated' };
+    prismaMock.documents.findUnique.mockResolvedValueOnce(existing);
+    prismaMock.documents.update.mockResolvedValue(updated);
+
+    await service.update(
+      '507f1f77bcf86cd799439011',
+      { title: 'Updated', isPublic: true } as any,
+      'u1',
+    );
+
+    expect(prismaMock.documents.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: { title: 'Updated', isPublic: true },
+      }),
+    );
+  });
+
+  it('approve activates a pending document and persists reviewer metadata', async () => {
+    const existing = {
+      id: '507f1f77bcf86cd799439011',
+      authorId: 'u1',
+      status: DocumentStatus.PENDING,
+      isPublic: true,
+    };
+    const approved = {
+      id: '507f1f77bcf86cd799439011',
+      status: DocumentStatus.ACTIVE,
+      reviewedById: 'moderator-1',
+    };
+    prismaMock.documents.findUnique.mockResolvedValueOnce(existing);
+    prismaMock.documents.update.mockResolvedValue(approved);
+
+    const res = await service.approve(
+      '507f1f77bcf86cd799439011',
+      'moderator-1',
+    );
+
+    expect(prismaMock.documents.findUnique).toHaveBeenCalledWith({
+      where: {
+        id: '507f1f77bcf86cd799439011',
+        status: { not: DocumentStatus.DELETED },
+      },
+    });
+    expect(prismaMock.documents.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { id: '507f1f77bcf86cd799439011' },
+        data: expect.objectContaining({
+          status: DocumentStatus.ACTIVE,
+          reviewedById: 'moderator-1',
+          reviewedAt: expect.any(Date),
+          rejectionReason: null,
+        }),
+      }),
+    );
+    expect(res).toEqual({
+      message: 'Document approved successfully',
+      data: approved,
+    });
+  });
+
+  it('reject marks a pending document rejected and stores rejection reason', async () => {
+    const existing = {
+      id: '507f1f77bcf86cd799439011',
+      authorId: 'u1',
+      status: DocumentStatus.PENDING,
+      isPublic: true,
+    };
+    const rejected = {
+      id: '507f1f77bcf86cd799439011',
+      status: DocumentStatus.REJECTED,
+      reviewedById: 'moderator-1',
+      rejectionReason: 'Thiếu mô tả rõ ràng.',
+    };
+    prismaMock.documents.findUnique.mockResolvedValueOnce(existing);
+    prismaMock.documents.update.mockResolvedValue(rejected);
+
+    const res = await service.reject(
+      '507f1f77bcf86cd799439011',
+      { rejectionReason: 'Thiếu mô tả rõ ràng.' },
+      'moderator-1',
+    );
+
+    expect(prismaMock.documents.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { id: '507f1f77bcf86cd799439011' },
+        data: expect.objectContaining({
+          status: DocumentStatus.REJECTED,
+          reviewedById: 'moderator-1',
+          reviewedAt: expect.any(Date),
+          rejectionReason: 'Thiếu mô tả rõ ràng.',
+        }),
+      }),
+    );
+    expect(res).toEqual({
+      message: 'Document rejected successfully',
+      data: rejected,
+    });
+  });
+
+  it('approve throws NotFoundException when document is missing or deleted', async () => {
+    prismaMock.documents.findUnique.mockResolvedValue(null);
+
+    await expect(
+      service.approve('507f1f77bcf86cd799439011', 'moderator-1'),
+    ).rejects.toThrow();
+
+    expect(prismaMock.documents.update).not.toHaveBeenCalled();
+  });
+
+  it('reject throws NotFoundException when document is missing or deleted', async () => {
+    prismaMock.documents.findUnique.mockResolvedValue(null);
+
+    await expect(
+      service.reject(
+        '507f1f77bcf86cd799439011',
+        { rejectionReason: 'Không hợp lệ.' },
+        'moderator-1',
+      ),
+    ).rejects.toThrow();
+
+    expect(prismaMock.documents.update).not.toHaveBeenCalled();
+  });
+
+  it('approve throws BadRequestException when document is not pending', async () => {
+    prismaMock.documents.findUnique.mockResolvedValue({
+      id: '507f1f77bcf86cd799439011',
+      status: DocumentStatus.ACTIVE,
+    });
+
+    await expect(
+      service.approve('507f1f77bcf86cd799439011', 'moderator-1'),
+    ).rejects.toThrow();
+
+    expect(prismaMock.documents.update).not.toHaveBeenCalled();
+  });
+
+  it('reject throws BadRequestException when document is not pending', async () => {
+    prismaMock.documents.findUnique.mockResolvedValue({
+      id: '507f1f77bcf86cd799439011',
+      status: DocumentStatus.REJECTED,
+    });
+
+    await expect(
+      service.reject(
+        '507f1f77bcf86cd799439011',
+        { rejectionReason: 'Không hợp lệ.' },
+        'moderator-1',
+      ),
+    ).rejects.toThrow();
+
+    expect(prismaMock.documents.update).not.toHaveBeenCalled();
   });
 
   it('delete returns success message when author matches', async () => {

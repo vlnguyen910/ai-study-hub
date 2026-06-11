@@ -1,4 +1,4 @@
-import { IsNotEmpty, IsString } from 'class-validator';
+import { IsNotEmpty, IsOptional, IsString } from 'class-validator';
 
 export class CreateSubjectDto {
   @IsNotEmpty()
@@ -9,7 +9,9 @@ export class CreateSubjectDto {
   @IsString()
   code!: string;
 
-  @IsNotEmpty()
+  //TODO: this only for mvp, remove and uncomment the line below when we have school module
+  @IsOptional()
+  //@IsNotEmpty()
   @IsString()
   schoolId!: string;
 }

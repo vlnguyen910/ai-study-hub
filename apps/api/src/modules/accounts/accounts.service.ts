@@ -3,10 +3,12 @@ import {
   ConflictException,
   NotFoundException,
 } from '@nestjs/common';
-import { accounts, UserRole, UserStatus } from '@prisma/client';
+import { accounts, Prisma, UserRole, UserStatus } from '@prisma/client';
 import { CreateAccountDto } from './dto/create-account.dto';
+import { ListAccountsQueryDto } from './dto/list-accounts-query.dto';
 import { UpdateAccountDto } from './dto/update-account.dto';
 import { PrismaService } from '../../prisma/prisma.service';
+import argon2 from 'argon2';
 
 @Injectable()
 export class AccountsService {
@@ -21,25 +23,60 @@ export class AccountsService {
       throw new ConflictException('Email already exists');
     }
 
+    const hashedPassword = await argon2.hash(createAccountDto.password);
+
     await this.prismaService.accounts.create({
       data: {
         email: createAccountDto.email,
         name: createAccountDto.name,
-        password: createAccountDto.hashedPassword,
+        password: hashedPassword,
         avatarUrl: createAccountDto.avatarUrl ?? '',
         role: createAccountDto.role ?? UserRole.USER,
+        status: createAccountDto.status ?? UserStatus.UNVERIFIED,
       },
     });
 
     return { message: 'Account created successfully' };
   }
 
-  async findAll() {
+  async createModerator(createAccountDto: CreateAccountDto) {
+    return this.create({
+      ...createAccountDto,
+      role: UserRole.MODERATOR,
+      status: UserStatus.ACTIVE,
+    });
+  }
+
+  async findAll(query: ListAccountsQueryDto = {}) {
+    const where: Prisma.accountsWhereInput = {
+      status: { not: UserStatus.DELETED },
+      role: { not: UserRole.ADMIN },
+    };
+
+    const createdAt: Prisma.DateTimeFilter = {};
+
+    if (query.createdFrom) {
+      createdAt.gte = new Date(query.createdFrom);
+    }
+
+    if (query.createdTo) {
+      const createdTo = new Date(query.createdTo);
+
+      if (/^\d{4}-\d{2}-\d{2}$/.test(query.createdTo)) {
+        createdTo.setUTCDate(createdTo.getUTCDate() + 1);
+        createdAt.lt = createdTo;
+      } else {
+        createdAt.lte = createdTo;
+      }
+    }
+
+    if (createdAt.gte || createdAt.lte || createdAt.lt) {
+      where.createdAt = createdAt;
+    }
+
     return await this.prismaService.accounts.findMany({
-      where: {
-        status: { not: UserStatus.DELETED },
-        role: { not: UserRole.ADMIN },
-      },
+      where,
+      orderBy: { createdAt: 'desc' },
       select: {
         id: true,
         email: true,
@@ -57,6 +94,7 @@ export class AccountsService {
       where: {
         id,
         status: { not: UserStatus.DELETED },
+        role: { not: UserRole.ADMIN },
       },
       omit: {
         password: true,
@@ -91,6 +129,10 @@ export class AccountsService {
       throw new NotFoundException('Account not found');
     }
 
+    if (account.role === UserRole.ADMIN) {
+      throw new ConflictException('Admin accounts cannot be banned');
+    }
+
     if (account.status === UserStatus.BANNED) {
       return { message: 'Account is already banned' };
     }
@@ -105,13 +147,19 @@ export class AccountsService {
     return { message: `Account banned successfully` };
   }
 
-  async update(id: string, updateAccountDto: UpdateAccountDto) {
+  async update(id: string, updateAccountDto: UpdateAccountDto, userId: string) {
     const account = await this.prismaService.accounts.findUnique({
       where: { id },
     });
 
     if (!account) {
       throw new NotFoundException('Account not found');
+    }
+
+    if (account.id !== userId) {
+      throw new ConflictException(
+        'You have no permission to update this account',
+      );
     }
 
     const updatedAccount = await this.prismaService.accounts.update({
@@ -131,7 +179,7 @@ export class AccountsService {
     return updatedAccount;
   }
 
-  async remove(id: string) {
+  async remove(id: string, userId: string) {
     const account = await this.prismaService.accounts.findUnique({
       where: {
         id,
@@ -141,6 +189,12 @@ export class AccountsService {
 
     if (!account) {
       throw new NotFoundException('Account not found');
+    }
+
+    if (account.id !== userId) {
+      throw new ConflictException(
+        'You have no permission to delete this account',
+      );
     }
 
     await this.prismaService.accounts.update({

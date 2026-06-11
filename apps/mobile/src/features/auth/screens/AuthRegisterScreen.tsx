@@ -21,8 +21,11 @@ export function AuthRegisterScreen() {
   const { form, isLoading, submit } = useSignUp();
 
   const handleRegister = () => {
-    submit(() => {
-      router.replace("/(templates)/auth-login" as never);
+    submit((email) => {
+      router.replace({
+        pathname: "/(templates)/auth-verify-email",
+        params: { email },
+      } as never);
     });
   };
 

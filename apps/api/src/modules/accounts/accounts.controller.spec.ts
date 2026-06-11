@@ -9,6 +9,7 @@ describe('AccountsController', () => {
   let controller: AccountsController;
   const accountsServiceMock = {
     create: jest.fn().mockReturnValue('created'),
+    createModerator: jest.fn().mockReturnValue('created'),
     findAll: jest.fn().mockResolvedValue([]),
     ban: jest.fn().mockReturnValue({ message: 'Account banned successfully' }),
     findOne: jest.fn().mockReturnValue('one'),
@@ -17,6 +18,8 @@ describe('AccountsController', () => {
   };
 
   beforeEach(async () => {
+    jest.clearAllMocks();
+
     const module: TestingModule = await Test.createTestingModule({
       controllers: [AccountsController],
       providers: [
@@ -40,12 +43,14 @@ describe('AccountsController', () => {
 
   it('should call create', () => {
     expect(controller.create({} as any)).toBe('created');
-    expect(accountsServiceMock.create).toHaveBeenCalled();
+    expect(accountsServiceMock.createModerator).toHaveBeenCalled();
   });
 
   it('should call findAll', async () => {
-    await expect(controller.findAll()).resolves.toEqual([]);
-    expect(accountsServiceMock.findAll).toHaveBeenCalled();
+    const query = { createdFrom: '2026-06-01' };
+
+    await expect(controller.findAll(query)).resolves.toEqual([]);
+    expect(accountsServiceMock.findAll).toHaveBeenCalledWith(query);
   });
 
   it('should call ban', () => {
@@ -56,14 +61,36 @@ describe('AccountsController', () => {
   });
 
   it('should call findOne/update/remove', () => {
+    const user = { sub: 'acc-1' } as any;
+
     expect(controller.findOne('5')).toBe('one');
-    expect(controller.update('5', {} as any)).toBe('updated');
-    expect(controller.remove('5')).toBe('removed');
+    expect(controller.update('5', {} as any, user)).toBe('updated');
+    expect(controller.remove('5', user)).toBe('removed');
+    expect(accountsServiceMock.update).toHaveBeenCalledWith('5', {}, 'acc-1');
+    expect(accountsServiceMock.remove).toHaveBeenCalledWith('5', 'acc-1');
   });
 
-  it('should be restricted to ADMIN role', () => {
-    expect(Reflect.getMetadata(ROLES_KEY, AccountsController)).toEqual([
+  it('should restrict admin endpoints to ADMIN role', () => {
+    expect(Reflect.getMetadata(ROLES_KEY, controller.create)).toEqual([
       UserRole.ADMIN,
+    ]);
+    expect(Reflect.getMetadata(ROLES_KEY, controller.findAll)).toEqual([
+      UserRole.ADMIN,
+    ]);
+    expect(Reflect.getMetadata(ROLES_KEY, controller.ban)).toEqual([
+      UserRole.ADMIN,
+    ]);
+    expect(Reflect.getMetadata(ROLES_KEY, controller.findOne)).toEqual([
+      UserRole.ADMIN,
+    ]);
+  });
+
+  it('should restrict self-service endpoints to USER role', () => {
+    expect(Reflect.getMetadata(ROLES_KEY, controller.update)).toEqual([
+      UserRole.USER,
+    ]);
+    expect(Reflect.getMetadata(ROLES_KEY, controller.remove)).toEqual([
+      UserRole.USER,
     ]);
   });
 });

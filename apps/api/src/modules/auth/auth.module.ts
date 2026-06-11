@@ -6,8 +6,12 @@ import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { jwtConfiguration } from '../../config';
 import { AccountsModule } from '../accounts/accounts.module';
+import { RedisModule } from '../../common/redis/redis.module';
+import { MailModule } from '../mail/mail.module';
 import { JwtStrategy } from './strategies/jwt.strategy';
 import { RefreshTokenStrategy } from './strategies/refresh-token.strategy';
+import { EmailVerificationStrategy } from './strategies/email-verification.strategy';
+import { AuthTokenService } from './services/auth-token.service';
 
 @Module({
   imports: [
@@ -21,9 +25,17 @@ import { RefreshTokenStrategy } from './strategies/refresh-token.strategy';
       }),
     }),
     AccountsModule,
+    RedisModule,
+    MailModule,
   ],
   controllers: [AuthController],
-  providers: [AuthService, JwtStrategy, RefreshTokenStrategy],
+  providers: [
+    AuthService,
+    AuthTokenService,
+    JwtStrategy,
+    RefreshTokenStrategy,
+    EmailVerificationStrategy,
+  ],
   exports: [AuthService, JwtModule, PassportModule],
 })
 export class AuthModule {}

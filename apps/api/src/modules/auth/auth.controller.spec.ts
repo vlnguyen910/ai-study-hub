@@ -8,6 +8,10 @@ import { cookieConfiguration } from '../../config';
 import { JwtTokenType } from '../../common/enums/jwt.enum';
 import { TokenPayload } from '../../common/interfaces/auth.interface';
 
+jest.mock('uuid', () => ({
+  v4: jest.fn(() => 'email-verification-token'),
+}));
+
 describe('AuthController', () => {
   let controller: AuthController;
 
@@ -21,6 +25,12 @@ describe('AuthController', () => {
 
   const authServiceMock = {
     signup: jest.fn(),
+    verifyEmail: jest.fn(),
+    resendVerificationEmail: jest.fn(),
+    forgotPassword: jest.fn(),
+    resetPassword: jest.fn(),
+    changePassword: jest.fn(),
+    getCurrentUser: jest.fn(),
     signin: jest.fn(),
     logout: jest.fn(),
     refreshToken: jest.fn(),
@@ -66,15 +76,26 @@ describe('AuthController', () => {
   });
 
   it('should call signup service', async () => {
+    const response = createResponseMock();
     authServiceMock.signup.mockResolvedValue({
       message: 'Signup successful',
-      data: null,
+      data: {
+        accessToken: 'verification-access-token',
+      },
     });
 
-    await controller.signup({
-      email: 'new-user@example.com',
-      name: 'New User',
-      password: 'Password123!',
+    await expect(
+      controller.signup(
+        {
+          email: 'new-user@example.com',
+          name: 'New User',
+          password: 'Password123!',
+        },
+        response,
+      ),
+    ).resolves.toEqual({
+      message: 'Signup successful',
+      data: null,
     });
 
     expect(authServiceMock.signup).toHaveBeenCalledWith({
@@ -82,6 +103,148 @@ describe('AuthController', () => {
       name: 'New User',
       password: 'Password123!',
     });
+    expect(response.cookie).toHaveBeenCalledWith(
+      'accessToken',
+      'verification-access-token',
+      {
+        httpOnly: cookieConfigMock.httpOnly,
+        secure: cookieConfigMock.secure,
+        sameSite: cookieConfigMock.sameSite,
+        maxAge: cookieConfigMock.accessTokenMaxAge,
+      },
+    );
+  });
+
+  it('should call verify email service', async () => {
+    const response = createResponseMock();
+    authServiceMock.verifyEmail.mockResolvedValue({
+      message: 'Email verified successfully',
+      data: null,
+    });
+
+    await expect(
+      controller.verifyEmail(
+        {
+          token: 'email-verification-token',
+        },
+        response,
+      ),
+    ).resolves.toEqual({
+      message: 'Email verified successfully',
+      data: null,
+    });
+    expect(authServiceMock.verifyEmail).toHaveBeenCalledWith({
+      token: 'email-verification-token',
+    });
+    expect(response.clearCookie).toHaveBeenCalledWith('accessToken');
+  });
+
+  it('should call resend verification email service with cookie-authenticated user', async () => {
+    const unverifiedUser: TokenPayload = {
+      ...userPayload,
+      status: UserStatus.UNVERIFIED,
+      type: JwtTokenType.EmailVerification,
+    };
+    authServiceMock.resendVerificationEmail.mockResolvedValue({
+      message: 'Verification email sent',
+      data: null,
+    });
+
+    await expect(
+      controller.resendVerificationEmail(unverifiedUser),
+    ).resolves.toEqual({
+      message: 'Verification email sent',
+      data: null,
+    });
+    expect(authServiceMock.resendVerificationEmail).toHaveBeenCalledWith(
+      'user-1',
+    );
+  });
+
+  it('should call forgot password service', async () => {
+    authServiceMock.forgotPassword.mockResolvedValue({
+      message:
+        'If an account exists for this email, a password reset link has been sent.',
+      data: null,
+    });
+
+    await expect(
+      controller.forgotPassword({ email: 'new-user@example.com' }),
+    ).resolves.toEqual({
+      message:
+        'If an account exists for this email, a password reset link has been sent.',
+      data: null,
+    });
+    expect(authServiceMock.forgotPassword).toHaveBeenCalledWith({
+      email: 'new-user@example.com',
+    });
+  });
+
+  it('should call reset password service', async () => {
+    authServiceMock.resetPassword.mockResolvedValue({
+      message: 'Password reset successfully',
+      data: null,
+    });
+
+    await expect(
+      controller.resetPassword({
+        token: 'password-reset-token',
+        password: 'NewPassword123!',
+      }),
+    ).resolves.toEqual({
+      message: 'Password reset successfully',
+      data: null,
+    });
+    expect(authServiceMock.resetPassword).toHaveBeenCalledWith({
+      token: 'password-reset-token',
+      password: 'NewPassword123!',
+    });
+  });
+
+  it('should call change password service with authenticated user', async () => {
+    authServiceMock.changePassword.mockResolvedValue({
+      message: 'Password changed successfully',
+      data: null,
+    });
+
+    await expect(
+      controller.changePassword(userPayload, {
+        currentPassword: 'Password123!',
+        newPassword: 'NewPassword123!',
+      }),
+    ).resolves.toEqual({
+      message: 'Password changed successfully',
+      data: null,
+    });
+    expect(authServiceMock.changePassword).toHaveBeenCalledWith(userPayload, {
+      currentPassword: 'Password123!',
+      newPassword: 'NewPassword123!',
+    });
+  });
+
+  it('should return the current authenticated user', async () => {
+    authServiceMock.getCurrentUser.mockResolvedValue({
+      message: 'Current user retrieved successfully',
+      data: {
+        id: 'user-1',
+        email: 'new-user@example.com',
+        name: 'New User',
+        avatarUrl: '',
+        role: UserRole.USER,
+        status: UserStatus.ACTIVE,
+        createdAt: new Date('2026-06-08T00:00:00.000Z'),
+      },
+    });
+
+    await expect(controller.me(userPayload)).resolves.toEqual({
+      message: 'Current user retrieved successfully',
+      data: expect.objectContaining({
+        id: 'user-1',
+        email: 'new-user@example.com',
+        name: 'New User',
+      }),
+    });
+    expect(authServiceMock.getCurrentUser).toHaveBeenCalledWith(userPayload);
   });
 
   it('sets access token cookie and returns refresh token on web signin', async () => {

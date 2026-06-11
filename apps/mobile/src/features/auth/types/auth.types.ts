@@ -1,20 +1,36 @@
 export interface SignInPayload {
   email: string;
   password: string;
-  deviceInfo: "WEB" | "MOBILE";
+  deviceId: string;
 }
 
 export interface SignUpPayload {
   name: string;
   email: string;
   password: string;
-  deviceInfo?: "WEB" | "MOBILE";
   avatarUrl?: string;
 }
 
-export interface AuthResponseData {
-  accessToken: string;
+export interface VerifyEmailPayload {
+  token: string;
+}
+
+export interface ForgotPasswordPayload {
+  email: string;
+}
+
+export interface ResetPasswordPayload {
+  token: string;
+  password: string;
+}
+
+export interface RefreshTokenPayload {
   refreshToken: string;
+}
+
+export interface AuthResponseData {
+  accessToken?: string;
+  refreshToken?: string;
 }
 
 export interface AuthResponse {

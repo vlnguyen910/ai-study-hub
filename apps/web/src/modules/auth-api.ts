@@ -1,0 +1,166 @@
+import axios from "axios";
+import { APP_CONFIG } from "@/config";
+import { apiClient } from "@/lib/axios";
+import { normalizeUserRole } from "@/lib/auth";
+import { API_ENDPOINTS } from "@/shared/constants";
+import type { User } from "@/types";
+
+type ApiEnvelope<T> = {
+  success?: boolean;
+  statusCode?: number;
+  status_code?: number;
+  message?: string;
+  data?: T;
+};
+
+const client = axios.create({
+  baseURL: APP_CONFIG.api.baseUrl,
+  timeout: APP_CONFIG.api.timeout,
+  headers: { "Content-Type": "application/json" },
+  withCredentials: true,
+});
+
+const unwrap = <T>(response: { data: ApiEnvelope<T> | T }): ApiEnvelope<T> => {
+  const data = response.data as ApiEnvelope<T>;
+
+  return data && typeof data === "object" && "data" in data
+    ? data
+    : { data: response.data as T };
+};
+
+const getErrorMessage = (error: unknown, fallback: string) => {
+  if (axios.isAxiosError(error)) {
+    const data = error.response?.data as { message?: string } | undefined;
+    return data?.message || fallback;
+  }
+
+  return error instanceof Error ? error.message : fallback;
+};
+
+export const signup = async (payload: {
+  name: string;
+  email: string;
+  password: string;
+}) => {
+  try {
+    return unwrap<null>(await client.post("/api/v1/auth/signup", payload));
+  } catch (error) {
+    throw new Error(getErrorMessage(error, "Registration failed"));
+  }
+};
+
+export const signin = async (payload: {
+  email: string;
+  password: string;
+  deviceId: string;
+}) => {
+  try {
+    return unwrap<{ refreshToken?: string }>(
+      await client.post("/api/v1/auth/signin", payload),
+    );
+  } catch (error) {
+    throw new Error(getErrorMessage(error, "Login failed"));
+  }
+};
+
+export const verifyEmail = async (payload: { token: string }) => {
+  try {
+    return unwrap<null>(
+      await client.post("/api/v1/auth/verify-email", payload),
+    );
+  } catch (error) {
+    throw new Error(getErrorMessage(error, "Email verification failed"));
+  }
+};
+
+export const resendVerificationEmail = async () => {
+  try {
+    return unwrap<null>(
+      await client.post("/api/v1/auth/resend-verification-email"),
+    );
+  } catch (error) {
+    throw new Error(
+      getErrorMessage(error, "Could not resend verification email"),
+    );
+  }
+};
+
+export const forgotPassword = async (payload: { email: string }) => {
+  try {
+    return unwrap<null>(
+      await client.post("/api/v1/auth/forgot-password", payload),
+    );
+  } catch (error) {
+    throw new Error(
+      getErrorMessage(error, "Could not send password reset link"),
+    );
+  }
+};
+
+export const resetPassword = async (payload: {
+  token: string;
+  password: string;
+}) => {
+  try {
+    return unwrap<null>(
+      await client.post("/api/v1/auth/reset-password", payload),
+    );
+  } catch (error) {
+    throw new Error(getErrorMessage(error, "Could not reset password"));
+  }
+};
+
+export const logoutCurrentSession = async (): Promise<void> => {
+  try {
+    await apiClient.post(API_ENDPOINTS.AUTH.LOGOUT, null, {
+      skipToast: true,
+    });
+  } catch {
+    // Logout must still clear client auth when the server session is already
+    // expired, missing, or otherwise cannot be revoked.
+  }
+};
+
+export const changePassword = async (payload: {
+  currentPassword: string;
+  newPassword: string;
+}) => {
+  try {
+    return unwrap<null>(
+      await client.post("/api/v1/auth/change-password", payload),
+    );
+  } catch (error) {
+    throw new Error(getErrorMessage(error, "Could not change password"));
+  }
+};
+
+type CurrentUserResponse = {
+  id: string;
+  email: string;
+  name: string;
+  avatarUrl?: string | null;
+  role: string;
+  status: string;
+  createdAt: string;
+};
+
+export const mapCurrentUser = (account: CurrentUserResponse): User => ({
+  id: account.id,
+  email: account.email,
+  name: account.name,
+  role: normalizeUserRole(account.role),
+  avatar: account.avatarUrl || undefined,
+  createdAt: new Date(account.createdAt),
+});
+
+export const getCurrentUser = async (): Promise<User> => {
+  try {
+    const account = await apiClient.get<unknown, CurrentUserResponse>(
+      API_ENDPOINTS.AUTH.ME,
+      { skipToast: true },
+    );
+    return mapCurrentUser(account);
+  } catch (error) {
+    throw new Error(getErrorMessage(error, "Could not fetch current user"));
+  }
+};

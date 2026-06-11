@@ -9,6 +9,7 @@ import { signInService, AuthServiceError } from "../services/auth.service";
 import type { SignInPayload } from "../types/auth.types";
 import { Alert } from "react-native";
 import { saveTokens } from "../../../utils/storage";
+import { getDeviceId } from "../../../utils/device";
 
 export const useSignIn = () => {
   const [isLoading, setIsLoading] = useState(false);
@@ -23,21 +24,27 @@ export const useSignIn = () => {
     },
   });
 
-  const onSubmit = async (values: SignInFormValues, onSuccess?: () => void) => {
+  const onSubmit = async (
+    values: SignInFormValues,
+    onSuccess?: () => void,
+    onNeedsVerification?: (email: string) => void,
+  ) => {
     setIsLoading(true);
     setErrorMessage(null);
 
     try {
+      const deviceId = await getDeviceId();
+
       const payload: SignInPayload = {
         email: values.email,
         password: values.password,
-        deviceInfo: "MOBILE",
+        deviceId,
       };
 
       const response = await signInService(payload);
 
       if (response.success || response.status_code === 200) {
-        if (response.data) {
+        if (response.data?.accessToken && response.data.refreshToken) {
           await saveTokens(
             response.data.accessToken,
             response.data.refreshToken,
@@ -57,7 +64,17 @@ export const useSignIn = () => {
           ? error.message
           : "Đã xảy ra lỗi không mong muốn";
       setErrorMessage(msg);
-      Alert.alert("Đăng nhập thất bại", msg);
+      if (msg.toLowerCase().includes("verification")) {
+        Alert.alert("Cần xác thực email", msg, [
+          {
+            text: "Xác thực",
+            onPress: () => onNeedsVerification?.(values.email),
+          },
+          { text: "Đóng" },
+        ]);
+      } else {
+        Alert.alert("Đăng nhập thất bại", msg);
+      }
     } finally {
       setIsLoading(false);
     }
@@ -67,7 +84,12 @@ export const useSignIn = () => {
     form,
     isLoading,
     errorMessage,
-    submit: (onSuccess?: () => void) =>
-      form.handleSubmit((values) => onSubmit(values, onSuccess))(),
+    submit: (
+      onSuccess?: () => void,
+      onNeedsVerification?: (email: string) => void,
+    ) =>
+      form.handleSubmit((values) =>
+        onSubmit(values, onSuccess, onNeedsVerification),
+      )(),
   };
 };

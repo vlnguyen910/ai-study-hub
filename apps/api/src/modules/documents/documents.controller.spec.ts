@@ -3,6 +3,7 @@ import { DocumentsController } from './documents.controller';
 import { DocumentsService } from './documents.service';
 import { AuthGuard } from '../../common/guards/auth.guard';
 import { OptionalJwtGuard } from '../../common/guards/optional-jwt.guard';
+import { RolesGuard } from '../../common/guards/roles.guard';
 
 jest.mock('uuid', () => ({
   v4: jest.fn(() => 'test-jti'),
@@ -17,6 +18,8 @@ describe('DocumentsController', () => {
     findMine: jest.fn(),
     findOne: jest.fn(),
     update: jest.fn(),
+    approve: jest.fn(),
+    reject: jest.fn(),
     delete: jest.fn(),
   };
 
@@ -39,6 +42,9 @@ describe('DocumentsController', () => {
       .useValue({ canActivate: () => true });
     moduleBuilder
       .overrideGuard(OptionalJwtGuard)
+      .useValue({ canActivate: () => true });
+    moduleBuilder
+      .overrideGuard(RolesGuard)
       .useValue({ canActivate: () => true });
 
     const module: TestingModule = await moduleBuilder.compile();
@@ -152,6 +158,32 @@ describe('DocumentsController', () => {
       'doc1',
       dto,
       'user-123',
+    );
+  });
+
+  it('should call approve service with moderator id', async () => {
+    documentsServiceMock.approve.mockResolvedValue({ id: 'doc1' });
+    const user = { sub: 'moderator-123' } as any;
+
+    await controller.approve('doc1', user);
+
+    expect(documentsServiceMock.approve).toHaveBeenCalledWith(
+      'doc1',
+      'moderator-123',
+    );
+  });
+
+  it('should call reject service with dto and moderator id', async () => {
+    documentsServiceMock.reject.mockResolvedValue({ id: 'doc1' });
+    const dto = { rejectionReason: 'Thông tin chưa phù hợp.' };
+    const user = { sub: 'moderator-123' } as any;
+
+    await controller.reject('doc1', dto, user);
+
+    expect(documentsServiceMock.reject).toHaveBeenCalledWith(
+      'doc1',
+      dto,
+      'moderator-123',
     );
   });
 

@@ -15,13 +15,15 @@ import {
   CreateDocumentDto,
   UpdateDocumentDto,
   ListDocumentsQueryDto,
+  RejectDocumentDto,
 } from './dto';
 import { Public } from '../../common/decorators/public.decorator';
 import { OptionalJwtGuard } from '../../common/guards/optional-jwt.guard';
 import { ParseMongoIdPipe } from '../../common/pipes/parse-mongoid.pipe';
 import { JwtAuthGuard } from '../../common/guards/jwt.guard';
+import { RolesGuard } from '../../common/guards/roles.guard';
 import { TokenPayload } from '../../common/interfaces/auth.interface';
-import { User } from '../../common/decorators';
+import { Roles, User } from '../../common/decorators';
 
 @Controller('documents')
 export class DocumentsController {
@@ -50,6 +52,29 @@ export class DocumentsController {
   @Get('me')
   findMine(@Query() query: ListDocumentsQueryDto, @User() user: TokenPayload) {
     return this.documentsService.findMine(query, user.sub);
+  }
+
+  @Version('1')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('MODERATOR', 'ADMIN')
+  @Post(':id/approve')
+  approve(
+    @Param('id', new ParseMongoIdPipe()) id: string,
+    @User() user: TokenPayload,
+  ) {
+    return this.documentsService.approve(id, user.sub);
+  }
+
+  @Version('1')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('MODERATOR', 'ADMIN')
+  @Post(':id/reject')
+  reject(
+    @Param('id', new ParseMongoIdPipe()) id: string,
+    @Body() rejectDocumentDto: RejectDocumentDto,
+    @User() user: TokenPayload,
+  ) {
+    return this.documentsService.reject(id, rejectDocumentDto, user.sub);
   }
 
   @Version('1')

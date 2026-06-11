@@ -1,4 +1,4 @@
-import { UserRole } from '@prisma/client';
+import { UserRole, UserStatus } from '@prisma/client';
 import {
   IsEmail,
   IsEnum,
@@ -18,7 +18,7 @@ export class CreateAccountDto {
 
   @IsString()
   @MinLength(8)
-  hashedPassword!: string;
+  password!: string;
 
   @IsOptional()
   @IsUrl({ require_tld: false })
@@ -27,4 +27,8 @@ export class CreateAccountDto {
   @IsOptional()
   @IsEnum(UserRole)
   role?: UserRole;
+
+  @IsOptional()
+  @IsEnum(UserStatus)
+  status?: UserStatus;
 }

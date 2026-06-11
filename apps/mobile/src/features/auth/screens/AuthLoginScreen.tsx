@@ -19,9 +19,17 @@ export function AuthLoginScreen() {
   const { form, isLoading, submit } = useSignIn();
 
   const handleSignIn = () => {
-    submit(() => {
-      router.replace("/" as never);
-    });
+    submit(
+      () => {
+        router.replace("/" as never);
+      },
+      (email) => {
+        router.push({
+          pathname: "/(templates)/auth-verify-email",
+          params: { email },
+        } as never);
+      },
+    );
   };
 
   return (
