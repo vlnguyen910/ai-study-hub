@@ -328,12 +328,17 @@ export class DocumentsService {
     const shouldQueueForReview =
       existingDocument.isPublic === false &&
       updateDocumentDto.isPublic === true;
+    const shouldCancelReview =
+      existingDocument.status === DocumentStatus.PENDING &&
+      existingDocument.isPublic === true &&
+      updateDocumentDto.isPublic === false;
 
     const document = await this.prismaService.documents.update({
       where: { id },
       data: {
         ...updateDocumentDto,
         ...(shouldQueueForReview ? { status: DocumentStatus.PENDING } : {}),
+        ...(shouldCancelReview ? { status: DocumentStatus.ACTIVE } : {}),
       },
       include: {
         author: {
