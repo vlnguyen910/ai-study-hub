@@ -6,7 +6,7 @@
  * Pure file-selection component — no network calls happen here.
  * The file is held in the parent (UploadPage) and passed to
  * DocumentUploadForm, which triggers the Cloudinary upload + API call
- * together when the user clicks "Công khai tài liệu" or "Lưu nháp".
+ * together when the user clicks "Công khai tài liệu" or "Riêng tư".
  *
  * Responsibilities:
  *  - Render the drag-and-drop / click-to-browse zone
@@ -164,10 +164,10 @@ export default function FileUploadBox({
           onClick={removeFile}
           disabled={isSubmitting}
           className="
-            flex w-full items-center justify-center gap-1 rounded-xl
+            flex w-fit items-center justify-center gap-1 rounded-xl
             border border-error/40 py-2 text-sm text-error
             transition-colors hover:bg-error-container/30
-            disabled:cursor-not-allowed disabled:opacity-50
+            disabled:cursor-not-allowed disabled:opacity-50 p-4 px-5 ml-auto
           "
         >
           <span className="material-symbols-outlined text-[16px]">close</span>

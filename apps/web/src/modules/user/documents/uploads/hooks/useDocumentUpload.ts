@@ -9,7 +9,7 @@
  *   a) Uploads the file to Cloudinary (unsigned preset).
  *   b) Posts the resulting metadata + form values to POST /api/v1/documents.
  *
- * isPublic=false → "Lưu nháp" (ACTIVE, private)
+ * isPublic=false → "Riêng tư" (ACTIVE, private)
  * isPublic=true  → "Công khai tài liệu" (PENDING, awaiting moderation)
  */
 
@@ -117,7 +117,7 @@ export function useDocumentUpload() {
 
   /**
    * Uploads the file to Cloudinary then creates the document record in the API.
-   * @param isPublic true → "Công khai tài liệu"; false → "Lưu nháp"
+   * @param isPublic true → "Công khai tài liệu"; false → "Riêng tư"
    */
   const handleSubmit = useCallback(
     async (isPublic: boolean) => {

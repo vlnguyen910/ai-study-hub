@@ -54,7 +54,7 @@ export default function Home(): ReactElement {
             Cộng đồng
           </Link>
           <Link
-            href="/upload"
+            href="/uploads"
             className="text-gray-500 font-semibold text-sm hover:text-blue-600 transition-all duration-200 py-1 border-b-2 border-transparent hover:border-blue-600"
           >
             Tải lên
