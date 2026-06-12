@@ -17,6 +17,9 @@ import {
   ModeratorBadge,
   ModeratorCard,
 } from "../components/ModeratorPrimitives";
+import { DocumentPreview } from "@/modules/user/documents/detail/components/DocumentPreview";
+import type { DocumentPreviewData } from "@/modules/user/documents/detail/type";
+import { loadDocumentPreview } from "@/modules/user/documents/detail/utils/document-preview";
 
 const statusLabelMap: Record<DocumentStatus, string> = {
   PENDING: "Chờ duyệt",
@@ -58,6 +61,7 @@ export default function ModeratorDocumentDetailPage({
   const router = useRouter();
   const [document, setDocument] = useState<DocumentDetail | null>(null);
   const [note, setNote] = useState("");
+  const [preview, setPreview] = useState<DocumentPreviewData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -70,6 +74,7 @@ export default function ModeratorDocumentDetailPage({
     try {
       const response = await fetchDocumentDetail(documentId);
       setDocument(response);
+      setPreview(await loadDocumentPreview(response));
       setNote("");
     } catch {
       setDocument(null);
@@ -199,20 +204,8 @@ export default function ModeratorDocumentDetailPage({
                 Mở tệp
               </a>
             </div>
-            <div className="relative flex aspect-[3/4] items-center justify-center bg-surface-container p-6">
-              <div className="flex max-w-md flex-col items-center gap-4 rounded-xl border border-outline-variant bg-white p-8 text-center">
-                <MaterialIcon
-                  className="text-6xl text-primary"
-                  name="article"
-                />
-                <p className="font-headline-md text-headline-md text-on-surface">
-                  {document.title}
-                </p>
-                <p className="font-label-sm text-label-sm text-on-surface-variant">
-                  {document.format.toUpperCase()} •{" "}
-                  {formatBytes(document.sizeInBytes)}
-                </p>
-              </div>
+            <div className="bg-surface-container p-4">
+              <DocumentPreview preview={preview ?? { type: "pdf" }} />
             </div>
           </ModeratorCard>
         </div>

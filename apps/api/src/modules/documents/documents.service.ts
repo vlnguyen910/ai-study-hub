@@ -3,7 +3,9 @@ import {
   NotFoundException,
   ForbiddenException,
   BadRequestException,
+  Logger,
 } from '@nestjs/common';
+import { createHash } from 'node:crypto';
 import { DocumentStatus, Prisma, UserRole } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import {
@@ -17,10 +19,18 @@ import { TokenPayload } from '../../common/interfaces/auth.interface';
 
 @Injectable()
 export class DocumentsService {
+  private readonly logger = new Logger(DocumentsService.name);
+
   constructor(
     private readonly prismaService: PrismaService,
     private readonly subjectsService: SubjectsService,
   ) {}
+
+  private readonly cloudinaryCloudName =
+    process.env.CLOUDINARY_CLOUD_NAME ?? '';
+  private readonly cloudinaryApiKey = process.env.CLOUDINARY_API_KEY ?? '';
+  private readonly cloudinaryApiSecret =
+    process.env.CLOUDINARY_API_SECRET ?? '';
 
   private readonly listDocumentSelect = {
     id: true,
@@ -103,6 +113,114 @@ export class DocumentsService {
     }
 
     return existingDocument;
+  }
+
+  private async destroyCloudinaryAsset(document: {
+    publicId: string;
+    resourceType: string;
+  }) {
+    if (
+      !this.cloudinaryCloudName ||
+      !this.cloudinaryApiKey ||
+      !this.cloudinaryApiSecret
+    ) {
+      this.logger.warn(
+        `Skipping Cloudinary destroy for ${document.publicId}: missing server credentials`,
+      );
+      return;
+    }
+
+    const candidates = Array.from(
+      new Set([document.resourceType, 'image', 'raw', 'video'].filter(Boolean)),
+    );
+
+    this.logger.log(
+      `Starting Cloudinary destroy for document=${document.publicId}, resourceType=${document.resourceType}, candidates=${candidates.join(',')}`,
+    );
+
+    const timestamp = Math.floor(Date.now() / 1000).toString();
+    const signature = createHash('sha1')
+      .update(
+        `public_id=${document.publicId}&timestamp=${timestamp}${this.cloudinaryApiSecret}`,
+      )
+      .digest('hex');
+
+    const readResponseBody = async (response: Response) => {
+      if (typeof response.text === 'function') {
+        return response.text();
+      }
+
+      if (typeof response.json === 'function') {
+        try {
+          const data = await response.json();
+          return JSON.stringify(data);
+        } catch {
+          return '';
+        }
+      }
+
+      return '';
+    };
+
+    for (const resourceType of candidates) {
+      const formData = new FormData();
+      formData.append('public_id', document.publicId);
+      formData.append('timestamp', timestamp);
+      formData.append('api_key', this.cloudinaryApiKey);
+      formData.append('signature', signature);
+
+      const url = `https://api.cloudinary.com/v1_1/${this.cloudinaryCloudName}/${resourceType}/destroy`;
+      this.logger.log(
+        `Cloudinary destroy request: url=${url}, publicId=${document.publicId}, resourceType=${resourceType}`,
+      );
+
+      try {
+        const response = await fetch(url, {
+          method: 'POST',
+          body: formData,
+        });
+
+        const bodyText = await readResponseBody(response as Response);
+        this.logger.log(
+          `Cloudinary destroy response: status=${response.status}, ok=${response.ok}, resourceType=${resourceType}, body=${bodyText}`,
+        );
+
+        if (!response.ok) {
+          continue;
+        }
+
+        let parsed: { result?: string } = {};
+        try {
+          parsed = bodyText
+            ? (JSON.parse(bodyText) as { result?: string })
+            : {};
+        } catch {
+          this.logger.warn(
+            `Cloudinary destroy response was not JSON for publicId=${document.publicId}, resourceType=${resourceType}`,
+          );
+        }
+
+        if (parsed.result === 'ok' || parsed.result === 'not found') {
+          this.logger.log(
+            `Cloudinary destroy completed for publicId=${document.publicId}, resourceType=${resourceType}, result=${parsed.result}`,
+          );
+          return;
+        }
+
+        this.logger.warn(
+          `Cloudinary destroy returned unexpected result for publicId=${document.publicId}, resourceType=${resourceType}, result=${parsed.result ?? 'unknown'}`,
+        );
+      } catch (error) {
+        this.logger.error(
+          `Cloudinary destroy threw for publicId=${document.publicId}, resourceType=${resourceType}`,
+          error instanceof Error ? error.stack : String(error),
+        );
+      }
+    }
+
+    this.logger.warn(
+      `Cloudinary destroy exhausted all candidates for publicId=${document.publicId}. The DB record will still be deleted.`,
+    );
   }
 
   async create(createDocumentDto: CreateDocumentDto, authorId: string) {
@@ -448,6 +566,12 @@ export class DocumentsService {
           not: DocumentStatus.DELETED,
         },
       },
+      select: {
+        id: true,
+        authorId: true,
+        publicId: true,
+        resourceType: true,
+      },
     });
 
     if (!existingDocument) {
@@ -460,12 +584,10 @@ export class DocumentsService {
       );
     }
 
-    await this.prismaService.documents.update({
+    await this.destroyCloudinaryAsset(existingDocument);
+
+    await this.prismaService.documents.delete({
       where: { id },
-      data: {
-        status: DocumentStatus.DELETED,
-        deletedAt: new Date(),
-      },
     });
 
     return {
