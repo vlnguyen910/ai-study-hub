@@ -35,6 +35,9 @@ describe("web auth api helpers", () => {
     clientMock.post.mockResolvedValue({
       data: { message: "ok", data: null },
     });
+    apiClientMock.post.mockResolvedValue({
+      data: { message: "ok", data: null },
+    });
   });
 
   it("posts verification tokens as a token payload", async () => {
@@ -81,7 +84,7 @@ describe("web auth api helpers", () => {
   it("resends verification email without an email payload", async () => {
     await resendVerificationEmail();
 
-    expect(clientMock.post).toHaveBeenCalledWith(
+    expect(apiClientMock.post).toHaveBeenCalledWith(
       "/api/v1/auth/resend-verification-email",
     );
   });

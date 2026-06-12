@@ -55,7 +55,7 @@ export const signin = async (payload: {
   deviceId: string;
 }) => {
   try {
-    return unwrap<{ refreshToken?: string }>(
+    return unwrap<{ accessToken?: string }>(
       await client.post("/api/v1/auth/signin", payload),
     );
   } catch (error) {
@@ -76,7 +76,7 @@ export const verifyEmail = async (payload: { token: string }) => {
 export const resendVerificationEmail = async () => {
   try {
     return unwrap<null>(
-      await client.post("/api/v1/auth/resend-verification-email"),
+      await apiClient.post(API_ENDPOINTS.AUTH.RESEND_VERIFICATION_EMAIL),
     );
   } catch (error) {
     throw new Error(
@@ -149,6 +149,7 @@ export const mapCurrentUser = (account: CurrentUserResponse): User => ({
   email: account.email,
   name: account.name,
   role: normalizeUserRole(account.role),
+  status: account.status,
   avatar: account.avatarUrl || undefined,
   createdAt: new Date(account.createdAt),
 });

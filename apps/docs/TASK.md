@@ -95,10 +95,10 @@ The API now has a dedicated `AdminModule` for admin-only controller ownership:
 
 - [x] Align Web signin/refresh/logout with access-token body and refresh-token cookie strategy.
 - [ ] Ensure Web verify-email token route posts `{ token }` to `/auth/verify-email`.
-- [ ] Ensure Web resend verification uses `/auth/resend-verification-email` with the pending verification cookie/JWT.
+- [x] Ensure Web resend verification uses `/auth/resend-verification-email` from the logged-in access-token session.
 - [x] Mobile: add reset-password flow for reset-token links.
 - [x] Mobile: add refresh-token flow and token persistence strategy.
-- [ ] Mobile: define and implement resend verification contract for pending verification users.
+- [x] Mobile: define and implement resend verification contract for logged-in unverified users.
 - [x] Add regression tests for Web auth helpers and Mobile auth service.
 
 ## Priority 5 - Prepare Phase 5 File Upload
@@ -129,7 +129,6 @@ Do not start implementation until file upload and document lifecycle are stable.
 
 ## Recommended Next Sprint
 
-1. Complete Web verify-email and resend-verification flows.
-2. Define Mobile resend verification contract for pending verification users.
-3. Define Admin settings backend contract if system configuration becomes part of MVP.
-4. Run focused API/Web/Mobile auth regression tests.
+1. Complete Web verify-email route polish after token-link UX review.
+2. Define Admin settings backend contract if system configuration becomes part of MVP.
+3. Run focused API/Web/Mobile auth regression tests after each auth contract change.

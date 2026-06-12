@@ -33,7 +33,6 @@ const VERIFY_EMAIL_COOLDOWN_PREFIX = 'verify_email_cooldown';
 const PASSWORD_RESET_TOKEN_PREFIX = 'password_reset';
 const PASSWORD_RESET_USER_PREFIX = 'password_reset_user';
 const PASSWORD_RESET_COOLDOWN_PREFIX = 'password_reset_cooldown';
-const EMAIL_VERIFICATION_DEVICE_ID = 'email-verification';
 const PASSWORD_RESET_SUCCESS_MESSAGE =
   'If an account exists for this email, a password reset link has been sent.';
 
@@ -110,13 +109,10 @@ export class AuthService {
     }
 
     await this.issueVerificationEmail(account);
-    const accessToken = await this.generateEmailVerificationToken(account);
 
     return {
       message: 'Signup successful. Please verify your email.',
-      data: {
-        accessToken,
-      },
+      data: null,
     };
   }
 
@@ -371,8 +367,11 @@ export class AuthService {
       throw new UnauthorizedException('Invalid credentials');
     }
 
-    if (account.status !== UserStatus.ACTIVE) {
-      throw new UnauthorizedException('Email verification is required');
+    if (
+      account.status !== UserStatus.ACTIVE &&
+      account.status !== UserStatus.UNVERIFIED
+    ) {
+      throw new UnauthorizedException('Invalid credentials');
     }
 
     const tokens = await this.manageUserToken(account, signinDto.deviceId);
@@ -492,22 +491,6 @@ export class AuthService {
     ]);
 
     return { accessToken, refreshToken };
-  }
-
-  private async generateEmailVerificationToken(account: VerificationAccount) {
-    const tokenPayload: TokenPayload = {
-      sub: account.id,
-      role: account.role,
-      status: UserStatus.UNVERIFIED,
-      type: JwtTokenType.EmailVerification,
-      deviceId: EMAIL_VERIFICATION_DEVICE_ID,
-    };
-
-    return this.generateToken(
-      tokenPayload,
-      JwtTokenType.EmailVerification,
-      this.jwtConfig.accessTokenExpiresIn,
-    );
   }
 
   private async issueVerificationEmail(account: VerificationAccount) {
