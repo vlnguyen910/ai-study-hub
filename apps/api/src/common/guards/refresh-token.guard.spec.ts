@@ -9,8 +9,16 @@ describe('RefreshTokenGuard', () => {
     guard = new RefreshTokenGuard();
   });
 
-  function mockContext(body: Record<string, unknown> = {}) {
-    const req = { body };
+  function mockContext({
+    body = {},
+    cookies = {},
+    headers = {},
+  }: {
+    body?: Record<string, unknown>;
+    cookies?: Record<string, unknown>;
+    headers?: Record<string, unknown>;
+  } = {}) {
+    const req = { body, cookies, headers };
     return {
       switchToHttp: () => ({ getRequest: () => req }),
     } as ExecutionContext;
@@ -22,21 +30,31 @@ describe('RefreshTokenGuard', () => {
 
   it('throws bad request when refreshToken is blank', () => {
     expect(() =>
-      guard.canActivate(mockContext({ refreshToken: '   ' })),
+      guard.canActivate(mockContext({ body: { refreshToken: '   ' } })),
     ).toThrow(BadRequestException);
   });
 
   it('throws bad request when refreshToken is not a string', () => {
-    expect(() => guard.canActivate(mockContext({ refreshToken: 123 }))).toThrow(
-      BadRequestException,
-    );
+    expect(() =>
+      guard.canActivate(mockContext({ body: { refreshToken: 123 } })),
+    ).toThrow(BadRequestException);
   });
 
   it('delegates to passport guard when refreshToken is present', () => {
     const passportCanActivate = jest
       .spyOn(Object.getPrototypeOf(RefreshTokenGuard.prototype), 'canActivate')
       .mockReturnValue(true);
-    const ctx = mockContext({ refreshToken: 'refresh-token' });
+    const ctx = mockContext({ body: { refreshToken: 'refresh-token' } });
+
+    expect(guard.canActivate(ctx)).toBe(true);
+    expect(passportCanActivate).toHaveBeenCalledWith(ctx);
+  });
+
+  it('delegates to passport guard when refreshToken cookie is present', () => {
+    const passportCanActivate = jest
+      .spyOn(Object.getPrototypeOf(RefreshTokenGuard.prototype), 'canActivate')
+      .mockReturnValue(true);
+    const ctx = mockContext({ cookies: { refreshToken: 'refresh-cookie' } });
 
     expect(guard.canActivate(ctx)).toBe(true);
     expect(passportCanActivate).toHaveBeenCalledWith(ctx);

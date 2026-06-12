@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import type { ReactElement } from "react";
 import { Button } from "@repo/ui/button";
-import { buildUserFromRefreshToken, extractRefreshToken } from "@/lib/auth";
+import { buildUserFromAccessToken, extractAccessToken } from "@/lib/auth";
 import { apiClient } from "@/lib/axios";
 import { ROUTE_PATHS } from "@/routes/router.const";
 import { API_ENDPOINTS } from "@/shared/constants";
@@ -93,17 +93,17 @@ export default function LoginModal({
         deviceId,
       });
 
-      const refreshToken = extractRefreshToken(data);
-      const user = buildUserFromRefreshToken(refreshToken ?? undefined, {
+      const accessToken = extractAccessToken(data);
+      const user = buildUserFromAccessToken(accessToken ?? undefined, {
         email: formData.email,
       });
 
-      if (!refreshToken)
-        throw new Error("Login succeeded but refresh token was missing.");
+      if (!accessToken)
+        throw new Error("Login succeeded but access token was missing.");
       if (!user)
         throw new Error("Login succeeded but token payload was invalid.");
 
-      setAuth(null, user.role, user, refreshToken);
+      setAuth(accessToken, user.role, user, null);
       resetForm();
       onClose();
       router.push(ROUTE_PATHS.PROTECTED_ROUTES.HOME);

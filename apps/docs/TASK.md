@@ -16,7 +16,7 @@ The project is currently in **Phase 4 completion / Admin MVP hardening readiness
 ## Priority 0 - Spec and Contract Cleanup
 
 - [x] Update `apps/docs/SPEC.md` to match the current codebase.
-- [x] Decide and document the Web auth token strategy: use hybrid cookie access-token behavior with refresh token stored client-side for refresh requests.
+- [x] Decide and document the Web auth token strategy: use access token in response body plus HTTP-only refresh-token cookie for Web renewal.
 - [x] Decide Admin account update/delete contract: Admin can create/list/detail/ban accounts for MVP. `PATCH /accounts/:id` and `DELETE /accounts/:id` remain user self-service routes.
 - [x] Decide document visibility/status transition: private -> public should move to `PENDING` and require review.
 
@@ -93,7 +93,7 @@ The API now has a dedicated `AdminModule` for admin-only controller ownership:
 
 ## Priority 4 - Auth Client Completion
 
-- [x] Align Web signin/refresh/logout with the chosen token strategy.
+- [x] Align Web signin/refresh/logout with access-token body and refresh-token cookie strategy.
 - [ ] Ensure Web verify-email token route posts `{ token }` to `/auth/verify-email`.
 - [ ] Ensure Web resend verification uses `/auth/resend-verification-email` with the pending verification cookie/JWT.
 - [x] Mobile: add reset-password flow for reset-token links.
@@ -131,6 +131,5 @@ Do not start implementation until file upload and document lifecycle are stable.
 
 1. Complete Web verify-email and resend-verification flows.
 2. Define Mobile resend verification contract for pending verification users.
-3. Evaluate refresh-token cookie Web auth contract as a separate backend/client cleanup.
-4. Define Admin settings backend contract if system configuration becomes part of MVP.
-5. Run focused API/Web/Mobile auth regression tests.
+3. Define Admin settings backend contract if system configuration becomes part of MVP.
+4. Run focused API/Web/Mobile auth regression tests.

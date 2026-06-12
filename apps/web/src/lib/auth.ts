@@ -13,8 +13,12 @@ type BackendAuthPayload = {
   jti?: string;
 };
 
-type LoginResponse = {
+type RefreshTokenResponse = {
   refreshToken?: string;
+};
+
+type AccessTokenResponse = {
+  accessToken?: string;
 };
 
 const decodeBase64Url = (value: string): string => {
@@ -66,15 +70,15 @@ export const normalizeUserRole = (role?: string): UserRole => {
   }
 };
 
-export const buildUserFromRefreshToken = (
-  refreshToken?: string,
+export const buildUserFromAuthToken = (
+  authToken?: string,
   fallback?: { email?: string; name?: string },
 ): User | null => {
-  if (!refreshToken) {
+  if (!authToken) {
     return null;
   }
 
-  const payload = decodeJwtPayload<BackendAuthPayload>(refreshToken);
+  const payload = decodeJwtPayload<BackendAuthPayload>(authToken);
   if (!payload?.sub) {
     return null;
   }
@@ -93,7 +97,7 @@ export const buildUserFromRefreshToken = (
 
   if (!payload.email || !payload.name) {
     console.warn(
-      "[buildUserFromRefreshToken] Refresh token does not contain profile claims; using fallback session fields.",
+      "[buildUserFromAuthToken] Auth token does not contain profile claims; using fallback session fields.",
       {
         hasEmailClaim: Boolean(payload.email),
         hasNameClaim: Boolean(payload.name),
@@ -110,13 +114,27 @@ export const buildUserFromRefreshToken = (
   };
 };
 
+export const buildUserFromRefreshToken = buildUserFromAuthToken;
+export const buildUserFromAccessToken = buildUserFromAuthToken;
+
 export const extractRefreshToken = (response: unknown): string | null => {
   if (!response || typeof response !== "object") {
     return null;
   }
 
-  const { refreshToken } = response as LoginResponse;
+  const { refreshToken } = response as RefreshTokenResponse;
   return typeof refreshToken === "string" && refreshToken.length > 0
     ? refreshToken
+    : null;
+};
+
+export const extractAccessToken = (response: unknown): string | null => {
+  if (!response || typeof response !== "object") {
+    return null;
+  }
+
+  const { accessToken } = response as AccessTokenResponse;
+  return typeof accessToken === "string" && accessToken.length > 0
+    ? accessToken
     : null;
 };

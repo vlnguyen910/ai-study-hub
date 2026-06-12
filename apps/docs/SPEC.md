@@ -49,10 +49,10 @@ Spec này đã được đối chiếu với codebase hiện tại ngày 2026-06
 - Verify email bằng `{ token }` để chuyển account `UNVERIFIED` sang `ACTIVE`.
 - Resend verification email cho account `UNVERIFIED` qua endpoint được bảo vệ bởi email-verification JWT.
 - Signin chỉ cấp token/session cho account `ACTIVE`; `UNVERIFIED`, `BANNED`, `DELETED` đều bị chặn.
-- Web signin set HTTP-only `accessToken` cookie và trả `refreshToken` trong body.
+- Web signin set HTTP-only `refreshToken` cookie và trả `accessToken` trong body.
 - Mobile signin trả `accessToken` và `refreshToken` trong body.
 - Logout theo userId + deviceId, revoke session hiện tại và clear cookie.
-- Refresh access token bằng refresh-token guard và refresh token trong body.
+- Refresh access token bằng refresh-token guard; Web dùng `refreshToken` cookie, Mobile dùng refresh token trong body.
 - Forgot/reset password dùng single-use reset token Redis, resend cooldown và revoke active sessions sau reset thành công.
 - Change password yêu cầu JWT, xác minh current password, đổi password và revoke các session khác.
 - Phân quyền theo role `USER`, `MODERATOR`, `ADMIN`.
@@ -502,14 +502,14 @@ Behavior:
 - Rejects accounts that are not `ACTIVE`; no token/session is issued for `UNVERIFIED`, `BANNED`, or `DELETED`.
 - Creates or updates session by `userId + deviceId`.
 - Stores hashed refresh token.
-- Sets `accessToken` as HTTP-only cookie.
-- Returns `refreshToken` in response body.
+- Sets `refreshToken` as HTTP-only cookie.
+- Returns `accessToken` in response body.
 
 Current Web client behavior:
 
-- Signin keeps the backend access-token cookie behavior and stores the returned `refreshToken` client-side.
-- The Web store keeps `accessToken` nullable. It starts as `null` after signin because authenticated requests can use the HTTP-only cookie.
-- If a protected request returns `401`, the Web interceptor posts `{ refreshToken }` to `/auth/refresh`, stores the returned access token, and retries the original request once with `Authorization: Bearer <accessToken>`.
+- Signin stores the returned `accessToken` client-side and relies on the HTTP-only `refreshToken` cookie for renewal.
+- The Web store does not persist `refreshToken`.
+- If a protected request returns `401`, the Web interceptor calls `/auth/refresh` with credentials, stores the returned access token, and retries the original request once with `Authorization: Bearer <accessToken>`.
 - Logout calls `/auth/logout` to revoke the current session and clear backend cookies, then clears the local Web auth store.
 
 ### `POST /auth/mobile-signin`
@@ -542,7 +542,8 @@ Requires refresh-token guard.
 
 Request body:
 
-- `refreshToken`
+- Web: no body required when `refreshToken` cookie is present.
+- Mobile/body clients: `refreshToken`.
 
 Behavior:
 
@@ -796,7 +797,7 @@ Behavior:
 ### Current Gaps
 
 - Continue expanding real API coverage for remaining non-document Web modules.
-- Web auth uses the chosen hybrid cookie + refresh-token store strategy.
+- Web auth uses the chosen access-token body + HTTP-only refresh-token cookie strategy.
 
 ## Authenticated Web
 
@@ -898,7 +899,7 @@ Current status: Implemented in API; Web/Mobile UI exists. Verification flow now 
 
 ### US-002 Web Login
 
-Current status: API implemented. Web signin keeps the HTTP-only access-token cookie and stores the returned refresh token client-side.
+Current status: API implemented. Web signin stores returned access token client-side and keeps refresh token in an HTTP-only cookie.
 
 ### US-003 Mobile Login
 
@@ -910,7 +911,7 @@ Current status: Implemented in API.
 
 ### US-005 Refresh Access Token
 
-Current status: API implemented. Web refresh posts refresh token from store; Mobile retries `401` responses once after exchanging the stored refresh token for a new access token.
+Current status: API implemented. Web refresh uses the HTTP-only refresh-token cookie; Mobile retries `401` responses once after exchanging the stored refresh token for a new access token.
 
 ### US-006 Email Verification
 
@@ -1080,7 +1081,6 @@ AI features should only be considered MVP-complete when:
 
 ### Contract Gaps
 
-- Decide whether to migrate Web refreshToken storage to an HTTP-only cookie in a future backend/client contract cleanup.
 - Define the Mobile resend verification contract for pending verification users.
 - Implement or explicitly defer Admin account UI beyond create/list/detail/ban.
 - Define and implement Admin settings API if system configuration becomes part of MVP.
@@ -1089,8 +1089,7 @@ AI features should only be considered MVP-complete when:
 
 ### Contract Decisions
 
-- Web auth direction: hybrid cookie access-token behavior with refresh token stored client-side for refresh requests.
-- Future Web auth contract option: moving refreshToken to an HTTP-only cookie is tracked separately from the current MVP alignment to avoid backend/client scope creep.
+- Web auth direction: access token is returned in the signin/refresh body, while refresh token is stored in an HTTP-only cookie for Web renewal and logout cleanup.
 - Admin account management MVP: Admin can create/list/detail/ban accounts; `PATCH/DELETE /accounts/:id` remain user self-service routes.
 - Admin API boundary direction: admin-only account routes and subject mutation routes are owned by `AdminModule` while keeping current `/accounts` and `/subjects` URL contracts.
 - Document publication direction: private-to-public documents should return to `PENDING` and require review.
