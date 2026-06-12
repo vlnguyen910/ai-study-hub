@@ -95,17 +95,19 @@ export const ADMIN_NAV_ITEMS: SideNavItem[] = [
     section: "main",
   },
   {
-    label: "Quản lý danh mục",
-    icon: "category",
-    href: ROUTE_PATHS.ADMIN_ROUTES.CATEGORIES,
+    label: "Quản lý môn học",
+    icon: "menu_book",
+    href: ROUTE_PATHS.ADMIN_ROUTES.SUBJECTS,
     section: "main",
   },
+
   {
     label: "Báo cáo",
     icon: "bar_chart",
     href: ROUTE_PATHS.ADMIN_ROUTES.REPORTS,
     section: "main",
   },
+
   {
     label: "Cài đặt hệ thống",
     icon: "settings",
