@@ -45,7 +45,9 @@ export const ROUTE_PATHS = {
     USERS: "/admin/users",
     DOCUMENTS: "/admin/documents",
     CATEGORIES: "/admin/categories",
+    SUBJECTS: "/admin/subjects",
     REPORTS: "/admin/reports",
+
     SETTINGS: "/admin/settings",
   },
 
