@@ -14,6 +14,7 @@ import { JwtAuthGuard } from '../../common/guards/jwt.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import { CreateSubjectDto, UpdateSubjectDto } from '../subjects/dto';
 import { SubjectsService } from '../subjects/subjects.service';
+import { ParseMongoIdPipe } from '../../common/pipes/parse-mongoid.pipe';
 
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Controller('subjects')
@@ -30,14 +31,17 @@ export class AdminSubjectsController {
   @Version('1')
   @Roles(UserRole.ADMIN)
   @Patch(':id')
-  update(@Param('id') id: string, @Body() updateSubjectDto: UpdateSubjectDto) {
+  update(
+    @Param('id', new ParseMongoIdPipe()) id: string,
+    @Body() updateSubjectDto: UpdateSubjectDto,
+  ) {
     return this.subjectsService.update(id, updateSubjectDto);
   }
 
   @Version('1')
   @Roles(UserRole.ADMIN)
   @Delete(':id')
-  remove(@Param('id') id: string) {
+  remove(@Param('id', new ParseMongoIdPipe()) id: string) {
     return this.subjectsService.delete(id);
   }
 }
