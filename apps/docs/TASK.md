@@ -1,21 +1,22 @@
 # AI Study Hub - Next Tasks
 
-Updated: 2026-06-08
+Updated: 2026-06-12
 
 ## Current Position
 
 The project is currently in **Phase 4 completion / Admin MVP hardening readiness**.
 
 - API auth/account/subject/document metadata is mostly implemented.
-- Web document and moderator review flows use real APIs; Admin Web still has mock/local-state screens.
-- Mobile still has several template/mock screens.
+- Admin-only API controller ownership has been split into `AdminModule` while keeping current `/accounts` and `/subjects` route contracts.
+- Web document, Admin dashboard summary, Admin Users, and moderator review flows use real APIs; Admin settings remains UI-only/deferred because no settings API exists yet.
+- Mobile auth now has token persistence, refresh retry, and forgot/reset password flow; several document/profile/moderator screens still remain template/mock.
 - Dedicated moderation approve/reject endpoints are implemented.
 - File upload/download and AI/RAG phases are not ready to start yet.
 
 ## Priority 0 - Spec and Contract Cleanup
 
 - [x] Update `apps/docs/SPEC.md` to match the current codebase.
-- [x] Decide and document the Web auth token strategy: use hybrid cookie access-token behavior with refresh token stored client-side for refresh requests.
+- [x] Decide and document the Web auth token strategy: use access token in response body plus HTTP-only refresh-token cookie for Web renewal.
 - [x] Decide Admin account update/delete contract: Admin can create/list/detail/ban accounts for MVP. `PATCH /accounts/:id` and `DELETE /accounts/:id` remain user self-service routes.
 - [x] Decide document visibility/status transition: private -> public should move to `PENDING` and require review.
 
@@ -63,6 +64,10 @@ The project is currently in **Phase 4 completion / Admin MVP hardening readiness
 - [x] On UI, banned users will hile ban action
 - [x] Add bussiness rule admin account can not be banned and admin account will hide from user account management list
 - [x] Hide ID from account management, Last Login Date
+- [x] Refactor admin-only API controller ownership into `AdminModule`.
+- [x] Add backend dashboard summary endpoint at `GET /api/v1/admin/dashboard`.
+- [x] Connect Web Admin dashboard summary cards to `GET /api/v1/admin/dashboard`.
+- [x] Make Admin settings persistence explicitly deferred instead of reporting fake saves.
 
 ### Admin Subject Management Workflow
 
@@ -74,14 +79,27 @@ For the current Admin MVP hardening pass, subject management is API-only.
 - Subject listing and detail remain public through `GET /api/v1/subjects` and `GET /api/v1/subjects/:id`.
 - The Web Admin subject-management UI is deferred until after the users page is stable against real account APIs.
 
+### Admin API Boundary
+
+The API now has a dedicated `AdminModule` for admin-only controller ownership:
+
+- Admin account create/list/detail/ban handlers are owned by `AdminModule`.
+- Admin subject create/update/delete handlers are owned by `AdminModule`.
+- Route URLs remain backward compatible:
+  - `/api/v1/accounts`
+  - `/api/v1/subjects`
+- User self-service account update/delete remains in `AccountsController`.
+- Subject read routes remain in `SubjectsController`.
+
 ## Priority 4 - Auth Client Completion
 
-- [ ] Align Web signin/refresh/logout with the chosen token strategy.
+- [x] Align Web signin/refresh/logout with access-token body and refresh-token cookie strategy.
 - [ ] Ensure Web verify-email token route posts `{ token }` to `/auth/verify-email`.
 - [ ] Ensure Web resend verification uses `/auth/resend-verification-email` with the pending verification cookie/JWT.
-- [ ] Mobile: add reset-password flow if product supports password reset from mobile links/codes.
-- [ ] Mobile: add refresh-token flow and token persistence strategy.
-- [ ] Add regression tests for Web auth helpers and Mobile auth service.
+- [x] Mobile: add reset-password flow for reset-token links.
+- [x] Mobile: add refresh-token flow and token persistence strategy.
+- [ ] Mobile: define and implement resend verification contract for pending verification users.
+- [x] Add regression tests for Web auth helpers and Mobile auth service.
 
 ## Priority 5 - Prepare Phase 5 File Upload
 
@@ -111,8 +129,7 @@ Do not start implementation until file upload and document lifecycle are stable.
 
 ## Recommended Next Sprint
 
-1. Connect Admin Users page to real account APIs.
-2. Connect Admin user detail/read action to `GET /accounts/:id`.
-3. Connect Admin ban action to `PATCH /accounts/:accountId/ban`.
-4. Decide Admin create account UI versus documented API-only workflow.
-5. Run focused API tests, Web typecheck, and Mobile typecheck.
+1. Complete Web verify-email and resend-verification flows.
+2. Define Mobile resend verification contract for pending verification users.
+3. Define Admin settings backend contract if system configuration becomes part of MVP.
+4. Run focused API/Web/Mobile auth regression tests.

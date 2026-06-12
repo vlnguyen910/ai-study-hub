@@ -32,6 +32,7 @@ describe('DocumentsService', () => {
       findFirst: jest.fn(),
       findUnique: jest.fn(),
       update: jest.fn(),
+      delete: jest.fn(),
     },
   };
 
@@ -41,6 +42,10 @@ describe('DocumentsService', () => {
 
   beforeEach(async () => {
     jest.clearAllMocks();
+    process.env.CLOUDINARY_CLOUD_NAME = 'demo';
+    process.env.CLOUDINARY_API_KEY = 'key';
+    process.env.CLOUDINARY_API_SECRET = 'secret';
+    global.fetch = jest.fn();
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -714,6 +719,37 @@ describe('DocumentsService', () => {
     );
   });
 
+  it('update resets pending review to active when author makes a pending public document private', async () => {
+    const existing = {
+      id: '507f1f77bcf86cd799439011',
+      authorId: 'u1',
+      status: DocumentStatus.PENDING,
+      isPublic: true,
+    };
+    const updated = {
+      id: '507f1f77bcf86cd799439011',
+      isPublic: false,
+      status: DocumentStatus.ACTIVE,
+    };
+    prismaMock.documents.findUnique.mockResolvedValueOnce(existing);
+    prismaMock.documents.update.mockResolvedValue(updated);
+
+    await service.update(
+      '507f1f77bcf86cd799439011',
+      { isPublic: false } as any,
+      'u1',
+    );
+
+    expect(prismaMock.documents.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: {
+          isPublic: false,
+          status: DocumentStatus.ACTIVE,
+        },
+      }),
+    );
+  });
+
   it('approve activates a pending document and persists reviewer metadata', async () => {
     const existing = {
       id: '507f1f77bcf86cd799439011',
@@ -854,15 +890,22 @@ describe('DocumentsService', () => {
     const existing = {
       id: '507f1f77bcf86cd799439011',
       authorId: 'u1',
+      publicId: 'docs/sample',
+      resourceType: 'image',
       status: DocumentStatus.ACTIVE,
     };
     prismaMock.documents.findUnique.mockResolvedValue(existing);
-    prismaMock.documents.update.mockResolvedValue({});
+    prismaMock.documents.delete.mockResolvedValue({});
+    (global.fetch as jest.Mock).mockResolvedValue({
+      ok: true,
+      json: async () => ({ result: 'ok' }),
+    });
 
     const res = await service.delete('507f1f77bcf86cd799439011', 'u1');
 
     expect(prismaMock.documents.findUnique).toHaveBeenCalled();
-    expect(prismaMock.documents.update).toHaveBeenCalled();
+    expect(global.fetch).toHaveBeenCalled();
+    expect(prismaMock.documents.delete).toHaveBeenCalled();
     expect(res).toEqual({ message: 'Document deleted successfully' });
   });
 
@@ -882,6 +925,8 @@ describe('DocumentsService', () => {
     const existing = {
       id: '507f1f77bcf86cd799439011',
       authorId: 'other',
+      publicId: 'docs/sample',
+      resourceType: 'image',
       status: DocumentStatus.ACTIVE,
     };
     prismaMock.documents.findUnique.mockResolvedValueOnce(existing);

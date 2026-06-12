@@ -29,6 +29,31 @@ export interface CreateAdminAccountPayload {
   readonly status?: AdminAccountStatus;
 }
 
+export interface AdminDashboardStats {
+  readonly accounts: {
+    readonly total: number;
+    readonly active: number;
+    readonly banned: number;
+    readonly unverified: number;
+  };
+  readonly subjects: {
+    readonly total: number;
+  };
+  readonly documents: {
+    readonly total: number;
+    readonly active: number;
+    readonly pending: number;
+    readonly rejected: number;
+  };
+}
+
+export const fetchAdminDashboardStats =
+  async (): Promise<AdminDashboardStats> => {
+    return apiClient.get<unknown, AdminDashboardStats>(
+      API_ENDPOINTS.ADMIN.DASHBOARD,
+    );
+  };
+
 export const fetchAdminAccounts = async (
   params: FetchAdminAccountsParams = {},
 ): Promise<AdminAccount[]> => {

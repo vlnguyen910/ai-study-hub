@@ -1,4 +1,9 @@
-export type DocumentPreviewType = "pdf" | "docx" | "txt" | "image";
+export type DocumentPreviewType =
+  | "pdf"
+  | "docx"
+  | "txt"
+  | "image"
+  | "unsupported";
 
 export interface DocumentPreviewData {
   readonly type: DocumentPreviewType;

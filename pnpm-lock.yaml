@@ -358,8 +358,8 @@ importers:
         specifier: 16.2.0
         version: 16.2.0(@babel/core@7.29.0)(@playwright/test@1.60.0)(babel-plugin-react-compiler@1.0.0)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
       pdfjs-dist:
-        specifier: ^5.7.284
-        version: 5.7.284
+        specifier: 5.4.296
+        version: 5.4.296
       react:
         specifier: ^19.2.0
         version: 19.2.0
@@ -11179,13 +11179,6 @@ packages:
         integrity: sha512-DlOzet0HO7OEnmUmB6wWGJrrdvbyJKftI1bhMitK7O2N8W2gc757yyYBbINy9IDafXAV9wmKr9t7xsTaNKRG5Q==,
       }
     engines: { node: ">=20.16.0 || >=22.3.0" }
-
-  pdfjs-dist@5.7.284:
-    resolution:
-      {
-        integrity: sha512-h4EdYQczmGhbOlqc3PPZwxevn7ApdWPbovAuWXOB/DjIyigSnwfy2oze7c6mRcSr9XgLp3eN3EeL4DyySTPMFw==,
-      }
-    engines: { node: ">=22.13.0 || >=24" }
 
   perfect-debounce@1.0.0:
     resolution:
@@ -22092,10 +22085,6 @@ snapshots:
   pause@0.0.1: {}
 
   pdfjs-dist@5.4.296:
-    optionalDependencies:
-      "@napi-rs/canvas": 0.1.100
-
-  pdfjs-dist@5.7.284:
     optionalDependencies:
       "@napi-rs/canvas": 0.1.100
 

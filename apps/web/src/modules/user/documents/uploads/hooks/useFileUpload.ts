@@ -38,12 +38,10 @@ export const useFileUpload = (initialConfig: CloudinaryConfig) => {
 
     try {
       const response = await fetch(
-        `https://cloudinary.com/${CLOUD_NAME}/image/upload`,
+        `https://api.cloudinary.com/v1_1/${CLOUD_NAME}/auto/upload`,
         {
           method: "POST",
           body: formData,
-          // Đảm bảo Content-Type không bị thiết lập bởi trình duyệt
-          headers: { "Content-Type": "multipart/form-data" },
         },
       );
 

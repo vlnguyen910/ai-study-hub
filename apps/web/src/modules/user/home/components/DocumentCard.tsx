@@ -1,6 +1,10 @@
+"use client";
+
+import Image from "next/image";
 import Link from "next/link";
 import { Badge } from "@/components/ui/Badge";
 import type { FC } from "react";
+import { useState } from "react";
 
 interface DocumentCardProps {
   id: string;
@@ -19,6 +23,8 @@ export const DocumentCard: FC<DocumentCardProps> = ({
   pageCount,
   className = "",
 }) => {
+  const [imageFailed, setImageFailed] = useState(false);
+
   return (
     <Link href={`/documents/${id}`}>
       <div
@@ -32,24 +38,31 @@ export const DocumentCard: FC<DocumentCardProps> = ({
           ${className}
   `}
       >
-        {/* CARD INNER (no border, no bg → glass/clean feel) */}
         <div className="flex h-[420px] flex-col">
-          {/* ===================== SECTION 1 (2/3) ===================== */}
-          <div className="relative flex-[2] overflow-hidden rounded-2xl">
-            <img
-              src={coverImage}
-              alt={title}
-              className="
-              h-full w-full object-cover
-              transition-transform duration-300
-              group-hover:scale-[1.03]
-            "
-            />
+          <div className="relative flex-[2] overflow-hidden rounded-2xl bg-surface-variant">
+            {!imageFailed ? (
+              <Image
+                src={coverImage}
+                alt={title}
+                fill
+                sizes="320px"
+                className="
+                  object-cover
+                  transition-transform duration-300
+                  group-hover:scale-[1.03]
+                "
+                onError={() => setImageFailed(true)}
+              />
+            ) : (
+              <div className="flex h-full items-center justify-center bg-linear-to-br from-surface-variant to-surface">
+                <span className="material-symbols-outlined text-6xl text-on-surface-variant/40">
+                  preview
+                </span>
+              </div>
+            )}
 
-            {/* subtle overlay for readability */}
             <div className="absolute inset-0 bg-black/10" />
 
-            {/* badge bottom-right */}
             <div className="absolute bottom-2 right-2">
               <Badge className="bg-white text-black shadow-sm">
                 {pageCount} pages
@@ -57,13 +70,12 @@ export const DocumentCard: FC<DocumentCardProps> = ({
             </div>
           </div>
 
-          {/* ===================== SECTION 2 (1/3) ===================== */}
           <div className="flex flex-[1] flex-col justify-center px-1 pt-3">
-            <h3 className="text-base font-semibold leading-snug line-clamp-2 text-on-surface">
+            <h3 className="line-clamp-2 text-base font-semibold leading-snug text-on-surface">
               {title}
             </h3>
 
-            <p className="mt-1 text-sm text-on-surface-variant line-clamp-2">
+            <p className="mt-1 line-clamp-2 text-sm text-on-surface-variant">
               {subtitle}
             </p>
           </div>

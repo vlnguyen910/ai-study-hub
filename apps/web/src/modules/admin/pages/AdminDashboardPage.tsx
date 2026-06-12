@@ -1,44 +1,103 @@
-import { Badge } from "@/components/ui/Badge";
+"use client";
+
 import { Button } from "@/components/ui/Button";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import {
-  activityTimeline,
-  adminStats,
-  recentAdminActivities,
-  systemServices,
-} from "../mockData";
 import {
   AdminCard,
   AdminToneIcon,
   MaterialIcon,
 } from "../components/AdminPrimitives";
-import type { SystemServiceStatus } from "../types";
+import { fetchAdminDashboardStats, type AdminDashboardStats } from "../api";
+import type { AdminStat } from "../types";
 
-const activityToneClasses = {
-  primary: "bg-primary",
-  secondary: "bg-secondary",
-  tertiary: "bg-tertiary",
-  error: "bg-error",
-} as const;
+const formatCount = (value: number): string =>
+  new Intl.NumberFormat("vi-VN").format(value);
 
-const serviceTone: Record<
-  SystemServiceStatus["status"],
-  "success" | "warning" | "neutral"
-> = {
-  operational: "success",
-  degraded: "warning",
-  maintenance: "neutral",
-};
+const buildStats = (stats: AdminDashboardStats): AdminStat[] => [
+  {
+    label: "Tổng tài khoản",
+    value: formatCount(stats.accounts.total),
+    caption: `${formatCount(stats.accounts.active)} đang hoạt động · ${formatCount(
+      stats.accounts.unverified,
+    )} chưa xác thực`,
+    icon: "group",
+    tone: "primary",
+    trend: "API",
+  },
+  {
+    label: "Tài khoản bị khóa",
+    value: formatCount(stats.accounts.banned),
+    caption: "Không bao gồm tài khoản admin và tài khoản đã xóa",
+    icon: "block",
+    tone: "error",
+    trend: "API",
+  },
+  {
+    label: "Môn học",
+    value: formatCount(stats.subjects.total),
+    caption: "Tổng môn học hiện có trong hệ thống",
+    icon: "menu_book",
+    tone: "secondary",
+    trend: "API",
+  },
+  {
+    label: "Tài liệu",
+    value: formatCount(stats.documents.total),
+    caption: `${formatCount(stats.documents.pending)} chờ duyệt · ${formatCount(
+      stats.documents.rejected,
+    )} bị từ chối`,
+    icon: "description",
+    tone: "neutral",
+    trend: `${formatCount(stats.documents.active)} active`,
+  },
+];
 
-const serviceLabel: Record<SystemServiceStatus["status"], string> = {
-  operational: "Ổn định",
-  degraded: "Giảm hiệu năng",
-  maintenance: "Bảo trì",
-};
+const deferredSections = [
+  {
+    title: "Hoạt động hệ thống trong 7 ngày",
+    icon: "monitoring",
+    message: "Chưa có API audit log để hiển thị hoạt động theo ngày.",
+  },
+  {
+    title: "Trạng thái dịch vụ",
+    icon: "dns",
+    message: "Chưa có API telemetry để hiển thị uptime và độ trễ dịch vụ.",
+  },
+  {
+    title: "Hoạt động gần đây",
+    icon: "history",
+    message: "Chưa có nguồn dữ liệu backend cho lịch sử thao tác admin.",
+  },
+] as const;
 
 export default function AdminDashboardPage(): React.JSX.Element {
-  const maxTransactions = Math.max(
-    ...activityTimeline.map((item) => item.transactions),
+  const [dashboardStats, setDashboardStats] =
+    useState<AdminDashboardStats | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [errorMessage, setErrorMessage] = useState("");
+
+  const loadDashboardStats = useCallback(async () => {
+    setIsLoading(true);
+    setErrorMessage("");
+
+    try {
+      const stats = await fetchAdminDashboardStats();
+      setDashboardStats(stats);
+    } catch {
+      setErrorMessage("Không thể tải số liệu dashboard.");
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    void loadDashboardStats();
+  }, [loadDashboardStats]);
+
+  const adminStats = useMemo(
+    () => (dashboardStats ? buildStats(dashboardStats) : []),
+    [dashboardStats],
   );
 
   return (
@@ -54,12 +113,18 @@ export default function AdminDashboardPage(): React.JSX.Element {
           </p>
         </div>
         <div className="flex flex-wrap gap-3">
-          <Button className="inline-flex items-center gap-2 rounded" size="sm">
+          <Button
+            className="inline-flex items-center gap-2 rounded"
+            disabled={isLoading}
+            onClick={() => void loadDashboardStats()}
+            size="sm"
+          >
             <MaterialIcon className="text-[18px]" name="refresh" />
             Đồng bộ
           </Button>
           <Button
             className="inline-flex items-center gap-2 rounded"
+            disabled
             size="sm"
             variant="outline"
           >
@@ -70,145 +135,58 @@ export default function AdminDashboardPage(): React.JSX.Element {
       </div>
 
       <div className="grid grid-cols-1 gap-gutter lg:grid-cols-12">
-        {adminStats.map((stat) => (
-          <AdminCard className="p-6 lg:col-span-3" key={stat.label}>
-            <div className="flex items-start justify-between gap-4">
-              <AdminToneIcon icon={stat.icon} tone={stat.tone} />
-              <span className="font-label-sm text-label-sm text-primary">
-                {stat.trend}
-              </span>
+        {isLoading ? (
+          <AdminCard className="p-6 lg:col-span-12">
+            <p className="font-label-md text-label-md text-on-surface-variant">
+              Đang tải số liệu dashboard...
+            </p>
+          </AdminCard>
+        ) : null}
+
+        {errorMessage ? (
+          <div className="rounded border border-error/30 bg-error-container px-4 py-3 font-label-sm text-label-sm text-error lg:col-span-12">
+            {errorMessage}
+          </div>
+        ) : null}
+
+        {!isLoading && !errorMessage
+          ? adminStats.map((stat) => (
+              <AdminCard className="p-6 lg:col-span-3" key={stat.label}>
+                <div className="flex items-start justify-between gap-4">
+                  <AdminToneIcon icon={stat.icon} tone={stat.tone} />
+                  <span className="font-label-sm text-label-sm text-primary">
+                    {stat.trend}
+                  </span>
+                </div>
+                <p className="mt-6 font-label-md text-label-md text-on-surface-variant tracking-normal">
+                  {stat.label}
+                </p>
+                <p className="mt-2 text-3xl font-bold tracking-normal text-on-surface">
+                  {stat.value}
+                </p>
+                <p className="mt-2 font-label-sm text-label-sm text-on-surface-variant tracking-normal">
+                  {stat.caption}
+                </p>
+              </AdminCard>
+            ))
+          : null}
+
+        {deferredSections.map((section) => (
+          <AdminCard className="p-6 lg:col-span-4" key={section.title}>
+            <div className="mb-4 flex items-center justify-between gap-4">
+              <h2 className="text-xl font-semibold tracking-normal text-on-surface">
+                {section.title}
+              </h2>
+              <MaterialIcon
+                className="text-on-surface-variant"
+                name={section.icon}
+              />
             </div>
-            <p className="mt-6 font-label-md text-label-md text-on-surface-variant tracking-normal">
-              {stat.label}
-            </p>
-            <p className="mt-2 text-3xl font-bold tracking-normal text-on-surface">
-              {stat.value}
-            </p>
-            <p className="mt-2 font-label-sm text-label-sm text-on-surface-variant tracking-normal">
-              {stat.caption}
+            <p className="font-label-sm text-label-sm text-on-surface-variant tracking-normal">
+              {section.message}
             </p>
           </AdminCard>
         ))}
-
-        <AdminCard className="p-6 lg:col-span-8">
-          <div className="mb-8 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <h2 className="text-xl font-semibold tracking-normal text-on-surface">
-                Hoạt động hệ thống trong 7 ngày
-              </h2>
-              <p className="font-label-sm text-label-sm text-on-surface-variant tracking-normal">
-                So sánh giao dịch và phiên hoạt động theo ngày.
-              </p>
-            </div>
-            <div className="flex flex-wrap gap-4">
-              <span className="flex items-center gap-2 font-label-sm text-label-sm tracking-normal">
-                <span className="h-3 w-3 rounded-sm bg-primary" />
-                Giao dịch
-              </span>
-              <span className="flex items-center gap-2 font-label-sm text-label-sm tracking-normal">
-                <span className="h-3 w-3 rounded-sm bg-secondary" />
-                Phiên hoạt động
-              </span>
-            </div>
-          </div>
-          <div className="flex h-72 items-end gap-3 border-b border-outline-variant px-2 pb-8">
-            {activityTimeline.map((day) => (
-              <div
-                className="relative flex h-full flex-1 items-end"
-                key={day.label}
-              >
-                <div
-                  aria-label={`${day.label}: ${day.transactions} giao dịch`}
-                  className="relative flex h-full w-full items-end justify-center rounded-t bg-surface-container"
-                  role="img"
-                >
-                  <div
-                    className="w-full max-w-10 rounded-t bg-primary transition-opacity hover:opacity-85"
-                    style={{
-                      height: `${Math.max(16, (day.transactions / maxTransactions) * 100)}%`,
-                    }}
-                  />
-                  <div
-                    className="absolute bottom-0 w-full max-w-10 rounded-t bg-secondary/70"
-                    style={{
-                      height: `${Math.max(12, (day.sessions / maxTransactions) * 100)}%`,
-                    }}
-                  />
-                </div>
-                <span className="absolute -bottom-6 left-1/2 -translate-x-1/2 font-label-sm text-label-sm text-on-surface-variant">
-                  {day.label}
-                </span>
-              </div>
-            ))}
-          </div>
-        </AdminCard>
-
-        <AdminCard className="p-6 lg:col-span-4">
-          <div className="mb-6 flex items-center justify-between gap-4">
-            <div>
-              <h2 className="text-xl font-semibold tracking-normal text-on-surface">
-                Trạng thái dịch vụ
-              </h2>
-              <p className="font-label-sm text-label-sm text-on-surface-variant tracking-normal">
-                Theo dõi uptime và độ trễ.
-              </p>
-            </div>
-            <MaterialIcon className="text-on-surface-variant" name="dns" />
-          </div>
-          <div className="space-y-4">
-            {systemServices.map((service) => (
-              <div
-                className="rounded border border-outline-variant bg-surface p-4"
-                key={service.name}
-              >
-                <div className="flex items-start justify-between gap-3">
-                  <div>
-                    <p className="font-label-md text-label-md text-on-surface tracking-normal">
-                      {service.name}
-                    </p>
-                    <p className="font-label-sm text-label-sm text-on-surface-variant tracking-normal">
-                      Uptime {service.uptime} · {service.latency}
-                    </p>
-                  </div>
-                  <Badge tone={serviceTone[service.status]}>
-                    {serviceLabel[service.status]}
-                  </Badge>
-                </div>
-              </div>
-            ))}
-          </div>
-        </AdminCard>
-
-        <AdminCard className="p-6 lg:col-span-7">
-          <div className="mb-6 flex items-center justify-between">
-            <h2 className="text-xl font-semibold tracking-normal text-on-surface">
-              Hoạt động gần đây
-            </h2>
-            <MaterialIcon className="text-on-surface-variant" name="history" />
-          </div>
-          <div className="space-y-5">
-            {recentAdminActivities.map((activity) => (
-              <div className="flex gap-4" key={activity.id}>
-                <div
-                  className={`h-auto w-1 shrink-0 rounded-full ${
-                    activityToneClasses[activity.tone]
-                  }`}
-                />
-                <div className="min-w-0">
-                  <p className="font-label-md text-label-md text-on-surface tracking-normal">
-                    {activity.action}
-                  </p>
-                  <p className="font-label-sm text-label-sm text-on-surface-variant tracking-normal">
-                    {activity.performer} · {activity.timestamp}
-                  </p>
-                  <p className="mt-1 font-body-md text-sm text-on-surface-variant">
-                    {activity.details}
-                  </p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </AdminCard>
 
         <AdminCard className="p-6 lg:col-span-5">
           <div className="mb-6">
@@ -238,24 +216,6 @@ export default function AdminDashboardPage(): React.JSX.Element {
                 Cấu hình bảo mật
               </span>
             </Link>
-            <button
-              className="flex min-h-28 flex-col justify-between rounded border border-outline-variant bg-surface p-4 text-left transition-colors hover:border-primary hover:bg-primary-fixed"
-              type="button"
-            >
-              <MaterialIcon className="text-primary" name="mark_email_read" />
-              <span className="font-label-md text-label-md tracking-normal">
-                Gửi thông báo
-              </span>
-            </button>
-            <button
-              className="flex min-h-28 flex-col justify-between rounded border border-outline-variant bg-surface p-4 text-left transition-colors hover:border-primary hover:bg-primary-fixed"
-              type="button"
-            >
-              <MaterialIcon className="text-primary" name="backup" />
-              <span className="font-label-md text-label-md tracking-normal">
-                Sao lưu dữ liệu
-              </span>
-            </button>
           </div>
         </AdminCard>
       </div>

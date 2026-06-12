@@ -9,7 +9,7 @@
  * Single-step flow:
  *   1. User selects / drops a file in FileUploadBox (left column).
  *   2. User fills the metadata form in DocumentUploadForm (right column).
- *   3. "Công khai" or "Lưu nháp" triggers Cloudinary upload + API create
+ *   3. "Công khai" or "Riêng tư" triggers Cloudinary upload + API create
  *      in one loading state — no intermediate "Upload File" button.
  */
 
@@ -47,7 +47,8 @@ export default function UploadPage(): React.JSX.Element {
           Tải lên thành công!
         </h2>
         <p className="text-on-surface-variant">
-          Tài liệu đang chờ kiểm duyệt (nếu công khai) hoặc đã được lưu nháp.
+          Tài liệu đang chờ kiểm duyệt (nếu công khai) hoặc đã được lưu riêng
+          tư.
         </p>
         <Button
           type="button"

@@ -76,6 +76,12 @@ export default function RootLayout() {
         }}
       />
       <Stack.Screen
+        name="(templates)/auth-reset-password"
+        options={{
+          title: "Reset Password",
+        }}
+      />
+      <Stack.Screen
         name="(templates)/profile"
         options={{
           title: "Profile",

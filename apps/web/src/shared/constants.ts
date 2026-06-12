@@ -18,6 +18,9 @@ export const API_ENDPOINTS = {
     DETAIL: (id: string) => `/api/v1/accounts/${id}`,
     BAN: (id: string) => `/api/v1/accounts/${id}/ban`,
   },
+  ADMIN: {
+    DASHBOARD: "/api/v1/admin/dashboard",
+  },
   DOCUMENTS: {
     BASE: "/api/v1/documents",
     DETAIL: (id: string) => `/api/v1/documents/${id}`,

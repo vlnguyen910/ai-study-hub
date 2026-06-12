@@ -33,15 +33,27 @@ const COLUMNS = [
   { key: "actions", label: "Thao tác", align: "right" as const },
 ] as const;
 
-/** Maps API status enum to Vietnamese label + Badge tone. */
-const STATUS_MAP: Record<
-  string,
-  { label: string; tone: "success" | "warning" | "error" | "neutral" }
-> = {
-  ACTIVE: { label: "Công khai", tone: "success" },
-  PENDING: { label: "Đang chờ duyệt", tone: "warning" },
-  REJECTED: { label: "Bị từ chối", tone: "error" },
-};
+/**
+ * Derives the Vietnamese label + Badge tone from both status AND isPublic.
+ *
+ * Why both fields?
+ *   - ACTIVE + isPublic:false  → draft   (chỉ mình xem)
+ *   - ACTIVE + isPublic:true   → live    (đã được duyệt, công khai)
+ *   - PENDING                  → waiting for moderation (bất kể isPublic)
+ *   - REJECTED                 → rejected by moderator
+ */
+function getStatusDisplay(
+  status: string,
+  isPublic: boolean,
+): { label: string; tone: "success" | "warning" | "error" | "neutral" } {
+  if (status === "ACTIVE" && isPublic)
+    return { label: "Công khai", tone: "success" };
+  if (status === "ACTIVE" && !isPublic)
+    return { label: "Riêng tư", tone: "neutral" };
+  if (status === "PENDING") return { label: "Đang chờ duyệt", tone: "warning" };
+  if (status === "REJECTED") return { label: "Bị từ chối", tone: "error" };
+  return { label: status, tone: "neutral" };
+}
 
 /** Infers a Material Symbol icon from the document publicId extension. */
 function formatToIcon(publicId: string): string {
@@ -123,10 +135,7 @@ export function DocumentTable({
 
   // Build Table rows from visible documents
   const tableRows: TableRow[] = visibleDocuments.map((doc) => {
-    const status = STATUS_MAP[doc.status] ?? {
-      label: doc.status,
-      tone: "neutral" as const,
-    };
+    const status = getStatusDisplay(doc.status, doc.isPublic);
     const icon = formatToIcon(doc.publicId);
 
     return {

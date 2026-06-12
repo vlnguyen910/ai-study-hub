@@ -23,15 +23,16 @@ AI Study Hub là nền tảng quản lý và chia sẻ tài liệu học tập c
 
 ### Current Implementation Snapshot
 
-Spec này đã được đối chiếu với codebase hiện tại ngày 2026-06-08.
+Spec này đã được đối chiếu với codebase hiện tại ngày 2026-06-12.
 
 - API: NestJS, Prisma MongoDB, Redis, JWT, refresh token session, role guard, response interceptor, exception filter.
+- API Admin boundary: `AdminModule` owns admin-only account routes, subject mutation routes, and `GET /admin/dashboard`; account and subject route URLs remain backward compatible.
 - Auth: signup tạo account `UNVERIFIED`, gửi link verify email bằng token Redis SHA-256, signin chỉ cấp session/token cho account `ACTIVE`, forgot/reset/change password đã có backend.
 - Mail: `MailModule` dùng Nodemailer SMTP qua cấu hình `MAILTRAP_SMTP_*`; khi thiếu SMTP credentials thì log link trong development hoặc bỏ qua gửi mail ở môi trường khác.
 - Database: MongoDB qua Prisma với models `accounts`, `sessions`, `schools`, `subjects`, `documents`; Redis dùng cho token/cooldown của email verification và password recovery.
-- Web: Next.js App Router, route groups cho auth/app/admin/moderator, shared UI components, Zustand auth store, Axios clients. Auth helpers, public/user document helpers và Moderator document review đã dùng API thật; Admin vẫn còn mock/local state.
-- Mobile: Expo Router, NativeWind, auth service đã gọi `/api/v1/auth/mobile-signin`; document service mới có create metadata cơ bản; nhiều màn hình document/profile/moderator vẫn là template/mock.
-- Current phase: API đã hoàn thành Phase 4 moderation cơ bản cho tài liệu; Product tổng thể chưa đạt Current MVP DoD vì Admin Web và một số Mobile screens còn mock/template.
+- Web: Next.js App Router, route groups cho auth/app/admin/moderator, shared UI components, Zustand auth store, Axios clients. Auth helpers, public/user document helpers, Admin dashboard summary cards, Admin Users và Moderator document review đã dùng API thật; Admin settings vẫn là UI-only/deferred vì chưa có backend contract.
+- Mobile: Expo Router, NativeWind, auth service đã gọi `/api/v1/auth/mobile-signin`, lưu access/refresh token bằng SecureStore, tự refresh access token khi API trả `401`, và có forgot/reset password flow bằng reset-token link; document service mới có create metadata cơ bản; nhiều màn hình document/profile/moderator vẫn là template/mock.
+- Current phase: API đã hoàn thành Phase 4 moderation cơ bản, đã tách boundary `AdminModule` cho Admin MVP hardening, và Web/Mobile auth client đã align với token contract hiện tại; Product tổng thể chưa đạt Current MVP DoD vì Admin settings và một số Mobile screens còn mock/template.
 - Chưa có: binary file upload, Cloudinary/storage integration, download endpoint/count, full-text/tag search, AI extraction/summary/keywords/chat/quiz/duplicate detection.
 
 ---
@@ -48,10 +49,10 @@ Spec này đã được đối chiếu với codebase hiện tại ngày 2026-06
 - Verify email bằng `{ token }` để chuyển account `UNVERIFIED` sang `ACTIVE`.
 - Resend verification email cho account `UNVERIFIED` qua endpoint được bảo vệ bởi email-verification JWT.
 - Signin chỉ cấp token/session cho account `ACTIVE`; `UNVERIFIED`, `BANNED`, `DELETED` đều bị chặn.
-- Web signin set HTTP-only `accessToken` cookie và trả `refreshToken` trong body.
+- Web signin set HTTP-only `refreshToken` cookie và trả `accessToken` trong body.
 - Mobile signin trả `accessToken` và `refreshToken` trong body.
 - Logout theo userId + deviceId, revoke session hiện tại và clear cookie.
-- Refresh access token bằng refresh-token guard và refresh token trong body.
+- Refresh access token bằng refresh-token guard; Web dùng `refreshToken` cookie, Mobile dùng refresh token trong body.
 - Forgot/reset password dùng single-use reset token Redis, resend cooldown và revoke active sessions sau reset thành công.
 - Change password yêu cầu JWT, xác minh current password, đổi password và revoke các session khác.
 - Phân quyền theo role `USER`, `MODERATOR`, `ADMIN`.
@@ -62,6 +63,7 @@ Spec này đã được đối chiếu với codebase hiện tại ngày 2026-06
 - Admin xem danh sách account không bao gồm account đã xóa và không bao gồm Admin.
 - Admin xem chi tiết account không trả password.
 - Admin ban account.
+- Admin xem dashboard summary qua `/admin/dashboard`.
 - User update name/avatarUrl của chính mình.
 - User soft delete chính account của mình bằng `UserStatus.DELETED`.
 
@@ -149,6 +151,7 @@ Spec này đã được đối chiếu với codebase hiện tại ngày 2026-06
 ### API Modules
 
 - `AuthModule`
+- `AdminModule`
 - `AccountsModule`
 - `DocumentsModule`
 - `SubjectsModule`
@@ -219,12 +222,14 @@ Quản trị hệ thống.
 - View account list and account detail.
 - Ban accounts.
 - Create/update/delete subjects.
+- View backend-backed dashboard summary counts.
 - Access Admin Web pages.
 
 ### Current Gaps
 
 - Admin update/delete account endpoints in live API are currently restricted to `USER` role and operate on the caller's own account, not Admin-managed update/delete.
 - Admin has no special document visibility rule in `DocumentsService`.
+- Admin dashboard currently exposes aggregate counts only; recent activity and system health do not have real backend sources yet.
 
 ---
 
@@ -497,14 +502,15 @@ Behavior:
 - Rejects accounts that are not `ACTIVE`; no token/session is issued for `UNVERIFIED`, `BANNED`, or `DELETED`.
 - Creates or updates session by `userId + deviceId`.
 - Stores hashed refresh token.
-- Sets `accessToken` as HTTP-only cookie.
-- Returns `refreshToken` in response body.
+- Sets `refreshToken` as HTTP-only cookie.
+- Returns `accessToken` in response body.
 
-Current Web client gap:
+Current Web client behavior:
 
-- Backend behavior is cookie access token + refresh token response body.
-- Web store still models an in-memory `accessToken`, while the web signin helper only receives `refreshToken`.
-- The chosen direction is hybrid cookie + refresh-token store, but signin/refresh/logout alignment is still an implementation task.
+- Signin stores the returned `accessToken` client-side and relies on the HTTP-only `refreshToken` cookie for renewal.
+- The Web store does not persist `refreshToken`.
+- If a protected request returns `401`, the Web interceptor calls `/auth/refresh` with credentials, stores the returned access token, and retries the original request once with `Authorization: Bearer <accessToken>`.
+- Logout calls `/auth/logout` to revoke the current session and clear backend cookies, then clears the local Web auth store.
 
 ### `POST /auth/mobile-signin`
 
@@ -536,7 +542,8 @@ Requires refresh-token guard.
 
 Request body:
 
-- `refreshToken`
+- Web: no body required when `refreshToken` cookie is present.
+- Mobile/body clients: `refreshToken`.
 
 Behavior:
 
@@ -545,6 +552,8 @@ Behavior:
 - Returns a new access token.
 
 ## Accounts API
+
+Admin create/list/detail/ban handlers are registered through `AdminModule`, but their route contract remains `/api/v1/accounts` for backward compatibility with the current Web Admin client.
 
 ### `POST /accounts`
 
@@ -602,6 +611,8 @@ Known gap:
 
 ## Subjects API
 
+Admin subject mutation handlers are registered through `AdminModule`, but their route contract remains `/api/v1/subjects`. Public read handlers remain in `SubjectsController` for subject selection workflows.
+
 ### `GET /subjects`
 
 Public.
@@ -627,6 +638,22 @@ Admin only. Updates subject and checks duplicate `code`.
 ### `DELETE /subjects/:id`
 
 Admin only. Deletes subject.
+
+## Admin API
+
+### `GET /admin/dashboard`
+
+Admin only. Returns backend-backed aggregate counts for the Admin dashboard.
+
+Current data:
+
+- accounts: total, active, banned, unverified
+- subjects: total
+- documents: total, active, pending, rejected
+
+Known gap:
+
+- Recent activity and system health cards are not backed by real API data yet.
 
 ## Documents API
 
@@ -770,7 +797,7 @@ Behavior:
 ### Current Gaps
 
 - Continue expanding real API coverage for remaining non-document Web modules.
-- Web auth implementation should be aligned with the chosen hybrid cookie + refresh-token store strategy.
+- Web auth uses the chosen access-token body + HTTP-only refresh-token cookie strategy.
 
 ## Authenticated Web
 
@@ -820,11 +847,14 @@ Behavior:
 
 ### Current Behavior
 
-- Users/settings pages are currently UI-first and use mock/local state.
+- Dashboard summary cards consume `GET /admin/dashboard`.
+- Users page consumes `/accounts` for list/detail/create/ban.
+- Settings page is UI-only/deferred; save action does not claim persistence because no settings API exists yet.
+- Dashboard activity, service health and recent activity panels are deferred placeholders until audit-log or telemetry APIs exist.
 
 ### Expected Behavior
 
-- Users page should consume `/accounts` for list/detail/ban.
+- Users page should consume `/accounts` for list/detail/create/ban.
 - Admin account management should stay scoped to create/list/detail/ban for MVP; user update/delete remain self-service routes.
 - Settings page needs product-level definition before backend implementation.
 
@@ -834,7 +864,7 @@ Behavior:
 
 ## Current Routes and Screens
 
-- Auth: login, register, forgot password, verify email template.
+- Auth: login, register, forgot password, reset password, verify email template.
 - Tabs: home, search, library.
 - Profile template.
 - Document upload/edit/detail templates.
@@ -843,15 +873,17 @@ Behavior:
 ## Current Mobile API Integration
 
 - `apiClient` injects access token from storage into Authorization header.
+- `apiClient` uses the stored refresh token to call `/api/v1/auth/refresh` after a `401`, saves the new access token, and retries the original request once.
 - Auth service calls `/api/v1/auth/mobile-signin` for sign in.
 - Auth service calls `/api/v1/auth/signup` for sign up.
 - Auth service calls `/api/v1/auth/forgot-password`.
+- Auth service calls `/api/v1/auth/reset-password` from the reset-token route.
 - Document service can create metadata through `POST /documents`.
 
 ## Known Gaps
 
-- No refresh-token flow in mobile client yet.
-- Mobile verify-email/reset-password integration is incomplete relative to backend.
+- Mobile resend verification is not fully aligned with backend yet because the current resend endpoint requires an email-verification JWT, while Mobile signup does not receive that token in the response body. This is tracked separately from reset-password support.
+- Mobile verify-email manual resend behavior needs the dedicated resend verification contract above.
 - Document list/detail/update/delete screens are template/mock and do not yet call the full Documents API.
 - Upload screen only simulates file choice; binary upload is not available in backend.
 
@@ -867,11 +899,11 @@ Current status: Implemented in API; Web/Mobile UI exists. Verification flow now 
 
 ### US-002 Web Login
 
-Current status: API implemented. Web client token handling still needs implementation alignment with the chosen hybrid cookie + refresh-token store strategy.
+Current status: API implemented. Web signin stores returned access token client-side and keeps refresh token in an HTTP-only cookie.
 
 ### US-003 Mobile Login
 
-Current status: API implemented and Mobile service calls `/api/v1/auth/mobile-signin`.
+Current status: API implemented. Mobile service calls `/api/v1/auth/mobile-signin` and persists returned access/refresh tokens in SecureStore.
 
 ### US-004 Logout
 
@@ -879,15 +911,15 @@ Current status: Implemented in API.
 
 ### US-005 Refresh Access Token
 
-Current status: API implemented. Web refresh posts refresh token from store; Mobile refresh flow still needs implementation.
+Current status: API implemented. Web refresh uses the HTTP-only refresh-token cookie; Mobile retries `401` responses once after exchanging the stored refresh token for a new access token.
 
 ### US-006 Email Verification
 
-Current status: Implemented in API/Web direction with token link, SHA-256 hashed Redis token keys, and resend endpoint guarded by email-verification JWT.
+Current status: Implemented in API/Web direction with token link, SHA-256 hashed Redis token keys, and resend endpoint guarded by email-verification JWT. Mobile verify-email route exists, but resend verification needs a separate mobile-safe contract.
 
 ### US-007 Password Recovery
 
-Current status: Implemented in API and Web helpers/pages; Mobile has forgot-password service but reset flow still needs product integration.
+Current status: Implemented in API, Web helpers/pages, and Mobile forgot/reset password screens using a reset-token link.
 
 ## Phase 2 - Account and Subject Management
 
@@ -1000,7 +1032,7 @@ Current status: Not implemented.
 ### API Phase
 
 - Phase 1: Implemented with minor client-contract cleanup remaining.
-- Phase 2: Mostly implemented. Admin account management is intentionally scoped to create/list/detail/ban for MVP; user update/delete remain self-service routes.
+- Phase 2: Mostly implemented. Admin account management is intentionally scoped to create/list/detail/ban for MVP; user update/delete remain self-service routes. Admin-only account and subject mutation controller ownership now lives in `AdminModule`.
 - Phase 3: Mostly implemented for metadata workflows.
 - Phase 4: Basic document moderation workflow is implemented for pending list/detail and approve/reject.
 - Phase 5-7: Not started.
@@ -1049,16 +1081,19 @@ AI features should only be considered MVP-complete when:
 
 ### Contract Gaps
 
-- Implement Web auth alignment with the chosen hybrid cookie + refresh-token store strategy.
-- Implement or explicitly defer Mobile refresh/reset-password flows.
+- Define the Mobile resend verification contract for pending verification users.
 - Implement or explicitly defer Admin account UI beyond create/list/detail/ban.
+- Define and implement Admin settings API if system configuration becomes part of MVP.
+- Define audit-log and telemetry APIs before replacing deferred Admin dashboard activity/system-health placeholders.
 - Implement document status transition when a private document becomes public so it moves through review instead of bypassing moderation.
 
 ### Contract Decisions
 
-- Web auth direction: hybrid cookie access-token behavior with refresh token stored client-side for refresh requests.
+- Web auth direction: access token is returned in the signin/refresh body, while refresh token is stored in an HTTP-only cookie for Web renewal and logout cleanup.
 - Admin account management MVP: Admin can create/list/detail/ban accounts; `PATCH/DELETE /accounts/:id` remain user self-service routes.
+- Admin API boundary direction: admin-only account routes and subject mutation routes are owned by `AdminModule` while keeping current `/accounts` and `/subjects` URL contracts.
 - Document publication direction: private-to-public documents should return to `PENDING` and require review.
+- Mobile auth direction: store mobile access/refresh tokens in SecureStore, refresh access token through `/auth/refresh` on a single `401` retry, and handle password recovery with reset-token links.
 
 ### Product Decisions Needed
 
@@ -1085,4 +1120,4 @@ AI features should only be considered MVP-complete when:
 - Keep dedicated moderation approve/reject tests updated as moderation rules evolve.
 - Add subject duplicate-code tests if coverage is incomplete.
 - Add Web tests for protected/guest route behavior.
-- Add Mobile service tests for auth endpoints and document service.
+- Add Mobile screen-level regression tests for auth flows and keep Mobile service tests for auth endpoints and document service.
