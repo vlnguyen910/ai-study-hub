@@ -1,13 +1,14 @@
 # AI Study Hub - Next Tasks
 
-Updated: 2026-06-08
+Updated: 2026-06-12
 
 ## Current Position
 
 The project is currently in **Phase 4 completion / Admin MVP hardening readiness**.
 
 - API auth/account/subject/document metadata is mostly implemented.
-- Web document and moderator review flows use real APIs; Admin Web still has mock/local-state screens.
+- Admin-only API controller ownership has been split into `AdminModule` while keeping current `/accounts` and `/subjects` route contracts.
+- Web document, Admin Users, and moderator review flows use real APIs; Admin dashboard/settings still have mock/local-state screens.
 - Mobile still has several template/mock screens.
 - Dedicated moderation approve/reject endpoints are implemented.
 - File upload/download and AI/RAG phases are not ready to start yet.
@@ -63,6 +64,8 @@ The project is currently in **Phase 4 completion / Admin MVP hardening readiness
 - [x] On UI, banned users will hile ban action
 - [x] Add bussiness rule admin account can not be banned and admin account will hide from user account management list
 - [x] Hide ID from account management, Last Login Date
+- [x] Refactor admin-only API controller ownership into `AdminModule`.
+- [x] Add backend dashboard summary endpoint at `GET /api/v1/admin/dashboard`.
 
 ### Admin Subject Management Workflow
 
@@ -73,6 +76,18 @@ For the current Admin MVP hardening pass, subject management is API-only.
 - Admin can delete a subject with `DELETE /api/v1/subjects/:id`.
 - Subject listing and detail remain public through `GET /api/v1/subjects` and `GET /api/v1/subjects/:id`.
 - The Web Admin subject-management UI is deferred until after the users page is stable against real account APIs.
+
+### Admin API Boundary
+
+The API now has a dedicated `AdminModule` for admin-only controller ownership:
+
+- Admin account create/list/detail/ban handlers are owned by `AdminModule`.
+- Admin subject create/update/delete handlers are owned by `AdminModule`.
+- Route URLs remain backward compatible:
+  - `/api/v1/accounts`
+  - `/api/v1/subjects`
+- User self-service account update/delete remains in `AccountsController`.
+- Subject read routes remain in `SubjectsController`.
 
 ## Priority 4 - Auth Client Completion
 
@@ -111,8 +126,8 @@ Do not start implementation until file upload and document lifecycle are stable.
 
 ## Recommended Next Sprint
 
-1. Connect Admin Users page to real account APIs.
-2. Connect Admin user detail/read action to `GET /accounts/:id`.
-3. Connect Admin ban action to `PATCH /accounts/:accountId/ban`.
-4. Decide Admin create account UI versus documented API-only workflow.
-5. Run focused API tests, Web typecheck, and Mobile typecheck.
+1. Align Web signin/refresh/logout with the chosen token strategy.
+2. Complete Web verify-email and resend-verification flows.
+3. Finish Mobile refresh-token persistence and reset-password support decision.
+4. Wire Web Admin dashboard summary cards to `GET /api/v1/admin/dashboard`.
+5. Run focused API/Web/Mobile auth regression tests.

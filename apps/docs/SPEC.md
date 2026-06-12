@@ -23,15 +23,16 @@ AI Study Hub là nền tảng quản lý và chia sẻ tài liệu học tập c
 
 ### Current Implementation Snapshot
 
-Spec này đã được đối chiếu với codebase hiện tại ngày 2026-06-08.
+Spec này đã được đối chiếu với codebase hiện tại ngày 2026-06-12.
 
 - API: NestJS, Prisma MongoDB, Redis, JWT, refresh token session, role guard, response interceptor, exception filter.
+- API Admin boundary: `AdminModule` owns admin-only account routes, subject mutation routes, and `GET /admin/dashboard`; account and subject route URLs remain backward compatible.
 - Auth: signup tạo account `UNVERIFIED`, gửi link verify email bằng token Redis SHA-256, signin chỉ cấp session/token cho account `ACTIVE`, forgot/reset/change password đã có backend.
 - Mail: `MailModule` dùng Nodemailer SMTP qua cấu hình `MAILTRAP_SMTP_*`; khi thiếu SMTP credentials thì log link trong development hoặc bỏ qua gửi mail ở môi trường khác.
 - Database: MongoDB qua Prisma với models `accounts`, `sessions`, `schools`, `subjects`, `documents`; Redis dùng cho token/cooldown của email verification và password recovery.
-- Web: Next.js App Router, route groups cho auth/app/admin/moderator, shared UI components, Zustand auth store, Axios clients. Auth helpers, public/user document helpers và Moderator document review đã dùng API thật; Admin vẫn còn mock/local state.
+- Web: Next.js App Router, route groups cho auth/app/admin/moderator, shared UI components, Zustand auth store, Axios clients. Auth helpers, public/user document helpers, Admin Users và Moderator document review đã dùng API thật; Admin dashboard/settings vẫn còn mock/local state.
 - Mobile: Expo Router, NativeWind, auth service đã gọi `/api/v1/auth/mobile-signin`; document service mới có create metadata cơ bản; nhiều màn hình document/profile/moderator vẫn là template/mock.
-- Current phase: API đã hoàn thành Phase 4 moderation cơ bản cho tài liệu; Product tổng thể chưa đạt Current MVP DoD vì Admin Web và một số Mobile screens còn mock/template.
+- Current phase: API đã hoàn thành Phase 4 moderation cơ bản và đã tách boundary `AdminModule` cho Admin MVP hardening; Product tổng thể chưa đạt Current MVP DoD vì Auth client, Admin dashboard/settings và một số Mobile screens còn mock/template.
 - Chưa có: binary file upload, Cloudinary/storage integration, download endpoint/count, full-text/tag search, AI extraction/summary/keywords/chat/quiz/duplicate detection.
 
 ---
@@ -62,6 +63,7 @@ Spec này đã được đối chiếu với codebase hiện tại ngày 2026-06
 - Admin xem danh sách account không bao gồm account đã xóa và không bao gồm Admin.
 - Admin xem chi tiết account không trả password.
 - Admin ban account.
+- Admin xem dashboard summary qua `/admin/dashboard`.
 - User update name/avatarUrl của chính mình.
 - User soft delete chính account của mình bằng `UserStatus.DELETED`.
 
@@ -149,6 +151,7 @@ Spec này đã được đối chiếu với codebase hiện tại ngày 2026-06
 ### API Modules
 
 - `AuthModule`
+- `AdminModule`
 - `AccountsModule`
 - `DocumentsModule`
 - `SubjectsModule`
@@ -219,12 +222,14 @@ Quản trị hệ thống.
 - View account list and account detail.
 - Ban accounts.
 - Create/update/delete subjects.
+- View backend-backed dashboard summary counts.
 - Access Admin Web pages.
 
 ### Current Gaps
 
 - Admin update/delete account endpoints in live API are currently restricted to `USER` role and operate on the caller's own account, not Admin-managed update/delete.
 - Admin has no special document visibility rule in `DocumentsService`.
+- Admin dashboard currently exposes aggregate counts only; recent activity and system health do not have real backend sources yet.
 
 ---
 
@@ -546,6 +551,8 @@ Behavior:
 
 ## Accounts API
 
+Admin create/list/detail/ban handlers are registered through `AdminModule`, but their route contract remains `/api/v1/accounts` for backward compatibility with the current Web Admin client.
+
 ### `POST /accounts`
 
 Admin only. Creates account.
@@ -602,6 +609,8 @@ Known gap:
 
 ## Subjects API
 
+Admin subject mutation handlers are registered through `AdminModule`, but their route contract remains `/api/v1/subjects`. Public read handlers remain in `SubjectsController` for subject selection workflows.
+
 ### `GET /subjects`
 
 Public.
@@ -627,6 +636,22 @@ Admin only. Updates subject and checks duplicate `code`.
 ### `DELETE /subjects/:id`
 
 Admin only. Deletes subject.
+
+## Admin API
+
+### `GET /admin/dashboard`
+
+Admin only. Returns backend-backed aggregate counts for the Admin dashboard.
+
+Current data:
+
+- accounts: total, active, banned, unverified
+- subjects: total
+- documents: total, active, pending, rejected
+
+Known gap:
+
+- Recent activity and system health cards are not backed by real API data yet.
 
 ## Documents API
 
@@ -1000,7 +1025,7 @@ Current status: Not implemented.
 ### API Phase
 
 - Phase 1: Implemented with minor client-contract cleanup remaining.
-- Phase 2: Mostly implemented. Admin account management is intentionally scoped to create/list/detail/ban for MVP; user update/delete remain self-service routes.
+- Phase 2: Mostly implemented. Admin account management is intentionally scoped to create/list/detail/ban for MVP; user update/delete remain self-service routes. Admin-only account and subject mutation controller ownership now lives in `AdminModule`.
 - Phase 3: Mostly implemented for metadata workflows.
 - Phase 4: Basic document moderation workflow is implemented for pending list/detail and approve/reject.
 - Phase 5-7: Not started.
@@ -1052,12 +1077,14 @@ AI features should only be considered MVP-complete when:
 - Implement Web auth alignment with the chosen hybrid cookie + refresh-token store strategy.
 - Implement or explicitly defer Mobile refresh/reset-password flows.
 - Implement or explicitly defer Admin account UI beyond create/list/detail/ban.
+- Wire Web Admin dashboard to `GET /admin/dashboard` or explicitly keep dashboard cards as mock UI until settings/telemetry APIs exist.
 - Implement document status transition when a private document becomes public so it moves through review instead of bypassing moderation.
 
 ### Contract Decisions
 
 - Web auth direction: hybrid cookie access-token behavior with refresh token stored client-side for refresh requests.
 - Admin account management MVP: Admin can create/list/detail/ban accounts; `PATCH/DELETE /accounts/:id` remain user self-service routes.
+- Admin API boundary direction: admin-only account routes and subject mutation routes are owned by `AdminModule` while keeping current `/accounts` and `/subjects` URL contracts.
 - Document publication direction: private-to-public documents should return to `PENDING` and require review.
 
 ### Product Decisions Needed
