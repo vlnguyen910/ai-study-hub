@@ -71,26 +71,30 @@ export default function DocumentDetailPage(): React.JSX.Element {
       try {
         const doc = await fetchDocumentDetail(id);
         setDocument(doc);
-        setPreview(await loadDocumentPreview(doc));
         setRelatedDocuments([]);
 
-        if (!doc.subject?.id) {
-          return;
+        if (doc.subject?.id) {
+          try {
+            const relatedResponse = await fetchDocuments({
+              subjectId: doc.subject.id,
+              limit: 4,
+            });
+
+            const filtered = relatedResponse.documents
+              .filter((d) => d.id !== id)
+              .slice(0, 3);
+
+            setRelatedDocuments(filtered);
+          } catch (relatedError) {
+            console.error("Could not load related documents", relatedError);
+          }
         }
 
         try {
-          const relatedResponse = await fetchDocuments({
-            subjectId: doc.subject.id,
-            limit: 4,
-          });
-
-          const filtered = relatedResponse.documents
-            .filter((d) => d.id !== id)
-            .slice(0, 3);
-
-          setRelatedDocuments(filtered);
-        } catch (relatedError) {
-          console.error("Could not load related documents", relatedError);
+          setPreview(await loadDocumentPreview(doc));
+        } catch (previewError) {
+          console.error("Could not load document preview", previewError);
+          setPreview(null);
         }
       } catch {
         setError("Không thể tải tài liệu. Vui lòng thử lại.");
@@ -114,7 +118,7 @@ export default function DocumentDetailPage(): React.JSX.Element {
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1fr_320px]">
         <div className="space-y-6">
-          <DocumentPreview preview={preview ?? { type: "pdf" }} />
+          <DocumentPreview preview={preview ?? { type: "unsupported" }} />
 
           {document.description ? (
             <Card className="space-y-5 p-6">

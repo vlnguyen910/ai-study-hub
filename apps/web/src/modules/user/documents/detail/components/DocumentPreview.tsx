@@ -42,6 +42,9 @@ export function DocumentPreview({ preview }: Props): React.JSX.Element {
           <UnsupportedPreview />
         );
 
+      case "unsupported":
+        return <UnsupportedPreview />;
+
       default:
         return <UnsupportedPreview />;
     }

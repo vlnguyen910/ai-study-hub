@@ -12,7 +12,7 @@ interface DocumentCardProps {
   document: LibraryDocument;
 }
 
-const CLOUD_NAME = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME ?? "ddxstobvd";
+const CLOUD_NAME = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME ?? null;
 
 const IMAGE_EXTENSIONS = new Set([
   "png",
@@ -55,6 +55,9 @@ const getGradient = (seed: string): string => {
 };
 
 const buildCloudinaryThumbnailUrl = (publicId: string): string => {
+  if (!CLOUD_NAME) {
+    return "";
+  }
   const normalized = publicId.replace(/\.[a-z0-9]+$/i, "");
   return `https://res.cloudinary.com/${CLOUD_NAME}/image/upload/c_fill,g_auto,w_640,h_320,q_auto,f_auto/${normalized}`;
 };
@@ -69,9 +72,10 @@ export const DocumentCard: FC<DocumentCardProps> = ({ document }) => {
     IMAGE_EXTENSIONS.has(
       document.publicId.split(".").pop()?.toLowerCase() ?? "",
     );
-  const thumbnailUrl = shouldShowImage
-    ? buildCloudinaryThumbnailUrl(document.publicId)
-    : null;
+  const thumbnailUrl =
+    shouldShowImage && CLOUD_NAME
+      ? buildCloudinaryThumbnailUrl(document.publicId)
+      : null;
 
   return (
     <Link

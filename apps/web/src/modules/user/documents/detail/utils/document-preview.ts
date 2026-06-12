@@ -57,7 +57,7 @@ export function buildPreviewSkeleton(
     return { type: "image", images: [fileUrl] };
   }
 
-  return { type: "pdf" };
+  return { type: "unsupported" };
 }
 
 export async function loadDocumentPreview(
@@ -81,5 +81,5 @@ export async function loadDocumentPreview(
     return { type: "image", images: [document.fileUrl] };
   }
 
-  return { type: "pdf" };
+  return { type: "unsupported" };
 }

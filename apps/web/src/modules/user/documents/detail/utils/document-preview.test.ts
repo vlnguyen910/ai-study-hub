@@ -32,6 +32,6 @@ describe("buildPreviewSkeleton", () => {
   it("falls back to the unsupported branch for pptx", () => {
     expect(
       buildPreviewSkeleton("pptx", "https://example.com/file.pptx"),
-    ).toEqual({ type: "pdf" });
+    ).toEqual({ type: "unsupported" });
   });
 });
