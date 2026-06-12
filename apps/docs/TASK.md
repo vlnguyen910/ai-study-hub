@@ -9,7 +9,7 @@ The project is currently in **Phase 4 completion / Admin MVP hardening readiness
 - API auth/account/subject/document metadata is mostly implemented.
 - Admin-only API controller ownership has been split into `AdminModule` while keeping current `/accounts` and `/subjects` route contracts.
 - Web document, Admin dashboard summary, Admin Users, and moderator review flows use real APIs; Admin settings remains UI-only/deferred because no settings API exists yet.
-- Mobile still has several template/mock screens.
+- Mobile auth now has token persistence, refresh retry, and forgot/reset password flow; several document/profile/moderator screens still remain template/mock.
 - Dedicated moderation approve/reject endpoints are implemented.
 - File upload/download and AI/RAG phases are not ready to start yet.
 
@@ -96,8 +96,9 @@ The API now has a dedicated `AdminModule` for admin-only controller ownership:
 - [ ] Align Web signin/refresh/logout with the chosen token strategy.
 - [ ] Ensure Web verify-email token route posts `{ token }` to `/auth/verify-email`.
 - [ ] Ensure Web resend verification uses `/auth/resend-verification-email` with the pending verification cookie/JWT.
-- [ ] Mobile: add reset-password flow if product supports password reset from mobile links/codes.
-- [ ] Mobile: add refresh-token flow and token persistence strategy.
+- [x] Mobile: add reset-password flow for reset-token links.
+- [x] Mobile: add refresh-token flow and token persistence strategy.
+- [ ] Mobile: define and implement resend verification contract for pending verification users.
 - [ ] Add regression tests for Web auth helpers and Mobile auth service.
 
 ## Priority 5 - Prepare Phase 5 File Upload
@@ -130,6 +131,6 @@ Do not start implementation until file upload and document lifecycle are stable.
 
 1. Align Web signin/refresh/logout with the chosen token strategy.
 2. Complete Web verify-email and resend-verification flows.
-3. Finish Mobile refresh-token persistence and reset-password support decision.
+3. Define Mobile resend verification contract for pending verification users.
 4. Define Admin settings backend contract if system configuration becomes part of MVP.
 5. Run focused API/Web/Mobile auth regression tests.
