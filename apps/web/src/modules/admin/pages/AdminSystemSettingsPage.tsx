@@ -42,13 +42,13 @@ export default function AdminSystemSettingsPage(): React.JSX.Element {
   const [message, setMessage] = useState<string | null>(null);
 
   const handleSave = () => {
-    setMessage("Đã lưu thay đổi cài đặt.");
+    setMessage("Cấu hình hệ thống chưa có API lưu thay đổi.");
     window.setTimeout(() => setMessage(null), 2600);
   };
 
   const handleCancel = () => {
     setSettings(mockSettings);
-    setMessage("Đã hoàn tác về cấu hình ban đầu.");
+    setMessage("Đã hoàn tác thay đổi trên giao diện.");
     window.setTimeout(() => setMessage(null), 2600);
   };
 

@@ -8,7 +8,7 @@ The project is currently in **Phase 4 completion / Admin MVP hardening readiness
 
 - API auth/account/subject/document metadata is mostly implemented.
 - Admin-only API controller ownership has been split into `AdminModule` while keeping current `/accounts` and `/subjects` route contracts.
-- Web document, Admin Users, and moderator review flows use real APIs; Admin dashboard/settings still have mock/local-state screens.
+- Web document, Admin dashboard summary, Admin Users, and moderator review flows use real APIs; Admin settings remains UI-only/deferred because no settings API exists yet.
 - Mobile still has several template/mock screens.
 - Dedicated moderation approve/reject endpoints are implemented.
 - File upload/download and AI/RAG phases are not ready to start yet.
@@ -66,6 +66,8 @@ The project is currently in **Phase 4 completion / Admin MVP hardening readiness
 - [x] Hide ID from account management, Last Login Date
 - [x] Refactor admin-only API controller ownership into `AdminModule`.
 - [x] Add backend dashboard summary endpoint at `GET /api/v1/admin/dashboard`.
+- [x] Connect Web Admin dashboard summary cards to `GET /api/v1/admin/dashboard`.
+- [x] Make Admin settings persistence explicitly deferred instead of reporting fake saves.
 
 ### Admin Subject Management Workflow
 
@@ -129,5 +131,5 @@ Do not start implementation until file upload and document lifecycle are stable.
 1. Align Web signin/refresh/logout with the chosen token strategy.
 2. Complete Web verify-email and resend-verification flows.
 3. Finish Mobile refresh-token persistence and reset-password support decision.
-4. Wire Web Admin dashboard summary cards to `GET /api/v1/admin/dashboard`.
+4. Define Admin settings backend contract if system configuration becomes part of MVP.
 5. Run focused API/Web/Mobile auth regression tests.

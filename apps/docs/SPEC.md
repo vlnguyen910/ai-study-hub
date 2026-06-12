@@ -30,9 +30,9 @@ Spec này đã được đối chiếu với codebase hiện tại ngày 2026-06
 - Auth: signup tạo account `UNVERIFIED`, gửi link verify email bằng token Redis SHA-256, signin chỉ cấp session/token cho account `ACTIVE`, forgot/reset/change password đã có backend.
 - Mail: `MailModule` dùng Nodemailer SMTP qua cấu hình `MAILTRAP_SMTP_*`; khi thiếu SMTP credentials thì log link trong development hoặc bỏ qua gửi mail ở môi trường khác.
 - Database: MongoDB qua Prisma với models `accounts`, `sessions`, `schools`, `subjects`, `documents`; Redis dùng cho token/cooldown của email verification và password recovery.
-- Web: Next.js App Router, route groups cho auth/app/admin/moderator, shared UI components, Zustand auth store, Axios clients. Auth helpers, public/user document helpers, Admin Users và Moderator document review đã dùng API thật; Admin dashboard/settings vẫn còn mock/local state.
+- Web: Next.js App Router, route groups cho auth/app/admin/moderator, shared UI components, Zustand auth store, Axios clients. Auth helpers, public/user document helpers, Admin dashboard summary cards, Admin Users và Moderator document review đã dùng API thật; Admin settings vẫn là UI-only/deferred vì chưa có backend contract.
 - Mobile: Expo Router, NativeWind, auth service đã gọi `/api/v1/auth/mobile-signin`; document service mới có create metadata cơ bản; nhiều màn hình document/profile/moderator vẫn là template/mock.
-- Current phase: API đã hoàn thành Phase 4 moderation cơ bản và đã tách boundary `AdminModule` cho Admin MVP hardening; Product tổng thể chưa đạt Current MVP DoD vì Auth client, Admin dashboard/settings và một số Mobile screens còn mock/template.
+- Current phase: API đã hoàn thành Phase 4 moderation cơ bản và đã tách boundary `AdminModule` cho Admin MVP hardening; Product tổng thể chưa đạt Current MVP DoD vì Auth client, Admin settings và một số Mobile screens còn mock/template.
 - Chưa có: binary file upload, Cloudinary/storage integration, download endpoint/count, full-text/tag search, AI extraction/summary/keywords/chat/quiz/duplicate detection.
 
 ---
@@ -845,11 +845,14 @@ Behavior:
 
 ### Current Behavior
 
-- Users/settings pages are currently UI-first and use mock/local state.
+- Dashboard summary cards consume `GET /admin/dashboard`.
+- Users page consumes `/accounts` for list/detail/create/ban.
+- Settings page is UI-only/deferred; save action does not claim persistence because no settings API exists yet.
+- Dashboard activity, service health and recent activity panels are deferred placeholders until audit-log or telemetry APIs exist.
 
 ### Expected Behavior
 
-- Users page should consume `/accounts` for list/detail/ban.
+- Users page should consume `/accounts` for list/detail/create/ban.
 - Admin account management should stay scoped to create/list/detail/ban for MVP; user update/delete remain self-service routes.
 - Settings page needs product-level definition before backend implementation.
 
@@ -1077,7 +1080,8 @@ AI features should only be considered MVP-complete when:
 - Implement Web auth alignment with the chosen hybrid cookie + refresh-token store strategy.
 - Implement or explicitly defer Mobile refresh/reset-password flows.
 - Implement or explicitly defer Admin account UI beyond create/list/detail/ban.
-- Wire Web Admin dashboard to `GET /admin/dashboard` or explicitly keep dashboard cards as mock UI until settings/telemetry APIs exist.
+- Define and implement Admin settings API if system configuration becomes part of MVP.
+- Define audit-log and telemetry APIs before replacing deferred Admin dashboard activity/system-health placeholders.
 - Implement document status transition when a private document becomes public so it moves through review instead of bypassing moderation.
 
 ### Contract Decisions

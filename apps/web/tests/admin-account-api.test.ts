@@ -5,6 +5,7 @@ import {
   createAdminAccount,
   fetchAdminAccountDetail,
   fetchAdminAccounts,
+  fetchAdminDashboardStats,
 } from "../src/modules/admin/api";
 import { apiClient } from "../src/lib/axios";
 
@@ -85,5 +86,18 @@ describe("admin account api helpers", () => {
     await expect(banAdminAccount("acc-1")).resolves.toBe(response);
 
     expect(clientMock.patch).toHaveBeenCalledWith("/api/v1/accounts/acc-1/ban");
+  });
+
+  it("fetches admin dashboard stats", async () => {
+    const response = {
+      accounts: { total: 12, active: 7, banned: 2, unverified: 3 },
+      subjects: { total: 5 },
+      documents: { total: 20, active: 14, pending: 4, rejected: 2 },
+    };
+    clientMock.get.mockResolvedValue(response);
+
+    await expect(fetchAdminDashboardStats()).resolves.toBe(response);
+
+    expect(clientMock.get).toHaveBeenCalledWith("/api/v1/admin/dashboard");
   });
 });
