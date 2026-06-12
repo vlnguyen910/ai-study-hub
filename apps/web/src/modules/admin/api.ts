@@ -239,10 +239,14 @@ export const updateAdminSubject = async (
   await new Promise((resolve) => setTimeout(resolve, 500));
   const index = mockSubjects.findIndex((s) => s.id === id);
   if (index === -1) throw new Error("Subject not found");
-  const updated = {
-    ...mockSubjects[index],
-    name: payload.name ?? mockSubjects[index].name,
-    code: payload.code ? payload.code.toUpperCase() : mockSubjects[index].code,
+  const current = mockSubjects[index];
+  if (!current) throw new Error("Subject not found");
+  const updated: AdminSubject = {
+    id: current.id,
+    name: payload.name ?? current.name,
+    code: payload.code ? payload.code.toUpperCase() : current.code,
+    schoolId: current.schoolId,
+    createdAt: current.createdAt,
     updatedAt: new Date().toISOString(),
   };
   mockSubjects[index] = updated;
