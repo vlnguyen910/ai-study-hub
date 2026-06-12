@@ -74,8 +74,17 @@ export default function ModeratorDocumentDetailPage({
     try {
       const response = await fetchDocumentDetail(documentId);
       setDocument(response);
-      setPreview(await loadDocumentPreview(response));
       setNote("");
+
+      try {
+        setPreview(await loadDocumentPreview(response));
+      } catch (previewError) {
+        console.error(
+          "Could not load moderator document preview",
+          previewError,
+        );
+        setPreview(null);
+      }
     } catch {
       setDocument(null);
       setError("Không thể tải chi tiết tài liệu.");
@@ -205,7 +214,7 @@ export default function ModeratorDocumentDetailPage({
               </a>
             </div>
             <div className="bg-surface-container p-4">
-              <DocumentPreview preview={preview ?? { type: "pdf" }} />
+              <DocumentPreview preview={preview ?? { type: "unsupported" }} />
             </div>
           </ModeratorCard>
         </div>
