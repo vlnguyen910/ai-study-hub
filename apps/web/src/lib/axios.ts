@@ -64,13 +64,9 @@ const handleLogoutAndRedirectToLogin = () => {
 let refreshTokenPromise: Promise<string | null> | null = null;
 
 const refreshAccessToken = async (): Promise<string | null> => {
-  const { refreshToken } = useAuthStore.getState();
-
-  if (!refreshToken) return null;
-
   if (!refreshTokenPromise) {
     refreshTokenPromise = apiClient
-      .post(API_ENDPOINTS.AUTH.REFRESH, { refreshToken }, { skipToast: true })
+      .post(API_ENDPOINTS.AUTH.REFRESH, null, { skipToast: true })
       .then((response) => {
         const data = response as unknown as { accessToken?: unknown };
 

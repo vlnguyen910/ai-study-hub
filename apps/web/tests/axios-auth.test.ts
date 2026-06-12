@@ -38,17 +38,15 @@ describe("web api auth interceptors", () => {
     vi.clearAllMocks();
   });
 
-  it("refreshes with the stored refresh token and retries skipToast session requests", async () => {
+  it("refreshes with the refresh-token cookie and retries skipToast session requests", async () => {
     useAuthStore
       .getState()
-      .setAuth(null, "student", undefined, "refresh-token");
+      .setAuth("expired-access-token", "student", undefined, null);
 
     const adapter = vi.fn<ReturnType<AxiosAdapter>, Parameters<AxiosAdapter>>(
       async (config) => {
         if (config.url === API_ENDPOINTS.AUTH.REFRESH) {
-          expect(JSON.parse(String(config.data))).toEqual({
-            refreshToken: "refresh-token",
-          });
+          expect(config.data).toBe("null");
 
           return {
             data: {
@@ -66,7 +64,7 @@ describe("web api auth interceptors", () => {
 
         if (
           config.url === API_ENDPOINTS.AUTH.ME &&
-          !config.headers?.Authorization
+          config.headers?.Authorization !== "Bearer new-access-token"
         ) {
           throw new axios.AxiosError(
             "Expired access token",

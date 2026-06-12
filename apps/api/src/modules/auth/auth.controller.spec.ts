@@ -247,7 +247,7 @@ describe('AuthController', () => {
     expect(authServiceMock.getCurrentUser).toHaveBeenCalledWith(userPayload);
   });
 
-  it('sets access token cookie and returns refresh token on web signin', async () => {
+  it('sets refresh token cookie and returns access token on web signin', async () => {
     const response = createResponseMock();
     authServiceMock.signin.mockResolvedValue({
       message: 'Signin successful',
@@ -274,14 +274,15 @@ describe('AuthController', () => {
       },
       DeviceType.WEB,
     );
+    expect(response.cookie).toHaveBeenCalledTimes(1);
     expect(response.cookie).toHaveBeenCalledWith(
-      'accessToken',
-      'access-token',
+      'refreshToken',
+      'refresh-token',
       {
         httpOnly: cookieConfigMock.httpOnly,
         secure: cookieConfigMock.secure,
         sameSite: cookieConfigMock.sameSite,
-        maxAge: cookieConfigMock.accessTokenMaxAge,
+        maxAge: cookieConfigMock.refreshTokenMaxAge,
       },
     );
     expect(response.json).toHaveBeenCalledWith({
@@ -289,12 +290,12 @@ describe('AuthController', () => {
       statusCode: HttpStatus.OK,
       message: 'Signin successful',
       data: {
-        refreshToken: 'refresh-token',
+        accessToken: 'access-token',
       },
     });
     expect(
       (response.json as jest.Mock).mock.calls[0][0].data,
-    ).not.toHaveProperty('accessToken');
+    ).not.toHaveProperty('refreshToken');
   });
 
   it('returns both tokens and forces mobile device type on mobile signin', async () => {
@@ -347,25 +348,34 @@ describe('AuthController', () => {
     });
   });
 
-  //TODO: uncomment and fix this test later =))
-  // it('should refresh token using authenticated refresh payload', async () => {
-  //   const refreshPayload = {
-  //     ...userPayload,
-  //     type: JwtTokenType.RefreshToken,
-  //   };
-  //   authServiceMock.refreshToken.mockResolvedValue({
-  //     message: 'Token refreshed successfully',
-  //     data: {
-  //       accessToken: 'new-access-token',
-  //     },
-  //   });
+  it('refreshes using refresh token from cookie when body is empty', async () => {
+    const refreshPayload = {
+      ...userPayload,
+      type: JwtTokenType.RefreshToken,
+    };
+    authServiceMock.refreshToken.mockResolvedValue({
+      message: 'Token refreshed successfully',
+      data: {
+        accessToken: 'new-access-token',
+      },
+    });
 
-  //   await expect(controller.refreshToken(refreshPayload)).resolves.toEqual({
-  //     message: 'Token refreshed successfully',
-  //     data: {
-  //       accessToken: 'new-access-token',
-  //     },
-  //   });
-  //   expect(authServiceMock.refreshToken).toHaveBeenCalledWith(refreshPayload);
-  // });
+    await expect(
+      controller.refreshToken(refreshPayload, {}, {
+        cookies: {
+          refreshToken: 'cookie-refresh-token',
+        },
+        headers: {},
+      } as any),
+    ).resolves.toEqual({
+      message: 'Token refreshed successfully',
+      data: {
+        accessToken: 'new-access-token',
+      },
+    });
+    expect(authServiceMock.refreshToken).toHaveBeenCalledWith(
+      refreshPayload,
+      'cookie-refresh-token',
+    );
+  });
 });

@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Body,
   Controller,
   Get,
@@ -6,12 +7,13 @@ import {
   HttpStatus,
   Inject,
   Post,
+  Req,
   Res,
   UseGuards,
   Version,
 } from '@nestjs/common';
 import type { ConfigType } from '@nestjs/config';
-import type { Response } from 'express';
+import type { Request, Response } from 'express';
 import { AuthService } from './auth.service';
 import { SigninDto } from './dto/signin.dto';
 import { SignupDto } from './dto/signup.dto';
@@ -27,6 +29,31 @@ import { TokenPayload } from '../../common/interfaces/auth.interface';
 import { RefreshTokenGuard } from '../../common/guards/refresh-token.guard';
 import { JwtAuthGuard } from '../../common/guards/jwt.guard';
 import { EmailVerificationGuard } from '../../common/guards/email-verification.guard';
+
+type RefreshTokenRequest = Request & {
+  body?: {
+    refreshToken?: unknown;
+  };
+};
+
+const getBearerToken = (authorization?: unknown) => {
+  if (typeof authorization !== 'string') {
+    return undefined;
+  }
+
+  const [scheme, token] = authorization.split(' ');
+  return scheme === 'Bearer' ? token : undefined;
+};
+
+const getRefreshToken = (request: RefreshTokenRequest) => {
+  const token =
+    request.body?.refreshToken ??
+    getBearerToken(request.headers?.authorization) ??
+    request.cookies?.['refreshToken'] ??
+    request.cookies?.['refresh_token'];
+
+  return typeof token === 'string' ? token : undefined;
+};
 
 @Controller('auth')
 export class AuthController {
@@ -122,21 +149,21 @@ export class AuthController {
   async signin(@Body() signinDto: SigninDto, @Res() res: Response) {
     const result = await this.authService.signin(signinDto, DeviceType.WEB);
 
-    // Set access token as HTTP-only cookie
-    res.cookie('accessToken', result.data.accessToken, {
+    // Store refresh token in an HTTP-only cookie for the web session.
+    res.cookie('refreshToken', result.data.refreshToken, {
       httpOnly: this.cookieConfig.httpOnly,
       secure: this.cookieConfig.secure,
       sameSite: this.cookieConfig.sameSite,
-      maxAge: this.cookieConfig.accessTokenMaxAge,
+      maxAge: this.cookieConfig.refreshTokenMaxAge,
     });
 
-    // Return response with refresh token in body
+    // Return access token in the body for client-side Authorization retries.
     return res.json({
       success: true,
       statusCode: HttpStatus.OK,
       message: result.message,
       data: {
-        refreshToken: result.data.refreshToken,
+        accessToken: result.data.accessToken,
       },
     });
   }
@@ -174,8 +201,15 @@ export class AuthController {
   @UseGuards(RefreshTokenGuard)
   async refreshToken(
     @User() userPayload: TokenPayload,
-    @Body() body: { refreshToken: string },
+    @Body() body: { refreshToken?: string },
+    @Req() req: RefreshTokenRequest,
   ) {
-    return this.authService.refreshToken(userPayload, body.refreshToken);
+    const refreshToken = body.refreshToken ?? getRefreshToken(req);
+
+    if (!refreshToken) {
+      throw new BadRequestException('refreshToken is required');
+    }
+
+    return this.authService.refreshToken(userPayload, refreshToken);
   }
 }

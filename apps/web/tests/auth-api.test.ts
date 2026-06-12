@@ -48,13 +48,13 @@ describe("web auth api helpers", () => {
     });
   });
 
-  it("posts web signin payload and returns the refresh token envelope", async () => {
+  it("posts web signin payload and returns the access token envelope", async () => {
     clientMock.post.mockResolvedValue({
       data: {
         success: true,
         statusCode: 200,
         message: "Signin successful",
-        data: { refreshToken: "refresh-token" },
+        data: { accessToken: "access-token" },
       },
     });
 
@@ -68,7 +68,7 @@ describe("web auth api helpers", () => {
       success: true,
       statusCode: 200,
       message: "Signin successful",
-      data: { refreshToken: "refresh-token" },
+      data: { accessToken: "access-token" },
     });
 
     expect(clientMock.post).toHaveBeenCalledWith("/api/v1/auth/signin", {

@@ -20,13 +20,15 @@ vi.mock("@/lib/axios", () => ({
   apiClient: apiClientMock,
 }));
 
-const makeRefreshToken = (role = "USER") => {
+const makeAccessToken = (role = "USER") => {
   const payload = Buffer.from(
     JSON.stringify({
       sub: "user-1",
+      email: "student@example.com",
+      name: "Nguyen Student",
       role,
       status: "ACTIVE",
-      type: "refreshToken",
+      type: "accessToken",
       deviceId: "device-1",
     }),
   ).toString("base64url");
@@ -54,7 +56,7 @@ describe("web auth routing", () => {
   });
 
   it("redirects to /home after successful login by default", async () => {
-    apiClientMock.post.mockResolvedValue({ refreshToken: makeRefreshToken() });
+    apiClientMock.post.mockResolvedValue({ accessToken: makeAccessToken() });
 
     render(<LoginPage />);
 
@@ -75,7 +77,7 @@ describe("web auth routing", () => {
     navigationMocks.searchParams.mockReturnValue(
       new URLSearchParams("redirect=/uploads"),
     );
-    apiClientMock.post.mockResolvedValue({ refreshToken: makeRefreshToken() });
+    apiClientMock.post.mockResolvedValue({ accessToken: makeAccessToken() });
 
     render(<LoginPage />);
 
@@ -94,7 +96,7 @@ describe("web auth routing", () => {
 
   it("redirects admins to /admin after successful login by default", async () => {
     apiClientMock.post.mockResolvedValue({
-      refreshToken: makeRefreshToken("ADMIN"),
+      accessToken: makeAccessToken("ADMIN"),
     });
 
     render(<LoginPage />);
@@ -114,7 +116,7 @@ describe("web auth routing", () => {
 
   it("redirects moderators to /moderator after successful login by default", async () => {
     apiClientMock.post.mockResolvedValue({
-      refreshToken: makeRefreshToken("MODERATOR"),
+      accessToken: makeAccessToken("MODERATOR"),
     });
 
     render(<LoginPage />);
@@ -172,7 +174,7 @@ describe("web auth routing", () => {
   });
 
   it("hydrates and displays the current user in the shared sidebar", async () => {
-    useAuthStore.getState().setAuth(null, "student", undefined, "refresh");
+    useAuthStore.getState().setAuth("access-token", "student");
 
     render(
       <UserShell title="Không gian học tập" subtitle="Quản lý tài liệu">
@@ -197,7 +199,7 @@ describe("web auth routing", () => {
         role: "student",
         createdAt: new Date("2026-06-08T00:00:00.000Z"),
       },
-      "refresh",
+      null,
     );
     apiClientMock.post.mockResolvedValue({ data: null });
 
@@ -221,7 +223,7 @@ describe("web auth routing", () => {
   });
 
   it("renders back buttons on auth pages", async () => {
-    apiClientMock.post.mockResolvedValue({ refreshToken: makeRefreshToken() });
+    apiClientMock.post.mockResolvedValue({ accessToken: makeAccessToken() });
     apiClientMock.get.mockResolvedValue({ data: null });
 
     const pages = [
