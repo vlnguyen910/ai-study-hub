@@ -32,7 +32,7 @@ Spec này đã được đối chiếu với codebase hiện tại ngày 2026-06
 - Database: MongoDB qua Prisma với models `accounts`, `sessions`, `schools`, `subjects`, `documents`; Redis dùng cho token/cooldown của email verification và password recovery.
 - Web: Next.js App Router, route groups cho auth/app/admin/moderator, shared UI components, Zustand auth store, Axios clients. Auth helpers, public/user document helpers, Admin dashboard summary cards, Admin Users và Moderator document review đã dùng API thật; Admin settings vẫn là UI-only/deferred vì chưa có backend contract.
 - Mobile: Expo Router, NativeWind, auth service đã gọi `/api/v1/auth/mobile-signin`, lưu access/refresh token bằng SecureStore, tự refresh access token khi API trả `401`, và có forgot/reset password flow bằng reset-token link; document service mới có create metadata cơ bản; nhiều màn hình document/profile/moderator vẫn là template/mock.
-- Current phase: API đã hoàn thành Phase 4 moderation cơ bản và đã tách boundary `AdminModule` cho Admin MVP hardening; Product tổng thể chưa đạt Current MVP DoD vì Web auth client, Admin settings và một số Mobile screens còn mock/template.
+- Current phase: API đã hoàn thành Phase 4 moderation cơ bản, đã tách boundary `AdminModule` cho Admin MVP hardening, và Web/Mobile auth client đã align với token contract hiện tại; Product tổng thể chưa đạt Current MVP DoD vì Admin settings và một số Mobile screens còn mock/template.
 - Chưa có: binary file upload, Cloudinary/storage integration, download endpoint/count, full-text/tag search, AI extraction/summary/keywords/chat/quiz/duplicate detection.
 
 ---
@@ -505,11 +505,12 @@ Behavior:
 - Sets `accessToken` as HTTP-only cookie.
 - Returns `refreshToken` in response body.
 
-Current Web client gap:
+Current Web client behavior:
 
-- Backend behavior is cookie access token + refresh token response body.
-- Web store still models an in-memory `accessToken`, while the web signin helper only receives `refreshToken`.
-- The chosen direction is hybrid cookie + refresh-token store, but signin/refresh/logout alignment is still an implementation task.
+- Signin keeps the backend access-token cookie behavior and stores the returned `refreshToken` client-side.
+- The Web store keeps `accessToken` nullable. It starts as `null` after signin because authenticated requests can use the HTTP-only cookie.
+- If a protected request returns `401`, the Web interceptor posts `{ refreshToken }` to `/auth/refresh`, stores the returned access token, and retries the original request once with `Authorization: Bearer <accessToken>`.
+- Logout calls `/auth/logout` to revoke the current session and clear backend cookies, then clears the local Web auth store.
 
 ### `POST /auth/mobile-signin`
 
@@ -795,7 +796,7 @@ Behavior:
 ### Current Gaps
 
 - Continue expanding real API coverage for remaining non-document Web modules.
-- Web auth implementation should be aligned with the chosen hybrid cookie + refresh-token store strategy.
+- Web auth uses the chosen hybrid cookie + refresh-token store strategy.
 
 ## Authenticated Web
 
@@ -897,7 +898,7 @@ Current status: Implemented in API; Web/Mobile UI exists. Verification flow now 
 
 ### US-002 Web Login
 
-Current status: API implemented. Web client token handling still needs implementation alignment with the chosen hybrid cookie + refresh-token store strategy.
+Current status: API implemented. Web signin keeps the HTTP-only access-token cookie and stores the returned refresh token client-side.
 
 ### US-003 Mobile Login
 
@@ -1079,7 +1080,7 @@ AI features should only be considered MVP-complete when:
 
 ### Contract Gaps
 
-- Implement Web auth alignment with the chosen hybrid cookie + refresh-token store strategy.
+- Decide whether to migrate Web refreshToken storage to an HTTP-only cookie in a future backend/client contract cleanup.
 - Define the Mobile resend verification contract for pending verification users.
 - Implement or explicitly defer Admin account UI beyond create/list/detail/ban.
 - Define and implement Admin settings API if system configuration becomes part of MVP.
@@ -1089,6 +1090,7 @@ AI features should only be considered MVP-complete when:
 ### Contract Decisions
 
 - Web auth direction: hybrid cookie access-token behavior with refresh token stored client-side for refresh requests.
+- Future Web auth contract option: moving refreshToken to an HTTP-only cookie is tracked separately from the current MVP alignment to avoid backend/client scope creep.
 - Admin account management MVP: Admin can create/list/detail/ban accounts; `PATCH/DELETE /accounts/:id` remain user self-service routes.
 - Admin API boundary direction: admin-only account routes and subject mutation routes are owned by `AdminModule` while keeping current `/accounts` and `/subjects` URL contracts.
 - Document publication direction: private-to-public documents should return to `PENDING` and require review.

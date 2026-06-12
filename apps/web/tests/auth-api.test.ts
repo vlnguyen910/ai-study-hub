@@ -25,6 +25,7 @@ import {
   logoutCurrentSession,
   resendVerificationEmail,
   resetPassword,
+  signin,
   verifyEmail,
 } from "../src/modules/auth-api";
 
@@ -44,6 +45,36 @@ describe("web auth api helpers", () => {
 
     expect(clientMock.post).toHaveBeenCalledWith("/api/v1/auth/verify-email", {
       token: "verify-token",
+    });
+  });
+
+  it("posts web signin payload and returns the refresh token envelope", async () => {
+    clientMock.post.mockResolvedValue({
+      data: {
+        success: true,
+        statusCode: 200,
+        message: "Signin successful",
+        data: { refreshToken: "refresh-token" },
+      },
+    });
+
+    await expect(
+      signin({
+        email: "student@example.com",
+        password: "Password123!",
+        deviceId: "device-1",
+      }),
+    ).resolves.toEqual({
+      success: true,
+      statusCode: 200,
+      message: "Signin successful",
+      data: { refreshToken: "refresh-token" },
+    });
+
+    expect(clientMock.post).toHaveBeenCalledWith("/api/v1/auth/signin", {
+      email: "student@example.com",
+      password: "Password123!",
+      deviceId: "device-1",
     });
   });
 

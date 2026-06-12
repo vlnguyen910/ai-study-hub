@@ -424,6 +424,10 @@ Base path: `/api/v1/auth`
 - Side effects:
   - sets `accessToken` cookie
   - returns `refreshToken` in the body
+- Web client behavior:
+  - stores returned `refreshToken` client-side
+  - starts with no in-memory `accessToken` after signin and relies on the HTTP-only cookie for authenticated requests
+  - uses `/refresh` with `{ refreshToken }` when a protected request returns `401`
 
 #### Request Body
 
@@ -505,6 +509,10 @@ This endpoint bypasses the global response interceptor and returns a manual payl
 
 - Auth: refresh token guard
 - Description: exchanges a valid refresh token for a new access token
+- Web client behavior:
+  - posts the stored `refreshToken` in the request body after a protected request returns `401`
+  - stores the returned `accessToken`
+  - retries the original request once with `Authorization: Bearer <accessToken>`
 - Mobile client behavior:
   - posts the stored `refreshToken` after an authenticated request returns `401`
   - stores the returned `accessToken`
