@@ -10,8 +10,7 @@ interface Props {
 }
 
 pdfjs.GlobalWorkerOptions.workerSrc = new URL(
-  "pdfjs-dist/build/pdf.worker.min.mjs",
-  import.meta.url,
+  "https://unpkg.com/pdfjs-dist@5.4.296/build/pdf.worker.min.mjs",
 ).toString();
 
 export function PdfPreview({ fileUrl }: Props): React.JSX.Element {
