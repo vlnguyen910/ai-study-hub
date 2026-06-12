@@ -25,7 +25,7 @@ The goal of this refactor is to introduce a clearer admin boundary without break
 - Do not change the public subject read contract unless a later product decision requires it.
 - Do not add new storage tables or audit-log infrastructure for dashboard activity.
 - Do not redesign auth or document moderation in this refactor.
-- Do not move admin route paths away from the current API versioning scheme.
+- Do not move the existing account and subject admin route paths in this pass.
 
 ## Proposed Module Layout
 
@@ -64,10 +64,10 @@ Responsibility:
 
 Route shape:
 
-- `POST /api/v1/admin/accounts`
-- `GET /api/v1/admin/accounts`
-- `GET /api/v1/admin/accounts/:id`
-- `PATCH /api/v1/admin/accounts/:accountId/ban`
+- `POST /api/v1/accounts`
+- `GET /api/v1/accounts`
+- `GET /api/v1/accounts/:id`
+- `PATCH /api/v1/accounts/:accountId/ban`
 
 #### `AdminSubjectsController`
 
@@ -78,9 +78,9 @@ Responsibility:
 
 Route shape:
 
-- `POST /api/v1/admin/subjects`
-- `PATCH /api/v1/admin/subjects/:id`
-- `DELETE /api/v1/admin/subjects/:id`
+- `POST /api/v1/subjects`
+- `PATCH /api/v1/subjects/:id`
+- `DELETE /api/v1/subjects/:id`
 
 ### Existing Controllers After Refactor
 
@@ -98,7 +98,7 @@ Keep only public read routes used by users and document upload:
 - `GET /api/v1/subjects`
 - `GET /api/v1/subjects/:id`
 
-This keeps the public read surface stable and makes the admin write surface explicit.
+This keeps the public read surface stable and moves controller ownership into `AdminModule` without breaking existing Web API clients.
 
 ## Dashboard Data Contract
 
@@ -137,6 +137,10 @@ Anything that depends on an audit trail or operational telemetry, such as recent
 ### Why separate admin controllers instead of one mixed controller?
 
 It keeps authorization boundaries obvious. Public read, self-service, and admin-only mutation paths stop sharing a single controller surface.
+
+### Why keep existing account and subject admin route paths?
+
+The current Web Admin client already calls `/api/v1/accounts` for account management and `/api/v1/subjects` for subject mutation workflows. This refactor improves backend ownership without forcing a frontend contract migration in the same pass.
 
 ### Why keep public subject reads outside `AdminModule`?
 
