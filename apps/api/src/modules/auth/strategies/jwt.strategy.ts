@@ -33,7 +33,10 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
       throw new UnauthorizedException('Invalid token: missing deviceId');
     }
 
-    if (payload.status !== UserStatus.ACTIVE) {
+    if (
+      payload.status !== UserStatus.ACTIVE &&
+      payload.status !== UserStatus.UNVERIFIED
+    ) {
       throw new UnauthorizedException('User is not active');
     }
 

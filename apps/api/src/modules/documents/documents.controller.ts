@@ -22,6 +22,7 @@ import { OptionalJwtGuard } from '../../common/guards/optional-jwt.guard';
 import { ParseMongoIdPipe } from '../../common/pipes/parse-mongoid.pipe';
 import { JwtAuthGuard } from '../../common/guards/jwt.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
+import { VerifiedAccountGuard } from '../../common/guards/verified-account.guard';
 import { TokenPayload } from '../../common/interfaces/auth.interface';
 import { Roles, User } from '../../common/decorators';
 
@@ -30,7 +31,7 @@ export class DocumentsController {
   constructor(private readonly documentsService: DocumentsService) {}
 
   @Version('1')
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, VerifiedAccountGuard)
   @Post()
   create(
     @Body() createDocumentDto: CreateDocumentDto,
@@ -89,7 +90,7 @@ export class DocumentsController {
   }
 
   @Version('1')
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, VerifiedAccountGuard)
   @Patch(':id')
   update(
     @Param('id', new ParseMongoIdPipe()) id: string,

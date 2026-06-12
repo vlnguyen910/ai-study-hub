@@ -239,7 +239,7 @@ Base path: `/api/v1/auth`
 ### `POST /signup`
 
 - Auth: none
-- Description: creates an unverified user, sends verification email, sets an `accessToken` cookie for email verification
+- Description: creates an unverified user and sends a verification email. No login session is created by signup.
 
 #### Request Body
 
@@ -253,7 +253,7 @@ Base path: `/api/v1/auth`
 #### Response Body
 
 - Standard envelope via interceptor.
-- `data` is `null` because the controller strips the token from the response body.
+- `data` is `null`.
 
 ```json
 {
@@ -288,8 +288,8 @@ Base path: `/api/v1/auth`
 
 ### `POST /resend-verification-email`
 
-- Auth: access token cookie from signup
-- Description: sends another verification email for the current unverified user
+- Auth: normal access token session (`JwtAuthGuard`)
+- Description: sends another verification email for the current logged-in unverified user
 
 #### Request Body
 
@@ -997,13 +997,14 @@ Base path: `/api/v1/documents`
 
 ### Access Notes
 
-- `POST /`, `PATCH /:id`, and `DELETE /:id` require an access token.
+- `POST /` and `PATCH /:id` require an access token and a verified (`ACTIVE`) account.
+- `DELETE /:id` requires an access token.
 - `POST /:id/approve` and `POST /:id/reject` require `MODERATOR` or `ADMIN`.
 - `GET /` and `GET /:id` are implemented with `OptionalJwtGuard`, so guest access is supported and authenticated users receive personalized visibility.
 
 ### `POST /`
 
-- Auth: access token
+- Auth: access token + verified account
 - Description: creates a document
 
 #### Request Body
@@ -1115,7 +1116,7 @@ Base path: `/api/v1/documents`
 
 ### `GET /me`
 
-- Auth: access token
+- Auth: access token + verified account
 - Description: lists the current user's documents
 
 #### Query Parameters

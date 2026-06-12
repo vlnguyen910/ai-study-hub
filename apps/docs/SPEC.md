@@ -27,7 +27,7 @@ Spec này đã được đối chiếu với codebase hiện tại ngày 2026-06
 
 - API: NestJS, Prisma MongoDB, Redis, JWT, refresh token session, role guard, response interceptor, exception filter.
 - API Admin boundary: `AdminModule` owns admin-only account routes, subject mutation routes, and `GET /admin/dashboard`; account and subject route URLs remain backward compatible.
-- Auth: signup tạo account `UNVERIFIED`, gửi link verify email bằng token Redis SHA-256, signin chỉ cấp session/token cho account `ACTIVE`, forgot/reset/change password đã có backend.
+- Auth: signup tạo account `UNVERIFIED`, gửi link verify email bằng token Redis SHA-256; signin cấp session/token cho `ACTIVE` và `UNVERIFIED`, trong đó `UNVERIFIED` chỉ có phiên hạn chế; forgot/reset/change password đã có backend.
 - Mail: `MailModule` dùng Nodemailer SMTP qua cấu hình `MAILTRAP_SMTP_*`; khi thiếu SMTP credentials thì log link trong development hoặc bỏ qua gửi mail ở môi trường khác.
 - Database: MongoDB qua Prisma với models `accounts`, `sessions`, `schools`, `subjects`, `documents`; Redis dùng cho token/cooldown của email verification và password recovery.
 - Web: Next.js App Router, route groups cho auth/app/admin/moderator, shared UI components, Zustand auth store, Axios clients. Auth helpers, public/user document helpers, Admin dashboard summary cards, Admin Users và Moderator document review đã dùng API thật; Admin settings vẫn là UI-only/deferred vì chưa có backend contract.
@@ -47,8 +47,8 @@ Spec này đã được đối chiếu với codebase hiện tại ngày 2026-06
 - Gửi verification link sau register; raw token chỉ dùng để gửi email/link.
 - Lưu verification token trong Redis theo key chứa SHA-256 hash của token.
 - Verify email bằng `{ token }` để chuyển account `UNVERIFIED` sang `ACTIVE`.
-- Resend verification email cho account `UNVERIFIED` qua endpoint được bảo vệ bởi email-verification JWT.
-- Signin chỉ cấp token/session cho account `ACTIVE`; `UNVERIFIED`, `BANNED`, `DELETED` đều bị chặn.
+- Resend verification email cho account `UNVERIFIED` qua phiên đăng nhập thường.
+- Signin cấp token/session cho account `ACTIVE` và `UNVERIFIED`; `UNVERIFIED` bị chặn ở các chức năng tiêu tốn tài nguyên cho đến khi verify email.
 - Web signin set HTTP-only `refreshToken` cookie và trả `accessToken` trong body.
 - Mobile signin trả `accessToken` và `refreshToken` trong body.
 - Logout theo userId + deviceId, revoke session hiện tại và clear cookie.
@@ -390,8 +390,7 @@ Behavior:
 - Hashes password with Argon2.
 - Creates account with role `USER` and status `UNVERIFIED`.
 - Rotates a raw verification token, stores only SHA-256 hashed token state in Redis, and sends a verification link through mail.
-- Generates an email-verification JWT and sets it as HTTP-only `accessToken` cookie so the pending user can call resend.
-- Returns success message and `data: null`; no normal login session is created.
+- Returns success message and `data: null`; no login session is created until the user signs in.
 
 ### `POST /auth/verify-email`
 
@@ -407,7 +406,7 @@ Behavior:
 - Rejects invalid, expired, already active, or non-`UNVERIFIED` accounts.
 - Updates account status from `UNVERIFIED` to `ACTIVE`.
 - Invalidates token, subject lookup, and cooldown state after success.
-- Clears `accessToken` cookie.
+- Clears any legacy `accessToken` cookie.
 - Returns success message and `data: null`.
 
 ### `POST /auth/resend-verification-email`
@@ -416,11 +415,11 @@ Sends a fresh verification email for an unverified account.
 
 Auth:
 
-- Requires `EmailVerificationGuard`.
+- Requires a normal logged-in access token session.
 
 Behavior:
 
-- Uses the pending user's JWT subject, not an email request body.
+- Uses the logged-in user's JWT subject, not an email request body.
 - Requires an existing account with status `UNVERIFIED`.
 - Enforces configured resend cooldown.
 - Rotates Redis verification token state.
@@ -499,7 +498,8 @@ Request body:
 Behavior:
 
 - Validates credentials.
-- Rejects accounts that are not `ACTIVE`; no token/session is issued for `UNVERIFIED`, `BANNED`, or `DELETED`.
+- Allows accounts with status `ACTIVE` or `UNVERIFIED`; no token/session is issued for `BANNED` or `DELETED`.
+- `UNVERIFIED` users receive normal access/refresh tokens but remain blocked from verified-only resource actions.
 - Creates or updates session by `userId + deviceId`.
 - Stores hashed refresh token.
 - Sets `refreshToken` as HTTP-only cookie.
@@ -882,8 +882,7 @@ Behavior:
 
 ## Known Gaps
 
-- Mobile resend verification is not fully aligned with backend yet because the current resend endpoint requires an email-verification JWT, while Mobile signup does not receive that token in the response body. This is tracked separately from reset-password support.
-- Mobile verify-email manual resend behavior needs the dedicated resend verification contract above.
+- Unverified Web/Mobile users can sign in, see a verification banner, and resend verification from the logged-in session.
 - Document list/detail/update/delete screens are template/mock and do not yet call the full Documents API.
 - Upload screen only simulates file choice; binary upload is not available in backend.
 
@@ -915,7 +914,7 @@ Current status: API implemented. Web refresh uses the HTTP-only refresh-token co
 
 ### US-006 Email Verification
 
-Current status: Implemented in API/Web direction with token link, SHA-256 hashed Redis token keys, and resend endpoint guarded by email-verification JWT. Mobile verify-email route exists, but resend verification needs a separate mobile-safe contract.
+Current status: Implemented in API/Web/Mobile direction with token link, SHA-256 hashed Redis token keys, logged-in resend, and limited sessions for `UNVERIFIED` accounts.
 
 ### US-007 Password Recovery
 
@@ -1081,7 +1080,7 @@ AI features should only be considered MVP-complete when:
 
 ### Contract Gaps
 
-- Define the Mobile resend verification contract for pending verification users.
+- Extend verified-only guards to future resource-heavy endpoints such as AI/chatbot and payment before those features ship.
 - Implement or explicitly defer Admin account UI beyond create/list/detail/ban.
 - Define and implement Admin settings API if system configuration becomes part of MVP.
 - Define audit-log and telemetry APIs before replacing deferred Admin dashboard activity/system-health placeholders.
@@ -1090,6 +1089,7 @@ AI features should only be considered MVP-complete when:
 ### Contract Decisions
 
 - Web auth direction: access token is returned in the signin/refresh body, while refresh token is stored in an HTTP-only cookie for Web renewal and logout cleanup.
+- Email verification direction: `UNVERIFIED` accounts can sign in with limited sessions; verified-only guards enforce resource-heavy actions such as document create/update.
 - Admin account management MVP: Admin can create/list/detail/ban accounts; `PATCH/DELETE /accounts/:id` remain user self-service routes.
 - Admin API boundary direction: admin-only account routes and subject mutation routes are owned by `AdminModule` while keeping current `/accounts` and `/subjects` URL contracts.
 - Document publication direction: private-to-public documents should return to `PENDING` and require review.

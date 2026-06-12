@@ -176,7 +176,6 @@ describe('AuthService', () => {
     });
     mailServiceMock.sendVerificationCode.mockResolvedValue(undefined);
     redisServiceMock.set.mockResolvedValue('OK');
-    jwtMock.signAsync.mockResolvedValue('verification-access-token');
 
     const result = await service.signup({
       email: 'new-user@example.com',
@@ -223,21 +222,10 @@ describe('AuthService', () => {
     });
 
     expect(prismaMock.sessions.upsert).not.toHaveBeenCalled();
-    expect(jwtMock.signAsync).toHaveBeenCalledWith(
-      expect.objectContaining({
-        sub: 'user-1',
-        role: UserRole.USER,
-        status: UserStatus.UNVERIFIED,
-        type: JwtTokenType.EmailVerification,
-        deviceId: 'email-verification',
-      }),
-      { expiresIn: jwtConfigMock.accessTokenExpiresIn },
-    );
+    expect(jwtMock.signAsync).not.toHaveBeenCalled();
     expect(result).toEqual({
       message: 'Signup successful. Please verify your email.',
-      data: {
-        accessToken: 'verification-access-token',
-      },
+      data: null,
     });
   });
 
@@ -789,7 +777,7 @@ describe('AuthService', () => {
     ).rejects.toBeInstanceOf(UnauthorizedException);
   });
 
-  it('should reject unverified signin before issuing tokens or sessions', async () => {
+  it('should sign in unverified users with limited-session tokens', async () => {
     const hashedPassword = await argon2.hash('Password123!');
 
     accountsServiceMock.findAccountByEmail.mockResolvedValue({
@@ -800,6 +788,10 @@ describe('AuthService', () => {
       role: UserRole.USER,
       status: UserStatus.UNVERIFIED,
     });
+    jwtMock.signAsync
+      .mockResolvedValueOnce('unverified-access-token')
+      .mockResolvedValueOnce('unverified-refresh-token');
+    prismaMock.sessions.upsert.mockResolvedValue({ id: 'session-1' });
 
     await expect(
       service.signin(
@@ -810,9 +802,31 @@ describe('AuthService', () => {
         },
         DeviceType.WEB,
       ),
-    ).rejects.toBeInstanceOf(UnauthorizedException);
-    expect(jwtMock.signAsync).not.toHaveBeenCalled();
-    expect(prismaMock.sessions.upsert).not.toHaveBeenCalled();
+    ).resolves.toEqual({
+      message: 'Signin successful',
+      data: {
+        accessToken: 'unverified-access-token',
+        refreshToken: 'unverified-refresh-token',
+      },
+    });
+    expect(jwtMock.signAsync).toHaveBeenNthCalledWith(
+      1,
+      expect.objectContaining({
+        sub: 'user-1',
+        status: UserStatus.UNVERIFIED,
+        type: JwtTokenType.AccessToken,
+        deviceId: 'device-1',
+      }),
+      { expiresIn: jwtConfigMock.accessTokenExpiresIn },
+    );
+    expect(prismaMock.sessions.upsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        create: expect.objectContaining({
+          userId: 'user-1',
+          deviceType: DeviceType.WEB,
+        }),
+      }),
+    );
   });
 
   it('should revoke the current device session on logout', async () => {

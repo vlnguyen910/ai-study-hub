@@ -110,6 +110,7 @@ export const buildUserFromAuthToken = (
     email,
     name,
     role: normalizeUserRole(payload.role),
+    status: payload.status,
     createdAt: new Date(),
   };
 };

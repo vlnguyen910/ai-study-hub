@@ -188,6 +188,54 @@ describe("web auth routing", () => {
     });
   });
 
+  it("shows a resend verification banner for unverified users", async () => {
+    useAuthStore.getState().setAuth(
+      "access-token",
+      "student",
+      {
+        id: "user-1",
+        email: "student@example.com",
+        name: "Nguyen Student",
+        role: "student",
+        status: "UNVERIFIED",
+        createdAt: new Date("2026-06-08T00:00:00.000Z"),
+      },
+      null,
+    );
+    apiClientMock.get.mockResolvedValue({
+      id: "user-1",
+      email: "student@example.com",
+      name: "Nguyen Student",
+      avatarUrl: "",
+      role: "USER",
+      status: "UNVERIFIED",
+      createdAt: "2026-06-08T00:00:00.000Z",
+    });
+    apiClientMock.post.mockResolvedValue({ data: null });
+
+    render(
+      <UserShell title="Không gian học tập" subtitle="Quản lý tài liệu">
+        <div>Content</div>
+      </UserShell>,
+    );
+
+    expect(
+      screen.getByText(
+        "Tài khoản của bạn chưa xác thực email. Vui lòng kiểm tra hộp thư để xác thực.",
+      ),
+    ).toBeInTheDocument();
+
+    fireEvent.click(
+      screen.getByRole("button", { name: "Gửi lại email xác thực" }),
+    );
+
+    await waitFor(() => {
+      expect(apiClientMock.post).toHaveBeenCalledWith(
+        "/api/v1/auth/resend-verification-email",
+      );
+    });
+  });
+
   it("logs out from the shared sidebar and redirects to /login", async () => {
     useAuthStore.getState().setAuth(
       null,
