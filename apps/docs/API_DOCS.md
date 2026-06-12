@@ -522,20 +522,76 @@ This endpoint bypasses the global response interceptor and returns a manual payl
 }
 ```
 
+## Module: Admin
+
+Base path: `/api/v1/admin`
+
+### Endpoint Status
+
+| Endpoint         | Current status |
+| ---------------- | -------------- |
+| `GET /dashboard` | Implemented    |
+
+### Access Notes
+
+- All endpoints in this module require an access token.
+- All endpoints in this module require `ADMIN`.
+- Admin account and subject mutation handlers are registered from `AdminModule`, but they intentionally keep the existing `/api/v1/accounts` and `/api/v1/subjects` route contracts.
+
+### `GET /dashboard`
+
+- Auth: access token
+- Role: `ADMIN`
+- Description: returns backend-backed aggregate counts for Admin dashboard summary cards
+
+#### Response Body
+
+```json
+{
+  "success": true,
+  "status_code": 200,
+  "message": "Admin dashboard stats fetched successfully",
+  "data": {
+    "accounts": {
+      "total": 12,
+      "active": 7,
+      "banned": 2,
+      "unverified": 3
+    },
+    "subjects": {
+      "total": 5
+    },
+    "documents": {
+      "total": 20,
+      "active": 14,
+      "pending": 4,
+      "rejected": 2
+    }
+  }
+}
+```
+
+#### Current Limits
+
+- Recent admin activity is not backed by a real audit-log source yet.
+- System health cards are not backed by a real telemetry source yet.
+
 ## Module: Accounts
 
 Base path: `/api/v1/accounts`
 
+Admin create/list/detail/ban handlers are registered by `AdminModule` for controller ownership, but the route contract remains under `/api/v1/accounts`.
+
 ### Endpoint Status
 
-| Endpoint                | Current status |
-| ----------------------- | -------------- |
-| `POST /`                | Implemented    |
-| `GET /`                 | Implemented    |
-| `PATCH /:accountId/ban` | Implemented    |
-| `GET /:id`              | Implemented    |
-| `PATCH /:id`            | Implemented    |
-| `DELETE /:id`           | Implemented    |
+| Endpoint                | Current status                |
+| ----------------------- | ----------------------------- |
+| `POST /`                | Implemented via `AdminModule` |
+| `GET /`                 | Implemented via `AdminModule` |
+| `PATCH /:accountId/ban` | Implemented via `AdminModule` |
+| `GET /:id`              | Implemented via `AdminModule` |
+| `PATCH /:id`            | Implemented                   |
+| `DELETE /:id`           | Implemented                   |
 
 ### Access Notes
 
@@ -732,21 +788,23 @@ The DTO allows all create-account fields, but the service currently only updates
 
 Base path: `/api/v1/subjects`
 
+Admin create/update/delete handlers are registered by `AdminModule` for controller ownership, but the route contract remains under `/api/v1/subjects`. Subject read handlers remain in `SubjectsController`.
+
 ### Endpoint Status
 
 | Endpoint      | Current status                                                           |
 | ------------- | ------------------------------------------------------------------------ |
-| `POST /`      | Implemented                                                              |
+| `POST /`      | Implemented via `AdminModule`                                            |
 | `GET /`       | Implemented, but authenticated at runtime despite `@Public()` annotation |
 | `GET /:id`    | Implemented, but authenticated at runtime despite `@Public()` annotation |
-| `PATCH /:id`  | Implemented                                                              |
-| `DELETE /:id` | Implemented                                                              |
+| `PATCH /:id`  | Implemented via `AdminModule`                                            |
+| `DELETE /:id` | Implemented via `AdminModule`                                            |
 
 ### Access Notes
 
-- The controller is decorated with `JwtAuthGuard` and `RolesGuard`.
+- The read controller is decorated with `JwtAuthGuard` and `RolesGuard`.
 - `POST`, `PATCH`, and `DELETE` require `ADMIN`.
-- The `GET` handlers are annotated `@Public()` in code, but `JwtAuthGuard` is still applied at the controller level and there is no global public-aware auth guard wired in `main.ts`, so treat these routes as authenticated in the current implementation.
+- The `GET` handlers are annotated `@Public()` in code, but `JwtAuthGuard` is still applied at the controller level and does not read `IS_PUBLIC_KEY`, so treat these routes as authenticated in the current runtime implementation.
 
 ### `POST /`
 
