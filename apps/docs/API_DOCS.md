@@ -455,6 +455,9 @@ This endpoint bypasses the global response interceptor and returns a manual payl
 - Side effects:
   - returns both tokens in the body
   - does not set cookies
+- Mobile client behavior:
+  - stores returned `accessToken` and `refreshToken` in SecureStore
+  - sends `Authorization: Bearer <accessToken>` on authenticated requests
 
 #### Request Body
 
@@ -502,6 +505,10 @@ This endpoint bypasses the global response interceptor and returns a manual payl
 
 - Auth: refresh token guard
 - Description: exchanges a valid refresh token for a new access token
+- Mobile client behavior:
+  - posts the stored `refreshToken` after an authenticated request returns `401`
+  - stores the returned `accessToken`
+  - retries the original request once
 
 #### Request Body
 

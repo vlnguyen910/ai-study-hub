@@ -31,8 +31,8 @@ Spec này đã được đối chiếu với codebase hiện tại ngày 2026-06
 - Mail: `MailModule` dùng Nodemailer SMTP qua cấu hình `MAILTRAP_SMTP_*`; khi thiếu SMTP credentials thì log link trong development hoặc bỏ qua gửi mail ở môi trường khác.
 - Database: MongoDB qua Prisma với models `accounts`, `sessions`, `schools`, `subjects`, `documents`; Redis dùng cho token/cooldown của email verification và password recovery.
 - Web: Next.js App Router, route groups cho auth/app/admin/moderator, shared UI components, Zustand auth store, Axios clients. Auth helpers, public/user document helpers, Admin dashboard summary cards, Admin Users và Moderator document review đã dùng API thật; Admin settings vẫn là UI-only/deferred vì chưa có backend contract.
-- Mobile: Expo Router, NativeWind, auth service đã gọi `/api/v1/auth/mobile-signin`; document service mới có create metadata cơ bản; nhiều màn hình document/profile/moderator vẫn là template/mock.
-- Current phase: API đã hoàn thành Phase 4 moderation cơ bản và đã tách boundary `AdminModule` cho Admin MVP hardening; Product tổng thể chưa đạt Current MVP DoD vì Auth client, Admin settings và một số Mobile screens còn mock/template.
+- Mobile: Expo Router, NativeWind, auth service đã gọi `/api/v1/auth/mobile-signin`, lưu access/refresh token bằng SecureStore, tự refresh access token khi API trả `401`, và có forgot/reset password flow bằng reset-token link; document service mới có create metadata cơ bản; nhiều màn hình document/profile/moderator vẫn là template/mock.
+- Current phase: API đã hoàn thành Phase 4 moderation cơ bản và đã tách boundary `AdminModule` cho Admin MVP hardening; Product tổng thể chưa đạt Current MVP DoD vì Web auth client, Admin settings và một số Mobile screens còn mock/template.
 - Chưa có: binary file upload, Cloudinary/storage integration, download endpoint/count, full-text/tag search, AI extraction/summary/keywords/chat/quiz/duplicate detection.
 
 ---
@@ -862,7 +862,7 @@ Behavior:
 
 ## Current Routes and Screens
 
-- Auth: login, register, forgot password, verify email template.
+- Auth: login, register, forgot password, reset password, verify email template.
 - Tabs: home, search, library.
 - Profile template.
 - Document upload/edit/detail templates.
@@ -871,15 +871,17 @@ Behavior:
 ## Current Mobile API Integration
 
 - `apiClient` injects access token from storage into Authorization header.
+- `apiClient` uses the stored refresh token to call `/api/v1/auth/refresh` after a `401`, saves the new access token, and retries the original request once.
 - Auth service calls `/api/v1/auth/mobile-signin` for sign in.
 - Auth service calls `/api/v1/auth/signup` for sign up.
 - Auth service calls `/api/v1/auth/forgot-password`.
+- Auth service calls `/api/v1/auth/reset-password` from the reset-token route.
 - Document service can create metadata through `POST /documents`.
 
 ## Known Gaps
 
-- No refresh-token flow in mobile client yet.
-- Mobile verify-email/reset-password integration is incomplete relative to backend.
+- Mobile resend verification is not fully aligned with backend yet because the current resend endpoint requires an email-verification JWT, while Mobile signup does not receive that token in the response body. This is tracked separately from reset-password support.
+- Mobile verify-email manual resend behavior needs the dedicated resend verification contract above.
 - Document list/detail/update/delete screens are template/mock and do not yet call the full Documents API.
 - Upload screen only simulates file choice; binary upload is not available in backend.
 
@@ -899,7 +901,7 @@ Current status: API implemented. Web client token handling still needs implement
 
 ### US-003 Mobile Login
 
-Current status: API implemented and Mobile service calls `/api/v1/auth/mobile-signin`.
+Current status: API implemented. Mobile service calls `/api/v1/auth/mobile-signin` and persists returned access/refresh tokens in SecureStore.
 
 ### US-004 Logout
 
@@ -907,15 +909,15 @@ Current status: Implemented in API.
 
 ### US-005 Refresh Access Token
 
-Current status: API implemented. Web refresh posts refresh token from store; Mobile refresh flow still needs implementation.
+Current status: API implemented. Web refresh posts refresh token from store; Mobile retries `401` responses once after exchanging the stored refresh token for a new access token.
 
 ### US-006 Email Verification
 
-Current status: Implemented in API/Web direction with token link, SHA-256 hashed Redis token keys, and resend endpoint guarded by email-verification JWT.
+Current status: Implemented in API/Web direction with token link, SHA-256 hashed Redis token keys, and resend endpoint guarded by email-verification JWT. Mobile verify-email route exists, but resend verification needs a separate mobile-safe contract.
 
 ### US-007 Password Recovery
 
-Current status: Implemented in API and Web helpers/pages; Mobile has forgot-password service but reset flow still needs product integration.
+Current status: Implemented in API, Web helpers/pages, and Mobile forgot/reset password screens using a reset-token link.
 
 ## Phase 2 - Account and Subject Management
 
@@ -1078,7 +1080,7 @@ AI features should only be considered MVP-complete when:
 ### Contract Gaps
 
 - Implement Web auth alignment with the chosen hybrid cookie + refresh-token store strategy.
-- Implement or explicitly defer Mobile refresh/reset-password flows.
+- Define the Mobile resend verification contract for pending verification users.
 - Implement or explicitly defer Admin account UI beyond create/list/detail/ban.
 - Define and implement Admin settings API if system configuration becomes part of MVP.
 - Define audit-log and telemetry APIs before replacing deferred Admin dashboard activity/system-health placeholders.
@@ -1090,6 +1092,7 @@ AI features should only be considered MVP-complete when:
 - Admin account management MVP: Admin can create/list/detail/ban accounts; `PATCH/DELETE /accounts/:id` remain user self-service routes.
 - Admin API boundary direction: admin-only account routes and subject mutation routes are owned by `AdminModule` while keeping current `/accounts` and `/subjects` URL contracts.
 - Document publication direction: private-to-public documents should return to `PENDING` and require review.
+- Mobile auth direction: store mobile access/refresh tokens in SecureStore, refresh access token through `/auth/refresh` on a single `401` retry, and handle password recovery with reset-token links.
 
 ### Product Decisions Needed
 
@@ -1116,4 +1119,4 @@ AI features should only be considered MVP-complete when:
 - Keep dedicated moderation approve/reject tests updated as moderation rules evolve.
 - Add subject duplicate-code tests if coverage is incomplete.
 - Add Web tests for protected/guest route behavior.
-- Add Mobile service tests for auth endpoints and document service.
+- Add Mobile screen-level regression tests for auth flows and keep Mobile service tests for auth endpoints and document service.
