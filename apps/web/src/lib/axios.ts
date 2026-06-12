@@ -25,6 +25,21 @@ const isAuthPage = (pathname: string): boolean =>
   pathname.startsWith("/reset-password") ||
   pathname.startsWith("/verify-email/");
 
+const PUBLIC_AUTH_ENDPOINTS = [
+  API_ENDPOINTS.AUTH.LOGIN,
+  API_ENDPOINTS.AUTH.REGISTER,
+  API_ENDPOINTS.AUTH.RESEND_VERIFICATION_EMAIL,
+  API_ENDPOINTS.AUTH.VERIFY_EMAIL,
+  API_ENDPOINTS.AUTH.REFRESH,
+  "/api/v1/auth/forgot-password",
+  "/api/v1/auth/reset-password",
+] as const;
+
+const isPublicAuthEndpoint = (url?: string): boolean =>
+  Boolean(
+    url && PUBLIC_AUTH_ENDPOINTS.some((endpoint) => url.includes(endpoint)),
+  );
+
 export const getLoginRedirectHref = (pathname: string, search = ""): string => {
   if (!pathname || pathname === "/" || isAuthPage(pathname)) {
     return "/login";
@@ -57,8 +72,6 @@ const refreshAccessToken = async (): Promise<string | null> => {
     refreshTokenPromise = apiClient
       .post(API_ENDPOINTS.AUTH.REFRESH, { refreshToken }, { skipToast: true })
       .then((response) => {
-        // ✅ FIX: interceptor đã unwrap response.data rồi
-        // response ở đây là plain object, không còn là AxiosResponse
         const data = response as unknown as { accessToken?: unknown };
 
         if (!data || typeof data.accessToken !== "string") return null;
@@ -75,9 +88,9 @@ const refreshAccessToken = async (): Promise<string | null> => {
 
 apiClient.interceptors.request.use((config) => {
   const token = useAuthStore.getState().accessToken;
-  const isAuthRequest = config.url?.includes("/auth/");
+  const isPublicAuthRequest = isPublicAuthEndpoint(config.url);
 
-  if (token && !isAuthRequest) {
+  if (token && !isPublicAuthRequest) {
     config.headers.Authorization = `Bearer ${token}`;
   }
   return config;
@@ -92,18 +105,17 @@ apiClient.interceptors.response.use(
   async (error) => {
     const originalRequest = error.config ?? {};
     const is401 = error.response?.status === 401;
-    const isAuthRequest = originalRequest.url?.includes("/auth/");
+    const isPublicAuthRequest = isPublicAuthEndpoint(originalRequest.url);
 
     if (axios.isCancel(error)) return Promise.reject(error);
-    if (originalRequest.skipToast) return Promise.reject(error);
 
     // 401 từ auth endpoint (login sai, v.v.) → để page tự hiện lỗi form
-    if (is401 && isAuthRequest) {
+    if (is401 && isPublicAuthRequest) {
       return Promise.reject(error);
     }
 
     // 401 từ request thường → thử refresh token trước
-    if (is401 && !isAuthRequest && !originalRequest._retry) {
+    if (is401 && !isPublicAuthRequest && !originalRequest._retry) {
       originalRequest._retry = true;
 
       try {
@@ -119,9 +131,11 @@ apiClient.interceptors.response.use(
       }
     }
 
-    if (is401 && !isAuthRequest) {
+    if (is401 && !isPublicAuthRequest) {
       handleLogoutAndRedirectToLogin();
     }
+
+    if (originalRequest.skipToast) return Promise.reject(error);
 
     return Promise.reject(error);
   },
