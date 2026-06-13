@@ -109,7 +109,7 @@ export const ADMIN_NAV_ITEMS: SideNavItem[] = [
   },
 
   {
-    label: "Cài đặt hệ thống",
+    label: "Cài đặt",
     icon: "settings",
     href: ROUTE_PATHS.ADMIN_ROUTES.SETTINGS,
     section: "secondary",

@@ -1,2 +1,1 @@
-export { UserSettingsPage } from "./pages/UserSettingsPage";
-export { ModeratorSettingsPage } from "./pages/ModeratorSettingsPage";
+export { SettingsPage } from "./pages/SettingsPage";

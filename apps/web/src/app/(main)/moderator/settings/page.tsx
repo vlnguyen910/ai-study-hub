@@ -1,5 +1,5 @@
-import { ModeratorSettingsPage } from "@/modules/settings";
+import { SettingsPage } from "@/modules/settings";
 
 export default function Page(): React.JSX.Element {
-  return <ModeratorSettingsPage />;
+  return <SettingsPage />;
 }
