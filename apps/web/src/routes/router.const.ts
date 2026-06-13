@@ -58,6 +58,7 @@ export const ROUTE_PATHS = {
     DOCUMENTS: "/moderator/documents",
     DOCUMENT_DETAIL: "/moderator/documents/:id",
     POSTS: "/moderator/posts",
+    SETTINGS: "/moderator/settings",
   },
 } as const;
 
