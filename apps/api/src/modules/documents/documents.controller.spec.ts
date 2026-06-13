@@ -1,9 +1,11 @@
 import { Test, TestingModule } from '@nestjs/testing';
+import { GUARDS_METADATA } from '@nestjs/common/constants';
 import { DocumentsController } from './documents.controller';
 import { DocumentsService } from './documents.service';
 import { AuthGuard } from '../../common/guards/auth.guard';
 import { OptionalJwtGuard } from '../../common/guards/optional-jwt.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
+import { VerifiedAccountGuard } from '../../common/guards/verified-account.guard';
 
 jest.mock('uuid', () => ({
   v4: jest.fn(() => 'test-jti'),
@@ -45,6 +47,9 @@ describe('DocumentsController', () => {
       .useValue({ canActivate: () => true });
     moduleBuilder
       .overrideGuard(RolesGuard)
+      .useValue({ canActivate: () => true });
+    moduleBuilder
+      .overrideGuard(VerifiedAccountGuard)
       .useValue({ canActivate: () => true });
 
     const module: TestingModule = await moduleBuilder.compile();
@@ -208,5 +213,21 @@ describe('DocumentsController', () => {
     await expect(
       controller.create({} as any, { sub: 'u' } as any),
     ).rejects.toThrow();
+  });
+
+  it('requires verified accounts for document creation and updates', () => {
+    const createGuards =
+      Reflect.getMetadata(
+        GUARDS_METADATA,
+        DocumentsController.prototype.create,
+      ) ?? [];
+    const updateGuards =
+      Reflect.getMetadata(
+        GUARDS_METADATA,
+        DocumentsController.prototype.update,
+      ) ?? [];
+
+    expect(createGuards).toContain(VerifiedAccountGuard);
+    expect(updateGuards).toContain(VerifiedAccountGuard);
   });
 });

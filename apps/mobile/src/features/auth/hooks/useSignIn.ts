@@ -24,11 +24,7 @@ export const useSignIn = () => {
     },
   });
 
-  const onSubmit = async (
-    values: SignInFormValues,
-    onSuccess?: () => void,
-    onNeedsVerification?: (email: string) => void,
-  ) => {
+  const onSubmit = async (values: SignInFormValues, onSuccess?: () => void) => {
     setIsLoading(true);
     setErrorMessage(null);
 
@@ -64,17 +60,7 @@ export const useSignIn = () => {
           ? error.message
           : "Đã xảy ra lỗi không mong muốn";
       setErrorMessage(msg);
-      if (msg.toLowerCase().includes("verification")) {
-        Alert.alert("Cần xác thực email", msg, [
-          {
-            text: "Xác thực",
-            onPress: () => onNeedsVerification?.(values.email),
-          },
-          { text: "Đóng" },
-        ]);
-      } else {
-        Alert.alert("Đăng nhập thất bại", msg);
-      }
+      Alert.alert("Đăng nhập thất bại", msg);
     } finally {
       setIsLoading(false);
     }
@@ -84,12 +70,7 @@ export const useSignIn = () => {
     form,
     isLoading,
     errorMessage,
-    submit: (
-      onSuccess?: () => void,
-      onNeedsVerification?: (email: string) => void,
-    ) =>
-      form.handleSubmit((values) =>
-        onSubmit(values, onSuccess, onNeedsVerification),
-      )(),
+    submit: (onSuccess?: () => void) =>
+      form.handleSubmit((values) => onSubmit(values, onSuccess))(),
   };
 };

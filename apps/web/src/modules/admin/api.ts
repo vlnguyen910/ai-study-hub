@@ -82,3 +82,87 @@ export const createAdminAccount = async (
 export const banAdminAccount = async (id: string): Promise<unknown> => {
   return apiClient.patch(API_ENDPOINTS.ACCOUNTS.BAN(id));
 };
+
+export interface AdminSubject {
+  readonly id: string;
+  readonly name: string;
+  readonly code: string;
+  readonly schoolId: string;
+  readonly createdAt: string;
+  readonly updatedAt?: string;
+}
+
+export interface FetchAdminSubjectsParams {
+  readonly page?: number;
+  readonly limit?: number;
+  readonly schoolId?: string;
+  readonly search?: string;
+}
+
+export interface FetchAdminSubjectsResponse {
+  readonly subjects: readonly AdminSubject[];
+  readonly pagination: {
+    readonly page: number;
+    readonly limit: number;
+    readonly total: number;
+    readonly totalPages: number;
+  };
+}
+
+export interface CreateAdminSubjectPayload {
+  readonly name: string;
+  readonly code: string;
+  readonly schoolId?: string;
+}
+
+export interface UpdateAdminSubjectPayload {
+  readonly name?: string;
+  readonly code?: string;
+}
+
+export const fetchAdminSubjects = async (
+  params: FetchAdminSubjectsParams = {},
+): Promise<FetchAdminSubjectsResponse> => {
+  return apiClient.get<unknown, FetchAdminSubjectsResponse>(
+    API_ENDPOINTS.SUBJECTS.BASE,
+    {
+      params: {
+        page: params.page,
+        limit: params.limit,
+        schoolId: params.schoolId,
+        search: params.search,
+      },
+    },
+  );
+};
+
+export const fetchAdminSubjectDetail = async (
+  id: string,
+): Promise<AdminSubject> => {
+  return apiClient.get<unknown, AdminSubject>(
+    API_ENDPOINTS.SUBJECTS.DETAIL(id),
+  );
+};
+
+export const createAdminSubject = async (
+  payload: CreateAdminSubjectPayload,
+): Promise<AdminSubject> => {
+  return apiClient.post<unknown, AdminSubject>(
+    API_ENDPOINTS.SUBJECTS.BASE,
+    payload,
+  );
+};
+
+export const updateAdminSubject = async (
+  id: string,
+  payload: UpdateAdminSubjectPayload,
+): Promise<AdminSubject> => {
+  return apiClient.patch<unknown, AdminSubject>(
+    API_ENDPOINTS.SUBJECTS.DETAIL(id),
+    payload,
+  );
+};
+
+export const deleteAdminSubject = async (id: string): Promise<unknown> => {
+  return apiClient.delete(API_ENDPOINTS.SUBJECTS.DETAIL(id));
+};

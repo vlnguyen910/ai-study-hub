@@ -20,12 +20,31 @@ const client = axios.create({
   withCredentials: true,
 });
 
-const unwrap = <T>(response: { data: ApiEnvelope<T> | T }): ApiEnvelope<T> => {
-  const data = response.data as ApiEnvelope<T>;
+const isApiEnvelope = <T>(value: unknown): value is ApiEnvelope<T> => {
+  return (
+    value !== null &&
+    typeof value === "object" &&
+    ("data" in value ||
+      "message" in value ||
+      "success" in value ||
+      "statusCode" in value ||
+      "status_code" in value)
+  );
+};
 
-  return data && typeof data === "object" && "data" in data
-    ? data
-    : { data: response.data as T };
+const unwrap = <T>(response: unknown): ApiEnvelope<T> => {
+  if (response == null) {
+    return { data: null as T };
+  }
+
+  const data = response as { data?: ApiEnvelope<T> | T };
+  const payload = "data" in data ? data.data : response;
+
+  if (payload == null) {
+    return { data: null as T };
+  }
+
+  return isApiEnvelope<T>(payload) ? payload : { data: payload as T };
 };
 
 const getErrorMessage = (error: unknown, fallback: string) => {
@@ -55,7 +74,7 @@ export const signin = async (payload: {
   deviceId: string;
 }) => {
   try {
-    return unwrap<{ refreshToken?: string }>(
+    return unwrap<{ accessToken?: string }>(
       await client.post("/api/v1/auth/signin", payload),
     );
   } catch (error) {
@@ -76,7 +95,7 @@ export const verifyEmail = async (payload: { token: string }) => {
 export const resendVerificationEmail = async () => {
   try {
     return unwrap<null>(
-      await client.post("/api/v1/auth/resend-verification-email"),
+      await apiClient.post(API_ENDPOINTS.AUTH.RESEND_VERIFICATION_EMAIL),
     );
   } catch (error) {
     throw new Error(
@@ -149,6 +168,7 @@ export const mapCurrentUser = (account: CurrentUserResponse): User => ({
   email: account.email,
   name: account.name,
   role: normalizeUserRole(account.role),
+  status: account.status,
   avatar: account.avatarUrl || undefined,
   createdAt: new Date(account.createdAt),
 });

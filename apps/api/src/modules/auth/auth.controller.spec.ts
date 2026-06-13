@@ -1,5 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { HttpStatus } from '@nestjs/common';
+import { GUARDS_METADATA } from '@nestjs/common/constants';
 import { DeviceType, UserRole, UserStatus } from '@prisma/client';
 import type { Response } from 'express';
 import { AuthController } from './auth.controller';
@@ -7,6 +8,7 @@ import { AuthService } from './auth.service';
 import { cookieConfiguration } from '../../config';
 import { JwtTokenType } from '../../common/enums/jwt.enum';
 import { TokenPayload } from '../../common/interfaces/auth.interface';
+import { JwtAuthGuard } from '../../common/guards/jwt.guard';
 
 jest.mock('uuid', () => ({
   v4: jest.fn(() => 'email-verification-token'),
@@ -76,23 +78,17 @@ describe('AuthController', () => {
   });
 
   it('should call signup service', async () => {
-    const response = createResponseMock();
     authServiceMock.signup.mockResolvedValue({
       message: 'Signup successful',
-      data: {
-        accessToken: 'verification-access-token',
-      },
+      data: null,
     });
 
     await expect(
-      controller.signup(
-        {
-          email: 'new-user@example.com',
-          name: 'New User',
-          password: 'Password123!',
-        },
-        response,
-      ),
+      controller.signup({
+        email: 'new-user@example.com',
+        name: 'New User',
+        password: 'Password123!',
+      }),
     ).resolves.toEqual({
       message: 'Signup successful',
       data: null,
@@ -103,32 +99,18 @@ describe('AuthController', () => {
       name: 'New User',
       password: 'Password123!',
     });
-    expect(response.cookie).toHaveBeenCalledWith(
-      'accessToken',
-      'verification-access-token',
-      {
-        httpOnly: cookieConfigMock.httpOnly,
-        secure: cookieConfigMock.secure,
-        sameSite: cookieConfigMock.sameSite,
-        maxAge: cookieConfigMock.accessTokenMaxAge,
-      },
-    );
   });
 
   it('should call verify email service', async () => {
-    const response = createResponseMock();
     authServiceMock.verifyEmail.mockResolvedValue({
       message: 'Email verified successfully',
       data: null,
     });
 
     await expect(
-      controller.verifyEmail(
-        {
-          token: 'email-verification-token',
-        },
-        response,
-      ),
+      controller.verifyEmail({
+        token: 'email-verification-token',
+      }),
     ).resolves.toEqual({
       message: 'Email verified successfully',
       data: null,
@@ -136,14 +118,13 @@ describe('AuthController', () => {
     expect(authServiceMock.verifyEmail).toHaveBeenCalledWith({
       token: 'email-verification-token',
     });
-    expect(response.clearCookie).toHaveBeenCalledWith('accessToken');
   });
 
-  it('should call resend verification email service with cookie-authenticated user', async () => {
+  it('should call resend verification email service with the authenticated user', async () => {
     const unverifiedUser: TokenPayload = {
       ...userPayload,
       status: UserStatus.UNVERIFIED,
-      type: JwtTokenType.EmailVerification,
+      type: JwtTokenType.AccessToken,
     };
     authServiceMock.resendVerificationEmail.mockResolvedValue({
       message: 'Verification email sent',
@@ -159,6 +140,16 @@ describe('AuthController', () => {
     expect(authServiceMock.resendVerificationEmail).toHaveBeenCalledWith(
       'user-1',
     );
+  });
+
+  it('protects resend verification email with the normal JWT session guard', () => {
+    const guards =
+      Reflect.getMetadata(
+        GUARDS_METADATA,
+        AuthController.prototype.resendVerificationEmail,
+      ) ?? [];
+
+    expect(guards).toContain(JwtAuthGuard);
   });
 
   it('should call forgot password service', async () => {

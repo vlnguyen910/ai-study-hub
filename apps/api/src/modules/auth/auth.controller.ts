@@ -28,7 +28,6 @@ import { User } from '../../common/decorators';
 import { TokenPayload } from '../../common/interfaces/auth.interface';
 import { RefreshTokenGuard } from '../../common/guards/refresh-token.guard';
 import { JwtAuthGuard } from '../../common/guards/jwt.guard';
-import { EmailVerificationGuard } from '../../common/guards/email-verification.guard';
 
 type RefreshTokenRequest = Request & {
   body?: {
@@ -66,42 +65,20 @@ export class AuthController {
   @Version('1')
   @Public()
   @Post('signup')
-  async signup(
-    @Body() signupDto: SignupDto,
-    @Res({ passthrough: true }) res: Response,
-  ) {
-    const result = await this.authService.signup(signupDto);
-
-    res.cookie('accessToken', result.data.accessToken, {
-      httpOnly: this.cookieConfig.httpOnly,
-      secure: this.cookieConfig.secure,
-      sameSite: this.cookieConfig.sameSite,
-      maxAge: this.cookieConfig.accessTokenMaxAge,
-    });
-
-    return {
-      message: result.message,
-      data: null,
-    };
+  signup(@Body() signupDto: SignupDto) {
+    return this.authService.signup(signupDto);
   }
 
   @Version('1')
   @Public()
   @HttpCode(HttpStatus.OK)
   @Post('verify-email')
-  async verifyEmail(
-    @Body() verifyEmailDto: VerifyEmailDto,
-    @Res({ passthrough: true }) res: Response,
-  ) {
-    const result = await this.authService.verifyEmail(verifyEmailDto);
-
-    res.clearCookie('accessToken');
-
-    return result;
+  verifyEmail(@Body() verifyEmailDto: VerifyEmailDto) {
+    return this.authService.verifyEmail(verifyEmailDto);
   }
 
   @Version('1')
-  @UseGuards(EmailVerificationGuard)
+  @UseGuards(JwtAuthGuard)
   @HttpCode(HttpStatus.OK)
   @Post('resend-verification-email')
   resendVerificationEmail(@User() user: TokenPayload) {

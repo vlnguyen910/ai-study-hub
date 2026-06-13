@@ -105,13 +105,17 @@ export default function RegisterPageClient(): ReactElement {
 
     try {
       const deviceId = getOrCreateDeviceId();
+      const name = formData.name.trim();
+      const email = formData.email.trim();
+
       await apiClient.post(API_ENDPOINTS.AUTH.REGISTER, {
-        name: formData.name.trim(),
-        email: formData.email,
+        name,
+        email,
         password: formData.password,
         deviceId,
       });
-      router.push("/verify-email-pending");
+
+      router.replace(loginHref);
     } catch (error) {
       const axiosError = error as {
         response?: { data?: { message?: string } };

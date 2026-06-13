@@ -17,4 +17,8 @@ export class ListSubjectsQueryDto {
   @IsOptional()
   @IsString()
   schoolId?: string;
+
+  @IsOptional()
+  @IsString()
+  search?: string;
 }

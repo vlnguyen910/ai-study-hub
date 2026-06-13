@@ -52,13 +52,20 @@ export class SubjectsService {
   }
 
   async findAll(query: ListSubjectsQueryDto) {
-    const { page = 1, limit = 10, schoolId } = query;
+    const { page = 1, limit = 10, schoolId, search } = query;
     const skip = (page - 1) * limit;
 
     const where: any = {};
 
     if (schoolId) {
       where.schoolId = schoolId;
+    }
+
+    if (search) {
+      where.OR = [
+        { name: { contains: search, mode: 'insensitive' } },
+        { code: { contains: search, mode: 'insensitive' } },
+      ];
     }
 
     const [subjects, total] = await Promise.all([

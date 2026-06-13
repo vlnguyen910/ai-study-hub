@@ -7,7 +7,6 @@ import LoginPage from "../src/app/(auth)/login/page";
 import RegisterPage from "../src/app/(auth)/register/page";
 import { UserShell } from "../src/modules/user/components/UserShell";
 import { useAuthStore } from "../src/stores/auth/store";
-import VerifyEmailPendingPage from "../src/app/(auth)/verify-email-pending/page";
 import VerifyEmailPage from "../src/app/(auth)/verify-email/[token]/page";
 import { navigationMocks } from "./setup";
 
@@ -16,18 +15,32 @@ const apiClientMock = vi.hoisted(() => ({
   post: vi.fn(),
 }));
 
+const authApiMocks = vi.hoisted(() => ({
+  verifyEmail: vi.fn(),
+}));
+
 vi.mock("@/lib/axios", () => ({
   apiClient: apiClientMock,
 }));
 
-const makeAccessToken = (role = "USER") => {
+vi.mock("../src/modules/auth-api", async (importOriginal) => {
+  const actual =
+    await importOriginal<typeof import("../src/modules/auth-api")>();
+
+  return {
+    ...actual,
+    verifyEmail: authApiMocks.verifyEmail,
+  };
+});
+
+const makeAccessToken = (role = "USER", status = "ACTIVE") => {
   const payload = Buffer.from(
     JSON.stringify({
       sub: "user-1",
       email: "student@example.com",
       name: "Nguyen Student",
       role,
-      status: "ACTIVE",
+      status,
       type: "accessToken",
       deviceId: "device-1",
     }),
@@ -52,6 +65,10 @@ describe("web auth routing", () => {
       role: "USER",
       status: "ACTIVE",
       createdAt: "2026-06-08T00:00:00.000Z",
+    });
+    authApiMocks.verifyEmail.mockResolvedValue({
+      message: "Email đã được xác thực.",
+      data: null,
     });
   });
 
@@ -134,7 +151,7 @@ describe("web auth routing", () => {
     });
   });
 
-  it("submits register without confirmPassword and redirects to verify pending", async () => {
+  it("submits register without signing in and redirects to login", async () => {
     apiClientMock.post.mockResolvedValue({ data: null });
 
     render(<RegisterPage />);
@@ -163,14 +180,17 @@ describe("web auth routing", () => {
           deviceId: expect.any(String),
         }),
       );
-      expect(navigationMocks.router.push).toHaveBeenCalledWith(
-        "/verify-email-pending",
-      );
+      expect(navigationMocks.router.replace).toHaveBeenCalledWith("/login");
     });
 
     expect(apiClientMock.post.mock.calls[0][1]).not.toHaveProperty(
       "confirmPassword",
     );
+    expect(apiClientMock.post).not.toHaveBeenCalledWith(
+      "/api/v1/auth/signin",
+      expect.anything(),
+    );
+    expect(useAuthStore.getState().isAuthenticated).toBe(false);
   });
 
   it("hydrates and displays the current user in the shared sidebar", async () => {
@@ -185,6 +205,54 @@ describe("web auth routing", () => {
     expect(await screen.findByText("Nguyen Student")).toBeInTheDocument();
     expect(apiClientMock.get).toHaveBeenCalledWith("/api/v1/auth/me", {
       skipToast: true,
+    });
+  });
+
+  it("shows a resend verification banner for unverified users", async () => {
+    useAuthStore.getState().setAuth(
+      "access-token",
+      "student",
+      {
+        id: "user-1",
+        email: "student@example.com",
+        name: "Nguyen Student",
+        role: "student",
+        status: "UNVERIFIED",
+        createdAt: new Date("2026-06-08T00:00:00.000Z"),
+      },
+      null,
+    );
+    apiClientMock.get.mockResolvedValue({
+      id: "user-1",
+      email: "student@example.com",
+      name: "Nguyen Student",
+      avatarUrl: "",
+      role: "USER",
+      status: "UNVERIFIED",
+      createdAt: "2026-06-08T00:00:00.000Z",
+    });
+    apiClientMock.post.mockResolvedValue({ data: null });
+
+    render(
+      <UserShell title="Không gian học tập" subtitle="Quản lý tài liệu">
+        <div>Content</div>
+      </UserShell>,
+    );
+
+    expect(
+      screen.getByText(
+        "Tài khoản của bạn chưa xác thực email. Vui lòng kiểm tra hộp thư để xác thực.",
+      ),
+    ).toBeInTheDocument();
+
+    fireEvent.click(
+      screen.getByRole("button", { name: "Gửi lại email xác thực" }),
+    );
+
+    await waitFor(() => {
+      expect(apiClientMock.post).toHaveBeenCalledWith(
+        "/api/v1/auth/resend-verification-email",
+      );
     });
   });
 
@@ -222,7 +290,7 @@ describe("web auth routing", () => {
     expect(useAuthStore.getState().isAuthenticated).toBe(false);
   });
 
-  it("renders back buttons on auth pages", async () => {
+  it("renders back or close controls on auth pages", async () => {
     apiClientMock.post.mockResolvedValue({ accessToken: makeAccessToken() });
     apiClientMock.get.mockResolvedValue({ data: null });
 
@@ -231,7 +299,6 @@ describe("web auth routing", () => {
       <RegisterPage key="register" />,
       <ForgotPasswordPage key="forgot" />,
       <ResetPasswordPage key="reset" />,
-      <VerifyEmailPendingPage key="pending" />,
       <VerifyEmailPage
         key="verify"
         params={Promise.reject(new Error("Invalid token"))}
@@ -241,9 +308,38 @@ describe("web auth routing", () => {
     for (const page of pages) {
       const { unmount } = render(page);
       expect(
-        screen.getByRole("button", { name: /Quay lại/i }),
+        screen.queryByRole("button", { name: /Quay lại/i }) ??
+          screen.getByRole("button", { name: /Đóng màn hình/i }),
       ).toBeInTheDocument();
       unmount();
     }
+  });
+
+  it("renders verified email success actions", async () => {
+    authApiMocks.verifyEmail.mockResolvedValue({
+      message: "Email đã được xác thực.",
+      data: null,
+    });
+
+    render(
+      <VerifyEmailPage params={Promise.resolve({ token: "verify-token" })} />,
+    );
+
+    expect(
+      await screen.findByRole("heading", {
+        name: "Xác thực email thành công",
+      }),
+    ).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /Về trang chủ/i })).toHaveAttribute(
+      "href",
+      "/",
+    );
+    expect(
+      screen.getByRole("link", { name: /Đăng nhập ngay/i }),
+    ).toHaveAttribute("href", "/login");
+
+    fireEvent.click(screen.getByRole("button", { name: "Đóng màn hình" }));
+
+    expect(navigationMocks.router.replace).toHaveBeenCalledWith("/");
   });
 });

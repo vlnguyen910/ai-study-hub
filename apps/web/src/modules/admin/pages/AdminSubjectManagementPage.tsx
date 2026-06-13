@@ -10,65 +10,49 @@ import { SelectField } from "@/components/ui/SelectField";
 import { Table, type TableRow } from "@/components/ui/Table";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
-  banAdminAccount,
-  createAdminAccount,
-  fetchAdminAccountDetail,
-  fetchAdminAccounts,
-  type AdminAccount,
+  createAdminSubject,
+  deleteAdminSubject,
+  fetchAdminSubjectDetail,
+  fetchAdminSubjects,
+  updateAdminSubject,
+  type AdminSubject,
 } from "../api";
 import {
   AdminCard,
   AdminIconAction,
   MaterialIcon,
 } from "../components/AdminPrimitives";
-import type { AdminUser, AdminUserRole, AdminUserStatus } from "../types";
 
-const userColumns = [
-  { key: "name", label: "Tên", sortable: true },
-  { key: "email", label: "Email" },
-  { key: "role", label: "Vai trò" },
-  { key: "status", label: "Trạng thái" },
+const subjectColumns = [
+  { key: "code", label: "Mã môn học", sortable: true },
+  { key: "name", label: "Tên môn học", sortable: true },
+  { key: "createdAt", label: "Ngày tạo" },
   { key: "actions", label: "Thao tác", align: "center" as const },
 ] as const;
 
-const roleLabels: Record<AdminUserRole, string> = {
-  ADMIN: "Quản trị viên",
-  MODERATOR: "Kiểm duyệt viên",
-  USER: "Người dùng",
+const schoolLabelsMap: Record<"all" | "FPTU", string> = {
+  all: "Tất cả trường",
+  FPTU: "FPT University",
 };
 
-const statusLabels: Record<AdminUserStatus, string> = {
-  ACTIVE: "Đang hoạt động",
-  UNVERIFIED: "Chưa xác thực",
-  BANNED: "Đã khóa",
-  DELETED: "Đã xóa",
+const schoolValuesMap: Record<string, "all" | "FPTU"> = {
+  "Tất cả trường": "all",
+  "FPT University": "FPTU",
 };
 
-const statusTone: Record<
-  AdminUserStatus,
-  "success" | "warning" | "error" | "neutral"
-> = {
-  ACTIVE: "success",
-  UNVERIFIED: "warning",
-  BANNED: "error",
-  DELETED: "neutral",
-};
+const schoolOptionsList = Object.values(schoolLabelsMap);
 
-interface UserDraft {
+interface SubjectDraft {
   readonly name: string;
-  readonly email: string;
-  readonly password: string;
-  readonly avatarUrl: string;
+  readonly code: string;
 }
 
-const emptyDraft: UserDraft = {
+const emptyDraft: SubjectDraft = {
   name: "",
-  email: "",
-  password: "",
-  avatarUrl: "",
+  code: "",
 };
 
-const pageSize = 6;
+const pageSize = 10;
 
 const formatDate = (value?: string): string => {
   if (!value) {
@@ -94,162 +78,97 @@ const getErrorMessage = (error: unknown, fallback: string): string => {
   return fallback;
 };
 
-const mapAccountToUser = (account: AdminAccount): AdminUser => ({
-  id: account.id,
-  name: account.name,
-  email: account.email,
-  avatarUrl: account.avatarUrl,
-  role: account.role,
-  status: account.status,
-  createdAt: formatDate(account.createdAt),
-  updatedAt: account.updatedAt ? formatDate(account.updatedAt) : undefined,
-  lastLogin: "Chưa có dữ liệu",
-});
-
-const roleLabelsMap: Record<"all" | AdminUserRole, string> = {
-  all: "Tất cả vai trò",
-  ADMIN: "Quản trị viên",
-  MODERATOR: "Kiểm duyệt viên",
-  USER: "Người dùng",
-};
-
-const roleValuesMap: Record<string, "all" | AdminUserRole> = {
-  "Tất cả vai trò": "all",
-  "Quản trị viên": "ADMIN",
-  "Kiểm duyệt viên": "MODERATOR",
-  "Người dùng": "USER",
-};
-
-const roleOptionsList = Object.values(roleLabelsMap);
-
-const statusLabelsMap: Record<"all" | AdminUserStatus, string> = {
-  all: "Tất cả trạng thái",
-  ACTIVE: "Đang hoạt động",
-  UNVERIFIED: "Chưa xác thực",
-  BANNED: "Đã khóa",
-  DELETED: "Đã xóa",
-};
-
-const statusValuesMap: Record<string, "all" | AdminUserStatus> = {
-  "Tất cả trạng thái": "all",
-  "Đang hoạt động": "ACTIVE",
-  "Chưa xác thực": "UNVERIFIED",
-  "Đã khóa": "BANNED",
-  "Đã xóa": "DELETED",
-};
-
-const statusOptionsList = Object.values(statusLabelsMap);
-
-export default function AdminUserManagementPage(): React.JSX.Element {
-  const [users, setUsers] = useState<AdminUser[]>([]);
+export default function AdminSubjectManagementPage(): React.JSX.Element {
+  const [subjects, setSubjects] = useState<AdminSubject[]>([]);
   const [query, setQuery] = useState("");
-  const [roleFilter, setRoleFilter] = useState<"all" | AdminUserRole>("all");
-  const [statusFilter, setStatusFilter] = useState<"all" | AdminUserStatus>(
-    "all",
-  );
+  const [schoolFilter, setSchoolFilter] = useState<"all" | "FPTU">("all");
+
   const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalItems, setTotalItems] = useState(0);
+
   const [formOpen, setFormOpen] = useState(false);
-  const [viewUser, setViewUser] = useState<AdminUser | null>(null);
-  const [banUser, setBanUser] = useState<AdminUser | null>(null);
-  const [draft, setDraft] = useState<UserDraft>(emptyDraft);
-  const [createdFrom, setCreatedFrom] = useState("");
-  const [createdTo, setCreatedTo] = useState("");
+  const [editSubject, setEditSubject] = useState<AdminSubject | null>(null);
+  const [viewSubject, setViewSubject] = useState<AdminSubject | null>(null);
+  const [deleteSubject, setDeleteSubject] = useState<AdminSubject | null>(null);
+
+  const [draft, setDraft] = useState<SubjectDraft>(emptyDraft);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [isDetailLoading, setIsDetailLoading] = useState(false);
-  const [isBanning, setIsBanning] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [formErrorMessage, setFormErrorMessage] = useState("");
 
-  const loadUsers = useCallback(async () => {
+  const loadSubjects = useCallback(async () => {
     setIsLoading(true);
     setErrorMessage("");
 
     try {
-      const accounts = await fetchAdminAccounts({
-        createdFrom: createdFrom || undefined,
-        createdTo: createdTo || undefined,
+      const response = await fetchAdminSubjects({
+        page: currentPage,
+        limit: pageSize,
+        search: query.trim() || undefined,
       });
-      setUsers(
-        accounts
-          .filter((account) => account.role !== "ADMIN")
-          .map(mapAccountToUser),
-      );
+
+      setSubjects(response.subjects as AdminSubject[]);
+      setTotalPages(response.pagination.totalPages);
+      setTotalItems(response.pagination.total);
     } catch (error) {
       setErrorMessage(
-        getErrorMessage(error, "Không thể tải danh sách người dùng."),
+        getErrorMessage(error, "Không thể tải danh sách môn học."),
       );
     } finally {
       setIsLoading(false);
     }
-  }, [createdFrom, createdTo]);
+  }, [currentPage, query]);
 
   useEffect(() => {
-    void loadUsers();
-  }, [loadUsers]);
-
-  const filteredUsers = useMemo(() => {
-    const normalizedQuery = query.trim().toLowerCase();
-
-    return users.filter((user) => {
-      const matchesQuery =
-        normalizedQuery.length === 0 ||
-        user.name.toLowerCase().includes(normalizedQuery) ||
-        user.email.toLowerCase().includes(normalizedQuery);
-      const matchesRole = roleFilter === "all" || user.role === roleFilter;
-      const matchesStatus =
-        statusFilter === "all" || user.status === statusFilter;
-
-      return matchesQuery && matchesRole && matchesStatus;
-    });
-  }, [query, roleFilter, statusFilter, users]);
-
-  const totalPages = Math.max(1, Math.ceil(filteredUsers.length / pageSize));
-  const visibleUsers = filteredUsers.slice(
-    (currentPage - 1) * pageSize,
-    currentPage * pageSize,
-  );
+    void loadSubjects();
+  }, [loadSubjects]);
 
   const handleResetFilters = () => {
     setQuery("");
-    setRoleFilter("all");
-    setStatusFilter("all");
-    setCreatedFrom("");
-    setCreatedTo("");
+    setSchoolFilter("all");
     setCurrentPage(1);
   };
 
   const handleOpenAdd = () => {
+    setEditSubject(null);
     setDraft(emptyDraft);
     setFormErrorMessage("");
     setFormOpen(true);
   };
 
-  const handleOpenDetail = async (user: AdminUser) => {
+  const handleOpenEdit = (subject: AdminSubject) => {
+    setEditSubject(subject);
+    setDraft({
+      name: subject.name,
+      code: subject.code,
+    });
+    setFormErrorMessage("");
+    setFormOpen(true);
+  };
+
+  const handleOpenDetail = async (subject: AdminSubject) => {
     setIsDetailLoading(true);
     setErrorMessage("");
 
     try {
-      const account = await fetchAdminAccountDetail(user.id);
-      setViewUser(mapAccountToUser(account));
+      const detailed = await fetchAdminSubjectDetail(subject.id);
+      setViewSubject(detailed);
     } catch (error) {
       setErrorMessage(
-        getErrorMessage(error, "Không thể tải chi tiết tài khoản."),
+        getErrorMessage(error, "Không thể tải chi tiết môn học."),
       );
     } finally {
       setIsDetailLoading(false);
     }
   };
 
-  const handleSaveUser = async () => {
-    if (
-      !draft.name.trim() ||
-      !draft.email.trim() ||
-      draft.password.trim().length < 8
-    ) {
-      setFormErrorMessage(
-        "Vui lòng nhập tên, email và mật khẩu ít nhất 8 ký tự.",
-      );
+  const handleSaveSubject = async () => {
+    if (!draft.name.trim() || !draft.code.trim()) {
+      setFormErrorMessage("Vui lòng nhập đầy đủ tên và mã môn học.");
       return;
     }
 
@@ -257,88 +176,100 @@ export default function AdminUserManagementPage(): React.JSX.Element {
     setFormErrorMessage("");
 
     try {
-      await createAdminAccount({
-        name: draft.name.trim(),
-        email: draft.email.trim(),
-        password: draft.password,
-        avatarUrl: draft.avatarUrl.trim() || undefined,
-        role: "MODERATOR",
-        status: "ACTIVE",
-      });
-      setDraft(emptyDraft);
+      if (editSubject) {
+        // Update subject
+        await updateAdminSubject(editSubject.id, {
+          name: draft.name.trim(),
+          code: draft.code.trim().toUpperCase(),
+        });
+      } else {
+        // Create subject
+        await createAdminSubject({
+          name: draft.name.trim(),
+          code: draft.code.trim().toUpperCase(),
+          schoolId: "school-fptu",
+        });
+      }
+
       setFormOpen(false);
+      setDraft(emptyDraft);
+      setEditSubject(null);
       setCurrentPage(1);
-      await loadUsers();
+      await loadSubjects();
     } catch (error) {
-      setFormErrorMessage(getErrorMessage(error, "Không thể tạo tài khoản."));
+      setFormErrorMessage(
+        getErrorMessage(
+          error,
+          editSubject
+            ? "Không thể cập nhật môn học."
+            : "Không thể tạo môn học.",
+        ),
+      );
     } finally {
       setIsSaving(false);
     }
   };
 
-  const handleBanUser = async () => {
-    if (!banUser) {
+  const handleDeleteSubject = async () => {
+    if (!deleteSubject) {
       return;
     }
 
-    setIsBanning(true);
+    setIsDeleting(true);
     setErrorMessage("");
 
     try {
-      await banAdminAccount(banUser.id);
-      setUsers((current) =>
-        current.map((user) =>
-          user.id === banUser.id ? { ...user, status: "BANNED" } : user,
-        ),
-      );
-      setBanUser(null);
+      await deleteAdminSubject(deleteSubject.id);
+      setDeleteSubject(null);
+      setCurrentPage(1);
+      await loadSubjects();
     } catch (error) {
-      setErrorMessage(getErrorMessage(error, "Không thể khóa tài khoản."));
+      setErrorMessage(getErrorMessage(error, "Không thể xóa môn học."));
     } finally {
-      setIsBanning(false);
+      setIsDeleting(false);
     }
   };
 
-  const rows: TableRow[] = visibleUsers.map((user) => {
-    const canBanUser = user.role !== "ADMIN" && user.status === "ACTIVE";
-
+  const rows: TableRow[] = subjects.map((subject) => {
     return {
-      id: user.id,
+      id: subject.id,
       cells: [
-        <div className="min-w-40" key="name">
-          <p className="font-label-md text-label-md text-on-surface tracking-normal">
-            {user.name}
-          </p>
-          <p className="font-label-sm text-label-sm text-on-surface-variant tracking-normal">
-            Tạo ngày {user.createdAt}
-          </p>
-        </div>,
+        <span
+          className="font-mono text-sm font-semibold text-primary"
+          key="code"
+        >
+          {subject.code}
+        </span>,
+        <span
+          className="font-label-md text-label-md text-on-surface tracking-normal"
+          key="name"
+        >
+          {subject.name}
+        </span>,
         <span
           className="font-body-md text-sm text-on-surface-variant"
-          key="email"
+          key="createdAt"
         >
-          {user.email}
+          {formatDate(subject.createdAt)}
         </span>,
-        <Badge key="role" tone={user.role === "ADMIN" ? "warning" : "neutral"}>
-          {roleLabels[user.role]}
-        </Badge>,
-        <Badge key="status" tone={statusTone[user.status]}>
-          {statusLabels[user.status]}
-        </Badge>,
         <div className="flex justify-center gap-1" key="actions">
           <AdminIconAction
             icon="visibility"
-            label={`Xem ${user.name}`}
-            onClick={() => void handleOpenDetail(user)}
+            label={`Xem ${subject.name}`}
+            onClick={() => void handleOpenDetail(subject)}
           />
-          {canBanUser ? (
-            <AdminIconAction
-              icon="block"
-              label={`Khóa ${user.name}`}
-              onClick={() => setBanUser(user)}
-              tone="error"
-            />
-          ) : null}
+          <AdminIconAction
+            icon="edit"
+            label={`Sửa ${subject.name}`}
+            onClick={() => handleOpenEdit(subject)}
+            tone="primary"
+          />
+          <AdminIconAction
+            icon="delete"
+            label={`Xóa ${subject.name}`}
+            onClick={() => setDeleteSubject(subject)}
+            tone="error"
+          />
         </div>,
       ],
     };
@@ -349,18 +280,19 @@ export default function AdminUserManagementPage(): React.JSX.Element {
       <div className="mb-8 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
         <div>
           <h1 className="text-3xl font-bold tracking-normal text-on-surface">
-            Quản lý người dùng
+            Quản lý môn học
           </h1>
           <p className="mt-2 max-w-2xl font-body-md text-body-md text-on-surface-variant">
-            Tìm kiếm, lọc trạng thái và thao tác nhanh với tài khoản hệ thống.
+            Xem danh sách môn học, tìm kiếm, lọc theo trường và cập nhật thông
+            tin môn học hệ thống.
           </p>
         </div>
         <Button
           className="inline-flex items-center justify-center gap-2 self-start h-[42px] rounded-xl px-6"
           onClick={handleOpenAdd}
         >
-          <MaterialIcon className="text-[18px]" name="person_add" />
-          Thêm kiểm duyệt viên
+          <MaterialIcon className="text-[18px]" name="add" />
+          Thêm môn học mới
         </Button>
       </div>
 
@@ -371,7 +303,7 @@ export default function AdminUserManagementPage(): React.JSX.Element {
       ) : null}
 
       <Card className="mb-6 p-4">
-        <div className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(280px,1fr)_180px_180px_180px_180px_auto] lg:items-end">
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(280px,1fr)_220px_auto] lg:items-end">
           <SearchInput
             label="Tìm kiếm"
             onChange={(event) => {
@@ -382,47 +314,24 @@ export default function AdminUserManagementPage(): React.JSX.Element {
               setQuery("");
               setCurrentPage(1);
             }}
-            placeholder="Tìm kiếm người dùng..."
+            placeholder="Tìm theo mã hoặc tên môn học..."
             value={query}
           />
           <SelectField
-            label="Vai trò"
+            label="Trường học"
             onChange={(value) => {
-              setRoleFilter(roleValuesMap[value] ?? "all");
+              setSchoolFilter(schoolValuesMap[value] ?? "all");
               setCurrentPage(1);
             }}
-            options={roleOptionsList}
-            value={roleLabelsMap[roleFilter]}
+            options={schoolOptionsList}
+            value={schoolLabelsMap[schoolFilter]}
           />
-          <SelectField
-            label="Trạng thái"
-            onChange={(value) => {
-              setStatusFilter(statusValuesMap[value] ?? "all");
-              setCurrentPage(1);
-            }}
-            options={statusOptionsList}
-            value={statusLabelsMap[statusFilter]}
-          />
-          <InputField
-            label="Tạo từ ngày"
-            onChange={(event) => {
-              setCreatedFrom(event.target.value);
-              setCurrentPage(1);
-            }}
-            type="date"
-            value={createdFrom}
-          />
-          <InputField
-            label="Tạo đến ngày"
-            onChange={(event) => {
-              setCreatedTo(event.target.value);
-              setCurrentPage(1);
-            }}
-            type="date"
-            value={createdTo}
-          />
-          <Button onClick={handleResetFilters} variant="outline">
-            Xóa lọc
+          <Button
+            onClick={handleResetFilters}
+            variant="outline"
+            className="h-[42px] rounded-xl px-6"
+          >
+            Xóa bộ lọc
           </Button>
         </div>
       </Card>
@@ -431,10 +340,10 @@ export default function AdminUserManagementPage(): React.JSX.Element {
         <div className="flex flex-col gap-3 border-b border-outline-variant p-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h2 className="font-label-md text-label-md text-on-surface tracking-normal">
-              Danh sách người dùng
+              Danh sách môn học
             </h2>
             <p className="font-label-sm text-label-sm text-on-surface-variant tracking-normal">
-              {filteredUsers.length} kết quả · {users.length} tài khoản
+              {totalItems} kết quả hiện có
             </p>
           </div>
           <Badge tone="neutral">
@@ -443,19 +352,18 @@ export default function AdminUserManagementPage(): React.JSX.Element {
         </div>
         {isLoading ? (
           <div className="p-6 font-body-md text-body-md text-on-surface-variant">
-            Đang tải danh sách người dùng...
+            Đang tải danh sách môn học...
           </div>
         ) : rows.length > 0 ? (
-          <Table columns={userColumns} rows={rows} />
+          <Table columns={subjectColumns} rows={rows} />
         ) : (
           <div className="p-6 font-body-md text-body-md text-on-surface-variant">
-            Không có tài khoản phù hợp.
+            Không tìm thấy môn học nào phù hợp.
           </div>
         )}
         <div className="flex flex-col gap-3 border-t border-outline-variant p-4 sm:flex-row sm:items-center sm:justify-between">
           <p className="font-label-sm text-label-sm text-on-surface-variant tracking-normal">
-            Hiển thị {visibleUsers.length} trên {filteredUsers.length} người
-            dùng.
+            Hiển thị {subjects.length} trên {totalItems} môn học.
           </p>
           <Pagination
             currentPage={currentPage}
@@ -466,22 +374,27 @@ export default function AdminUserManagementPage(): React.JSX.Element {
       </AdminCard>
 
       {formOpen ? (
-        <UserFormDialog
+        <SubjectFormDialog
           draft={draft}
           errorMessage={formErrorMessage}
           isSaving={isSaving}
+          isUpdate={editSubject !== null}
           onCancel={() => {
             setFormOpen(false);
+            setEditSubject(null);
             setDraft(emptyDraft);
             setFormErrorMessage("");
           }}
           onChange={setDraft}
-          onSave={handleSaveUser}
+          onSave={handleSaveSubject}
         />
       ) : null}
 
-      {viewUser ? (
-        <UserDetailDialog onClose={() => setViewUser(null)} user={viewUser} />
+      {viewSubject ? (
+        <SubjectDetailDialog
+          onClose={() => setViewSubject(null)}
+          subject={viewSubject}
+        />
       ) : null}
 
       {isDetailLoading ? (
@@ -493,59 +406,60 @@ export default function AdminUserManagementPage(): React.JSX.Element {
       ) : null}
 
       <AdminConfirmDialog
-        confirmLabel={isBanning ? "Đang khóa..." : "Khóa"}
+        confirmLabel={isDeleting ? "Đang xóa..." : "Xóa"}
         description={
-          banUser
-            ? `Tài khoản ${banUser.name} sẽ chuyển sang trạng thái đã khóa.`
+          deleteSubject
+            ? `Môn học ${deleteSubject.name} (${deleteSubject.code}) sẽ bị xóa hoàn toàn khỏi hệ thống.`
             : ""
         }
-        disabled={isBanning}
-        onCancel={() => setBanUser(null)}
-        onConfirm={() => void handleBanUser()}
-        open={banUser !== null}
-        title="Khóa người dùng"
+        disabled={isDeleting}
+        onCancel={() => setDeleteSubject(null)}
+        onConfirm={() => void handleDeleteSubject()}
+        open={deleteSubject !== null}
+        title="Xóa môn học"
       />
     </div>
   );
 }
 
-function UserFormDialog({
+function SubjectFormDialog({
   draft,
   errorMessage,
   isSaving,
+  isUpdate,
   onCancel,
   onChange,
   onSave,
 }: {
-  readonly draft: UserDraft;
+  readonly draft: SubjectDraft;
   readonly errorMessage: string;
   readonly isSaving: boolean;
+  readonly isUpdate: boolean;
   readonly onCancel: () => void;
-  readonly onChange: (draft: UserDraft) => void;
+  readonly onChange: (draft: SubjectDraft) => void;
   readonly onSave: () => void;
 }): React.JSX.Element {
   const canSave =
-    draft.name.trim().length > 0 &&
-    draft.email.trim().length > 0 &&
-    draft.password.trim().length >= 8 &&
-    !isSaving;
+    draft.name.trim().length > 0 && draft.code.trim().length > 0 && !isSaving;
 
   return (
     <div className="fixed inset-0 z-[80] flex items-center justify-center bg-inverse-surface/35 px-4 py-8">
       <button
-        aria-label="Đóng form người dùng"
+        aria-label="Đóng form môn học"
         className="absolute inset-0"
         onClick={onCancel}
         type="button"
       />
-      <div className="relative z-10 w-full max-w-2xl rounded-lg border border-outline-variant bg-surface-container-lowest p-6">
+      <div className="relative z-10 w-full max-w-lg rounded-lg border border-outline-variant bg-surface-container-lowest p-6">
         <div className="mb-6 flex items-start justify-between gap-4">
           <div>
             <h2 className="text-xl font-semibold tracking-normal text-on-surface">
-              Thêm người dùng
+              {isUpdate ? "Cập nhật môn học" : "Thêm môn học"}
             </h2>
             <p className="font-label-sm text-label-sm text-on-surface-variant tracking-normal">
-              Tài khoản kiểm duyệt viên mới
+              {isUpdate
+                ? "Thay đổi thông tin môn học hiện có"
+                : "Thêm môn học mới vào hệ thống"}
             </p>
           </div>
           <button
@@ -562,41 +476,24 @@ function UserFormDialog({
             {errorMessage}
           </p>
         ) : null}
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <div className="grid grid-cols-1 gap-4">
           <InputField
-            label="Tên"
+            label="Mã môn học"
+            onChange={(event) =>
+              onChange({ ...draft, code: event.target.value })
+            }
+            placeholder="Ví dụ: MATH, PHYS, CS"
+            required
+            value={draft.code}
+          />
+          <InputField
+            label="Tên môn học"
             onChange={(event) =>
               onChange({ ...draft, name: event.target.value })
             }
+            placeholder="Ví dụ: Toán học, Vật lý"
             required
             value={draft.name}
-          />
-          <InputField
-            label="Email"
-            onChange={(event) =>
-              onChange({ ...draft, email: event.target.value })
-            }
-            required
-            type="email"
-            value={draft.email}
-          />
-          <InputField
-            label="Mật khẩu"
-            minLength={8}
-            onChange={(event) =>
-              onChange({ ...draft, password: event.target.value })
-            }
-            required
-            type="password"
-            value={draft.password}
-          />
-          <InputField
-            label="Avatar URL"
-            onChange={(event) =>
-              onChange({ ...draft, avatarUrl: event.target.value })
-            }
-            type="url"
-            value={draft.avatarUrl}
           />
         </div>
         <div className="mt-6 flex justify-end gap-3 border-t border-outline-variant pt-4">
@@ -604,7 +501,11 @@ function UserFormDialog({
             Hủy
           </Button>
           <Button disabled={!canSave} onClick={onSave}>
-            {isSaving ? "Đang tạo..." : "Tạo kiểm duyệt viên"}
+            {isSaving
+              ? "Đang lưu..."
+              : isUpdate
+                ? "Lưu thay đổi"
+                : "Tạo môn học"}
           </Button>
         </div>
       </div>
@@ -612,17 +513,17 @@ function UserFormDialog({
   );
 }
 
-function UserDetailDialog({
-  user,
+function SubjectDetailDialog({
+  subject,
   onClose,
 }: {
-  readonly user: AdminUser;
+  readonly subject: AdminSubject;
   readonly onClose: () => void;
 }): React.JSX.Element {
   return (
     <div className="fixed inset-0 z-[80] flex items-center justify-center bg-inverse-surface/35 px-4 py-8">
       <button
-        aria-label="Đóng chi tiết người dùng"
+        aria-label="Đóng chi tiết môn học"
         className="absolute inset-0"
         onClick={onClose}
         type="button"
@@ -631,10 +532,10 @@ function UserDetailDialog({
         <div className="mb-6 flex items-start justify-between gap-4">
           <div>
             <h2 className="text-xl font-semibold tracking-normal text-on-surface">
-              {user.name}
+              {subject.name}
             </h2>
-            <p className="font-label-sm text-label-sm text-on-surface-variant tracking-normal">
-              {user.email}
+            <p className="font-mono font-label-sm text-label-sm text-primary tracking-normal">
+              Mã: {subject.code}
             </p>
           </div>
           <button
@@ -647,14 +548,17 @@ function UserDetailDialog({
           </button>
         </div>
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-          <DetailItem label="Vai trò" value={roleLabels[user.role]} />
-          <DetailItem label="Trạng thái" value={statusLabels[user.status]} />
-          <DetailItem label="Ngày tạo" value={user.createdAt} />
+          <DetailItem label="Mã môn học" value={subject.code} />
+          <DetailItem label="Tên môn học" value={subject.name} />
+          <DetailItem label="Ngày tạo" value={formatDate(subject.createdAt)} />
           <DetailItem
             label="Cập nhật gần nhất"
-            value={user.updatedAt ?? "Chưa có dữ liệu"}
+            value={
+              subject.updatedAt
+                ? formatDate(subject.updatedAt)
+                : "Chưa cập nhật"
+            }
           />
-          <DetailItem label="Avatar" value={user.avatarUrl ?? "Chưa có"} />
         </div>
       </div>
     </div>

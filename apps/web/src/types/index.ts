@@ -10,6 +10,7 @@ export interface User {
   email: string;
   name: string;
   role: UserRole;
+  status?: "ACTIVE" | "UNVERIFIED" | "BANNED" | string;
   avatar?: string;
   createdAt: Date;
 }

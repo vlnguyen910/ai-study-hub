@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Link } from "expo-router";
 import { ScrollView, Text, View } from "react-native";
 import { Button, Card, PageShell, SearchBar } from "@/components";
-import { removeTokens } from "@/utils/storage";
+import { EmailVerificationBanner } from "@/features/auth/components/EmailVerificationBanner";
 
 type RouteLink = {
   label: string;
@@ -80,6 +80,8 @@ export default function HomeTab() {
         showsVerticalScrollIndicator={false}
       >
         <View className="gap-6">
+          <EmailVerificationBanner />
+
           <View className="gap-2">
             <Text className="text-3xl font-bold text-on-surface">
               Mobile component hub
