@@ -2,7 +2,8 @@
 
 import { Card } from "../ui/Card";
 import { Modal } from "../ui/Modal";
-import { Toast } from "../ui/Toast";
+import { Button } from "../ui/Button";
+import { toast } from "sonner";
 import { Spinner } from "../ui/Spinner";
 import { Skeleton } from "../ui/Skeleton";
 import { Tooltip } from "../ui/Tooltip";
@@ -37,14 +38,13 @@ export const FeedbackSection: FC<FeedbackSectionProps> = ({ title }) => {
           <h3 className="font-headline-md text-headline-md absolute top-4 left-6">
             {styleGuideLabels.feedback.toastTitle}
           </h3>
-          <Toast
-            icon={
-              <span className="material-symbols-outlined text-[20px]">
-                check
-              </span>
+          <Button
+            onClick={() =>
+              toast.success(styleGuideLabels.feedback.toastMessage)
             }
-            message={styleGuideLabels.feedback.toastMessage}
-          />
+          >
+            Hiển thị Toast
+          </Button>
         </Card>
 
         <div className="grid grid-cols-2 gap-4">

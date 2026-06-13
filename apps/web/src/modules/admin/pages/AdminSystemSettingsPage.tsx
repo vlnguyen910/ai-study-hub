@@ -3,8 +3,8 @@
 import { Button } from "@/components/ui/Button";
 import { InputField } from "@/components/ui/InputField";
 import { Switch } from "@/components/ui/Switch";
-import { Toast } from "@/components/ui/Toast";
 import { useState, type ReactNode } from "react";
+import { toast } from "sonner";
 import {
   AdminCard,
   AdminSelect,
@@ -39,17 +39,13 @@ export default function AdminSystemSettingsPage(): React.JSX.Element {
   const [settings, setSettings] = useState<AdminSettings>(mockSettings);
   const [activeSection, setActiveSection] =
     useState<SettingsSection>("general");
-  const [message, setMessage] = useState<string | null>(null);
-
   const handleSave = () => {
-    setMessage("Cấu hình hệ thống chưa có API lưu thay đổi.");
-    window.setTimeout(() => setMessage(null), 2600);
+    toast.info("Cấu hình hệ thống chưa có API lưu thay đổi.");
   };
 
   const handleCancel = () => {
     setSettings(mockSettings);
-    setMessage("Đã hoàn tác thay đổi trên giao diện.");
-    window.setTimeout(() => setMessage(null), 2600);
+    toast.success("Đã hoàn tác thay đổi trên giao diện.");
   };
 
   return (
@@ -81,15 +77,6 @@ export default function AdminSystemSettingsPage(): React.JSX.Element {
           </Button>
         </div>
       </div>
-
-      {message ? (
-        <div className="fixed right-4 top-20 z-90">
-          <Toast
-            icon={<MaterialIcon className="text-[18px]" name="check" />}
-            message={message}
-          />
-        </div>
-      ) : null}
 
       <div className="grid grid-cols-1 gap-gutter lg:grid-cols-12">
         <AdminCard className="h-max p-4 lg:sticky lg:top-24 lg:col-span-3">
