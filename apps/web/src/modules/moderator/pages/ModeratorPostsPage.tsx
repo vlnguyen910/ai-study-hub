@@ -3,6 +3,7 @@
 import { Pagination } from "@/components/ui/Pagination";
 import { Table, type TableRow } from "@/components/ui/Table";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { toast } from "sonner";
 import { postModerationItems } from "../mockData";
 import type { PostModerationItem, PostModerationStatus } from "../types";
 
@@ -53,7 +54,6 @@ export default function ModeratorPostsPage(): React.JSX.Element {
   const [posts, setPosts] = useState(postModerationItems);
   const [activeTab, setActiveTab] = useState<ModerationTab>("pending");
   const [currentPage, setCurrentPage] = useState(1);
-  const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   const filteredPosts = useMemo(() => {
     if (activeTab === "history") {
@@ -86,7 +86,7 @@ export default function ModeratorPostsPage(): React.JSX.Element {
   const handleStatusChange = useCallback(
     (id: string, status: PostModerationStatus, message: string) => {
       setPosts((current) => updatePostStatus(current, id, status));
-      setToastMessage(message);
+      toast.success(message);
     },
     [],
   );
@@ -193,7 +193,7 @@ export default function ModeratorPostsPage(): React.JSX.Element {
                 icon="edit"
                 label={`Chỉnh sửa ${post.title}`}
                 onClick={() =>
-                  setToastMessage(`Mở trạng thái chỉnh sửa cho ${post.id}`)
+                  toast.info(`Mở trạng thái chỉnh sửa cho ${post.id}`)
                 }
               />
             </div>,
@@ -238,23 +238,6 @@ export default function ModeratorPostsPage(): React.JSX.Element {
           ))}
         </div>
       </div>
-
-      {toastMessage ? (
-        <div
-          className="mb-gutter flex items-center justify-between border border-primary bg-primary-fixed px-4 py-3 text-on-primary-fixed"
-          role="status"
-        >
-          <span className="font-label-md text-label-md">{toastMessage}</span>
-          <button
-            className="rounded p-1 text-on-primary-fixed-variant hover:bg-surface"
-            onClick={() => setToastMessage(null)}
-            type="button"
-          >
-            <span className="sr-only">Đóng thông báo</span>
-            <MaterialIcon name="close" />
-          </button>
-        </div>
-      ) : null}
 
       <div className="grid grid-cols-1 gap-gutter lg:grid-cols-12">
         <div className="space-y-gutter lg:col-span-4">

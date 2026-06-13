@@ -10,6 +10,7 @@ import {
 import type { LibraryDocument } from "@/types/document.type";
 import { formatDate } from "@/utils";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { toast } from "sonner";
 
 import {
   EmptyState,
@@ -42,7 +43,6 @@ export default function ModeratorDocumentsPage(): React.JSX.Element {
   const [isLoading, setIsLoading] = useState(true);
   const [actionId, setActionId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   const loadDocuments = useCallback(async () => {
     setIsLoading(true);
@@ -94,13 +94,12 @@ export default function ModeratorDocumentsPage(): React.JSX.Element {
   const handleApprove = useCallback(
     async (document: LibraryDocument) => {
       setActionId(document.id);
-      setToastMessage(null);
       try {
         await approveDocument(document.id);
-        setToastMessage(`Đã phê duyệt ${document.title}`);
+        toast.success(`Đã phê duyệt ${document.title}`);
         await loadDocuments();
       } catch {
-        setToastMessage(`Không thể phê duyệt ${document.title}`);
+        toast.error(`Không thể phê duyệt ${document.title}`);
       } finally {
         setActionId(null);
       }
@@ -117,13 +116,12 @@ export default function ModeratorDocumentsPage(): React.JSX.Element {
       if (!reason) return;
 
       setActionId(document.id);
-      setToastMessage(null);
       try {
         await rejectDocument(document.id, { rejectionReason: reason });
-        setToastMessage(`Đã từ chối ${document.title}`);
+        toast.success(`Đã từ chối ${document.title}`);
         await loadDocuments();
       } catch {
-        setToastMessage(`Không thể từ chối ${document.title}`);
+        toast.error(`Không thể từ chối ${document.title}`);
       } finally {
         setActionId(null);
       }
@@ -215,23 +213,6 @@ export default function ModeratorDocumentsPage(): React.JSX.Element {
           </div>
         </div>
       </div>
-
-      {toastMessage ? (
-        <div
-          className="flex items-center justify-between border border-primary bg-primary-fixed px-4 py-3 text-on-primary-fixed"
-          role="status"
-        >
-          <span className="font-label-md text-label-md">{toastMessage}</span>
-          <button
-            className="rounded p-1 text-on-primary-fixed-variant hover:bg-surface"
-            onClick={() => setToastMessage(null)}
-            type="button"
-          >
-            <span className="sr-only">Đóng thông báo</span>
-            <MaterialIcon name="close" />
-          </button>
-        </div>
-      ) : null}
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
         <label className="border border-outline-variant bg-white p-4 transition-colors hover:border-primary md:col-span-3">

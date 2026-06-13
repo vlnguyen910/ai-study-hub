@@ -9,6 +9,7 @@ import { SearchInput } from "@/components/ui/SearchInput";
 import { SelectField } from "@/components/ui/SelectField";
 import { Table, type TableRow } from "@/components/ui/Table";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { toast } from "sonner";
 import {
   createAdminSubject,
   deleteAdminSubject,
@@ -191,6 +192,11 @@ export default function AdminSubjectManagementPage(): React.JSX.Element {
         });
       }
 
+      toast.success(
+        editSubject
+          ? "Cập nhật môn học thành công!"
+          : "Tạo môn học mới thành công!",
+      );
       setFormOpen(false);
       setDraft(emptyDraft);
       setEditSubject(null);
@@ -220,6 +226,7 @@ export default function AdminSubjectManagementPage(): React.JSX.Element {
 
     try {
       await deleteAdminSubject(deleteSubject.id);
+      toast.success("Xóa môn học thành công!");
       setDeleteSubject(null);
       setCurrentPage(1);
       await loadSubjects();
