@@ -73,15 +73,8 @@ export class AuthController {
   @Public()
   @HttpCode(HttpStatus.OK)
   @Post('verify-email')
-  async verifyEmail(
-    @Body() verifyEmailDto: VerifyEmailDto,
-    @Res({ passthrough: true }) res: Response,
-  ) {
-    const result = await this.authService.verifyEmail(verifyEmailDto);
-
-    res.clearCookie('accessToken');
-
-    return result;
+  verifyEmail(@Body() verifyEmailDto: VerifyEmailDto) {
+    return this.authService.verifyEmail(verifyEmailDto);
   }
 
   @Version('1')

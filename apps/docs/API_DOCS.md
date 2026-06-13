@@ -240,6 +240,7 @@ Base path: `/api/v1/auth`
 
 - Auth: none
 - Description: creates an unverified user and sends a verification email. No login session is created by signup.
+- Client note: Web and Mobile currently redirect to login after this response. The user signs in manually to receive a normal limited `UNVERIFIED` session.
 
 #### Request Body
 

@@ -23,11 +23,11 @@ AI Study Hub là nền tảng quản lý và chia sẻ tài liệu học tập c
 
 ### Current Implementation Snapshot
 
-Spec này đã được đối chiếu với codebase hiện tại ngày 2026-06-12.
+Spec này đã được đối chiếu với codebase hiện tại ngày 2026-06-13.
 
 - API: NestJS, Prisma MongoDB, Redis, JWT, refresh token session, role guard, response interceptor, exception filter.
 - API Admin boundary: `AdminModule` owns admin-only account routes, subject mutation routes, and `GET /admin/dashboard`; account and subject route URLs remain backward compatible.
-- Auth: signup tạo account `UNVERIFIED`, gửi link verify email bằng token Redis SHA-256; signin cấp session/token cho `ACTIVE` và `UNVERIFIED`, trong đó `UNVERIFIED` chỉ có phiên hạn chế; forgot/reset/change password đã có backend.
+- Auth: signup tạo account `UNVERIFIED`, gửi link verify email bằng token Redis SHA-256; signin cấp session/token cho `ACTIVE` và `UNVERIFIED`, trong đó `UNVERIFIED` chỉ có phiên hạn chế; Web/Mobile redirect về login sau signup để người dùng đăng nhập thủ công; forgot/reset/change password đã có backend.
 - Mail: `MailModule` dùng Nodemailer SMTP qua cấu hình `MAILTRAP_SMTP_*`; khi thiếu SMTP credentials thì log link trong development hoặc bỏ qua gửi mail ở môi trường khác.
 - Database: MongoDB qua Prisma với models `accounts`, `sessions`, `schools`, `subjects`, `documents`; Redis dùng cho token/cooldown của email verification và password recovery.
 - Web: Next.js App Router, route groups cho auth/app/admin/moderator, shared UI components, Zustand auth store, Axios clients. Auth helpers, public/user document helpers, Admin dashboard summary cards, Admin Users và Moderator document review đã dùng API thật; Admin settings vẫn là UI-only/deferred vì chưa có backend contract.
@@ -49,6 +49,7 @@ Spec này đã được đối chiếu với codebase hiện tại ngày 2026-06
 - Verify email bằng `{ token }` để chuyển account `UNVERIFIED` sang `ACTIVE`.
 - Resend verification email cho account `UNVERIFIED` qua phiên đăng nhập thường.
 - Signin cấp token/session cho account `ACTIVE` và `UNVERIFIED`; `UNVERIFIED` bị chặn ở các chức năng tiêu tốn tài nguyên cho đến khi verify email.
+- Web/Mobile signup flow không tạo session tự động; client điều hướng về login sau khi backend tạo account thành công.
 - Web signin set HTTP-only `refreshToken` cookie và trả `accessToken` trong body.
 - Mobile signin trả `accessToken` và `refreshToken` trong body.
 - Logout theo userId + deviceId, revoke session hiện tại và clear cookie.
@@ -90,6 +91,7 @@ Spec này đã được đối chiếu với codebase hiện tại ngày 2026-06
 - Có route public/auth/app/admin/moderator.
 - Có route auth: forgot password, reset password, verify email token link.
 - Có helper auth API cho signup/signin/verify/resend/forgot/reset/change password.
+- Register page/modal gọi signup rồi điều hướng về `/login`; không tự signin hoặc lưu session sau signup.
 - Có helper document API cho public/user document workflows và moderator approve/reject.
 - Admin Web và một số module UI riêng vẫn chưa đồng bộ hoàn toàn với API.
 
@@ -97,6 +99,7 @@ Spec này đã được đối chiếu với codebase hiện tại ngày 2026-06
 
 - Có Expo Router và nhóm tab/template.
 - Có auth service gọi `/api/v1/auth/mobile-signin`, `/api/v1/auth/signup`, `/api/v1/auth/forgot-password`.
+- Register flow gọi signup rồi điều hướng về màn login; không tự mobile-signin hoặc lưu token sau signup.
 - Có màn hình login/register/forgot password/verify email template.
 - Có document create metadata service cơ bản.
 - Có màn hình upload/edit/detail documents và moderator review dạng template/mock.
@@ -784,7 +787,6 @@ Behavior:
 - `/forgot-password`
 - `/reset-password`
 - `/reset-password/[token]`
-- `/verify-email-pending`
 - `/verify-email/[token]`
 
 ### Current Behavior

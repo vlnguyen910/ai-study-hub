@@ -102,19 +102,15 @@ describe('AuthController', () => {
   });
 
   it('should call verify email service', async () => {
-    const response = createResponseMock();
     authServiceMock.verifyEmail.mockResolvedValue({
       message: 'Email verified successfully',
       data: null,
     });
 
     await expect(
-      controller.verifyEmail(
-        {
-          token: 'email-verification-token',
-        },
-        response,
-      ),
+      controller.verifyEmail({
+        token: 'email-verification-token',
+      }),
     ).resolves.toEqual({
       message: 'Email verified successfully',
       data: null,
@@ -122,14 +118,13 @@ describe('AuthController', () => {
     expect(authServiceMock.verifyEmail).toHaveBeenCalledWith({
       token: 'email-verification-token',
     });
-    expect(response.clearCookie).toHaveBeenCalledWith('accessToken');
   });
 
-  it('should call resend verification email service with cookie-authenticated user', async () => {
+  it('should call resend verification email service with the authenticated user', async () => {
     const unverifiedUser: TokenPayload = {
       ...userPayload,
       status: UserStatus.UNVERIFIED,
-      type: JwtTokenType.EmailVerification,
+      type: JwtTokenType.AccessToken,
     };
     authServiceMock.resendVerificationEmail.mockResolvedValue({
       message: 'Verification email sent',
