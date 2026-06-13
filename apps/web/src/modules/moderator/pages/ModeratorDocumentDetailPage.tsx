@@ -10,6 +10,7 @@ import { formatDate } from "@/utils";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
+import { toast } from "sonner";
 
 import {
   EmptyState,
@@ -65,7 +66,6 @@ export default function ModeratorDocumentDetailPage({
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   const loadDocument = useCallback(async () => {
     setIsLoading(true);
@@ -101,14 +101,13 @@ export default function ModeratorDocumentDetailPage({
     if (!document) return;
 
     setIsSubmitting(true);
-    setToastMessage(null);
     try {
       await approveDocument(document.id);
-      setToastMessage(`Đã phê duyệt ${document.title}`);
+      toast.success(`Đã phê duyệt ${document.title}`);
       router.push("/moderator/documents");
       router.refresh();
     } catch {
-      setToastMessage(`Không thể phê duyệt ${document.title}`);
+      toast.error(`Không thể phê duyệt ${document.title}`);
     } finally {
       setIsSubmitting(false);
     }
@@ -119,19 +118,18 @@ export default function ModeratorDocumentDetailPage({
 
     const rejectionReason = note.trim();
     if (!rejectionReason) {
-      setToastMessage("Vui lòng nhập lý do từ chối trước khi gửi.");
+      toast.warning("Vui lòng nhập lý do từ chối trước khi gửi.");
       return;
     }
 
     setIsSubmitting(true);
-    setToastMessage(null);
     try {
       await rejectDocument(document.id, { rejectionReason });
-      setToastMessage(`Đã từ chối ${document.title}`);
+      toast.success(`Đã từ chối ${document.title}`);
       router.push("/moderator/documents");
       router.refresh();
     } catch {
-      setToastMessage(`Không thể từ chối ${document.title}`);
+      toast.error(`Không thể từ chối ${document.title}`);
     } finally {
       setIsSubmitting(false);
     }
@@ -175,23 +173,6 @@ export default function ModeratorDocumentDetailPage({
         <MaterialIcon className="text-sm" name="chevron_right" />
         <span className="text-on-surface">{document.id}</span>
       </nav>
-
-      {toastMessage ? (
-        <div
-          className="mb-gutter flex items-center justify-between border border-primary bg-primary-fixed px-4 py-3 text-on-primary-fixed"
-          role="status"
-        >
-          <span className="font-label-md text-label-md">{toastMessage}</span>
-          <button
-            className="rounded p-1 text-on-primary-fixed-variant hover:bg-surface"
-            onClick={() => setToastMessage(null)}
-            type="button"
-          >
-            <span className="sr-only">Đóng thông báo</span>
-            <MaterialIcon name="close" />
-          </button>
-        </div>
-      ) : null}
 
       <div className="grid grid-cols-1 gap-gutter xl:grid-cols-12 xl:items-start">
         <div className="space-y-gutter xl:col-span-8">

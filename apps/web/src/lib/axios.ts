@@ -2,6 +2,7 @@ import axios from "axios";
 import { APP_CONFIG } from "@/config";
 import { API_ENDPOINTS } from "@/shared/constants";
 import { useAuthStore } from "@/stores/auth/store";
+import { toast } from "sonner";
 
 declare module "axios" {
   export interface AxiosRequestConfig {
@@ -130,6 +131,13 @@ apiClient.interceptors.response.use(
     }
 
     if (originalRequest.skipToast) return Promise.reject(error);
+
+    const message =
+      error.response?.data?.message ||
+      error.message ||
+      "An unexpected error occurred. Please try again.";
+
+    toast.error(message);
 
     return Promise.reject(error);
   },
