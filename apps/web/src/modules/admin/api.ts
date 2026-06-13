@@ -120,143 +120,49 @@ export interface UpdateAdminSubjectPayload {
   readonly code?: string;
 }
 
-// In-memory mock database for subjects
-let mockSubjects: AdminSubject[] = [
-  {
-    id: "sub-1",
-    name: "Mathematics",
-    code: "MATH",
-    schoolId: "school-fptu",
-    createdAt: "2026-06-08T00:00:00.000Z",
-  },
-  {
-    id: "sub-2",
-    name: "Physics",
-    code: "PHYS",
-    schoolId: "school-fptu",
-    createdAt: "2026-06-08T10:00:00.000Z",
-  },
-  {
-    id: "sub-3",
-    name: "Chemistry",
-    code: "CHEM",
-    schoolId: "school-fptu",
-    createdAt: "2026-06-09T08:00:00.000Z",
-  },
-  {
-    id: "sub-4",
-    name: "Computer Science",
-    code: "CS",
-    schoolId: "school-fptu",
-    createdAt: "2026-06-09T14:00:00.000Z",
-  },
-  {
-    id: "sub-5",
-    name: "Programming",
-    code: "PROG",
-    schoolId: "school-fptu",
-    createdAt: "2026-06-10T09:00:00.000Z",
-  },
-];
-
 export const fetchAdminSubjects = async (
   params: FetchAdminSubjectsParams = {},
 ): Promise<FetchAdminSubjectsResponse> => {
-  const { page = 1, limit = 10, schoolId, search } = params;
-
-  if (search) {
-    console.log(`Mock API Call: GET api/v1/subject?search=${search}`);
-  } else {
-    console.log(`Mock API Call: GET api/v1/subjects`, params);
-  }
-
-  // Simulate network delay
-  await new Promise((resolve) => setTimeout(resolve, 300));
-
-  let filtered = [...mockSubjects];
-  if (schoolId) {
-    filtered = filtered.filter((s) => s.schoolId === schoolId);
-  }
-  if (search) {
-    const s = search.toLowerCase();
-    filtered = filtered.filter(
-      (subj) =>
-        subj.name.toLowerCase().includes(s) ||
-        subj.code.toLowerCase().includes(s),
-    );
-  }
-
-  const total = filtered.length;
-  const totalPages = Math.max(1, Math.ceil(total / limit));
-  const startIndex = (page - 1) * limit;
-  const paginated = filtered.slice(startIndex, startIndex + limit);
-
-  return {
-    subjects: paginated,
-    pagination: {
-      page,
-      limit,
-      total,
-      totalPages,
+  return apiClient.get<unknown, FetchAdminSubjectsResponse>(
+    API_ENDPOINTS.SUBJECTS.BASE,
+    {
+      params: {
+        page: params.page,
+        limit: params.limit,
+        schoolId: params.schoolId,
+        search: params.search,
+      },
     },
-  };
+  );
 };
 
 export const fetchAdminSubjectDetail = async (
   id: string,
 ): Promise<AdminSubject> => {
-  console.log(`Mock API Call: GET api/v1/subjects/${id}`);
-
-  await new Promise((resolve) => setTimeout(resolve, 300));
-  const subject = mockSubjects.find((s) => s.id === id);
-  if (!subject) throw new Error("Subject not found");
-  return subject;
+  return apiClient.get<unknown, AdminSubject>(
+    API_ENDPOINTS.SUBJECTS.DETAIL(id),
+  );
 };
 
 export const createAdminSubject = async (
   payload: CreateAdminSubjectPayload,
 ): Promise<AdminSubject> => {
-  console.log("Mock API Call: POST api/v1/subjects", payload);
-
-  await new Promise((resolve) => setTimeout(resolve, 500));
-  const newSubject: AdminSubject = {
-    id: `sub-${Math.random().toString(36).substring(2, 9)}`,
-    name: payload.name,
-    code: payload.code.toUpperCase(),
-    schoolId: payload.schoolId || "school-fptu",
-    createdAt: new Date().toISOString(),
-  };
-  mockSubjects = [newSubject, ...mockSubjects];
-  return newSubject;
+  return apiClient.post<unknown, AdminSubject>(
+    API_ENDPOINTS.SUBJECTS.BASE,
+    payload,
+  );
 };
 
 export const updateAdminSubject = async (
   id: string,
   payload: UpdateAdminSubjectPayload,
 ): Promise<AdminSubject> => {
-  console.log(`Mock API Call: PATCH api/v1/subjects`, { id, payload });
-
-  await new Promise((resolve) => setTimeout(resolve, 500));
-  const index = mockSubjects.findIndex((s) => s.id === id);
-  if (index === -1) throw new Error("Subject not found");
-  const current = mockSubjects[index];
-  if (!current) throw new Error("Subject not found");
-  const updated: AdminSubject = {
-    id: current.id,
-    name: payload.name ?? current.name,
-    code: payload.code ? payload.code.toUpperCase() : current.code,
-    schoolId: current.schoolId,
-    createdAt: current.createdAt,
-    updatedAt: new Date().toISOString(),
-  };
-  mockSubjects[index] = updated;
-  return updated;
+  return apiClient.patch<unknown, AdminSubject>(
+    API_ENDPOINTS.SUBJECTS.DETAIL(id),
+    payload,
+  );
 };
 
 export const deleteAdminSubject = async (id: string): Promise<unknown> => {
-  console.log(`Mock API Call: DELETE api/v1/subject`, { id });
-
-  await new Promise((resolve) => setTimeout(resolve, 500));
-  mockSubjects = mockSubjects.filter((s) => s.id !== id);
-  return { message: "Subject deleted successfully" };
+  return apiClient.delete(API_ENDPOINTS.SUBJECTS.DETAIL(id));
 };

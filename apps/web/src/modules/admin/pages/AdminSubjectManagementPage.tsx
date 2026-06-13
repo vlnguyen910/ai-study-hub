@@ -109,7 +109,6 @@ export default function AdminSubjectManagementPage(): React.JSX.Element {
         page: currentPage,
         limit: pageSize,
         search: query.trim() || undefined,
-        schoolId: schoolFilter === "FPTU" ? "school-fptu" : undefined,
       });
 
       setSubjects(response.subjects as AdminSubject[]);
@@ -122,7 +121,7 @@ export default function AdminSubjectManagementPage(): React.JSX.Element {
     } finally {
       setIsLoading(false);
     }
-  }, [currentPage, query, schoolFilter]);
+  }, [currentPage, query]);
 
   useEffect(() => {
     void loadSubjects();
@@ -549,8 +548,8 @@ function SubjectDetailDialog({
           </button>
         </div>
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-          <DetailItem label="ID môn học" value={subject.id} />
-          <DetailItem label="ID Trường học" value={subject.schoolId} />
+          <DetailItem label="Mã môn học" value={subject.code} />
+          <DetailItem label="Tên môn học" value={subject.name} />
           <DetailItem label="Ngày tạo" value={formatDate(subject.createdAt)} />
           <DetailItem
             label="Cập nhật gần nhất"
