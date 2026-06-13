@@ -4,6 +4,7 @@ import { useState } from "react";
 import type { ReactElement } from "react";
 import { useRouter } from "next/navigation";
 import { apiClient } from "@/lib/axios";
+import { ROUTE_PATHS } from "@/routes/router.const";
 import { API_ENDPOINTS } from "@/shared/constants";
 import { getOrCreateDeviceId } from "@/utils";
 
@@ -100,15 +101,19 @@ export default function RegisterModal({
     setIsLoading(true);
     try {
       const deviceId = getOrCreateDeviceId();
+      const name = formData.name.trim();
+      const email = formData.email.trim();
+
       await apiClient.post(API_ENDPOINTS.AUTH.REGISTER, {
-        name: formData.name,
-        email: formData.email,
+        name,
+        email,
         password: formData.password,
         deviceId,
       });
+
       resetForm();
       onClose();
-      router.push("/verify-email-pending");
+      router.replace(ROUTE_PATHS.AUTH_ROUTES.LOGIN);
     } catch (error: unknown) {
       const axiosError = error as {
         response?: { status?: number; data?: { message?: string } };

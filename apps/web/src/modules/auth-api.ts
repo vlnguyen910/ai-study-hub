@@ -20,12 +20,31 @@ const client = axios.create({
   withCredentials: true,
 });
 
-const unwrap = <T>(response: { data: ApiEnvelope<T> | T }): ApiEnvelope<T> => {
-  const data = response.data as ApiEnvelope<T>;
+const isApiEnvelope = <T>(value: unknown): value is ApiEnvelope<T> => {
+  return (
+    value !== null &&
+    typeof value === "object" &&
+    ("data" in value ||
+      "message" in value ||
+      "success" in value ||
+      "statusCode" in value ||
+      "status_code" in value)
+  );
+};
 
-  return data && typeof data === "object" && "data" in data
-    ? data
-    : { data: response.data as T };
+const unwrap = <T>(response: unknown): ApiEnvelope<T> => {
+  if (response == null) {
+    return { data: null as T };
+  }
+
+  const data = response as { data?: ApiEnvelope<T> | T };
+  const payload = "data" in data ? data.data : response;
+
+  if (payload == null) {
+    return { data: null as T };
+  }
+
+  return isApiEnvelope<T>(payload) ? payload : { data: payload as T };
 };
 
 const getErrorMessage = (error: unknown, fallback: string) => {

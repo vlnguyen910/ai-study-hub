@@ -118,4 +118,35 @@ describe("web api auth interceptors", () => {
       "Bearer new-access-token",
     );
   });
+
+  it("attaches the access token when resending verification email", async () => {
+    useAuthStore.getState().setAuth("access-token", "student", undefined, null);
+
+    const adapter = vi.fn<ReturnType<AxiosAdapter>, Parameters<AxiosAdapter>>(
+      async (config) => ({
+        data: {
+          success: true,
+          status_code: 200,
+          message: "Verification email sent",
+          data: null,
+        },
+        status: 200,
+        statusText: "OK",
+        headers: {},
+        config,
+      }),
+    );
+    const previousAdapter = apiClient.defaults.adapter;
+    apiClient.defaults.adapter = adapter;
+
+    try {
+      await apiClient.post(API_ENDPOINTS.AUTH.RESEND_VERIFICATION_EMAIL);
+    } finally {
+      apiClient.defaults.adapter = previousAdapter;
+    }
+
+    expect(adapter.mock.calls[0][0].headers?.Authorization).toBe(
+      "Bearer access-token",
+    );
+  });
 });

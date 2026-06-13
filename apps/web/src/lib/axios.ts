@@ -21,14 +21,12 @@ const isAuthPage = (pathname: string): boolean =>
   pathname === "/login" ||
   pathname === "/register" ||
   pathname === "/forgot-password" ||
-  pathname === "/verify-email-pending" ||
   pathname.startsWith("/reset-password") ||
   pathname.startsWith("/verify-email/");
 
 const PUBLIC_AUTH_ENDPOINTS = [
   API_ENDPOINTS.AUTH.LOGIN,
   API_ENDPOINTS.AUTH.REGISTER,
-  API_ENDPOINTS.AUTH.RESEND_VERIFICATION_EMAIL,
   API_ENDPOINTS.AUTH.VERIFY_EMAIL,
   API_ENDPOINTS.AUTH.REFRESH,
   "/api/v1/auth/forgot-password",

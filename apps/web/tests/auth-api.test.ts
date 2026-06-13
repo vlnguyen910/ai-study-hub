@@ -89,6 +89,16 @@ describe("web auth api helpers", () => {
     );
   });
 
+  it("unwraps a null resend verification response without throwing", async () => {
+    apiClientMock.post.mockResolvedValue(null);
+
+    await expect(resendVerificationEmail()).resolves.toEqual({ data: null });
+
+    expect(apiClientMock.post).toHaveBeenCalledWith(
+      "/api/v1/auth/resend-verification-email",
+    );
+  });
+
   it("posts forgot and reset password payloads to auth endpoints", async () => {
     await forgotPassword({ email: "student@example.com" });
     await resetPassword({ token: "reset-token", password: "Password123!" });

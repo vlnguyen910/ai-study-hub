@@ -1,6 +1,9 @@
 import { act, renderHook } from "@testing-library/react-native";
 import { Alert } from "react-native";
-import { signInService } from "@/features/auth/services/auth.service";
+import {
+  AuthServiceError,
+  signInService,
+} from "@/features/auth/services/auth.service";
 import { useSignIn } from "@/features/auth/hooks/useSignIn";
 import { getDeviceId } from "@/utils/device";
 import { saveTokens } from "@/utils/storage";
@@ -74,5 +77,33 @@ describe("useSignIn", () => {
       "refresh-token",
     );
     expect(onSuccess).toHaveBeenCalledTimes(1);
+  });
+
+  it("does not open the legacy verify-email route when signin reports verification", async () => {
+    getDeviceIdMock.mockResolvedValue("device-1");
+    signInServiceMock.mockRejectedValue(
+      new AuthServiceError("Email verification required", 403),
+    );
+    const alertSpy = jest.spyOn(Alert, "alert");
+
+    const { result } = renderHook(() => useSignIn());
+
+    act(() => {
+      result.current.form.setValue("email", "student@example.com", {
+        shouldValidate: true,
+      });
+      result.current.form.setValue("password", "Password123!", {
+        shouldValidate: true,
+      });
+    });
+
+    await act(async () => {
+      await result.current.submit(jest.fn());
+    });
+
+    expect(alertSpy).toHaveBeenCalledWith(
+      "Đăng nhập thất bại",
+      "Email verification required",
+    );
   });
 });
