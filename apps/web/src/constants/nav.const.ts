@@ -63,7 +63,7 @@ export const MODERATOR_NAV_ITEMS: SideNavItem[] = [
   {
     label: "Cài đặt",
     icon: "settings",
-    href: ROUTE_PATHS.PROTECTED_ROUTES.SETTINGS,
+    href: ROUTE_PATHS.MODERATOR_ROUTES.SETTINGS,
     section: "secondary",
   },
   {
