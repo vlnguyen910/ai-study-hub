@@ -1,4 +1,4 @@
-export type SettingsTab = "account" | "security" | "theme" | "moderator";
+export type SettingsTab = "theme" | "language" | "account";
 
 export interface SettingsNavItem {
   readonly key: SettingsTab;
