@@ -93,9 +93,10 @@ describe("AdminSubjectManagementPage", () => {
       );
     });
 
-    expect(screen.getByText("ID môn học")).toBeInTheDocument();
-    expect(screen.getByText("ID Trường học")).toBeInTheDocument();
-    expect(screen.getAllByText("school-fptu")).toHaveLength(1);
+    expect(screen.getAllByText("Mã môn học")).toHaveLength(2);
+    expect(screen.getAllByText("Tên môn học")).toHaveLength(2);
+    expect(screen.getAllByText("MATH")).toHaveLength(2); // Table row and dialog grid value
+    expect(screen.getAllByText("Mathematics")).toHaveLength(3); // Table row, dialog title, dialog grid value
   });
 
   it("creates a subject through the admin API", async () => {
