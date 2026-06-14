@@ -82,9 +82,12 @@ export const signin = async (payload: {
   }
 };
 
-export const verifyEmail = async (payload: { token: string }) => {
+export const verifyEmail = async (payload: {
+  token: string;
+  deviceId?: string;
+}) => {
   try {
-    return unwrap<null>(
+    return unwrap<{ accessToken?: string } | null>(
       await client.post("/api/v1/auth/verify-email", payload),
     );
   } catch (error) {

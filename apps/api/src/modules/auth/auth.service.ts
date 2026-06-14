@@ -140,7 +140,7 @@ export class AuthService {
       throw new BadRequestException('Account cannot be verified');
     }
 
-    await this.prismaService.accounts.update({
+    const activatedAccount = await this.prismaService.accounts.update({
       where: { id: account.id },
       data: { status: UserStatus.ACTIVE },
     });
@@ -155,9 +155,14 @@ export class AuthService {
       verifyEmailDto.token,
     );
 
+    const deviceId = verifyEmailDto.deviceId?.trim();
+    const tokens = deviceId
+      ? await this.rotateVerifiedSession(activatedAccount, deviceId)
+      : null;
+
     return {
       message: 'Email verified successfully',
-      data: null,
+      data: tokens,
     };
   }
 
@@ -491,6 +496,34 @@ export class AuthService {
     ]);
 
     return { accessToken, refreshToken };
+  }
+
+  private async rotateVerifiedSession(account: accounts, deviceId: string) {
+    const tokens = await this.manageUserToken(account, deviceId);
+    const hashedRefreshToken = await argon2.hash(tokens.refreshToken);
+
+    await this.prismaService.sessions.upsert({
+      where: {
+        userId_deviceId: {
+          userId: account.id,
+          deviceId,
+        },
+      },
+      update: {
+        refreshToken: hashedRefreshToken,
+        expiresAt: this.getExpiryDate(this.jwtConfig.refreshTokenExpiresIn),
+        isRevoked: false,
+      },
+      create: {
+        userId: account.id,
+        refreshToken: hashedRefreshToken,
+        deviceId,
+        deviceType: DeviceType.WEB,
+        expiresAt: this.getExpiryDate(this.jwtConfig.refreshTokenExpiresIn),
+      },
+    });
+
+    return tokens;
   }
 
   private async issueVerificationEmail(account: VerificationAccount) {

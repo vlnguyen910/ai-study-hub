@@ -2,6 +2,7 @@ import axios, { type AxiosAdapter } from "axios";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { apiClient, getLoginRedirectHref } from "../src/lib/axios";
+import { canAccessRoute, getAuthRedirect } from "../src/routes";
 import { API_ENDPOINTS } from "../src/shared/constants";
 import { useAuthStore } from "../src/stores/auth/store";
 
@@ -28,6 +29,16 @@ describe("auth redirect helpers", () => {
     expect(getLoginRedirectHref("/register")).toBe("/login");
     expect(getLoginRedirectHref("/reset-password/token")).toBe("/login");
     expect(getLoginRedirectHref("/verify-email/token")).toBe("/login");
+  });
+
+  it("allows authenticated users to stay on verify-email routes", () => {
+    expect(
+      canAccessRoute({
+        pathname: "/verify-email/token",
+        isAuthenticated: true,
+      }),
+    ).toBe(true);
+    expect(getAuthRedirect("/verify-email/token", true)).toBeNull();
   });
 });
 

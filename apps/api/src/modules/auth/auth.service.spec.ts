@@ -286,6 +286,87 @@ describe('AuthService', () => {
     );
   });
 
+  it('should reissue session tokens after verifying email with a device id', async () => {
+    const token = 'email-verification-token';
+
+    redisServiceMock.get.mockResolvedValue('user-1');
+    accountsServiceMock.findOne.mockResolvedValue({
+      id: 'user-1',
+      email: 'new-user@example.com',
+      name: 'New User',
+      role: UserRole.USER,
+      status: UserStatus.UNVERIFIED,
+    });
+    prismaMock.accounts.update.mockResolvedValue({
+      id: 'user-1',
+      email: 'new-user@example.com',
+      name: 'New User',
+      role: UserRole.USER,
+      status: UserStatus.ACTIVE,
+    });
+    jwtMock.signAsync
+      .mockResolvedValueOnce('active-access-token')
+      .mockResolvedValueOnce('active-refresh-token');
+    prismaMock.sessions.upsert.mockResolvedValue({
+      userId: 'user-1',
+      deviceId: 'device-1',
+    });
+    redisServiceMock.del.mockResolvedValue(1);
+
+    await expect(
+      service.verifyEmail({
+        token,
+        deviceId: 'device-1',
+      }),
+    ).resolves.toEqual({
+      message: 'Email verified successfully',
+      data: {
+        accessToken: 'active-access-token',
+        refreshToken: 'active-refresh-token',
+      },
+    });
+    expect(jwtMock.signAsync).toHaveBeenNthCalledWith(
+      1,
+      {
+        sub: 'user-1',
+        role: UserRole.USER,
+        status: UserStatus.ACTIVE,
+        type: JwtTokenType.AccessToken,
+        deviceId: 'device-1',
+      },
+      { expiresIn: jwtConfigMock.accessTokenExpiresIn },
+    );
+    expect(jwtMock.signAsync).toHaveBeenNthCalledWith(
+      2,
+      {
+        sub: 'user-1',
+        role: UserRole.USER,
+        status: UserStatus.ACTIVE,
+        type: JwtTokenType.RefreshToken,
+        deviceId: 'device-1',
+      },
+      { expiresIn: jwtConfigMock.refreshTokenExpiresIn },
+    );
+    expect(prismaMock.sessions.upsert).toHaveBeenCalledWith({
+      where: {
+        userId_deviceId: {
+          userId: 'user-1',
+          deviceId: 'device-1',
+        },
+      },
+      update: expect.objectContaining({
+        refreshToken: expect.any(String),
+        isRevoked: false,
+      }),
+      create: expect.objectContaining({
+        userId: 'user-1',
+        deviceId: 'device-1',
+        deviceType: DeviceType.WEB,
+        refreshToken: expect.any(String),
+      }),
+    });
+  });
+
   it('should rotate verification email token on resend', async () => {
     (mockedUuidV4 as jest.Mock).mockReturnValueOnce('new-verification-token');
     const newHashedToken = createHash('sha256')

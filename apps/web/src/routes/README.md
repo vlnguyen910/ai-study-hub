@@ -55,7 +55,11 @@ Routes for user authentication:
 - RESET_PASSWORD (`/reset-password/:token`)
 - VERIFY_EMAIL (`/verify-email/:token`)
 
-**Behavior**: Should redirect to home if user is already authenticated.
+**Behavior**: Should redirect to home if user is already authenticated, except
+`VERIFY_EMAIL`. The verify-email route must stay reachable from a signed-in
+`UNVERIFIED` session so it can post the verification token, receive the fresh
+`ACTIVE` access token, and replace the stale auth state before the user
+continues.
 
 ### 3. Protected User Routes (`user/user.routes.ts`)
 

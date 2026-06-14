@@ -37,6 +37,9 @@ const matchesRouteSegment = (pathname: string, route: string): boolean => {
   return pathname === route || pathname.startsWith(`${route}/`);
 };
 
+const isVerifyEmailRoute = (pathname: string): boolean =>
+  pathname.startsWith("/verify-email/");
+
 const readStoredAuthState = (): StoredAuthState | null => {
   if (typeof window === "undefined") {
     return null;
@@ -68,7 +71,7 @@ export const canAccessRoute = (context: GuardContext): boolean => {
   }
 
   // Auth routes should only be accessed by unauthenticated users
-  if (isAuthRoute(pathname)) {
+  if (isAuthRoute(pathname) && !isVerifyEmailRoute(pathname)) {
     return !isAuthenticated;
   }
 
@@ -92,7 +95,11 @@ export const getAuthRedirect = (
   }
 
   // If authenticated and trying to access auth routes, redirect to home
-  if (isAuthenticated && isAuthRoute(pathname)) {
+  if (
+    isAuthenticated &&
+    isAuthRoute(pathname) &&
+    !isVerifyEmailRoute(pathname)
+  ) {
     return "/home";
   }
 

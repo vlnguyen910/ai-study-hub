@@ -41,13 +41,23 @@ describe("web auth api helpers", () => {
   });
 
   it("posts verification tokens as a token payload", async () => {
-    await expect(verifyEmail({ token: "verify-token" })).resolves.toEqual({
-      data: null,
+    clientMock.post.mockResolvedValue({
+      data: {
+        message: "ok",
+        data: { accessToken: "active-access-token" },
+      },
+    });
+
+    await expect(
+      verifyEmail({ token: "verify-token", deviceId: "device-1" }),
+    ).resolves.toEqual({
+      data: { accessToken: "active-access-token" },
       message: "ok",
     });
 
     expect(clientMock.post).toHaveBeenCalledWith("/api/v1/auth/verify-email", {
       token: "verify-token",
+      deviceId: "device-1",
     });
   });
 
