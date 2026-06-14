@@ -11,6 +11,7 @@ import { ROUTE_PATHS } from "@/routes/router.const";
 import { API_ENDPOINTS } from "@/shared/constants";
 import { useAuthStore } from "@/stores/auth/store";
 import { getOrCreateDeviceId } from "@/utils";
+import { getErrorMessage } from "@/utils/error";
 
 interface LoginModalProps {
   isOpen: boolean;
@@ -98,31 +99,32 @@ export default function LoginModal({
         email: formData.email,
       });
 
-      if (!accessToken)
-        throw new Error("Login succeeded but access token was missing.");
-      if (!user)
-        throw new Error("Login succeeded but token payload was invalid.");
+      if (!accessToken || !user) {
+        // Logged for debugging — never shown to the user as-is.
+        console.error(
+          "Login response missing access token or invalid payload:",
+          data,
+        );
+        setErrors((prev) => ({
+          ...prev,
+          general: "Đăng nhập thất bại. Vui lòng thử lại.",
+        }));
+        return;
+      }
 
       setAuth(accessToken, user.role, user, null);
       resetForm();
       onClose();
       router.push(ROUTE_PATHS.PROTECTED_ROUTES.HOME);
     } catch (error: unknown) {
-      const axiosError = error as { response?: { status?: number } };
-      if (axiosError?.response?.status === 401) {
-        setErrors((prev) => ({
-          ...prev,
-          general: "Email hoặc mật khẩu không đúng.",
-        }));
-      } else {
-        setErrors((prev) => ({
-          ...prev,
-          general:
-            error instanceof Error
-              ? error.message
-              : "Đăng nhập thất bại. Vui lòng thử lại.",
-        }));
-      }
+      // Logged for debugging — the user only ever sees a mapped message.
+      console.error("Login failed:", error);
+      setErrors((prev) => ({
+        ...prev,
+        general: getErrorMessage(error, {
+          401: "Email hoặc mật khẩu không đúng.",
+        }),
+      }));
     } finally {
       setIsLoading(false);
     }

@@ -18,12 +18,23 @@
  *
  * Subjects come from GET /api/v1/subjects (real API, not mock data).
  * "Trường học" is read-only — it is derived from the subject on the backend.
+ *
+ * Error handling:
+ *   - Client-side validation (missing file/title/config) uses fixed
+ *     messages from UPLOAD_ERROR_MESSAGES.
+ *   - Cloudinary upload failures use a fixed message — Cloudinary's raw
+ *     response body is logged via console.error but never shown.
+ *   - Backend (createDocument) errors are mapped via getErrorMessage(),
+ *     which translates the HTTP status code into a Vietnamese message.
+ *     Raw err.message from the backend is NEVER shown to the user.
  */
 
 import { useEffect, useState, useCallback } from "react";
 import { Button } from "@/components/ui/Button";
 import { InputField } from "@/components/ui/InputField";
 import { fetchSubjects, createDocument } from "@/apis/document.api";
+import { UPLOAD_ERROR_MESSAGES } from "@/constants/upload.const";
+import { getErrorMessage } from "@/utils/error";
 import type { Subject } from "@/types/document.type";
 import {
   buildCloudinaryUploadResult,
@@ -33,6 +44,12 @@ import {
 const CLOUD_NAME = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME ?? "ddxstobvd";
 const UPLOAD_PRESET = process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET ?? "";
 
+/**
+ * Uploads a file to Cloudinary using the unsigned preset.
+ * Throws a generic Error on failure — the caller maps it to
+ * UPLOAD_ERROR_MESSAGES.CLOUDINARY_UPLOAD_FAILED for the user
+ * and logs the raw response body for debugging.
+ */
 async function uploadToCloudinary(file: File): Promise<CloudinaryUploadResult> {
   const formData = new FormData();
   formData.append("file", file);
@@ -45,7 +62,8 @@ async function uploadToCloudinary(file: File): Promise<CloudinaryUploadResult> {
 
   if (!res.ok) {
     const body = await res.text();
-    throw new Error(`Cloudinary upload thất bại (${res.status}): ${body}`);
+    // Logged for debugging only — never surfaced to the user.
+    throw new Error(`Cloudinary upload failed (${res.status}): ${body}`);
   }
 
   const data = await res.json();
@@ -85,8 +103,9 @@ export function DocumentUploadForm({
   useEffect(() => {
     fetchSubjects(100)
       .then((res) => setSubjects(res.subjects))
-      .catch(() => {
-        /* non-critical — dropdown degrades gracefully to empty */
+      .catch((err) => {
+        // Non-critical — dropdown degrades gracefully to empty.
+        console.error("fetchSubjects failed:", err);
       })
       .finally(() => setSubjectsLoading(false));
   }, []);
@@ -100,15 +119,15 @@ export function DocumentUploadForm({
   const handleSubmit = useCallback(async () => {
     // Client-side guards
     if (!selectedFile) {
-      setSubmitError("Vui lòng chọn tệp tài liệu trước.");
+      setSubmitError(UPLOAD_ERROR_MESSAGES.MISSING_FILE);
       return;
     }
     if (!title.trim()) {
-      setSubmitError("Vui lòng nhập tên tài liệu.");
+      setSubmitError(UPLOAD_ERROR_MESSAGES.MISSING_TITLE);
       return;
     }
     if (!UPLOAD_PRESET) {
-      setSubmitError("Chưa cấu hình Cloudinary preset. Liên hệ quản trị viên.");
+      setSubmitError(UPLOAD_ERROR_MESSAGES.MISSING_UPLOAD_CONFIG);
       return;
     }
 
@@ -116,12 +135,20 @@ export function DocumentUploadForm({
     onSubmittingChange(true);
     setSubmitError(null);
 
+    // Phase 1 — upload file to Cloudinary
+    let cloudResult: CloudinaryUploadResult;
     try {
-      // Phase 1 — upload file to Cloudinary
-      const cloudResult = await uploadToCloudinary(selectedFile);
-      console.log("✅ Cloudinary done, isPublic =", isPublic);
+      cloudResult = await uploadToCloudinary(selectedFile);
+    } catch (err) {
+      console.error("Cloudinary upload failed:", err);
+      setSubmitError(UPLOAD_ERROR_MESSAGES.CLOUDINARY_UPLOAD_FAILED);
+      setIsSubmitting(false);
+      onSubmittingChange(false);
+      return;
+    }
 
-      // Phase 2 — create document record in the API
+    // Phase 2 — create document record in the API
+    try {
       await createDocument({
         title: title.trim(),
         description: description.trim() || undefined,
@@ -134,8 +161,6 @@ export function DocumentUploadForm({
         isPublic,
       });
 
-      console.log("✅ createDocument done");
-
       // Reset form on success
       setTitle("");
       setSubjectId("");
@@ -143,8 +168,14 @@ export function DocumentUploadForm({
       setIsPublic(false);
       onSuccess();
     } catch (err) {
+      // Logged for debugging — the user only sees a mapped message,
+      // never the raw backend error.
+      console.error("createDocument failed:", err);
       setSubmitError(
-        err instanceof Error ? err.message : "Đã xảy ra lỗi. Vui lòng thử lại.",
+        getErrorMessage(err, {
+          400: UPLOAD_ERROR_MESSAGES.CREATE_DOCUMENT_FAILED,
+          422: UPLOAD_ERROR_MESSAGES.CREATE_DOCUMENT_FAILED,
+        }),
       );
     } finally {
       setIsSubmitting(false);

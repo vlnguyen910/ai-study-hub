@@ -12,6 +12,7 @@ import { API_ENDPOINTS } from "@/shared/constants";
 import { useAuthStore } from "@/stores/auth/store";
 import type { UserRole } from "@/types";
 import { getOrCreateDeviceId } from "@/utils";
+import { getErrorMessage } from "@/utils/error";
 
 const getDefaultRedirectForRole = (role: UserRole): string => {
   if (role === "admin") {
@@ -77,9 +78,9 @@ export default function LoginPageClient(): ReactElement {
       router.replace(getSafeRedirect(searchParams.get("redirect"), user.role));
     } catch (error) {
       setErrorMessage(
-        error instanceof Error
-          ? error.message
-          : "Đăng nhập thất bại. Vui lòng thử lại.",
+        getErrorMessage(error, {
+          401: "Email hoặc mật khẩu không đúng.",
+        }),
       );
     } finally {
       setIsSubmitting(false);
