@@ -332,7 +332,7 @@ describe("web auth routing", () => {
     ).toBeInTheDocument();
     expect(screen.getByRole("link", { name: /Về trang chủ/i })).toHaveAttribute(
       "href",
-      "/",
+      "/home",
     );
     expect(
       screen.getByRole("link", { name: /Đăng nhập ngay/i }),
@@ -340,7 +340,7 @@ describe("web auth routing", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "Đóng màn hình" }));
 
-    expect(navigationMocks.router.replace).toHaveBeenCalledWith("/");
+    expect(navigationMocks.router.replace).toHaveBeenCalledWith("/home");
   });
 
   it("replaces the stale unverified token after email verification succeeds", async () => {
