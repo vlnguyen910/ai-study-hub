@@ -120,6 +120,48 @@ describe('AuthController', () => {
     });
   });
 
+  it('sets refresh token cookie and returns access token after email verification', async () => {
+    const response = createResponseMock();
+    authServiceMock.verifyEmail.mockResolvedValue({
+      message: 'Email verified successfully',
+      data: {
+        accessToken: 'active-access-token',
+        refreshToken: 'active-refresh-token',
+      },
+    });
+
+    await controller.verifyEmail(
+      {
+        token: 'email-verification-token',
+        deviceId: 'device-1',
+      },
+      response,
+    );
+
+    expect(authServiceMock.verifyEmail).toHaveBeenCalledWith({
+      token: 'email-verification-token',
+      deviceId: 'device-1',
+    });
+    expect(response.cookie).toHaveBeenCalledWith(
+      'refreshToken',
+      'active-refresh-token',
+      {
+        httpOnly: cookieConfigMock.httpOnly,
+        secure: cookieConfigMock.secure,
+        sameSite: cookieConfigMock.sameSite,
+        maxAge: cookieConfigMock.refreshTokenMaxAge,
+      },
+    );
+    expect(response.json).toHaveBeenCalledWith({
+      success: true,
+      statusCode: HttpStatus.OK,
+      message: 'Email verified successfully',
+      data: {
+        accessToken: 'active-access-token',
+      },
+    });
+  });
+
   it('should call resend verification email service with the authenticated user', async () => {
     const unverifiedUser: TokenPayload = {
       ...userPayload,

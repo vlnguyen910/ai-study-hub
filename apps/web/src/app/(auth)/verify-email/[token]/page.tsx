@@ -5,7 +5,10 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Check, CircleX, Home, LoaderCircle, LogIn, X } from "lucide-react";
 import type { ReactElement } from "react";
+import { buildUserFromAccessToken, extractAccessToken } from "@/lib/auth";
 import { verifyEmail } from "@/modules/auth-api";
+import { useAuthStore } from "@/stores/auth/store";
+import { getOrCreateDeviceId } from "@/utils";
 
 type VerifyEmailPageProps = {
   params: Promise<{
@@ -22,6 +25,8 @@ export default function VerifyEmailPage({
     "loading",
   );
   const [message, setMessage] = useState("Đang xác thực email của bạn...");
+  const setAuth = useAuthStore((state) => state.setAuth);
+  const setAccessToken = useAuthStore((state) => state.setAccessToken);
 
   useEffect(() => {
     let isMounted = true;
@@ -46,9 +51,23 @@ export default function VerifyEmailPage({
 
     let isMounted = true;
 
-    verifyEmail({ token })
+    verifyEmail({ token, deviceId: getOrCreateDeviceId() })
       .then((response) => {
         if (!isMounted) return;
+
+        const accessToken = extractAccessToken(response.data);
+        const currentUser = useAuthStore.getState().user;
+        const user = buildUserFromAccessToken(accessToken ?? undefined, {
+          email: currentUser?.email,
+          name: currentUser?.name,
+        });
+
+        if (accessToken && user) {
+          setAuth(accessToken, user.role, user, null);
+        } else if (accessToken) {
+          setAccessToken(accessToken);
+        }
+
         setState("success");
         setMessage(
           response.message ??
@@ -66,7 +85,7 @@ export default function VerifyEmailPage({
     return () => {
       isMounted = false;
     };
-  }, [token]);
+  }, [setAccessToken, setAuth, token]);
 
   const isSuccess = state === "success";
   const isError = state === "error";

@@ -54,6 +54,13 @@ $ pnpm run test
 $ pnpm run test:cov
 ```
 
+## Auth contract notes
+
+- `POST /api/v1/auth/signin` accepts `ACTIVE` and `UNVERIFIED` accounts. Web sign-in sets the HTTP-only `refreshToken` cookie and returns `data.accessToken`; Mobile sign-in returns both tokens in the response body.
+- `POST /api/v1/auth/verify-email` always accepts `{ token }` and activates the account when the verification token is valid.
+- Web clients should include `{ deviceId }` with verify-email when the user is already signed in. In that case the endpoint rotates a fresh `ACTIVE` access/refresh token pair for that device, stores the hashed refresh token on the session, sets the new `refreshToken` cookie, and returns only `data.accessToken` in the response body.
+- Verify-email calls without `deviceId` remain valid and return `data: null`; this keeps external-link verification and existing Mobile token-only calls compatible.
+
 ## Deployment
 
 When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.

@@ -13,6 +13,7 @@ export interface SignUpPayload {
 
 export interface VerifyEmailPayload {
   token: string;
+  deviceId?: string;
 }
 
 export interface ForgotPasswordPayload {

@@ -117,6 +117,7 @@ Bộ boilerplate mẫu đã được thêm sẵn để dev mới có thể tạo
 - Use EXPO_PUBLIC_API_URL for the API base URL.
 - Put API clients in src/services and feature-specific adapters in src/features/<domain>.
 - Keep state modules inside src/store and avoid cross-feature coupling.
+- Email verification still works with `{ token }`; pass `deviceId` only when a Mobile verify flow needs the backend to rotate a fresh session token after activation.
 
 ## Shared design tokens
 

@@ -73,8 +73,35 @@ export class AuthController {
   @Public()
   @HttpCode(HttpStatus.OK)
   @Post('verify-email')
-  verifyEmail(@Body() verifyEmailDto: VerifyEmailDto) {
-    return this.authService.verifyEmail(verifyEmailDto);
+  async verifyEmail(
+    @Body() verifyEmailDto: VerifyEmailDto,
+    @Res() res?: Response,
+  ) {
+    const result = await this.authService.verifyEmail(verifyEmailDto);
+
+    if (!res) {
+      return result;
+    }
+
+    if (result.data?.refreshToken) {
+      res.cookie('refreshToken', result.data.refreshToken, {
+        httpOnly: this.cookieConfig.httpOnly,
+        secure: this.cookieConfig.secure,
+        sameSite: this.cookieConfig.sameSite,
+        maxAge: this.cookieConfig.refreshTokenMaxAge,
+      });
+    }
+
+    return res.json({
+      success: true,
+      statusCode: HttpStatus.OK,
+      message: result.message,
+      data: result.data?.accessToken
+        ? {
+            accessToken: result.data.accessToken,
+          }
+        : result.data,
+    });
   }
 
   @Version('1')

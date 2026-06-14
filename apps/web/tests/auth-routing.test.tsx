@@ -342,4 +342,43 @@ describe("web auth routing", () => {
 
     expect(navigationMocks.router.replace).toHaveBeenCalledWith("/");
   });
+
+  it("replaces the stale unverified token after email verification succeeds", async () => {
+    useAuthStore.getState().setAuth(
+      makeAccessToken("USER", "UNVERIFIED"),
+      "student",
+      {
+        id: "user-1",
+        email: "student@example.com",
+        name: "Nguyen Student",
+        role: "student",
+        status: "UNVERIFIED",
+        createdAt: new Date("2026-06-08T00:00:00.000Z"),
+      },
+      null,
+    );
+    authApiMocks.verifyEmail.mockResolvedValue({
+      message: "Email đã được xác thực.",
+      data: {
+        accessToken: makeAccessToken("USER", "ACTIVE"),
+      },
+    });
+
+    render(
+      <VerifyEmailPage params={Promise.resolve({ token: "verify-token" })} />,
+    );
+
+    await screen.findByRole("heading", {
+      name: "Xác thực email thành công",
+    });
+
+    expect(authApiMocks.verifyEmail).toHaveBeenCalledWith({
+      token: "verify-token",
+      deviceId: expect.any(String),
+    });
+    expect(useAuthStore.getState().accessToken).toBe(
+      makeAccessToken("USER", "ACTIVE"),
+    );
+    expect(useAuthStore.getState().user?.status).toBe("ACTIVE");
+  });
 });
