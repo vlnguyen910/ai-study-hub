@@ -323,7 +323,7 @@ export default function ModeratorPostsPage(): React.JSX.Element {
               </p>
             </div>
             <button
-              className="rounded-lg border border-primary px-6 py-2 font-label-md text-label-md text-primary transition-colors hover:bg-primary-fixed"
+              className="rounded-lg border border-primary px-6 py-2 font-label-md text-label-md text-primary transition-colors hover:bg-primary/10"
               type="button"
             >
               Liên hệ Support

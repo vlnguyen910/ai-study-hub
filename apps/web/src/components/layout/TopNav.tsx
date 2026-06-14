@@ -10,7 +10,7 @@ export interface TopNavProps {
 
 export const TopNav: FC<TopNavProps> = ({ brandName, avatarUrl }) => {
   return (
-    <header className="bg-surface border-b border-outline-variant flex justify-between items-center w-full px-margin-desktop max-w-container-max mx-auto h-16 sticky top-0 z-50">
+    <header className="bg-surface border-b border-outline-variant flex justify-between items-center w-full px-margin-desktop max-w-container-max mx-auto h-16 sticky top-0 z-50 transition-colors duration-200">
       <div className="flex items-center gap-4">
         <span className="font-headline-md text-headline-md font-bold text-primary">
           {brandName}

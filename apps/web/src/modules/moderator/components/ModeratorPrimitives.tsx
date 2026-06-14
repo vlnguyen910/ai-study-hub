@@ -80,11 +80,11 @@ export function IconButton({
 }): React.JSX.Element {
   const className =
     tone === "primary"
-      ? "text-primary hover:bg-primary-fixed"
+      ? "text-primary hover:bg-primary/10"
       : tone === "error"
-        ? "text-error hover:bg-error-container"
+        ? "text-error hover:bg-error/10"
         : tone === "tertiary"
-          ? "text-tertiary hover:bg-tertiary-fixed"
+          ? "text-tertiary hover:bg-tertiary/10"
           : "text-on-surface-variant hover:bg-surface-container-high";
 
   if (href) {

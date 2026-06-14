@@ -199,7 +199,7 @@ export default function AdminDashboardPage(): React.JSX.Element {
           </div>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <Link
-              className="flex min-h-28 flex-col justify-between rounded border border-outline-variant bg-surface p-4 transition-colors hover:border-primary hover:bg-primary-fixed"
+              className="flex min-h-28 flex-col justify-between rounded border border-outline-variant bg-surface p-4 transition-colors hover:border-primary hover:bg-primary/10 hover:text-primary"
               href="/admin/users"
             >
               <MaterialIcon className="text-primary" name="person_add" />
@@ -208,7 +208,7 @@ export default function AdminDashboardPage(): React.JSX.Element {
               </span>
             </Link>
             <Link
-              className="flex min-h-28 flex-col justify-between rounded border border-outline-variant bg-surface p-4 transition-colors hover:border-primary hover:bg-primary-fixed"
+              className="flex min-h-28 flex-col justify-between rounded border border-outline-variant bg-surface p-4 transition-colors hover:border-primary hover:bg-primary/10 hover:text-primary"
               href="/admin/settings"
             >
               <MaterialIcon className="text-primary" name="security" />

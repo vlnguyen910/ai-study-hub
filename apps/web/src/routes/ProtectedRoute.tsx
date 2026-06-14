@@ -45,7 +45,7 @@ export const ProtectedRoute: FC<ProtectedRouteProps> = ({
 
     // Check authentication
     if (!isAuth) {
-      router.push(
+      router.replace(
         `/login?redirect=${encodeURIComponent(window.location.pathname)}`,
       );
       return;
@@ -60,7 +60,7 @@ export const ProtectedRoute: FC<ProtectedRouteProps> = ({
         requiredRoles: [requiredRole],
       })
     ) {
-      router.push(getRoleRedirect(role));
+      router.replace(getRoleRedirect(role));
       return;
     }
   }, [requiredRole, router]);

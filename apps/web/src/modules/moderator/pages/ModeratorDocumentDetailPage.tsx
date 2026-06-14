@@ -311,7 +311,7 @@ export default function ModeratorDocumentDetailPage({
                   Từ chối
                 </button>
                 <button
-                  className="flex items-center justify-center gap-2 rounded-lg bg-primary py-3 font-label-md text-label-md text-on-primary transition-colors hover:bg-on-primary-fixed-variant disabled:cursor-not-allowed disabled:opacity-60"
+                  className="flex items-center justify-center gap-2 rounded-lg bg-primary py-3 font-label-md text-label-md text-on-primary transition-colors hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-60"
                   disabled={!canReview || isSubmitting}
                   onClick={() => void handleApprove()}
                   type="button"
