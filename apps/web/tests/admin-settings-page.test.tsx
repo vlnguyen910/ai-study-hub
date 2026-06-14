@@ -57,12 +57,11 @@ describe("AdminSystemSettingsPage (single-page settings)", () => {
 
   // ── Rendering ───────────────────────────────────────────────────────────────
 
-  it("renders all three sections on the same page without nav tabs", () => {
+  it("renders both sections on the same page without nav tabs", () => {
     render(<AdminSystemSettingsPage />);
 
     expect(screen.getByText("Cài đặt")).toBeInTheDocument();
     // All sections visible simultaneously — no tab clicks needed
-    expect(screen.getByText("Chế độ tối")).toBeInTheDocument();
     expect(screen.getByText("Tiếng Việt")).toBeInTheDocument();
     expect(screen.getByText("Vùng nguy hiểm")).toBeInTheDocument();
   });
@@ -83,18 +82,6 @@ describe("AdminSystemSettingsPage (single-page settings)", () => {
       screen.queryByText("Cấu hình hệ thống chưa có API lưu thay đổi."),
     ).not.toBeInTheDocument();
     expect(screen.queryByText("Cấu hình chung")).not.toBeInTheDocument();
-  });
-
-  // ── Theme toggle ────────────────────────────────────────────────────────────
-
-  it("calls toggle when the dark mode switch is clicked", () => {
-    render(<AdminSystemSettingsPage />);
-
-    // Switch has no accessible name — scope to its row via the sibling label
-    const row = screen.getByText("Chế độ tối").parentElement!.parentElement!;
-    fireEvent.click(within(row).getByRole("button"));
-
-    expect(themeMock.toggle).toHaveBeenCalledOnce();
   });
 
   // ── Language selection ──────────────────────────────────────────────────────
