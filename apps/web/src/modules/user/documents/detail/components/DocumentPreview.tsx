@@ -79,14 +79,6 @@ export function DocumentPreview({ preview }: Props): React.JSX.Element {
 
           <span>{preview.type.toUpperCase()}</span>
         </div>
-
-        <div className="flex gap-3">
-          <span className="material-symbols-outlined">zoom_in</span>
-
-          <span className="material-symbols-outlined">zoom_out</span>
-
-          <span className="material-symbols-outlined">more_vert</span>
-        </div>
       </div>
 
       {/* Dynamic Preview */}
