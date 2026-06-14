@@ -1,7 +1,12 @@
-import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
-import { formatDate } from "@/utils";
+import { Button } from "@/components/ui/Button";
 import type { DocumentDetail } from "@/types/document.type";
+import { formatDate } from "@/utils";
+
+import {
+  buildCloudinaryDownloadUrl,
+  buildDownloadFileName,
+} from "../utils/document-download";
 
 interface Props {
   readonly document: DocumentDetail;
@@ -10,17 +15,15 @@ interface Props {
 /**
  * Page hero for the document detail view.
  * Renders the document title, author row, subject badge, upload date,
- * and action buttons (Download / Save).
- *
- * Stats (views, downloads, likes) are intentionally absent — the current
- * API's list/detail endpoints do not return engagement counters.
+ * and action buttons (Open document / Download / Save).
  */
 export function DocumentHero({ document }: Props): React.JSX.Element {
-  /**
-   * Avatar rendering strategy:
-   *  1. If the author has an avatarUrl from Cloudinary → show the image.
-   *  2. Otherwise → show the first character of their name as an initial.
-   */
+  const downloadUrl = buildCloudinaryDownloadUrl(document.fileUrl);
+  const downloadFileName = buildDownloadFileName(
+    document.title,
+    document.format,
+  );
+
   const avatarContent = document.author.avatarUrl ? (
     <img
       src={document.author.avatarUrl}
@@ -36,14 +39,12 @@ export function DocumentHero({ document }: Props): React.JSX.Element {
   return (
     <section className="rounded-2xl border border-outline-variant bg-surface p-6">
       <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
-        {/* ── Left: title + metadata ── */}
         <div className="space-y-4">
           <h1 className="max-w-3xl text-3xl font-bold leading-tight text-on-surface">
             {document.title}
           </h1>
 
           <div className="flex flex-wrap items-center gap-4 text-sm text-on-surface-variant">
-            {/* Author avatar + name */}
             <div className="flex items-center gap-3">
               <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary">
                 {avatarContent}
@@ -56,12 +57,10 @@ export function DocumentHero({ document }: Props): React.JSX.Element {
               </div>
             </div>
 
-            {/* Subject badge — shown only when the document belongs to a subject */}
             {document.subject ? (
               <Badge tone="neutral">{document.subject.name}</Badge>
             ) : null}
 
-            {/* Upload date */}
             <span className="flex items-center gap-1">
               <span className="material-symbols-outlined text-[16px]">
                 calendar_today
@@ -71,14 +70,19 @@ export function DocumentHero({ document }: Props): React.JSX.Element {
           </div>
         </div>
 
-        {/* ── Right: action buttons ── */}
-        <div className="flex shrink-0 gap-3">
-          {/*
-           * Download opens the Cloudinary fileUrl directly in a new tab.
-           * Cloudinary serves the original file with the appropriate Content-Type,
-           * so the browser will trigger a download for non-previewable formats.
-           */}
+        <div className="flex shrink-0 flex-wrap gap-3">
           <a href={document.fileUrl} target="_blank" rel="noopener noreferrer">
+            <Button variant="outline">
+              <span className="flex items-center gap-2">
+                <span className="material-symbols-outlined text-[18px]">
+                  open_in_new
+                </span>
+                Mở tài liệu
+              </span>
+            </Button>
+          </a>
+
+          <a href={downloadUrl} download={downloadFileName}>
             <Button variant="primary">
               <span className="flex items-center gap-2">
                 <span className="material-symbols-outlined text-[18px]">
