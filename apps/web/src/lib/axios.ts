@@ -55,7 +55,7 @@ const handleLogoutAndRedirectToLogin = () => {
     return;
   }
 
-  window.location.assign(
+  window.location.replace(
     getLoginRedirectHref(window.location.pathname, window.location.search),
   );
 };

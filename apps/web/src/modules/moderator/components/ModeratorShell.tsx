@@ -32,7 +32,7 @@ export function ModeratorShell({
   );
 
   return (
-    <div className="min-h-screen bg-background text-on-surface">
+    <div className="min-h-screen bg-background text-foreground">
       <SideNav
         title="Moderator Portal"
         subtitle="Cổng kiểm duyệt"
