@@ -7,7 +7,7 @@ export interface FooterProps {
 
 export const Footer: FC<FooterProps> = ({ brandText }) => {
   return (
-    <footer className="w-full py-8 px-margin-desktop border-t border-outline-variant bg-surface flex flex-col md:flex-row justify-between items-center max-w-container-max mx-auto mt-auto">
+    <footer className="w-full py-8 px-margin-desktop border-t border-outline-variant bg-surface flex flex-col md:flex-row justify-between items-center max-w-container-max mx-auto mt-auto transition-colors duration-200">
       <div className="font-label-md text-label-md font-bold text-primary mb-4 md:mb-0">
         {brandText}
       </div>

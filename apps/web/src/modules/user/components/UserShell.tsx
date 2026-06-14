@@ -94,7 +94,7 @@ export const UserShell: FC<UserShellProps> = ({
   const isUnverified = user?.status === "UNVERIFIED";
 
   return (
-    <div className="min-h-screen bg-background text-on-surface">
+    <div className="min-h-screen bg-background text-foreground">
       <SideNav
         title={title}
         subtitle={subtitle}

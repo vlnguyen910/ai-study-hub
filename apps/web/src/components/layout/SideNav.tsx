@@ -3,8 +3,9 @@
 import { SideNavItem } from "@/types/sideNav";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState, type FC, type ReactNode } from "react";
+import { useState, useEffect, type FC, type ReactNode } from "react";
 import { Logo } from "../ui/Logo";
+import { useThemeStore } from "@/stores";
 
 export interface SideNavProps {
   readonly title: string;
@@ -33,9 +34,47 @@ export const SideNav: FC<SideNavProps> = ({
 }: SideNavProps) => {
   const pathname = usePathname();
   const [isOpen, setIsOpen] = useState(false);
+  const { theme, toggleTheme } = useThemeStore();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const mainItems = items.filter((item) => item.section === "main");
   const secondaryItems = items.filter((item) => item.section === "secondary");
+
+  const renderThemeToggle = () => {
+    if (!mounted) return null;
+    return (
+      <div className="flex items-center justify-between rounded-2xl border border-outline-variant bg-surface-container-low/50 px-4 py-3 transition-colors duration-200">
+        <div className="flex items-center gap-3">
+          <span className="material-symbols-outlined text-lg text-on-surface-variant">
+            {theme === "dark" ? "dark_mode" : "light_mode"}
+          </span>
+        </div>
+        <button
+          type="button"
+          role="switch"
+          aria-checked={theme === "dark"}
+          aria-label="Chế độ tối"
+          onClick={toggleTheme}
+          className={`
+            relative h-6 w-11 shrink-0 rounded-full transition-colors duration-200 cursor-pointer
+            ${theme === "dark" ? "bg-primary" : "bg-outline-variant"}
+          `}
+        >
+          <span
+            className={`
+              pointer-events-none absolute top-0.5 left-0.5 h-5 w-5 rounded-full
+              bg-white shadow-sm transition-transform duration-200
+              ${theme === "dark" ? "translate-x-5" : "translate-x-0"}
+            `}
+          />
+        </button>
+      </div>
+    );
+  };
 
   const renderNavItem = (item: SideNavItem) => {
     const isActive =
@@ -85,7 +124,7 @@ export const SideNav: FC<SideNavProps> = ({
 
   return (
     <>
-      <div className="lg:hidden border-b border-outline-variant bg-surface-container-high/95 px-4 py-3 backdrop-blur-xl">
+      <div className="lg:hidden border-b border-outline-variant bg-surface-container-high/95 px-4 py-3 backdrop-blur-xl transition-all duration-200">
         <div className="flex items-center justify-between">
           <Logo />
           <button
@@ -147,6 +186,8 @@ export const SideNav: FC<SideNavProps> = ({
           </div>
         </div>
 
+        <div className="mt-6">{renderThemeToggle()}</div>
+
         {footerContent ? <div className="mt-6">{footerContent}</div> : null}
       </aside>
 
@@ -185,6 +226,8 @@ export const SideNav: FC<SideNavProps> = ({
                 {secondaryItems.map(renderNavItem)}
               </div>
             ) : null}
+
+            <div className="mt-6">{renderThemeToggle()}</div>
 
             {footerContent ? (
               <div className="mt-6 border-t border-outline-variant pt-6">
