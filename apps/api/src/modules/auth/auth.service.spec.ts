@@ -263,6 +263,7 @@ describe('AuthService', () => {
     await expect(
       service.verifyEmail({
         token,
+        deviceType: DeviceType.WEB,
       }),
     ).resolves.toEqual({
       message: 'Email verified successfully',
@@ -317,6 +318,7 @@ describe('AuthService', () => {
       service.verifyEmail({
         token,
         deviceId: 'device-1',
+        deviceType: DeviceType.WEB,
       }),
     ).resolves.toEqual({
       message: 'Email verified successfully',
