@@ -49,7 +49,11 @@ describe("web auth api helpers", () => {
     });
 
     await expect(
-      verifyEmail({ token: "verify-token", deviceId: "device-1" }),
+      verifyEmail({
+        token: "verify-token",
+        deviceId: "device-1",
+        deviceType: "WEB",
+      }),
     ).resolves.toEqual({
       data: { accessToken: "active-access-token" },
       message: "ok",
@@ -58,6 +62,7 @@ describe("web auth api helpers", () => {
     expect(clientMock.post).toHaveBeenCalledWith("/api/v1/auth/verify-email", {
       token: "verify-token",
       deviceId: "device-1",
+      deviceType: "WEB",
     });
   });
 

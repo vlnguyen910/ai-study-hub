@@ -1,6 +1,6 @@
 # AI Study Hub - Next Tasks
 
-Updated: 2026-06-12
+Updated: 2026-06-15
 
 ## Current Position
 
@@ -9,7 +9,7 @@ The project is currently in **Phase 4 completion / Admin MVP hardening readiness
 - API auth/account/subject/document metadata is mostly implemented.
 - Admin-only API controller ownership has been split into `AdminModule` while keeping current `/accounts` and `/subjects` route contracts.
 - Web document, Admin dashboard summary, Admin Users, and moderator review flows use real APIs; Admin settings remains UI-only/deferred because no settings API exists yet.
-- Mobile auth now has token persistence, refresh retry, and forgot/reset password flow; several document/profile/moderator screens still remain template/mock.
+- Mobile auth now has token persistence, refresh retry, forgot/reset password flow, and device-aware verify-email request handling; several document/profile/moderator screens still remain template/mock.
 - Dedicated moderation approve/reject endpoints are implemented.
 - File upload/download and AI/RAG phases are not ready to start yet.
 
@@ -94,12 +94,12 @@ The API now has a dedicated `AdminModule` for admin-only controller ownership:
 ## Priority 4 - Auth Client Completion
 
 - [x] Align Web signin/refresh/logout with access-token body and refresh-token cookie strategy.
-- [ ] Ensure Web verify-email token route posts `{ token }` to `/auth/verify-email`.
+- [x] Ensure Web and Mobile verify-email routes post device-aware payloads to `/auth/verify-email`.
 - [x] Ensure Web resend verification uses `/auth/resend-verification-email` from the logged-in access-token session.
 - [x] Mobile: add reset-password flow for reset-token links.
 - [x] Mobile: add refresh-token flow and token persistence strategy.
 - [x] Mobile: define and implement resend verification contract for logged-in unverified users.
-- [x] Add regression tests for Web auth helpers and Mobile auth service.
+- [x] Add regression tests for Web auth helpers, Mobile auth service, and mobile auth storage.
 
 ## Priority 5 - Prepare Phase 5 File Upload
 
@@ -129,6 +129,6 @@ Do not start implementation until file upload and document lifecycle are stable.
 
 ## Recommended Next Sprint
 
-1. Complete Web verify-email route polish after token-link UX review.
-2. Define Admin settings backend contract if system configuration becomes part of MVP.
+1. Define Admin settings backend contract if system configuration becomes part of MVP.
+2. Audit remaining Mobile template screens against the current API contracts.
 3. Run focused API/Web/Mobile auth regression tests after each auth contract change.

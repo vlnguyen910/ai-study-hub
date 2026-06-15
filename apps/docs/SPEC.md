@@ -23,16 +23,16 @@ AI Study Hub là nền tảng quản lý và chia sẻ tài liệu học tập c
 
 ### Current Implementation Snapshot
 
-Spec này đã được đối chiếu với codebase hiện tại ngày 2026-06-13.
+Spec này đã được đối chiếu với codebase hiện tại ngày 2026-06-15.
 
 - API: NestJS, Prisma MongoDB, Redis, JWT, refresh token session, role guard, response interceptor, exception filter.
 - API Admin boundary: `AdminModule` owns admin-only account routes, subject mutation routes, and `GET /admin/dashboard`; account and subject route URLs remain backward compatible.
 - Auth: signup tạo account `UNVERIFIED`, gửi link verify email bằng token Redis SHA-256; signin cấp session/token cho `ACTIVE` và `UNVERIFIED`, trong đó `UNVERIFIED` chỉ có phiên hạn chế; Web/Mobile redirect về login sau signup để người dùng đăng nhập thủ công; forgot/reset/change password đã có backend.
 - Mail: `MailModule` dùng Nodemailer SMTP qua cấu hình `MAILTRAP_SMTP_*`; khi thiếu SMTP credentials thì log link trong development hoặc bỏ qua gửi mail ở môi trường khác.
 - Database: MongoDB qua Prisma với models `accounts`, `sessions`, `schools`, `subjects`, `documents`; Redis dùng cho token/cooldown của email verification và password recovery.
-- Web: Next.js App Router, route groups cho auth/app/admin/moderator, shared UI components, Zustand auth store, Axios clients. Auth helpers, public/user document helpers, Admin dashboard summary cards, Admin Users và Moderator document review đã dùng API thật; Admin settings vẫn là UI-only/deferred vì chưa có backend contract.
-- Mobile: Expo Router, NativeWind, auth service đã gọi `/api/v1/auth/mobile-signin`, lưu access/refresh token bằng SecureStore, tự refresh access token khi API trả `401`, và có forgot/reset password flow bằng reset-token link; document service mới có create metadata cơ bản; nhiều màn hình document/profile/moderator vẫn là template/mock.
-- Current phase: API đã hoàn thành Phase 4 moderation cơ bản, đã tách boundary `AdminModule` cho Admin MVP hardening, và Web/Mobile auth client đã align với token contract hiện tại; Product tổng thể chưa đạt Current MVP DoD vì Admin settings và một số Mobile screens còn mock/template.
+- Web: Next.js App Router, route groups cho auth/app/admin/moderator, shared UI components, Zustand auth store, Axios clients. Auth helpers, public/user document helpers, Admin dashboard summary cards, Admin Users và Moderator document review đã dùng API thật; verify-email route hiện gửi `deviceId` + `deviceType = WEB` để có thể reissue session trên chính device, còn Admin settings vẫn là UI-only/deferred vì chưa có backend contract.
+- Mobile: Expo Router, NativeWind, auth service đã gọi `/api/v1/auth/mobile-signin`, lưu access/refresh token bằng SecureStore, tự refresh access token khi API trả `401`, và có forgot/reset password flow bằng reset-token link; verify-email screen hiện gửi `deviceType = MOBILE`; document service mới có create metadata cơ bản; nhiều màn hình document/profile/moderator vẫn là template/mock.
+- Current phase: API đã hoàn thành Phase 4 moderation cơ bản, đã tách boundary `AdminModule` cho Admin MVP hardening, và Web/Mobile auth client đã align với token contract hiện tại cùng luồng verify-email device-aware; Product tổng thể chưa đạt Current MVP DoD vì Admin settings và một số Mobile screens còn mock/template.
 - Chưa có: binary file upload, Cloudinary/storage integration, download endpoint/count, full-text/tag search, AI extraction/summary/keywords/chat/quiz/duplicate detection.
 
 ---
@@ -46,7 +46,7 @@ Spec này đã được đối chiếu với codebase hiện tại ngày 2026-06
 - Register bằng email, name, password, avatarUrl tùy chọn; account mới mặc định `UNVERIFIED`.
 - Gửi verification link sau register; raw token chỉ dùng để gửi email/link.
 - Lưu verification token trong Redis theo key chứa SHA-256 hash của token.
-- Verify email bằng `{ token }` để chuyển account `UNVERIFIED` sang `ACTIVE`.
+- Verify email bằng `{ token }` để chuyển account `UNVERIFIED` sang `ACTIVE`; khi client gửi thêm `deviceId` và `deviceType`, backend reissue session cho device đó.
 - Resend verification email cho account `UNVERIFIED` qua phiên đăng nhập thường.
 - Signin cấp token/session cho account `ACTIVE` và `UNVERIFIED`; `UNVERIFIED` bị chặn ở các chức năng tiêu tốn tài nguyên cho đến khi verify email.
 - Web/Mobile signup flow không tạo session tự động; client điều hướng về login sau khi backend tạo account thành công.
@@ -402,15 +402,18 @@ Verifies a newly registered account email.
 Request body:
 
 - `token`
+- `deviceId`: optional, dùng để reissue session cho device hiện tại.
+- `deviceType`: optional, mặc định `WEB`.
 
 Behavior:
 
 - Hashes the submitted token with SHA-256 and looks up the subject in Redis.
 - Rejects invalid, expired, already active, or non-`UNVERIFIED` accounts.
 - Updates account status from `UNVERIFIED` to `ACTIVE`.
+- When `deviceId` is supplied, rotates the verified session for that `deviceType` and returns a fresh `accessToken`; the refresh token is still persisted in the HTTP-only cookie path used by Web.
 - Invalidates token, subject lookup, and cooldown state after success.
 - Clears any legacy `accessToken` cookie.
-- Returns success message and `data: null`.
+- Returns success message and `data: null` when no device session is requested.
 
 ### `POST /auth/resend-verification-email`
 
@@ -916,7 +919,7 @@ Current status: API implemented. Web refresh uses the HTTP-only refresh-token co
 
 ### US-006 Email Verification
 
-Current status: Implemented in API/Web/Mobile direction with token link, SHA-256 hashed Redis token keys, logged-in resend, and limited sessions for `UNVERIFIED` accounts.
+Current status: Implemented in API/Web/Mobile direction with token link, SHA-256 hashed Redis token keys, logged-in resend, limited sessions for `UNVERIFIED` accounts, and device-aware session reissue on verify for the current client device.
 
 ### US-007 Password Recovery
 

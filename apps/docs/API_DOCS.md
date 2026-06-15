@@ -272,9 +272,11 @@ Base path: `/api/v1/auth`
 
 #### Request Body
 
-| Field   | Type   | Required | Validation       |
-| ------- | ------ | -------- | ---------------- |
-| `token` | string | yes      | non-empty string |
+| Field        | Type   | Required | Validation                           |
+| ------------ | ------ | -------- | ------------------------------------ |
+| `token`      | string | yes      | non-empty string                     |
+| `deviceId`   | string | no       | non-empty string                     |
+| `deviceType` | enum   | no       | `WEB` or `MOBILE`; defaults to `WEB` |
 
 #### Response Body
 
@@ -286,6 +288,9 @@ Base path: `/api/v1/auth`
   "data": null
 }
 ```
+
+- When `deviceId` is omitted, `data` is `null`.
+- When `deviceId` is provided, the backend reissues the verified session for that device, returns the fresh `accessToken` in `data`, and keeps the refresh token in the HTTP-only cookie path used by Web clients.
 
 ### `POST /resend-verification-email`
 

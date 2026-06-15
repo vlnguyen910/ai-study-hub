@@ -156,8 +156,9 @@ export class AuthService {
     );
 
     const deviceId = verifyEmailDto.deviceId?.trim();
+    const deviceType = verifyEmailDto.deviceType ?? DeviceType.WEB;
     const tokens = deviceId
-      ? await this.rotateVerifiedSession(activatedAccount, deviceId)
+      ? await this.rotateVerifiedSession(activatedAccount, deviceId, deviceType)
       : null;
 
     return {
@@ -498,7 +499,11 @@ export class AuthService {
     return { accessToken, refreshToken };
   }
 
-  private async rotateVerifiedSession(account: accounts, deviceId: string) {
+  private async rotateVerifiedSession(
+    account: accounts,
+    deviceId: string,
+    deviceType: DeviceType,
+  ) {
     const tokens = await this.manageUserToken(account, deviceId);
     const hashedRefreshToken = await argon2.hash(tokens.refreshToken);
 
@@ -511,6 +516,7 @@ export class AuthService {
       },
       update: {
         refreshToken: hashedRefreshToken,
+        deviceType,
         expiresAt: this.getExpiryDate(this.jwtConfig.refreshTokenExpiresIn),
         isRevoked: false,
       },
@@ -518,7 +524,7 @@ export class AuthService {
         userId: account.id,
         refreshToken: hashedRefreshToken,
         deviceId,
-        deviceType: DeviceType.WEB,
+        deviceType,
         expiresAt: this.getExpiryDate(this.jwtConfig.refreshTokenExpiresIn),
       },
     });

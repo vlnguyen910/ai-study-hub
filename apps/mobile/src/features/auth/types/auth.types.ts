@@ -11,9 +11,12 @@ export interface SignUpPayload {
   avatarUrl?: string;
 }
 
+export type AuthDeviceType = "WEB" | "MOBILE";
+
 export interface VerifyEmailPayload {
   token: string;
   deviceId?: string;
+  deviceType?: AuthDeviceType;
 }
 
 export interface ForgotPasswordPayload {

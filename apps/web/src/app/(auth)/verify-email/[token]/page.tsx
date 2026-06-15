@@ -51,7 +51,11 @@ export default function VerifyEmailPage({
 
     let isMounted = true;
 
-    verifyEmail({ token, deviceId: getOrCreateDeviceId() })
+    verifyEmail({
+      token,
+      deviceId: getOrCreateDeviceId(),
+      deviceType: "WEB",
+    })
       .then((response) => {
         if (!isMounted) return;
 
