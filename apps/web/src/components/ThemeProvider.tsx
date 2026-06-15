@@ -20,15 +20,45 @@ export function ThemeProvider({
 
     const root = document.documentElement;
 
-    // Check before editing DOM to prevent redundant layout reflows
-    if (!root.classList.contains(theme)) {
-      root.classList.remove("light", "dark");
-      root.classList.add(theme);
-    }
+    const applyTheme = (currentTheme: typeof theme) => {
+      // Set the active data theme option attribute
+      root.setAttribute("data-theme-option", currentTheme);
 
-    if (root.style.colorScheme !== theme) {
-      root.style.colorScheme = theme;
-    }
+      let resolvedTheme: "light" | "dark";
+      if (currentTheme === "system") {
+        resolvedTheme = window.matchMedia("(prefers-color-scheme: dark)")
+          .matches
+          ? "dark"
+          : "light";
+      } else {
+        resolvedTheme = currentTheme;
+      }
+
+      // Check before editing DOM to prevent redundant layout reflows
+      if (!root.classList.contains(resolvedTheme)) {
+        root.classList.remove("light", "dark");
+        root.classList.add(resolvedTheme);
+      }
+
+      if (root.style.colorScheme !== resolvedTheme) {
+        root.style.colorScheme = resolvedTheme;
+      }
+    };
+
+    applyTheme(theme);
+
+    if (theme !== "system") return;
+
+    // Listen for system changes when theme option is set to system
+    const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
+    const handleChange = () => {
+      applyTheme("system");
+    };
+
+    mediaQuery.addEventListener("change", handleChange);
+    return () => {
+      mediaQuery.removeEventListener("change", handleChange);
+    };
   }, [theme, hasHydrated]);
 
   return <>{children}</>;
