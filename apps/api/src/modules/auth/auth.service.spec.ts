@@ -355,6 +355,7 @@ describe('AuthService', () => {
         },
       },
       update: expect.objectContaining({
+        deviceType: DeviceType.WEB,
         refreshToken: expect.any(String),
         isRevoked: false,
       }),
@@ -362,6 +363,68 @@ describe('AuthService', () => {
         userId: 'user-1',
         deviceId: 'device-1',
         deviceType: DeviceType.WEB,
+        refreshToken: expect.any(String),
+      }),
+    });
+  });
+
+  it('should persist a mobile device type when verifying email on mobile', async () => {
+    const token = 'email-verification-token';
+
+    redisServiceMock.get.mockResolvedValue('user-1');
+    accountsServiceMock.findOne.mockResolvedValue({
+      id: 'user-1',
+      email: 'new-user@example.com',
+      name: 'New User',
+      role: UserRole.USER,
+      status: UserStatus.UNVERIFIED,
+    });
+    prismaMock.accounts.update.mockResolvedValue({
+      id: 'user-1',
+      email: 'new-user@example.com',
+      name: 'New User',
+      role: UserRole.USER,
+      status: UserStatus.ACTIVE,
+    });
+    jwtMock.signAsync
+      .mockResolvedValueOnce('mobile-access-token')
+      .mockResolvedValueOnce('mobile-refresh-token');
+    prismaMock.sessions.upsert.mockResolvedValue({
+      userId: 'user-1',
+      deviceId: 'device-mobile',
+    });
+    redisServiceMock.del.mockResolvedValue(1);
+
+    await expect(
+      service.verifyEmail({
+        token,
+        deviceId: 'device-mobile',
+        deviceType: DeviceType.MOBILE,
+      }),
+    ).resolves.toEqual({
+      message: 'Email verified successfully',
+      data: {
+        accessToken: 'mobile-access-token',
+        refreshToken: 'mobile-refresh-token',
+      },
+    });
+
+    expect(prismaMock.sessions.upsert).toHaveBeenCalledWith({
+      where: {
+        userId_deviceId: {
+          userId: 'user-1',
+          deviceId: 'device-mobile',
+        },
+      },
+      update: expect.objectContaining({
+        deviceType: DeviceType.MOBILE,
+        refreshToken: expect.any(String),
+        isRevoked: false,
+      }),
+      create: expect.objectContaining({
+        userId: 'user-1',
+        deviceId: 'device-mobile',
+        deviceType: DeviceType.MOBILE,
         refreshToken: expect.any(String),
       }),
     });

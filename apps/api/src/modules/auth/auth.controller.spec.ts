@@ -110,6 +110,7 @@ describe('AuthController', () => {
     await expect(
       controller.verifyEmail({
         token: 'email-verification-token',
+        deviceType: DeviceType.WEB,
       }),
     ).resolves.toEqual({
       message: 'Email verified successfully',
@@ -117,6 +118,7 @@ describe('AuthController', () => {
     });
     expect(authServiceMock.verifyEmail).toHaveBeenCalledWith({
       token: 'email-verification-token',
+      deviceType: DeviceType.WEB,
     });
   });
 
@@ -134,6 +136,7 @@ describe('AuthController', () => {
       {
         token: 'email-verification-token',
         deviceId: 'device-1',
+        deviceType: DeviceType.MOBILE,
       },
       response,
     );
@@ -141,6 +144,7 @@ describe('AuthController', () => {
     expect(authServiceMock.verifyEmail).toHaveBeenCalledWith({
       token: 'email-verification-token',
       deviceId: 'device-1',
+      deviceType: DeviceType.MOBILE,
     });
     expect(response.cookie).toHaveBeenCalledWith(
       'refreshToken',

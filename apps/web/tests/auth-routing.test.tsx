@@ -375,6 +375,7 @@ describe("web auth routing", () => {
     expect(authApiMocks.verifyEmail).toHaveBeenCalledWith({
       token: "verify-token",
       deviceId: expect.any(String),
+      deviceType: "WEB",
     });
     expect(useAuthStore.getState().accessToken).toBe(
       makeAccessToken("USER", "ACTIVE"),

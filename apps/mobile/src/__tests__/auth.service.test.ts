@@ -53,7 +53,10 @@ describe("auth.service", () => {
       },
       client,
     );
-    await verifyEmailService({ token: "verify-token" }, client);
+    await verifyEmailService(
+      { token: "verify-token", deviceType: "MOBILE" },
+      client,
+    );
     await resendVerificationEmailService(client);
     await forgotPasswordService({ email: "student@example.com" }, client);
     await resetPasswordService(
@@ -69,6 +72,7 @@ describe("auth.service", () => {
     });
     expect(client.post).toHaveBeenCalledWith("/api/v1/auth/verify-email", {
       token: "verify-token",
+      deviceType: "MOBILE",
     });
     expect(client.post).toHaveBeenCalledWith(
       "/api/v1/auth/resend-verification-email",

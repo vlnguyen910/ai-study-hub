@@ -47,6 +47,8 @@ const unwrap = <T>(response: unknown): ApiEnvelope<T> => {
   return isApiEnvelope<T>(payload) ? payload : { data: payload as T };
 };
 
+type AuthDeviceType = "WEB" | "MOBILE";
+
 const getErrorMessage = (error: unknown, fallback: string) => {
   if (axios.isAxiosError(error)) {
     const data = error.response?.data as { message?: string } | undefined;
@@ -85,6 +87,7 @@ export const signin = async (payload: {
 export const verifyEmail = async (payload: {
   token: string;
   deviceId?: string;
+  deviceType?: AuthDeviceType;
 }) => {
   try {
     return unwrap<{ accessToken?: string } | null>(

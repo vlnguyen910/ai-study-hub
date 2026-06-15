@@ -31,7 +31,7 @@ export function AuthVerifyEmailScreen() {
       setIsVerifying(true);
 
       try {
-        await verifyEmailService({ token });
+        await verifyEmailService({ token, deviceType: "MOBILE" });
         setVerificationMessage("Email đã được xác thực.");
         Alert.alert("Thành công", "Email đã được xác thực.", [
           {
@@ -70,7 +70,7 @@ export function AuthVerifyEmailScreen() {
     setIsVerifying(true);
 
     try {
-      await verifyEmailService({ token });
+      await verifyEmailService({ token, deviceType: "MOBILE" });
       Alert.alert("Thành công", "Email đã được xác thực.", [
         {
           text: "Đăng nhập",
