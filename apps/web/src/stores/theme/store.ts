@@ -1,7 +1,7 @@
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
 
-export type Theme = "light" | "dark";
+export type Theme = "light" | "dark" | "system";
 
 interface ThemeState {
   theme: Theme;
@@ -19,11 +19,19 @@ interface ThemeState {
 export const useThemeStore = create<ThemeState>()(
   persist(
     (set, get) => ({
-      theme: "light", // Default fallback; overridden by persisted state on hydration
+      theme: "system", // Default fallback; overridden by persisted state on hydration
       hasHydrated: false,
 
       toggleTheme: () => {
-        const next = get().theme === "light" ? "dark" : "light";
+        const current = get().theme;
+        let next: Theme;
+        if (current === "light") {
+          next = "dark";
+        } else if (current === "dark") {
+          next = "system";
+        } else {
+          next = "light";
+        }
         set({ theme: next });
       },
 

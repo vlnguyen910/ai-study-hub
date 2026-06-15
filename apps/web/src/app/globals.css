@@ -304,3 +304,46 @@ body {
     @apply font-sans;
   }
 }
+
+/* Theme toggle transitions */
+.theme-toggle-sun,
+.theme-toggle-moon,
+.theme-toggle-laptop {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Default state / Fallback light mode if no attribute */
+html:not([data-theme-option]) .theme-toggle-sun,
+html[data-theme-option="light"] .theme-toggle-sun {
+  transform: rotate(0deg) scale(1);
+  opacity: 1;
+}
+html:not([data-theme-option]) .theme-toggle-moon,
+html:not([data-theme-option]) .theme-toggle-laptop,
+html[data-theme-option="light"] .theme-toggle-moon,
+html[data-theme-option="light"] .theme-toggle-laptop {
+  transform: rotate(-90deg) scale(0);
+  opacity: 0;
+}
+
+/* Dark theme active */
+html[data-theme-option="dark"] .theme-toggle-moon {
+  transform: rotate(0deg) scale(1);
+  opacity: 1;
+}
+html[data-theme-option="dark"] .theme-toggle-sun,
+html[data-theme-option="dark"] .theme-toggle-laptop {
+  transform: rotate(90deg) scale(0);
+  opacity: 0;
+}
+
+/* System theme active */
+html[data-theme-option="system"] .theme-toggle-laptop {
+  transform: rotate(0deg) scale(1);
+  opacity: 1;
+}
+html[data-theme-option="system"] .theme-toggle-sun,
+html[data-theme-option="system"] .theme-toggle-moon {
+  transform: rotate(90deg) scale(0);
+  opacity: 0;
+}

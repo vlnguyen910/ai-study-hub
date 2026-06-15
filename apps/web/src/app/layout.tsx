@@ -39,9 +39,10 @@ export default function RootLayout({
           dangerouslySetInnerHTML={{
             __html: `
               try {
-                const theme = JSON.parse(localStorage.getItem('theme-storage'))?.state?.theme;
+                const theme = JSON.parse(localStorage.getItem('theme-storage'))?.state?.theme || 'system';
+                document.documentElement.setAttribute('data-theme-option', theme);
                 const systemDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-                if (theme === 'dark' || (!theme && systemDark)) {
+                if (theme === 'dark' || (theme === 'system' && systemDark)) {
                   document.documentElement.classList.add('dark');
                   document.documentElement.style.colorScheme = 'dark';
                 } else {
