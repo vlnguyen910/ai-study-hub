@@ -40,6 +40,7 @@ export class DocumentsService {
     isPublic: true,
     createdAt: true,
     updatedAt: true,
+    rejectionReason: true,
     author: {
       select: {
         id: true,

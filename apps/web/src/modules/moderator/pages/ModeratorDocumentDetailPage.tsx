@@ -1,16 +1,20 @@
 "use client";
 
+import { useCallback, useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import Link from "next/link";
+import { toast } from "sonner";
+
 import {
   approveDocument,
   fetchDocumentDetail,
   rejectDocument,
 } from "@/apis/document.api";
-import type { DocumentStatus, DocumentDetail } from "@/types/document.type";
+import type { DocumentDetail, DocumentStatus } from "@/types/document.type";
 import { formatDate } from "@/utils";
-import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useState } from "react";
-import { toast } from "sonner";
+import { DocumentPreview } from "@/modules/user/documents/detail/components/DocumentPreview";
+import type { DocumentPreviewData } from "@/modules/user/documents/detail/type";
+import { loadDocumentPreview } from "@/modules/user/documents/detail/utils/document-preview";
 
 import {
   EmptyState,
@@ -18,9 +22,7 @@ import {
   ModeratorBadge,
   ModeratorCard,
 } from "../components/ModeratorPrimitives";
-import { DocumentPreview } from "@/modules/user/documents/detail/components/DocumentPreview";
-import type { DocumentPreviewData } from "@/modules/user/documents/detail/type";
-import { loadDocumentPreview } from "@/modules/user/documents/detail/utils/document-preview";
+import { RejectDocumentModal } from "../components/RejectDocumentModal";
 
 const statusLabelMap: Record<DocumentStatus, string> = {
   PENDING: "Chờ duyệt",
@@ -61,11 +63,11 @@ export default function ModeratorDocumentDetailPage({
 }): React.JSX.Element {
   const router = useRouter();
   const [document, setDocument] = useState<DocumentDetail | null>(null);
-  const [note, setNote] = useState("");
   const [preview, setPreview] = useState<DocumentPreviewData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isRejecting, setIsRejecting] = useState(false);
 
   const loadDocument = useCallback(async () => {
     setIsLoading(true);
@@ -74,7 +76,6 @@ export default function ModeratorDocumentDetailPage({
     try {
       const response = await fetchDocumentDetail(documentId);
       setDocument(response);
-      setNote("");
 
       try {
         setPreview(await loadDocumentPreview(response));
@@ -113,19 +114,14 @@ export default function ModeratorDocumentDetailPage({
     }
   };
 
-  const handleReject = async () => {
+  const handleRejectConfirm = async (rejectionReason: string) => {
     if (!document) return;
-
-    const rejectionReason = note.trim();
-    if (!rejectionReason) {
-      toast.warning("Vui lòng nhập lý do từ chối trước khi gửi.");
-      return;
-    }
 
     setIsSubmitting(true);
     try {
       await rejectDocument(document.id, { rejectionReason });
       toast.success(`Đã từ chối ${document.title}`);
+      setIsRejecting(false);
       router.push("/moderator/documents");
       router.refresh();
     } catch {
@@ -285,50 +281,44 @@ export default function ModeratorDocumentDetailPage({
               <MaterialIcon name="verified_user" />
               Bảng kiểm duyệt
             </h2>
-            <div className="space-y-4">
-              <label className="block">
-                <span className="mb-2 block font-label-sm text-label-sm text-on-surface-variant">
-                  Lý do từ chối
-                </span>
-                <textarea
-                  className="w-full rounded-lg border border-outline bg-white p-3 font-body-md text-body-md outline-none transition-colors focus:border-2 focus:border-primary focus:p-[11px]"
-                  disabled={!canReview || isSubmitting}
-                  onChange={(event) => setNote(event.target.value)}
-                  placeholder="Bắt buộc khi từ chối tài liệu..."
-                  rows={5}
-                  value={note}
-                />
-              </label>
-
-              <div className="grid grid-cols-2 gap-3 pt-4">
-                <button
-                  className="flex items-center justify-center gap-2 rounded-lg bg-on-error-container py-3 font-label-md text-label-md text-on-error transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
-                  disabled={!canReview || isSubmitting}
-                  onClick={() => void handleReject()}
-                  type="button"
-                >
-                  <MaterialIcon name="close" />
-                  Từ chối
-                </button>
-                <button
-                  className="flex items-center justify-center gap-2 rounded-lg bg-primary py-3 font-label-md text-label-md text-on-primary transition-colors hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-60"
-                  disabled={!canReview || isSubmitting}
-                  onClick={() => void handleApprove()}
-                  type="button"
-                >
-                  <MaterialIcon name="check" />
-                  Phê duyệt
-                </button>
-              </div>
-              {!canReview ? (
-                <p className="font-label-sm text-label-sm text-on-surface-variant">
-                  Tài liệu này không còn ở trạng thái chờ duyệt.
-                </p>
-              ) : null}
+            <div className="grid grid-cols-2 gap-3 pt-4">
+              <button
+                className="flex items-center justify-center gap-2 rounded-lg bg-on-error-container py-3 font-label-md text-label-md text-on-error transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
+                disabled={!canReview || isSubmitting}
+                onClick={() => setIsRejecting(true)}
+                type="button"
+              >
+                <MaterialIcon name="close" />
+                Từ chối
+              </button>
+              <button
+                className="flex items-center justify-center gap-2 rounded-lg bg-primary py-3 font-label-md text-label-md text-on-primary transition-colors hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-60"
+                disabled={!canReview || isSubmitting}
+                onClick={() => void handleApprove()}
+                type="button"
+              >
+                <MaterialIcon name="check" />
+                Phê duyệt
+              </button>
             </div>
+            {!canReview ? (
+              <p className="mt-4 font-label-sm text-label-sm text-on-surface-variant">
+                Tài liệu này không còn ở trạng thái chờ duyệt.
+              </p>
+            ) : null}
           </section>
         </aside>
       </div>
+
+      <RejectDocumentModal
+        open={isRejecting}
+        isSubmitting={isSubmitting}
+        onCancel={() => {
+          if (isSubmitting) return;
+          setIsRejecting(false);
+        }}
+        onConfirm={handleRejectConfirm}
+      />
     </>
   );
 }

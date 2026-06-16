@@ -6,10 +6,6 @@
  * Renders the searchable, paginated list of the user's documents.
  * Uses only components/ui primitives: Card, Badge, Button, Table, Pagination,
  * InputField.
- *
- * All data and handler props flow in from the page — this component is purely
- * presentational with local search-term state (client-side filter on the
- * current page).
  */
 
 import { useMemo, useState } from "react";
@@ -24,38 +20,61 @@ import { Table, type TableRow } from "@/components/ui/Table";
 import { formatDate } from "@/utils";
 import type { LibraryDocument, PaginationMeta } from "@/types/document.type";
 
-// ── Config ────────────────────────────────────────────────────────────────────
+import { DocumentReasonModal } from "./DocumentReasonModal";
 
 const COLUMNS = [
   { key: "name", label: "Tên tài liệu" },
-  { key: "date", label: "Ngày tải lên" },
-  { key: "status", label: "Trạng thái" },
-  { key: "actions", label: "Thao tác", align: "right" as const },
+  { key: "date", label: "Ngày tải lên", align: "center" as const },
+  { key: "status", label: "Trạng thái", align: "center" as const },
+  { key: "reason", label: "Lý do", align: "center" as const },
+  { key: "actions", label: "Thao tác", align: "center" as const },
 ] as const;
 
-/**
- * Derives the Vietnamese label + Badge tone from both status AND isPublic.
- *
- * Why both fields?
- *   - ACTIVE + isPublic:false  → draft   (chỉ mình xem)
- *   - ACTIVE + isPublic:true   → live    (đã được duyệt, công khai)
- *   - PENDING                  → waiting for moderation (bất kể isPublic)
- *   - REJECTED                 → rejected by moderator
- */
 function getStatusDisplay(
   status: string,
   isPublic: boolean,
 ): { label: string; tone: "success" | "warning" | "error" | "neutral" } {
-  if (status === "ACTIVE" && isPublic)
-    return { label: "Công khai", tone: "success" };
-  if (status === "ACTIVE" && !isPublic)
+  const normalizedStatus = status.toLowerCase();
+
+  if (normalizedStatus === "approved") {
+    return { label: "Đã duyệt", tone: "success" };
+  }
+  if (normalizedStatus === "private") {
     return { label: "Riêng tư", tone: "neutral" };
-  if (status === "PENDING") return { label: "Đang chờ duyệt", tone: "warning" };
-  if (status === "REJECTED") return { label: "Bị từ chối", tone: "error" };
+  }
+  if (normalizedStatus === "pending") {
+    return { label: "Chờ duyệt", tone: "warning" };
+  }
+  if (normalizedStatus === "rejected") {
+    return { label: "Bị từ chối", tone: "error" };
+  }
+  if (normalizedStatus === "deleted") {
+    return { label: "Đã xóa", tone: "neutral" };
+  }
+
+  if (status === "ACTIVE" && isPublic) {
+    return { label: "Đã duyệt", tone: "success" };
+  }
+  if (status === "ACTIVE" && !isPublic) {
+    return { label: "Riêng tư", tone: "neutral" };
+  }
+  if (status === "PENDING") {
+    return { label: "Chờ duyệt", tone: "warning" };
+  }
+  if (status === "REJECTED") {
+    return { label: "Bị từ chối", tone: "error" };
+  }
+  if (status === "DELETED") {
+    return { label: "Đã xóa", tone: "neutral" };
+  }
+
   return { label: status, tone: "neutral" };
 }
 
-/** Infers a Material Symbol icon from the document publicId extension. */
+function isRejectedStatus(status: string): boolean {
+  return status.toLowerCase() === "rejected";
+}
+
 function formatToIcon(publicId: string): string {
   const lower = publicId.toLowerCase();
   if (lower.includes("pdf")) return "picture_as_pdf";
@@ -63,8 +82,6 @@ function formatToIcon(publicId: string): string {
   if (lower.includes("pptx") || lower.includes("ppt")) return "slideshow";
   return "draft";
 }
-
-// ── Skeleton row ──────────────────────────────────────────────────────────────
 
 function SkeletonRows({ count }: { count: number }): React.JSX.Element {
   return (
@@ -85,8 +102,6 @@ function SkeletonRows({ count }: { count: number }): React.JSX.Element {
   );
 }
 
-// ── Props ─────────────────────────────────────────────────────────────────────
-
 interface Props {
   readonly documents: LibraryDocument[];
   readonly pagination: PaginationMeta | null;
@@ -94,17 +109,11 @@ interface Props {
   readonly error: string | null;
   readonly skeletonCount: number;
   readonly onPageChange: (page: number) => void;
-  /** Called with the document ID when the delete button is clicked. */
-  readonly onDelete: (id: string) => Promise<void>;
-  /** Opens the edit dialog for a document row. */
+  readonly onRequestDelete: (document: LibraryDocument) => void;
   readonly onEdit: (document: LibraryDocument) => void;
-  /** ID of the document currently being deleted (disables its row buttons). */
   readonly deletingId: string | null;
-  /** ID of the document currently being edited/saved. */
   readonly savingId: string | null;
 }
-
-// ── Component ─────────────────────────────────────────────────────────────────
 
 export function DocumentTable({
   documents,
@@ -113,13 +122,15 @@ export function DocumentTable({
   error,
   skeletonCount,
   onPageChange,
-  onDelete,
+  onRequestDelete,
   onEdit,
   deletingId,
   savingId,
 }: Props): React.JSX.Element {
-  // Client-side search filter applied on top of the current server page
   const [searchTerm, setSearchTerm] = useState("");
+  const [reasonDocument, setReasonDocument] = useState<LibraryDocument | null>(
+    null,
+  );
   const normalizedSearchTerm = searchTerm.trim();
   const isSearching = normalizedSearchTerm.length > 0;
 
@@ -127,23 +138,22 @@ export function DocumentTable({
     const term = normalizedSearchTerm.toLowerCase();
     if (!term) return documents;
     return documents.filter(
-      (d) =>
-        d.title.toLowerCase().includes(term) ||
-        (d.subject?.name.toLowerCase().includes(term) ?? false),
+      (document) =>
+        document.title.toLowerCase().includes(term) ||
+        (document.subject?.name.toLowerCase().includes(term) ?? false),
     );
   }, [documents, normalizedSearchTerm]);
 
-  // Build Table rows from visible documents
   const tableRows: TableRow[] = visibleDocuments.map((doc) => {
     const status = getStatusDisplay(doc.status, doc.isPublic);
     const icon = formatToIcon(doc.publicId);
+    const canViewReason = isRejectedStatus(doc.status);
 
     return {
       id: doc.id,
       cells: [
-        /* ── Name ── */
         <div key="name" className="flex items-center gap-3">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-outline-variant bg-primary/10 text-primary">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-outline-variant bg-primary/10 text-primary shadow-sm shadow-primary/5">
             <span className="material-symbols-outlined text-[18px]">
               {icon}
             </span>
@@ -157,22 +167,36 @@ export function DocumentTable({
             </p>
           </div>
         </div>,
-
-        /* ── Date ── */
         <span
           key="date"
-          className="whitespace-nowrap text-sm text-on-surface-variant"
+          className="block text-center whitespace-nowrap text-sm text-on-surface-variant"
         >
           {formatDate(doc.createdAt)}
         </span>,
-
-        /* ── Status ── */
-        <Badge key="status" tone={status.tone}>
-          {status.label}
-        </Badge>,
-
-        /* ── Actions ── */
-        <div key="actions" className="flex justify-end gap-2">
+        <div key="status" className="flex justify-center">
+          <Badge tone={status.tone}>{status.label}</Badge>
+        </div>,
+        <div key="reason" className="flex justify-center">
+          {canViewReason ? (
+            <Button
+              type="button"
+              variant="outline"
+              size="xs"
+              className="gap-1 border-error/20 bg-error/5 px-2 text-error hover:border-error/35 hover:bg-error/10"
+              onClick={() => setReasonDocument(doc)}
+            >
+              <span className="material-symbols-outlined text-[14px]">
+                visibility
+              </span>
+              Xem lý do
+            </Button>
+          ) : (
+            <span className="inline-flex items-center rounded-full border border-outline-variant/80 bg-surface-variant/30 px-2 py-0.5 text-xs text-on-surface-variant">
+              -
+            </span>
+          )}
+        </div>,
+        <div key="actions" className="flex justify-center gap-2">
           <Button
             type="button"
             variant="ghost"
@@ -193,14 +217,14 @@ export function DocumentTable({
             variant="ghost"
             size="sm"
             className="px-3 text-error hover:bg-error-container hover:text-error"
-            onClick={() => onDelete(doc.id)}
+            onClick={() => onRequestDelete(doc)}
             disabled={deletingId === doc.id || savingId === doc.id}
           >
             <span className="flex items-center gap-1">
               <span className="material-symbols-outlined text-[16px]">
                 delete
               </span>
-              {deletingId === doc.id ? "Đang xóa…" : "Xóa"}
+              {deletingId === doc.id ? "Đang xóa..." : "Xóa"}
             </span>
           </Button>
         </div>,
@@ -210,7 +234,6 @@ export function DocumentTable({
 
   return (
     <Card className="p-5 shadow-sm shadow-black/5 lg:p-6">
-      {/* Header: title + search + filter/sort */}
       <div className="mb-5 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
         <div>
           <h2 className="text-lg font-bold text-on-surface">
@@ -230,7 +253,7 @@ export function DocumentTable({
         <div className="flex flex-wrap items-center gap-3">
           <div className="w-full lg:w-64">
             <InputField
-              placeholder="Tìm kiếm tài liệu…"
+              placeholder="Tìm kiếm tài liệu..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               leftIcon={
@@ -259,7 +282,6 @@ export function DocumentTable({
         </div>
       </div>
 
-      {/* Table body — three mutually exclusive states */}
       <div className="overflow-hidden rounded-2xl border border-outline-variant bg-surface-container-lowest">
         {isLoading ? (
           <SkeletonRows count={skeletonCount} />
@@ -286,7 +308,6 @@ export function DocumentTable({
         )}
       </div>
 
-      {/* Pagination */}
       {pagination && pagination.totalPages > 1 && !isLoading && !isSearching ? (
         <div className="mt-5 flex flex-col gap-3 border-t border-outline-variant pt-5 sm:flex-row sm:items-center sm:justify-between">
           <p className="text-xs text-on-surface-variant">
@@ -300,6 +321,12 @@ export function DocumentTable({
           />
         </div>
       ) : null}
+
+      <DocumentReasonModal
+        document={reasonDocument}
+        isOpen={reasonDocument !== null}
+        onClose={() => setReasonDocument(null)}
+      />
     </Card>
   );
 }

@@ -1,16 +1,17 @@
 "use client";
 
-import { Pagination } from "@/components/ui/Pagination";
-import { Table, type TableRow } from "@/components/ui/Table";
-import {
-  approveDocument,
-  fetchDocuments,
-  rejectDocument,
-} from "@/apis/document.api";
-import type { LibraryDocument } from "@/types/document.type";
-import { formatDate } from "@/utils";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
+
+import {
+  fetchDocuments,
+  approveDocument,
+  rejectDocument,
+} from "@/apis/document.api";
+import { Pagination } from "@/components/ui/Pagination";
+import { Table, type TableRow } from "@/components/ui/Table";
+import type { LibraryDocument } from "@/types/document.type";
+import { formatDate } from "@/utils";
 
 import {
   EmptyState,
@@ -19,6 +20,7 @@ import {
   ModeratorBadge,
   ModeratorCard,
 } from "../components/ModeratorPrimitives";
+import { RejectDocumentModal } from "../components/RejectDocumentModal";
 
 const pageSize = 10;
 
@@ -42,6 +44,8 @@ export default function ModeratorDocumentsPage(): React.JSX.Element {
   const [currentPage, setCurrentPage] = useState(1);
   const [isLoading, setIsLoading] = useState(true);
   const [actionId, setActionId] = useState<string | null>(null);
+  const [rejectingDocument, setRejectingDocument] =
+    useState<LibraryDocument | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const loadDocuments = useCallback(async () => {
@@ -107,26 +111,23 @@ export default function ModeratorDocumentsPage(): React.JSX.Element {
     [loadDocuments],
   );
 
-  const handleReject = useCallback(
-    async (document: LibraryDocument) => {
-      const rejectionReason = window.prompt(
-        `Nhập lý do từ chối tài liệu "${document.title}"`,
-      );
-      const reason = rejectionReason?.trim();
-      if (!reason) return;
+  const handleRejectConfirm = useCallback(
+    async (rejectionReason: string) => {
+      if (!rejectingDocument) return;
 
-      setActionId(document.id);
+      setActionId(rejectingDocument.id);
       try {
-        await rejectDocument(document.id, { rejectionReason: reason });
-        toast.success(`Đã từ chối ${document.title}`);
+        await rejectDocument(rejectingDocument.id, { rejectionReason });
+        toast.success(`Đã từ chối ${rejectingDocument.title}`);
+        setRejectingDocument(null);
         await loadDocuments();
       } catch {
-        toast.error(`Không thể từ chối ${document.title}`);
+        toast.error(`Không thể từ chối ${rejectingDocument.title}`);
       } finally {
         setActionId(null);
       }
     },
-    [loadDocuments],
+    [loadDocuments, rejectingDocument],
   );
 
   const documentRows: TableRow[] = visibleDocuments.map((document) => {
@@ -177,7 +178,7 @@ export default function ModeratorDocumentsPage(): React.JSX.Element {
           <IconButton
             icon={isActing ? "hourglass_empty" : "close"}
             label={`Từ chối ${document.title}`}
-            onClick={() => void handleReject(document)}
+            onClick={() => setRejectingDocument(document)}
             tone="error"
           />
           <IconButton
@@ -272,6 +273,16 @@ export default function ModeratorDocumentsPage(): React.JSX.Element {
           />
         </div>
       </ModeratorCard>
+
+      <RejectDocumentModal
+        open={rejectingDocument !== null}
+        isSubmitting={actionId === rejectingDocument?.id}
+        onCancel={() => {
+          if (actionId) return;
+          setRejectingDocument(null);
+        }}
+        onConfirm={handleRejectConfirm}
+      />
     </div>
   );
 }

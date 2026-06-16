@@ -160,6 +160,7 @@ describe('DocumentsService', () => {
           status: true,
           isPublic: true,
           updatedAt: true,
+          rejectionReason: true,
         }),
       }),
     );
@@ -358,6 +359,7 @@ describe('DocumentsService', () => {
           status: true,
           isPublic: true,
           updatedAt: true,
+          rejectionReason: true,
         }),
       }),
     );
