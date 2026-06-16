@@ -18,8 +18,7 @@ export function DocumentReasonModal({
 }: Props): React.JSX.Element | null {
   if (!isOpen || !document) return null;
 
-  const reasonText =
-    document.rejectionReason?.trim() || "Chưa có lý do từ chối.";
+  const rejectionReason = document.rejectionReason?.trim() || "Chưa có lý do.";
 
   return (
     <div
@@ -100,7 +99,7 @@ export function DocumentReasonModal({
               Lý do từ chối
             </p>
             <p className="mt-2 font-medium text-on-surface">
-              {document.rejectionReason?.trim() || "Chưa có lý do."}
+              {rejectionReason}
             </p>
           </div>
         </div>
