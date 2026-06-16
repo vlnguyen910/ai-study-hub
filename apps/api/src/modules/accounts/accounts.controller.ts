@@ -4,6 +4,7 @@ import {
   Patch,
   Param,
   Delete,
+  Get,
   Version,
   UseGuards,
 } from '@nestjs/common';
@@ -21,6 +22,13 @@ import { User } from '../../common/decorators';
 @Controller('accounts')
 export class AccountsController {
   constructor(private readonly accountsService: AccountsService) {}
+
+  @Roles(UserRole.USER, UserRole.ADMIN, UserRole.MODERATOR)
+  @Version('1')
+  @Get('me')
+  findMe(@User() user: TokenPayload) {
+    return this.accountsService.findMe(user.sub);
+  }
 
   @Roles(UserRole.USER, UserRole.ADMIN, UserRole.MODERATOR)
   @Version('1')

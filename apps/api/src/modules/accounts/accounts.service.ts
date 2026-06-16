@@ -107,6 +107,31 @@ export class AccountsService {
     return account;
   }
 
+  async findMe(id: string) {
+    const account = await this.prismaService.accounts.findUnique({
+      where: {
+        id,
+        status: { not: UserStatus.DELETED },
+      },
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        avatarUrl: true,
+        role: true,
+        status: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+    });
+
+    if (!account) {
+      throw new NotFoundException('Account not found');
+    }
+
+    return account;
+  }
+
   async findAccountByEmail(email: string): Promise<accounts | null> {
     return await this.prismaService.accounts.findUnique({
       where: {

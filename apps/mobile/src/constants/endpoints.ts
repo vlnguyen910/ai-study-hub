@@ -15,4 +15,8 @@ export const API_ENDPOINTS = {
     MINE: "/api/v1/documents/me",
     DETAIL: (id: string) => `/api/v1/documents/${id}`,
   },
+  ACCOUNTS: {
+    ME: "/api/v1/accounts/me",
+    DETAIL: (id: string) => `/api/v1/accounts/${id}`,
+  },
 };
