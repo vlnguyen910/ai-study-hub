@@ -21,7 +21,7 @@ import { accounts, DeviceType, UserRole, UserStatus } from '@prisma/client';
 import argon2 from 'argon2';
 import { AccountsService } from '../accounts/accounts.service';
 import { VerifyEmailDto } from './dto/verify-email.dto';
-import { MailService } from '../mail/mail.service';
+import { MailQueueService } from '../mail/mail-queue.service';
 import { AuthTokenService } from './services/auth-token.service';
 import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
@@ -57,7 +57,7 @@ export class AuthService {
     >,
     private accountService: AccountsService,
     private prismaService: PrismaService,
-    private mailService: MailService,
+    private mailQueueService: MailQueueService,
     private readonly authTokenService: AuthTokenService,
   ) {}
 
@@ -226,7 +226,7 @@ export class AuthService {
       ttlSeconds: this.passwordRecoveryConfig.ttlSeconds,
     });
 
-    await this.mailService.sendPasswordResetLink(
+    await this.mailQueueService.enqueuePasswordResetEmail(
       account,
       token,
       this.passwordRecoveryConfig.ttlSeconds,
@@ -539,7 +539,7 @@ export class AuthService {
       subjectId: account.id,
       ttlSeconds: this.emailVerificationConfig.ttlSeconds,
     });
-    await this.mailService.sendVerificationCode(account, token);
+    await this.mailQueueService.enqueueVerificationEmail(account, token);
   }
 
   private async assertVerificationCooldown(userId: string) {

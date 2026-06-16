@@ -32,6 +32,20 @@ describe('RedisService', () => {
     });
   });
 
+  it('returns BullMQ-compatible Redis options and prefix', () => {
+    expect(service.getBullMqConnectionOptions()).toEqual({
+      host: 'localhost',
+      port: 6379,
+      username: undefined,
+      password: undefined,
+      db: undefined,
+      tls: undefined,
+      maxRetriesPerRequest: null,
+      lazyConnect: true,
+    });
+    expect(service.getBullMqPrefix()).toBe('test');
+  });
+
   it('gets and sets plain values', async () => {
     redisMock.get.mockResolvedValue('value');
     redisMock.set.mockResolvedValue('OK');

@@ -9,10 +9,10 @@ export class RedisService implements OnModuleDestroy {
 
   constructor(
     @Inject(redisConfiguration.KEY)
-    redisConfig: ConfigType<typeof redisConfiguration>,
+    private readonly redisConfig: ConfigType<typeof redisConfiguration>,
   ) {
-    this.client = new Redis(redisConfig.url, {
-      keyPrefix: `${redisConfig.keyPrefix}:`,
+    this.client = new Redis(this.redisConfig.url, {
+      keyPrefix: `${this.redisConfig.keyPrefix}:`,
       maxRetriesPerRequest: 1,
       lazyConnect: true,
     });
@@ -40,6 +40,30 @@ export class RedisService implements OnModuleDestroy {
 
   ttl(key: string) {
     return this.client.ttl(key);
+  }
+
+  getBullMqConnectionOptions() {
+    const redisUrl = new URL(this.redisConfig.url);
+    const database = redisUrl.pathname.replace('/', '');
+
+    return {
+      host: redisUrl.hostname,
+      port: redisUrl.port ? Number(redisUrl.port) : 6379,
+      username: redisUrl.username
+        ? decodeURIComponent(redisUrl.username)
+        : undefined,
+      password: redisUrl.password
+        ? decodeURIComponent(redisUrl.password)
+        : undefined,
+      db: database ? Number(database) : undefined,
+      tls: redisUrl.protocol === 'rediss:' ? {} : undefined,
+      maxRetriesPerRequest: null,
+      lazyConnect: true,
+    };
+  }
+
+  getBullMqPrefix() {
+    return this.redisConfig.keyPrefix;
   }
 
   async getJson<T>(key: string): Promise<T | null> {

@@ -27,8 +27,8 @@ Spec này đã được đối chiếu với codebase hiện tại ngày 2026-06
 
 - API: NestJS, Prisma MongoDB, Redis, JWT, refresh token session, role guard, response interceptor, exception filter.
 - API Admin boundary: `AdminModule` owns admin-only account routes, subject mutation routes, and `GET /admin/dashboard`; account and subject route URLs remain backward compatible.
-- Auth: signup tạo account `UNVERIFIED`, gửi link verify email bằng token Redis SHA-256; signin cấp session/token cho `ACTIVE` và `UNVERIFIED`, trong đó `UNVERIFIED` chỉ có phiên hạn chế; Web/Mobile redirect về login sau signup để người dùng đăng nhập thủ công; forgot/reset/change password đã có backend.
-- Mail: `MailModule` dùng Nodemailer SMTP qua cấu hình `MAILTRAP_SMTP_*`; khi thiếu SMTP credentials thì log link trong development hoặc bỏ qua gửi mail ở môi trường khác.
+- Auth: signup tạo account `UNVERIFIED`, tạo token verify email bằng Redis SHA-256 và enqueue mail job; signin cấp session/token cho `ACTIVE` và `UNVERIFIED`, trong đó `UNVERIFIED` chỉ có phiên hạn chế; Web/Mobile redirect về login sau signup để người dùng đăng nhập thủ công; forgot/reset/change password đã có backend.
+- Mail: `MailModule` enqueue verification/password-reset jobs qua BullMQ và worker dùng Nodemailer SMTP qua cấu hình `MAILTRAP_SMTP_*`; khi thiếu SMTP credentials thì log link trong development hoặc bỏ qua gửi mail ở môi trường khác.
 - Database: MongoDB qua Prisma với models `accounts`, `sessions`, `schools`, `subjects`, `documents`; Redis dùng cho token/cooldown của email verification và password recovery.
 - Web: Next.js App Router, route groups cho auth/app/admin/moderator, shared UI components, Zustand auth store, Axios clients. Auth helpers, public/user document helpers, Admin dashboard summary cards, Admin Users và Moderator document review đã dùng API thật; verify-email route hiện gửi `deviceId` + `deviceType = WEB` để có thể reissue session trên chính device, còn Admin settings vẫn là UI-only/deferred vì chưa có backend contract.
 - Mobile: Expo Router, NativeWind, auth service đã gọi `/api/v1/auth/mobile-signin`, lưu access/refresh token bằng SecureStore, tự refresh access token khi API trả `401`, và có forgot/reset password flow bằng reset-token link; verify-email screen hiện gửi `deviceType = MOBILE`; document service mới có create metadata cơ bản; nhiều màn hình document/profile/moderator vẫn là template/mock.
@@ -392,7 +392,7 @@ Behavior:
 - Rejects duplicated email.
 - Hashes password with Argon2.
 - Creates account with role `USER` and status `UNVERIFIED`.
-- Rotates a raw verification token, stores only SHA-256 hashed token state in Redis, and sends a verification link through mail.
+- Rotates a raw verification token, stores only SHA-256 hashed token state in Redis, and enqueues a verification mail job.
 - Returns success message and `data: null`; no login session is created until the user signs in.
 
 ### `POST /auth/verify-email`
@@ -429,7 +429,7 @@ Behavior:
 - Requires an existing account with status `UNVERIFIED`.
 - Enforces configured resend cooldown.
 - Rotates Redis verification token state.
-- Sends a fresh verification link through mail.
+- Enqueues a fresh verification mail job.
 - Returns success message and `data: null`.
 
 ### `POST /auth/forgot-password`

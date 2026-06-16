@@ -61,6 +61,12 @@ $ pnpm run test:cov
 - Web clients should include `{ deviceId }` with verify-email when the user is already signed in. In that case the endpoint rotates a fresh `ACTIVE` access/refresh token pair for that device, stores the hashed refresh token on the session, sets the new `refreshToken` cookie, and returns only `data.accessToken` in the response body.
 - Verify-email calls without `deviceId` remain valid and return `data: null`; this keeps external-link verification and existing Mobile token-only calls compatible.
 
+## Mail queue notes
+
+- Signup, resend verification, and forgot-password flows enqueue BullMQ jobs on the `mail` queue instead of sending SMTP mail inline.
+- `MailProcessor` runs in the API process, consumes `mail.verify-email` and `mail.password-reset`, and delegates delivery to the existing Nodemailer-backed `MailService`.
+- Mail jobs retry up to 3 attempts with exponential backoff starting at 1 second. Redis must be available for auth mail enqueueing and worker processing.
+
 ## Deployment
 
 When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
