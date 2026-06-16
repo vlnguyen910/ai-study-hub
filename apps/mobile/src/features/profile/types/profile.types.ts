@@ -1,10 +1,24 @@
 export interface ProfileState {
+  id: string;
   fullName: string;
   email: string;
-  university: string;
-  faculty: string;
-  major: string;
   avatarUrl: string;
 }
 
-export type ProfileFieldKey = keyof Omit<ProfileState, "email">;
+export type ProfileFieldKey = Exclude<keyof ProfileState, "id" | "email">;
+
+export interface AccountProfile {
+  id: string;
+  email: string;
+  name: string;
+  avatarUrl: string | null;
+  role?: string;
+  status?: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface UpdateAccountProfilePayload {
+  name?: string;
+  avatarUrl?: string;
+}

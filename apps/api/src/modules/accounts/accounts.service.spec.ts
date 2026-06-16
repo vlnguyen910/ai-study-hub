@@ -208,6 +208,48 @@ describe('AccountsService', () => {
     );
   });
 
+  it('findMe returns the authenticated account profile', async () => {
+    const prisma: any = moduleRef.get(PrismaService as any);
+    const account = {
+      id: 'acc-1',
+      email: 'a@example.com',
+      name: 'Student',
+      avatarUrl: '',
+      role: UserRole.USER,
+      status: UserStatus.ACTIVE,
+    };
+    prisma.accounts.findUnique.mockResolvedValue(account);
+
+    const res = await service.findMe('acc-1');
+
+    expect(res).toEqual(account);
+    expect(prisma.accounts.findUnique).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: {
+          id: 'acc-1',
+          status: { not: UserStatus.DELETED },
+        },
+        select: expect.objectContaining({
+          id: true,
+          email: true,
+          name: true,
+          avatarUrl: true,
+          role: true,
+          status: true,
+        }),
+      }),
+    );
+  });
+
+  it('findMe throws NotFoundException when the authenticated account is missing', async () => {
+    const prisma: any = moduleRef.get(PrismaService as any);
+    prisma.accounts.findUnique.mockResolvedValue(null);
+
+    await expect(service.findMe('missing')).rejects.toBeInstanceOf(
+      NotFoundException,
+    );
+  });
+
   it('update returns updated account when exists', async () => {
     const prisma: any = moduleRef.get(PrismaService as any);
     prisma.accounts.findUnique.mockResolvedValue({ id: 'acc-1' });

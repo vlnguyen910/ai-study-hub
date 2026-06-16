@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import {
@@ -12,16 +12,18 @@ import {
   View,
 } from "react-native";
 import { Button, Card, PageShell } from "@/components";
-import type { ProfileFieldKey, ProfileState } from "../types/profile.types";
+import { fetchMyProfile, updateProfile } from "../services/profile.service";
+import type {
+  AccountProfile,
+  ProfileFieldKey,
+  ProfileState,
+} from "../types/profile.types";
 
 const INITIAL_PROFILE: ProfileState = {
-  fullName: "Nguyễn Văn A",
-  email: "vana.student@university.edu.vn",
-  university: "Đại học Khoa học Tự nhiên",
-  faculty: "Công nghệ thông tin",
-  major: "Khoa học máy tính",
-  avatarUrl:
-    "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=640&q=80",
+  id: "",
+  fullName: "",
+  email: "",
+  avatarUrl: "",
 };
 
 const profileFields: {
@@ -36,33 +38,30 @@ const profileFields: {
     placeholder: "Nhập họ và tên",
     icon: "person-outline",
   },
-  {
-    key: "university",
-    label: "Trường đại học",
-    placeholder: "Tên trường đại học",
-    icon: "school-outline",
-  },
-  {
-    key: "faculty",
-    label: "Khoa",
-    placeholder: "Tên khoa",
-    icon: "library-outline",
-  },
-  {
-    key: "major",
-    label: "Chuyên ngành",
-    placeholder: "Chuyên ngành học",
-    icon: "bookmark-outline",
-  },
 ];
 
 function getInitials(name: string): string {
-  return name
+  const initials = name
     .split(/\s+/)
     .filter(Boolean)
     .slice(0, 2)
     .map((part) => part[0]?.toUpperCase())
     .join("");
+
+  return initials || "?";
+}
+
+function mapAccountToProfile(
+  account: AccountProfile,
+  current: ProfileState = INITIAL_PROFILE,
+): ProfileState {
+  return {
+    ...current,
+    id: account.id,
+    fullName: account.name,
+    email: account.email,
+    avatarUrl: account.avatarUrl ?? "",
+  };
 }
 
 function ProfileAvatar({
@@ -122,14 +121,42 @@ export function ProfileScreen() {
   const [profile, setProfile] = useState<ProfileState>(INITIAL_PROFILE);
   const [draft, setDraft] = useState<ProfileState>(INITIAL_PROFILE);
   const [isEditing, setIsEditing] = useState(false);
+  const [isLoadingProfile, setIsLoadingProfile] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
-  const [statusMessage, setStatusMessage] = useState(
-    "Xem thông tin cá nhân hoặc chuyển sang chế độ sửa để cập nhật hồ sơ.",
-  );
+  const [statusMessage, setStatusMessage] = useState("Đang tải hồ sơ cá nhân.");
   const [fieldErrors, setFieldErrors] = useState<
     Partial<Record<ProfileFieldKey, string>>
   >({});
   const [lastUpdatedAt, setLastUpdatedAt] = useState("Chưa cập nhật");
+
+  const loadProfile = useCallback(async () => {
+    setIsLoadingProfile(true);
+    try {
+      const account = await fetchMyProfile();
+      const nextProfile = mapAccountToProfile(account);
+
+      setProfile(nextProfile);
+      setDraft(nextProfile);
+      setLastUpdatedAt(
+        account.updatedAt
+          ? new Date(account.updatedAt).toLocaleString("vi-VN")
+          : "Chưa cập nhật",
+      );
+      setStatusMessage(
+        "Xem thông tin cá nhân hoặc chuyển sang chế độ sửa để cập nhật hồ sơ.",
+      );
+    } catch {
+      setStatusMessage(
+        "Không thể tải hồ sơ cá nhân. Vui lòng kiểm tra kết nối và thử lại.",
+      );
+    } finally {
+      setIsLoadingProfile(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    void loadProfile();
+  }, [loadProfile]);
 
   const startEditing = () => {
     setDraft(profile);
@@ -156,11 +183,9 @@ export function ProfileScreen() {
   const validateDraft = () => {
     const nextErrors: Partial<Record<ProfileFieldKey, string>> = {};
 
-    profileFields.forEach(({ key, label }) => {
-      if (!draft[key].trim()) {
-        nextErrors[key] = `${label} không được để trống`;
-      }
-    });
+    if (!draft.fullName.trim()) {
+      nextErrors.fullName = "Họ và tên không được để trống";
+    }
 
     setFieldErrors(nextErrors);
     return Object.keys(nextErrors).length === 0;
@@ -172,24 +197,36 @@ export function ProfileScreen() {
       return;
     }
 
+    if (!profile.id) {
+      setStatusMessage("Hồ sơ chưa sẵn sàng để cập nhật. Vui lòng thử lại.");
+      return;
+    }
+
     setIsSaving(true);
-    await new Promise((resolve) => setTimeout(resolve, 700));
+    try {
+      const normalizedDraft: ProfileState = {
+        id: profile.id,
+        fullName: draft.fullName.trim(),
+        email: profile.email,
+        avatarUrl: draft.avatarUrl.trim(),
+      };
 
-    const normalizedProfile: ProfileState = {
-      fullName: draft.fullName.trim(),
-      email: profile.email,
-      university: draft.university.trim(),
-      faculty: draft.faculty.trim(),
-      major: draft.major.trim(),
-      avatarUrl: draft.avatarUrl.trim(),
-    };
+      const account = await updateProfile(profile.id, {
+        name: normalizedDraft.fullName,
+        avatarUrl: normalizedDraft.avatarUrl,
+      });
+      const normalizedProfile = mapAccountToProfile(account, normalizedDraft);
 
-    setProfile(normalizedProfile);
-    setDraft(normalizedProfile);
-    setIsEditing(false);
-    setIsSaving(false);
-    setLastUpdatedAt(new Date().toLocaleString("vi-VN"));
-    setStatusMessage("Cập nhật hồ sơ thành công.");
+      setProfile(normalizedProfile);
+      setDraft(normalizedProfile);
+      setIsEditing(false);
+      setLastUpdatedAt(new Date().toLocaleString("vi-VN"));
+      setStatusMessage("Cập nhật hồ sơ thành công.");
+    } catch {
+      setStatusMessage("Không thể cập nhật hồ sơ. Vui lòng thử lại.");
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   return (
@@ -245,6 +282,7 @@ export function ProfileScreen() {
               <View className="flex-row gap-3 pt-2">
                 {!isEditing ? (
                   <Button
+                    disabled={isLoadingProfile || !profile.id}
                     onPress={startEditing}
                     leftIcon={
                       <Ionicons
@@ -367,6 +405,17 @@ export function ProfileScreen() {
             <Text className="text-sm leading-6 text-on-surface-variant">
               {statusMessage}
             </Text>
+            {!isEditing ? (
+              <View className="mt-4 self-start">
+                <Button
+                  variant="outline"
+                  loading={isLoadingProfile}
+                  onPress={() => void loadProfile()}
+                >
+                  Tải lại hồ sơ
+                </Button>
+              </View>
+            ) : null}
           </Card>
         </ScrollView>
       </KeyboardAvoidingView>
