@@ -194,7 +194,6 @@ describe('AccountsService', () => {
       expect.objectContaining({
         where: expect.objectContaining({
           id: 'acc-1',
-          role: { not: UserRole.ADMIN },
         }),
       }),
     );

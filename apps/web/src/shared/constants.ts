@@ -32,3 +32,10 @@ export const API_ENDPOINTS = {
     DETAIL: (id: string) => `/api/v1/subjects/${id}`,
   },
 } as const;
+
+export const DEFAULT_AVATAR_URL =
+  "https://res.cloudinary.com/ddxstobvd/image/upload/v1/default-avatar";
+
+export const isDefaultAvatar = (url?: string | null): boolean => {
+  return !url || url === DEFAULT_AVATAR_URL;
+};
