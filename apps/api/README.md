@@ -66,6 +66,9 @@ $ pnpm run test:cov
 - Signup, resend verification, and forgot-password flows enqueue BullMQ jobs on the `mail` queue instead of sending SMTP mail inline.
 - `MailProcessor` runs in the API process, consumes `mail.verify-email` and `mail.password-reset`, and delegates delivery to the existing Nodemailer-backed `MailService`.
 - Mail jobs retry up to 3 attempts with exponential backoff starting at 1 second. Redis must be available for auth mail enqueueing and worker processing.
+- Queue transport uses `REDIS_URL` and `REDIS_KEY_PREFIX`; local development can use the Redis service from the root `docker-compose.yaml`.
+- There is no separate worker command yet. Starting the API with `pnpm --filter api dev` starts the in-process mail worker through `MailModule`.
+- Without Mailtrap SMTP credentials, queued jobs still run: `MailService` logs verification/reset links in development and skips SMTP delivery in other environments.
 
 ## Deployment
 
