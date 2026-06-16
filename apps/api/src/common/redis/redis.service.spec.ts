@@ -46,6 +46,28 @@ describe('RedisService', () => {
     expect(service.getBullMqPrefix()).toBe('test');
   });
 
+  it('throws contextual errors for invalid BullMQ Redis URLs', () => {
+    const invalidService = new RedisService({
+      url: 'not a redis url',
+      keyPrefix: 'test',
+    });
+
+    expect(() => invalidService.getBullMqConnectionOptions()).toThrow(
+      'Invalid Redis connection configuration for BullMQ: unable to parse REDIS_URL',
+    );
+  });
+
+  it('throws contextual errors for invalid BullMQ Redis database paths', () => {
+    const invalidService = new RedisService({
+      url: 'redis://localhost:6379/not-a-number',
+      keyPrefix: 'test',
+    });
+
+    expect(() => invalidService.getBullMqConnectionOptions()).toThrow(
+      'Invalid Redis connection configuration for BullMQ: Redis database must be a number',
+    );
+  });
+
   it('gets and sets plain values', async () => {
     redisMock.get.mockResolvedValue('value');
     redisMock.set.mockResolvedValue('OK');

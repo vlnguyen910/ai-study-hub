@@ -27,5 +27,6 @@
 - OWE-14 implements the shared queue layer with BullMQ instead of a custom Redis list queue because `ARCHITECTURE.md` already names BullMQ as the target queue worker and it gives retries, backoff, and job state without bespoke code.
 - Auth verification and password-reset requests now rotate Redis tokens synchronously, then enqueue mail jobs; Nodemailer delivery happens in the mail worker so SMTP latency/failure is outside the request path after enqueue succeeds.
 - The first mail worker runs in-process through `MailModule` to keep local development and deployment simple; it can be split into a dedicated worker process later without changing auth contracts.
+- BullMQ connection options are derived from `REDIS_URL`; invalid URLs or non-numeric Redis DB paths fail fast with contextual configuration errors.
 - Document processing jobs should handle extraction, chunking, embeddings, and duplicate detection.
 - Queue failures should not destroy saved metadata.

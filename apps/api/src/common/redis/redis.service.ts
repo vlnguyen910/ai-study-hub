@@ -43,8 +43,24 @@ export class RedisService implements OnModuleDestroy {
   }
 
   getBullMqConnectionOptions() {
-    const redisUrl = new URL(this.redisConfig.url);
+    let redisUrl: URL;
+
+    try {
+      redisUrl = new URL(this.redisConfig.url);
+    } catch (error) {
+      throw new Error(
+        `Invalid Redis connection configuration for BullMQ: unable to parse REDIS_URL (${(error as Error).message})`,
+      );
+    }
+
     const database = redisUrl.pathname.replace('/', '');
+    const db = database ? Number(database) : undefined;
+
+    if (db !== undefined && !Number.isInteger(db)) {
+      throw new Error(
+        `Invalid Redis connection configuration for BullMQ: Redis database must be a number, received "${database}"`,
+      );
+    }
 
     return {
       host: redisUrl.hostname,
@@ -55,7 +71,7 @@ export class RedisService implements OnModuleDestroy {
       password: redisUrl.password
         ? decodeURIComponent(redisUrl.password)
         : undefined,
-      db: database ? Number(database) : undefined,
+      db,
       tls: redisUrl.protocol === 'rediss:' ? {} : undefined,
       maxRetriesPerRequest: null,
       lazyConnect: true,
