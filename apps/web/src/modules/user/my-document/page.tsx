@@ -5,15 +5,15 @@
  *
  * Responsible for data fetching and coordinating state.
  * Rendering is fully delegated to child components:
- *   - DocumentStats  → stats row (total from API, others are UI placeholders)
- *   - DocumentTable  → search + table + pagination
+ *   - DocumentStats  -> stats row
+ *   - DocumentTable  -> search + table + pagination
  */
 
 import { useCallback, useEffect, useState } from "react";
 
 import {
-  fetchMyDocuments,
   deleteDocument,
+  fetchMyDocuments,
   fetchSubjects,
   updateDocument,
 } from "@/apis/document.api";
@@ -23,9 +23,11 @@ import type {
   Subject,
   UpdateDocumentPayload,
 } from "@/types/document.type";
+
 import { DocumentEditModal } from "./components/DocumentEditModal";
-import { DocumentTable } from "./components/DocumentTable";
+import { DeleteDocumentModal } from "./components/DeleteDocumentModal";
 import { DocumentStats } from "./components/DocumentStats";
+import { DocumentTable } from "./components/DocumentTable";
 
 const ITEMS_PER_PAGE = 4;
 
@@ -36,13 +38,14 @@ export default function MyDocumentPage(): React.JSX.Element {
   const [error, setError] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [deletingDocument, setDeletingDocument] =
+    useState<LibraryDocument | null>(null);
   const [subjects, setSubjects] = useState<Subject[]>([]);
   const [editingDocument, setEditingDocument] =
     useState<LibraryDocument | null>(null);
   const [savingId, setSavingId] = useState<string | null>(null);
   const [editError, setEditError] = useState<string | null>(null);
 
-  // ── Fetch ───────────────────────────────────────────────────────────────────
   const load = useCallback(async (page: number) => {
     setIsLoading(true);
     setError(null);
@@ -67,13 +70,10 @@ export default function MyDocumentPage(): React.JSX.Element {
       .catch(() => setSubjects([]));
   }, []);
 
-  // ── Delete ──────────────────────────────────────────────────────────────────
   const handleDelete = async (id: string) => {
-    if (!confirm("Bạn có chắc chắn muốn xóa tài liệu này không?")) return;
     setDeletingId(id);
     try {
       await deleteDocument(id);
-      // Step back one page when the last item on a non-first page is deleted
       const targetPage =
         documents.length === 1 && currentPage > 1
           ? currentPage - 1
@@ -84,6 +84,7 @@ export default function MyDocumentPage(): React.JSX.Element {
       alert("Xóa tài liệu thất bại. Vui lòng thử lại.");
     } finally {
       setDeletingId(null);
+      setDeletingDocument(null);
     }
   };
 
@@ -108,11 +109,10 @@ export default function MyDocumentPage(): React.JSX.Element {
     }
   };
 
-  // ── Render ──────────────────────────────────────────────────────────────────
   return (
     <div className="min-w-0 space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-on-surface">Tải liệu của tôi</h1>
+        <h1 className="text-2xl font-bold text-on-surface">Tài liệu của tôi</h1>
         <p className="mt-1 text-sm text-on-surface-variant">
           Quản lý tài liệu bạn đã tải lên.
         </p>
@@ -131,7 +131,7 @@ export default function MyDocumentPage(): React.JSX.Element {
         skeletonCount={ITEMS_PER_PAGE}
         onPageChange={setCurrentPage}
         onEdit={handleEdit}
-        onDelete={handleDelete}
+        onRequestDelete={(document) => setDeletingDocument(document)}
         deletingId={deletingId}
         savingId={savingId}
       />
@@ -148,6 +148,20 @@ export default function MyDocumentPage(): React.JSX.Element {
           setEditError(null);
         }}
         onSave={handleSaveEdit}
+      />
+
+      <DeleteDocumentModal
+        documentTitle={deletingDocument?.title ?? ""}
+        isOpen={deletingDocument !== null}
+        isDeleting={deletingId !== null}
+        onCancel={() => {
+          if (deletingId) return;
+          setDeletingDocument(null);
+        }}
+        onConfirm={() => {
+          if (!deletingDocument) return;
+          void handleDelete(deletingDocument.id);
+        }}
       />
     </div>
   );

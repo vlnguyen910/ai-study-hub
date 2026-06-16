@@ -31,6 +31,7 @@ export interface LibraryDocument {
   reviewedById?: string | null;
   reviewedAt?: string | null;
   rejectionReason?: string | null;
+  rejectionDetail?: string | null;
   author: DocumentAuthor;
   subject: DocumentSubject | null;
 }
@@ -118,6 +119,7 @@ export interface DocumentDetail {
   reviewedById?: string | null;
   reviewedAt?: string | null;
   rejectionReason?: string | null;
+  rejectionDetail?: string | null;
   author: {
     id: string;
     name: string;
