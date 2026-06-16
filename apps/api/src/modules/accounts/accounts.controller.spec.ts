@@ -30,12 +30,16 @@ describe('AccountsController', () => {
     expect(accountsServiceMock.remove).toHaveBeenCalledWith('5', 'acc-1');
   });
 
-  it('should restrict self-service endpoints to USER role', () => {
+  it('should restrict self-service endpoints to USER, ADMIN, and MODERATOR roles', () => {
     expect(Reflect.getMetadata(ROLES_KEY, controller.update)).toEqual([
       UserRole.USER,
+      UserRole.ADMIN,
+      UserRole.MODERATOR,
     ]);
     expect(Reflect.getMetadata(ROLES_KEY, controller.remove)).toEqual([
       UserRole.USER,
+      UserRole.ADMIN,
+      UserRole.MODERATOR,
     ]);
   });
 });

@@ -6,22 +6,18 @@
  * Displays and edits the user's personal information.
  *
  * API behaviour:
- *  - On save, calls PATCH /api/v1/accounts/:id with { name }.
- *  - Only `name` is persisted — the backend currently supports name + avatarUrl.
- *  - "Trường đại học", "Khoa", "Chuyên ngành": kept in local state only.
- *    The accounts schema does not expose these fields yet; they will sync to
- *    the API once the backend adds them.
- *  - Avatar: local FileReader preview works for display; a production flow
- *    would upload to Cloudinary before saving the URL. For now, avatar
- *    changes are shown locally but not persisted to the API.
+ *  - On save, uploads the selected avatar file to Cloudinary if changed,
+ *    and calls PATCH /api/v1/accounts/:id with { name, avatarUrl? }.
+ *  - "Trường đại học", "Khoa", "Chuyên ngành" are marked read-only with a message
+ *    "(Tính năng đang phát triển)" as they are not yet supported by the backend.
  *
  * Auth store update:
- *  After a successful save, the store's user.name is updated immediately so
+ *  After a successful save, updates the store's user state immediately so
  *  the SideNav and other surfaces reflect the change without a page reload.
  */
 
-import { useRef, useState } from "react";
-import { useForm, Controller } from "react-hook-form";
+import { useRef, useState, useEffect, useMemo, useCallback } from "react";
+import { useForm, Controller, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 
@@ -32,7 +28,9 @@ import { InputField } from "@/components/ui/InputField";
 
 import { updateProfile } from "@/apis/account.api";
 import { useAuthStore } from "@/stores/auth/store";
+import { DEFAULT_AVATAR_URL, isDefaultAvatar } from "@/shared/constants";
 import type { User } from "@/types";
+import { toast } from "sonner";
 
 // ── Validation schema ─────────────────────────────────────────────────────────
 
@@ -44,6 +42,14 @@ const schema = z.object({
 });
 
 type FormValues = z.infer<typeof schema>;
+
+// ── Constants ─────────────────────────────────────────────────────────────────
+
+const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/gif", "image/webp"];
+const ALLOWED_EXTENSIONS = ["jpg", "jpeg", "png", "gif", "webp"];
+
+const CLOUD_NAME = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
+const UPLOAD_PRESET = process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET;
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -57,11 +63,40 @@ function getInitials(name: string): string {
     .join("");
 }
 
+/** Helper to upload image to Cloudinary */
+async function uploadAvatarToCloudinary(file: File): Promise<string> {
+  if (!CLOUD_NAME || !UPLOAD_PRESET) {
+    throw new Error(
+      "Cấu hình lưu trữ ảnh (Cloudinary) bị thiếu. Vui lòng liên hệ quản trị viên.",
+    );
+  }
+
+  const formData = new FormData();
+  formData.append("file", file);
+  formData.append("upload_preset", UPLOAD_PRESET);
+
+  const cloudRes = await fetch(
+    `https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`,
+    { method: "POST", body: formData },
+  );
+
+  if (!cloudRes.ok) {
+    throw new Error("Lỗi kết nối máy chủ Cloudinary khi tải ảnh lên.");
+  }
+
+  const cloudData = await cloudRes.json();
+  if (!cloudData || typeof cloudData.secure_url !== "string") {
+    throw new Error("Dữ liệu phản hồi từ máy chủ Cloudinary không hợp lệ.");
+  }
+
+  return cloudData.secure_url;
+}
+
 // ── Props ─────────────────────────────────────────────────────────────────────
 
 interface Props {
   /** Authenticated user object from the auth store. */
-  user: User;
+  readonly user: User;
 }
 
 // ── Component ─────────────────────────────────────────────────────────────────
@@ -69,23 +104,16 @@ interface Props {
 export function PersonalInfoForm({ user }: Props): React.JSX.Element {
   const setUser = useAuthStore((state) => state.setUser);
 
-  // ── Edit mode ────────────────────────────────────────────────────────────────
+  // ── States ──────────────────────────────────────────────────────────────────
   const [isEditing, setIsEditing] = useState(false);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
+  const [isError, setIsError] = useState(false);
 
-  // ── Avatar (local preview only — not persisted to API) ───────────────────────
+  // ── Avatar States ───────────────────────────────────────────────────────────
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [avatarPreview, setAvatarPreview] = useState<string>(user.avatar ?? "");
-
-  const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = () => {
-      if (typeof reader.result === "string") setAvatarPreview(reader.result);
-    };
-    reader.readAsDataURL(file);
-  };
+  const [avatarFile, setAvatarFile] = useState<File | null>(null);
+  const [isAvatarDeleted, setIsAvatarDeleted] = useState(false);
 
   // ── React Hook Form ──────────────────────────────────────────────────────────
   const {
@@ -103,47 +131,162 @@ export function PersonalInfoForm({ user }: Props): React.JSX.Element {
     },
   });
 
+  // Watch current name for live initials preview
+  const formName = useWatch({ control, name: "name" }) || user.name;
+  const initials = useMemo(() => getInitials(formName), [formName]);
+
+  // Clean up Object URLs to prevent memory leaks
+  useEffect(() => {
+    return () => {
+      if (avatarPreview && avatarPreview.startsWith("blob:")) {
+        URL.revokeObjectURL(avatarPreview);
+      }
+    };
+  }, [avatarPreview]);
+
+  // Sync avatarPreview when user.avatar changes from outside (if not editing)
+  useEffect(() => {
+    if (!isEditing) {
+      setAvatarPreview(user.avatar ?? "");
+    }
+  }, [user.avatar, isEditing]);
+
+  const hasExistingAvatar = useMemo(() => {
+    return !!(user.avatar && !isDefaultAvatar(user.avatar));
+  }, [user.avatar]);
+
   // ── Handlers ─────────────────────────────────────────────────────────────────
 
-  const beginEditing = () => {
+  const resetFormStateFromUser = useCallback(() => {
     reset({ name: user.name, university: "", faculty: "", major: "" });
+    if (avatarPreview && avatarPreview.startsWith("blob:")) {
+      URL.revokeObjectURL(avatarPreview);
+    }
     setAvatarPreview(user.avatar ?? "");
+    setAvatarFile(null);
+    setIsAvatarDeleted(false);
     setStatusMessage(null);
+    setIsError(false);
+  }, [user, reset, avatarPreview]);
+
+  const beginEditing = () => {
+    resetFormStateFromUser();
     setIsEditing(true);
   };
 
   const cancelEditing = () => {
-    reset({ name: user.name, university: "", faculty: "", major: "" });
-    setAvatarPreview(user.avatar ?? "");
+    resetFormStateFromUser();
     setIsEditing(false);
     setStatusMessage("Đã hủy chỉnh sửa hồ sơ.");
+    setIsError(false);
+    toast.info("Đã hủy chỉnh sửa hồ sơ.");
+  };
+
+  const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    const fileExt = file.name.split(".").pop()?.toLowerCase();
+    const isTypeAllowed = ALLOWED_TYPES.includes(file.type);
+    const isExtAllowed = fileExt ? ALLOWED_EXTENSIONS.includes(fileExt) : false;
+
+    if (!isTypeAllowed && !isExtAllowed) {
+      const msg = "Chỉ chấp nhận ảnh định dạng JPG, JPEG, PNG, GIF hoặc WEBP.";
+      setStatusMessage(msg);
+      setIsError(true);
+      toast.error(msg);
+      e.target.value = "";
+      return;
+    }
+
+    // Validate file size (max 2MB)
+    if (file.size > 2 * 1024 * 1024) {
+      const msg = "Kích thước ảnh không được vượt quá 2MB.";
+      setStatusMessage(msg);
+      setIsError(true);
+      toast.error(msg);
+      e.target.value = "";
+      return;
+    }
+
+    // Revoke old blob preview URL if any
+    if (avatarPreview && avatarPreview.startsWith("blob:")) {
+      URL.revokeObjectURL(avatarPreview);
+    }
+
+    const previewUrl = URL.createObjectURL(file);
+    setAvatarFile(file);
+    setAvatarPreview(previewUrl);
+    setIsAvatarDeleted(false);
+    setStatusMessage(null);
+    setIsError(false);
+
+    // Reset input value so the same file can be selected again
+    e.target.value = "";
+  };
+
+  const handleDeleteAvatar = () => {
+    if (avatarPreview && avatarPreview.startsWith("blob:")) {
+      URL.revokeObjectURL(avatarPreview);
+    }
+    setAvatarPreview("");
+    setAvatarFile(null);
+    setIsAvatarDeleted(true);
+    setStatusMessage(null);
+    setIsError(false);
   };
 
   const onSubmit = handleSubmit(async (values) => {
     try {
-      // Persist name to the API (the only currently supported mutable field)
-      await updateProfile(user.id, { name: values.name });
+      let finalAvatarUrl: string | undefined = undefined;
 
-      // Update the auth store so the SideNav reflects the change immediately
+      if (isAvatarDeleted) {
+        finalAvatarUrl = DEFAULT_AVATAR_URL;
+      } else if (avatarFile) {
+        // Upload image to Cloudinary using extracted helper
+        finalAvatarUrl = await uploadAvatarToCloudinary(avatarFile);
+      }
+
+      // Restful PATCH: only send avatarUrl if it was changed
+      const updatePayload: { name: string; avatarUrl?: string } = {
+        name: values.name,
+      };
+
+      if (finalAvatarUrl !== undefined) {
+        updatePayload.avatarUrl = finalAvatarUrl;
+      }
+
+      // Persist name and/or avatarUrl to the API
+      const response = await updateProfile(user.id, updatePayload);
+
+      // Update the auth store so other components update instantly
       setUser({
         ...user,
-        name: values.name,
+        name: response.name,
+        avatar: response.avatarUrl || undefined,
       });
 
+      setAvatarFile(null);
+      setIsAvatarDeleted(false);
       setIsEditing(false);
-      setStatusMessage("Cập nhật hồ sơ thành công.");
+      const successMsg = "Cập nhật hồ sơ thành công.";
+      setStatusMessage(successMsg);
+      setIsError(false);
+      toast.success(successMsg);
     } catch (err) {
-      setStatusMessage(
+      console.error("[PersonalInfoForm] Update profile failed:", err);
+      setIsError(true);
+      const errMsg =
         err instanceof Error
           ? err.message
-          : "Cập nhật thất bại. Vui lòng thử lại.",
-      );
+          : "Cập nhật hồ sơ thất bại. Vui lòng thử lại sau.";
+      setStatusMessage(errMsg);
+      toast.error(errMsg);
     }
   });
 
-  // ── Render ────────────────────────────────────────────────────────────────────
-
-  const initials = getInitials(user.name);
+  const isFormChanged = isDirty || avatarFile !== null || isAvatarDeleted;
   const readonlyCls = "bg-surface-container-low text-on-surface-variant";
 
   return (
@@ -182,7 +325,7 @@ export function PersonalInfoForm({ user }: Props): React.JSX.Element {
               form="personal-info-form"
               variant="primary"
               size="sm"
-              disabled={isSubmitting || !isDirty}
+              disabled={isSubmitting || !isFormChanged}
             >
               {isSubmitting ? "Đang lưu..." : "Lưu hồ sơ"}
             </Button>
@@ -218,9 +361,9 @@ export function PersonalInfoForm({ user }: Props): React.JSX.Element {
               type="button"
               variant="ghost"
               size="sm"
-              disabled={!isEditing}
+              disabled={!isEditing || !hasExistingAvatar}
               className="text-error hover:bg-error-container hover:text-error"
-              onClick={() => setAvatarPreview("")}
+              onClick={handleDeleteAvatar}
             >
               <span className="flex items-center gap-1.5">
                 <span className="material-symbols-outlined text-[16px]">
@@ -234,12 +377,12 @@ export function PersonalInfoForm({ user }: Props): React.JSX.Element {
           <input
             ref={fileInputRef}
             type="file"
-            accept="image/*"
+            accept=".jpg,.jpeg,.png,.gif,.webp"
             className="sr-only"
             onChange={handleAvatarChange}
           />
           <p className="mt-1.5 text-xs text-on-surface-variant">
-            JPG, GIF hoặc PNG. Kích thước tối đa 2MB.
+            Chấp nhận JPG, JPEG, PNG, GIF hoặc WEBP. Kích thước tối đa 2MB.
           </p>
         </div>
       </div>
@@ -272,61 +415,71 @@ export function PersonalInfoForm({ user }: Props): React.JSX.Element {
             helperText="Email không thể chỉnh sửa từ trang này"
           />
 
-          {/* University — local state only; API does not support this field yet */}
+          {/* University — disabled with feature warning (API does not support this field yet) */}
           <Controller
             name="university"
             control={control}
             render={({ field }) => (
               <InputField
                 {...field}
-                label="Trường đại học"
+                label="Trường đại học (Tính năng đang phát triển)"
                 placeholder="Tên trường đại học"
-                disabled={!isEditing}
+                disabled
+                className={readonlyCls}
                 errorText={errors.university?.message}
-                className={!isEditing ? readonlyCls : ""}
+                helperText="Tính năng đang được phát triển"
               />
             )}
           />
 
-          {/* Faculty — local state only */}
+          {/* Faculty — disabled with feature warning */}
           <Controller
             name="faculty"
             control={control}
             render={({ field }) => (
               <InputField
                 {...field}
-                label="Khoa"
+                label="Khoa (Tính năng đang phát triển)"
                 placeholder="Khoa của bạn"
-                disabled={!isEditing}
+                disabled
+                className={readonlyCls}
                 errorText={errors.faculty?.message}
-                className={!isEditing ? readonlyCls : ""}
+                helperText="Tính năng đang được phát triển"
               />
             )}
           />
 
-          {/* Major — local state only */}
+          {/* Major — disabled with feature warning */}
           <Controller
             name="major"
             control={control}
             render={({ field }) => (
               <InputField
                 {...field}
-                label="Chuyên ngành"
+                label="Chuyên ngành (Tính năng đang phát triển)"
                 placeholder="Chuyên ngành học"
-                disabled={!isEditing}
+                disabled
+                className={readonlyCls}
                 errorText={errors.major?.message}
-                className={!isEditing ? readonlyCls : ""}
+                helperText="Tính năng đang được phát triển"
               />
             )}
           />
         </div>
       </form>
 
-      {/* Status message (success or error feedback) */}
+      {/* Status message (semantic style & role for accessibility) */}
       {statusMessage ? (
-        <p className="mt-4 rounded-xl bg-surface-container-low px-4 py-3 text-sm text-on-surface-variant">
+        <div
+          role={isError ? "alert" : "status"}
+          className={`mt-4 rounded-xl px-4 py-3 text-sm font-medium ${
+            isError
+              ? "bg-error-container text-error border border-error/20"
+              : "bg-primary/10 text-primary border border-primary/20"
+          }`}
+        >
           {statusMessage}
-        </p>
+        </div>
       ) : null}
     </Card>
   );

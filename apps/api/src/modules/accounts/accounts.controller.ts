@@ -22,7 +22,7 @@ import { User } from '../../common/decorators';
 export class AccountsController {
   constructor(private readonly accountsService: AccountsService) {}
 
-  @Roles(UserRole.USER)
+  @Roles(UserRole.USER, UserRole.ADMIN, UserRole.MODERATOR)
   @Version('1')
   @Patch(':id')
   update(
@@ -33,7 +33,7 @@ export class AccountsController {
     return this.accountsService.update(id, updateAccountDto, user.sub);
   }
 
-  @Roles(UserRole.USER)
+  @Roles(UserRole.USER, UserRole.ADMIN, UserRole.MODERATOR)
   @Version('1')
   @Delete(':id')
   remove(

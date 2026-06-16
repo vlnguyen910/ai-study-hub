@@ -1,4 +1,5 @@
 import type { FC } from "react";
+import { isDefaultAvatar } from "@/shared/constants";
 
 export interface AvatarProps {
   readonly imageUrl?: string;
@@ -27,7 +28,7 @@ export const Avatar: FC<AvatarProps> = ({
   tone = "primary",
   className = "",
 }) => {
-  if (imageUrl) {
+  if (imageUrl && !isDefaultAvatar(imageUrl)) {
     return (
       <img
         src={imageUrl}

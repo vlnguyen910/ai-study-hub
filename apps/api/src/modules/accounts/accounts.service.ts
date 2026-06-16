@@ -94,7 +94,6 @@ export class AccountsService {
       where: {
         id,
         status: { not: UserStatus.DELETED },
-        role: { not: UserRole.ADMIN },
       },
       omit: {
         password: true,
