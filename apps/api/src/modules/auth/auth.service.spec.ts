@@ -16,6 +16,7 @@ import { AuthService } from './auth.service';
 import { JwtTokenType } from '../../common/enums/jwt.enum';
 import { TokenPayload } from '../../common/interfaces/auth.interface';
 import { MailService } from '../mail/mail.service';
+import { MailQueueService } from '../mail/mail-queue.service';
 import { RedisService } from '../../common/redis/redis.service';
 import { AuthTokenService } from './services/auth-token.service';
 
@@ -62,6 +63,11 @@ describe('AuthService', () => {
     sendPasswordResetLink: jest.fn(),
   };
 
+  const mailQueueServiceMock = {
+    enqueueVerificationEmail: jest.fn(),
+    enqueuePasswordResetEmail: jest.fn(),
+  };
+
   const jwtConfigMock = {
     secret: 'test-secret',
     accessTokenExpiresIn: '15m',
@@ -102,6 +108,10 @@ describe('AuthService', () => {
         {
           provide: MailService,
           useValue: mailServiceMock,
+        },
+        {
+          provide: MailQueueService,
+          useValue: mailQueueServiceMock,
         },
         {
           provide: RedisService,
@@ -174,7 +184,7 @@ describe('AuthService', () => {
     accountsServiceMock.create.mockResolvedValue({
       message: 'Account created successfully',
     });
-    mailServiceMock.sendVerificationCode.mockResolvedValue(undefined);
+    mailQueueServiceMock.enqueueVerificationEmail.mockResolvedValue(undefined);
     redisServiceMock.set.mockResolvedValue('OK');
 
     const result = await service.signup({
@@ -193,7 +203,7 @@ describe('AuthService', () => {
         status: UserStatus.UNVERIFIED,
       }),
     );
-    expect(mailServiceMock.sendVerificationCode).toHaveBeenCalledWith(
+    expect(mailQueueServiceMock.enqueueVerificationEmail).toHaveBeenCalledWith(
       {
         id: 'user-1',
         email: 'new-user@example.com',
@@ -203,7 +213,8 @@ describe('AuthService', () => {
       },
       expect.any(String),
     );
-    const token = mailServiceMock.sendVerificationCode.mock.calls[0][1];
+    const token =
+      mailQueueServiceMock.enqueueVerificationEmail.mock.calls[0][1];
     const hashedToken = createHash('sha256').update(token).digest('hex');
     expect(redisServiceMock.set).toHaveBeenCalledWith(
       `verify_email:${hashedToken}`,
@@ -216,10 +227,7 @@ describe('AuthService', () => {
       emailVerificationConfigMock.ttlSeconds,
     );
     expect(redisServiceMock.set.mock.calls[0][0]).not.toContain(token);
-    expect(mailServiceMock.sendVerificationCode).not.toHaveBeenCalledWith({
-      email: 'new-user@example.com',
-      name: 'New User',
-    });
+    expect(mailServiceMock.sendVerificationCode).not.toHaveBeenCalled();
 
     expect(prismaMock.sessions.upsert).not.toHaveBeenCalled();
     expect(jwtMock.signAsync).not.toHaveBeenCalled();
@@ -450,7 +458,7 @@ describe('AuthService', () => {
       .mockResolvedValueOnce('old-hashed-token');
     redisServiceMock.del.mockResolvedValue(1);
     redisServiceMock.set.mockResolvedValue('OK');
-    mailServiceMock.sendVerificationCode.mockResolvedValue(undefined);
+    mailQueueServiceMock.enqueueVerificationEmail.mockResolvedValue(undefined);
 
     await expect(service.resendVerificationEmail('user-1')).resolves.toEqual({
       message: 'Verification email sent',
@@ -482,10 +490,11 @@ describe('AuthService', () => {
       '1',
       emailVerificationConfigMock.resendCooldownSeconds,
     );
-    expect(mailServiceMock.sendVerificationCode).toHaveBeenCalledWith(
+    expect(mailQueueServiceMock.enqueueVerificationEmail).toHaveBeenCalledWith(
       expect.objectContaining({ id: 'user-1' }),
       'new-verification-token',
     );
+    expect(mailServiceMock.sendVerificationCode).not.toHaveBeenCalled();
   });
 
   it('should return success without sending mail when resend account is already verified', async () => {
@@ -498,6 +507,9 @@ describe('AuthService', () => {
       message: 'Email is already verified',
       data: null,
     });
+    expect(
+      mailQueueServiceMock.enqueueVerificationEmail,
+    ).not.toHaveBeenCalled();
     expect(mailServiceMock.sendVerificationCode).not.toHaveBeenCalled();
     expect(redisServiceMock.set).not.toHaveBeenCalled();
   });
@@ -516,6 +528,9 @@ describe('AuthService', () => {
           'Please wait 42 seconds before requesting another verification email',
       }),
     );
+    expect(
+      mailQueueServiceMock.enqueueVerificationEmail,
+    ).not.toHaveBeenCalled();
     expect(mailServiceMock.sendVerificationCode).not.toHaveBeenCalled();
   });
 
@@ -537,7 +552,7 @@ describe('AuthService', () => {
       .mockResolvedValueOnce('old-reset-token');
     redisServiceMock.del.mockResolvedValue(1);
     redisServiceMock.set.mockResolvedValue('OK');
-    mailServiceMock.sendPasswordResetLink.mockResolvedValue(undefined);
+    mailQueueServiceMock.enqueuePasswordResetEmail.mockResolvedValue(undefined);
 
     await expect(
       service.forgotPassword({ email: 'new-user@example.com' }),
@@ -572,7 +587,7 @@ describe('AuthService', () => {
       '1',
       passwordRecoveryConfigMock.resendCooldownSeconds,
     );
-    expect(mailServiceMock.sendPasswordResetLink).toHaveBeenCalledWith(
+    expect(mailQueueServiceMock.enqueuePasswordResetEmail).toHaveBeenCalledWith(
       expect.objectContaining({
         id: 'user-1',
         email: 'new-user@example.com',
@@ -580,6 +595,7 @@ describe('AuthService', () => {
       'password-reset-token',
       passwordRecoveryConfigMock.ttlSeconds,
     );
+    expect(mailServiceMock.sendPasswordResetLink).not.toHaveBeenCalled();
   });
 
   it('should not reveal whether forgot-password email exists', async () => {
@@ -592,6 +608,9 @@ describe('AuthService', () => {
         'If an account exists for this email, a password reset link has been sent.',
       data: null,
     });
+    expect(
+      mailQueueServiceMock.enqueuePasswordResetEmail,
+    ).not.toHaveBeenCalled();
     expect(mailServiceMock.sendPasswordResetLink).not.toHaveBeenCalled();
     expect(redisServiceMock.set).not.toHaveBeenCalled();
   });
@@ -616,6 +635,9 @@ describe('AuthService', () => {
           'Please wait 42 seconds before requesting another password reset email',
       }),
     );
+    expect(
+      mailQueueServiceMock.enqueuePasswordResetEmail,
+    ).not.toHaveBeenCalled();
     expect(mailServiceMock.sendPasswordResetLink).not.toHaveBeenCalled();
   });
 
