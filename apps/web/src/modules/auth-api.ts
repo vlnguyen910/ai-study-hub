@@ -152,7 +152,7 @@ export const changePassword = async (payload: {
 }) => {
   try {
     return unwrap<null>(
-      await client.post("/api/v1/auth/change-password", payload),
+      await apiClient.post(API_ENDPOINTS.AUTH.CHANGE_PASSWORD, payload),
     );
   } catch (error) {
     throw new Error(getErrorMessage(error, "Could not change password"));

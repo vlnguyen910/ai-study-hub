@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   Alert,
   ActivityIndicator,
@@ -16,6 +16,8 @@ import {
   resendVerificationEmailService,
   verifyEmailService,
 } from "../services/auth.service";
+import { getDeviceId } from "@/utils/device";
+import { saveTokens } from "@/utils/storage";
 
 export function AuthVerifyEmailScreen() {
   const params = useLocalSearchParams<{ token?: string }>();
@@ -24,6 +26,21 @@ export function AuthVerifyEmailScreen() {
   const [isResending, setIsResending] = useState(false);
   const [verificationMessage, setVerificationMessage] = useState("");
 
+  const verifyCurrentToken = useCallback(async (currentToken: string) => {
+    const deviceId = await getDeviceId();
+    const response = await verifyEmailService({
+      token: currentToken,
+      deviceId,
+      deviceType: "MOBILE",
+    });
+
+    if (response.data?.accessToken && response.data.refreshToken) {
+      await saveTokens(response.data.accessToken, response.data.refreshToken);
+    }
+
+    return response;
+  }, []);
+
   useEffect(() => {
     if (!token) return;
 
@@ -31,7 +48,7 @@ export function AuthVerifyEmailScreen() {
       setIsVerifying(true);
 
       try {
-        await verifyEmailService({ token, deviceType: "MOBILE" });
+        await verifyCurrentToken(token);
         setVerificationMessage("Email đã được xác thực.");
         Alert.alert("Thành công", "Email đã được xác thực.", [
           {
@@ -52,7 +69,7 @@ export function AuthVerifyEmailScreen() {
     };
 
     void verifyToken();
-  }, [token]);
+  }, [token, verifyCurrentToken]);
 
   const handleOpenLogin = () => {
     router.replace("/(templates)/auth-login" as never);
@@ -70,7 +87,7 @@ export function AuthVerifyEmailScreen() {
     setIsVerifying(true);
 
     try {
-      await verifyEmailService({ token, deviceType: "MOBILE" });
+      await verifyCurrentToken(token);
       Alert.alert("Thành công", "Email đã được xác thực.", [
         {
           text: "Đăng nhập",

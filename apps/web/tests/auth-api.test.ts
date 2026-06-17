@@ -22,6 +22,7 @@ vi.mock("../src/lib/axios", () => ({
 
 import {
   forgotPassword,
+  changePassword,
   logoutCurrentSession,
   resendVerificationEmail,
   resetPassword,
@@ -125,6 +126,27 @@ describe("web auth api helpers", () => {
     expect(clientMock.post).toHaveBeenCalledWith(
       "/api/v1/auth/reset-password",
       { token: "reset-token", password: "Password123!" },
+    );
+  });
+
+  it("changes password through the authenticated api client", async () => {
+    apiClientMock.post.mockResolvedValue({ data: null });
+
+    await changePassword({
+      currentPassword: "OldPassword123!",
+      newPassword: "NewPassword123!",
+    });
+
+    expect(apiClientMock.post).toHaveBeenCalledWith(
+      "/api/v1/auth/change-password",
+      {
+        currentPassword: "OldPassword123!",
+        newPassword: "NewPassword123!",
+      },
+    );
+    expect(clientMock.post).not.toHaveBeenCalledWith(
+      "/api/v1/auth/change-password",
+      expect.anything(),
     );
   });
 

@@ -13,6 +13,7 @@
 - Introduce `POST /documents/upload` as the preferred file-upload contract.
 - Keep metadata-only edits separate from file replacement.
 - Use `visibility` and `reviewStatus` as separate lifecycle concepts.
+- OWE-18 keeps Web and Mobile auth on the same backend contract: authenticated Web helpers must use the shared `apiClient`, and Mobile verify-email sends `deviceId` so the backend can rotate the verified session and return fresh tokens.
 
 ## Lifecycle Decisions
 
