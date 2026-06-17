@@ -14,6 +14,10 @@
 - Keep metadata-only edits separate from file replacement.
 - Use `visibility` and `reviewStatus` as separate lifecycle concepts.
 - OWE-18 keeps Web and Mobile auth on the same backend contract: authenticated Web helpers must use the shared `apiClient`, and Mobile verify-email sends `deviceId` so the backend can rotate the verified session and return fresh tokens.
+- OWE-65 adds Google login without storing Google provider tokens. The backend stores only provider identity, links by Google subject first, then links a verified Google email to an existing non-deleted account, and rejects unverified Google emails.
+- OWE-65 Web uses API-owned OAuth state and callback handling so the API can set the HTTP-only refresh cookie. The access token is handed to Web in the URL fragment and removed by the login page after storing auth state.
+- OWE-65 Mobile uses Expo AuthSession to obtain a Google ID token, then calls the backend `/auth/google/mobile` endpoint and stores the returned access/refresh token pair in SecureStore.
+- Google client IDs and OAuth URLs are documented as `PLACE_HOLDER` env values until real Google Cloud credentials are added.
 
 ## Lifecycle Decisions
 

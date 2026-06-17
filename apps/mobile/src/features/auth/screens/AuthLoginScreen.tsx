@@ -13,13 +13,22 @@ import { router } from "expo-router";
 import { Controller } from "react-hook-form";
 import { Button, Card, PageShell } from "@/components";
 import { useSignIn } from "../hooks/useSignIn";
+import { useGoogleSignIn } from "../hooks/useGoogleSignIn";
 
 export function AuthLoginScreen() {
   const [showPassword, setShowPassword] = useState(false);
   const { form, isLoading, submit } = useSignIn();
+  const { isGoogleLoading, isGoogleReady, signInWithGoogle } =
+    useGoogleSignIn();
 
   const handleSignIn = () => {
     submit(() => {
+      router.replace("/" as never);
+    });
+  };
+
+  const handleGoogleSignIn = () => {
+    signInWithGoogle(() => {
       router.replace("/" as never);
     });
   };
@@ -296,10 +305,12 @@ export function AuthLoginScreen() {
               <Button
                 variant="outline"
                 fullWidth
+                loading={isGoogleLoading}
+                disabled={!isGoogleReady}
                 leftIcon={
                   <Ionicons name="logo-google" size={18} color="#EA4335" />
                 }
-                onPress={() => {}}
+                onPress={handleGoogleSignIn}
               >
                 Google
               </Button>

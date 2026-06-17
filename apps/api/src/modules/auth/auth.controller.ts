@@ -7,6 +7,7 @@ import {
   HttpStatus,
   Inject,
   Post,
+  Query,
   Req,
   Res,
   UseGuards,
@@ -21,6 +22,9 @@ import { VerifyEmailDto } from './dto/verify-email.dto';
 import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
 import { ChangePasswordDto } from './dto/change-password.dto';
+import { GoogleCallbackQueryDto } from './dto/google-callback-query.dto';
+import { GoogleMobileSigninDto } from './dto/google-mobile-signin.dto';
+import { GoogleSigninQueryDto } from './dto/google-signin-query.dto';
 import { Public } from '../../common/decorators/public.decorator';
 import { cookieConfiguration } from '../../config';
 import { DeviceType } from '@prisma/client';
@@ -144,6 +148,60 @@ export class AuthController {
     @Body() changePasswordDto: ChangePasswordDto,
   ) {
     return this.authService.changePassword(user, changePasswordDto);
+  }
+
+  @Version('1')
+  @Public()
+  @Get('google')
+  async googleSignin(
+    @Query() query: GoogleSigninQueryDto,
+    @Res() res: Response,
+  ) {
+    const authorizationUrl =
+      await this.authService.getGoogleAuthorizationUrl(query);
+
+    return res.redirect(authorizationUrl);
+  }
+
+  @Version('1')
+  @Public()
+  @Get('google/callback')
+  async googleCallback(
+    @Query() query: GoogleCallbackQueryDto,
+    @Res() res: Response,
+  ) {
+    if (query.error) {
+      return res.redirect(
+        this.authService.buildGoogleFailureRedirectUrl(query.error),
+      );
+    }
+
+    const result = await this.authService.signinWithGoogleCode(query);
+
+    res.cookie('refreshToken', result.tokens.refreshToken, {
+      httpOnly: this.cookieConfig.httpOnly,
+      secure: this.cookieConfig.secure,
+      sameSite: this.cookieConfig.sameSite,
+      maxAge: this.cookieConfig.refreshTokenMaxAge,
+    });
+
+    return res.redirect(result.redirectUrl);
+  }
+
+  @Version('1')
+  @Public()
+  @HttpCode(HttpStatus.OK)
+  @Post('google/mobile')
+  async mobileGoogleSignin(@Body() googleSigninDto: GoogleMobileSigninDto) {
+    const result = await this.authService.signinWithGoogleIdToken(
+      googleSigninDto,
+      DeviceType.MOBILE,
+    );
+
+    return {
+      message: result.message,
+      data: result.data,
+    };
   }
 
   @Version('1')

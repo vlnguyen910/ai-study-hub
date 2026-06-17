@@ -8,6 +8,7 @@ import { DeviceType, UserRole, UserStatus } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import {
   emailVerificationConfiguration,
+  googleAuthConfiguration,
   jwtConfiguration,
   passwordRecoveryConfiguration,
 } from '../../config';
@@ -19,6 +20,7 @@ import { MailService } from '../mail/mail.service';
 import { MailQueueService } from '../mail/mail-queue.service';
 import { RedisService } from '../../common/redis/redis.service';
 import { AuthTokenService } from './services/auth-token.service';
+import { GoogleAuthService } from './services/google-auth.service';
 
 jest.mock('uuid', () => ({
   v4: jest.fn(() => 'email-verification-token'),
@@ -31,8 +33,13 @@ describe('AuthService', () => {
 
   const prismaMock = {
     accounts: {
+      create: jest.fn(),
       findUnique: jest.fn(),
       update: jest.fn(),
+    },
+    auth_providers: {
+      create: jest.fn(),
+      findUnique: jest.fn(),
     },
     sessions: {
       findFirst: jest.fn(),
@@ -53,7 +60,9 @@ describe('AuthService', () => {
 
   const redisServiceMock = {
     get: jest.fn(),
+    getJson: jest.fn(),
     set: jest.fn(),
+    setJson: jest.fn(),
     del: jest.fn(),
     ttl: jest.fn(),
   };
@@ -66,6 +75,11 @@ describe('AuthService', () => {
   const mailQueueServiceMock = {
     enqueueVerificationEmail: jest.fn(),
     enqueuePasswordResetEmail: jest.fn(),
+  };
+
+  const googleAuthServiceMock = {
+    buildAuthorizationUrl: jest.fn(),
+    verifyIdToken: jest.fn(),
   };
 
   const jwtConfigMock = {
@@ -84,6 +98,17 @@ describe('AuthService', () => {
   const passwordRecoveryConfigMock = {
     ttlSeconds: 10 * 60,
     resendCooldownSeconds: 60,
+  };
+
+  const googleAuthConfigMock = {
+    webClientId: 'web-client-id',
+    iosClientId: 'ios-client-id',
+    androidClientId: 'android-client-id',
+    clientSecret: 'client-secret',
+    callbackUrl: 'http://localhost:8080/api/v1/auth/google/callback',
+    successRedirectUrl: 'http://localhost:3000/user/login',
+    failureRedirectUrl: 'http://localhost:3000/user/login',
+    stateTtlSeconds: 600,
   };
 
   beforeEach(async () => {
@@ -114,6 +139,10 @@ describe('AuthService', () => {
           useValue: mailQueueServiceMock,
         },
         {
+          provide: GoogleAuthService,
+          useValue: googleAuthServiceMock,
+        },
+        {
           provide: RedisService,
           useValue: redisServiceMock,
         },
@@ -128,6 +157,10 @@ describe('AuthService', () => {
         {
           provide: passwordRecoveryConfiguration.KEY,
           useValue: passwordRecoveryConfigMock,
+        },
+        {
+          provide: googleAuthConfiguration.KEY,
+          useValue: googleAuthConfigMock,
         },
       ],
     }).compile();
@@ -343,6 +376,8 @@ describe('AuthService', () => {
         status: UserStatus.ACTIVE,
         type: JwtTokenType.AccessToken,
         deviceId: 'device-1',
+        email: 'new-user@example.com',
+        name: 'New User',
       },
       { expiresIn: jwtConfigMock.accessTokenExpiresIn },
     );
@@ -354,6 +389,8 @@ describe('AuthService', () => {
         status: UserStatus.ACTIVE,
         type: JwtTokenType.RefreshToken,
         deviceId: 'device-1',
+        email: 'new-user@example.com',
+        name: 'New User',
       },
       { expiresIn: jwtConfigMock.refreshTokenExpiresIn },
     );
@@ -906,6 +943,136 @@ describe('AuthService', () => {
         'refresh-token',
       ),
     ).toBe(true);
+  });
+
+  it('should create an active account and provider identity from a verified Google id token', async () => {
+    googleAuthServiceMock.verifyIdToken.mockResolvedValue({
+      providerAccountId: 'google-sub-1',
+      email: 'student@example.com',
+      emailVerified: true,
+      name: 'Student User',
+      picture: 'https://example.com/avatar.png',
+    });
+    prismaMock.auth_providers.findUnique.mockResolvedValue(null);
+    accountsServiceMock.findAccountByEmail.mockResolvedValue(null);
+    prismaMock.accounts.create.mockResolvedValue({
+      id: 'user-1',
+      email: 'student@example.com',
+      name: 'Student User',
+      password: 'hashed-random-password',
+      avatarUrl: 'https://example.com/avatar.png',
+      role: UserRole.USER,
+      status: UserStatus.ACTIVE,
+    });
+    prismaMock.auth_providers.create.mockResolvedValue({ id: 'provider-1' });
+    jwtMock.signAsync
+      .mockResolvedValueOnce('google-access-token')
+      .mockResolvedValueOnce('google-refresh-token');
+    prismaMock.sessions.upsert.mockResolvedValue({ id: 'session-1' });
+
+    await expect(
+      service.signinWithGoogleIdToken(
+        {
+          idToken: 'id-token',
+          deviceId: 'device-1',
+        },
+        DeviceType.MOBILE,
+      ),
+    ).resolves.toEqual({
+      message: 'Google signin successful',
+      data: {
+        accessToken: 'google-access-token',
+        refreshToken: 'google-refresh-token',
+      },
+    });
+    expect(prismaMock.accounts.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        email: 'student@example.com',
+        name: 'Student User',
+        avatarUrl: 'https://example.com/avatar.png',
+        role: UserRole.USER,
+        status: UserStatus.ACTIVE,
+        password: expect.any(String),
+      }),
+    });
+    expect(prismaMock.auth_providers.create).toHaveBeenCalledWith({
+      data: {
+        provider: 'GOOGLE',
+        providerAccountId: 'google-sub-1',
+        accountId: 'user-1',
+        email: 'student@example.com',
+      },
+    });
+    expect(prismaMock.sessions.upsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        create: expect.objectContaining({
+          userId: 'user-1',
+          deviceId: 'device-1',
+          deviceType: DeviceType.MOBILE,
+        }),
+      }),
+    );
+  });
+
+  it('should reuse an existing Google provider identity when signing in', async () => {
+    googleAuthServiceMock.verifyIdToken.mockResolvedValue({
+      providerAccountId: 'google-sub-1',
+      email: 'student@example.com',
+      emailVerified: true,
+      name: 'Student User',
+      picture: null,
+    });
+    prismaMock.auth_providers.findUnique.mockResolvedValue({
+      id: 'provider-1',
+      account: {
+        id: 'user-1',
+        email: 'student@example.com',
+        name: 'Student User',
+        password: 'hashed-password',
+        avatarUrl: '',
+        role: UserRole.USER,
+        status: UserStatus.ACTIVE,
+      },
+    });
+    jwtMock.signAsync
+      .mockResolvedValueOnce('google-access-token')
+      .mockResolvedValueOnce('google-refresh-token');
+    prismaMock.sessions.upsert.mockResolvedValue({ id: 'session-1' });
+
+    const result = await service.signinWithGoogleIdToken(
+      {
+        idToken: 'id-token',
+        deviceId: 'device-1',
+      },
+      DeviceType.WEB,
+    );
+
+    expect(result.data.accessToken).toBe('google-access-token');
+    expect(accountsServiceMock.findAccountByEmail).not.toHaveBeenCalled();
+    expect(prismaMock.accounts.create).not.toHaveBeenCalled();
+    expect(prismaMock.auth_providers.create).not.toHaveBeenCalled();
+  });
+
+  it('should reject Google id tokens with unverified email claims', async () => {
+    googleAuthServiceMock.verifyIdToken.mockResolvedValue({
+      providerAccountId: 'google-sub-1',
+      email: 'student@example.com',
+      emailVerified: false,
+      name: 'Student User',
+      picture: null,
+    });
+
+    await expect(
+      service.signinWithGoogleIdToken(
+        {
+          idToken: 'id-token',
+          deviceId: 'device-1',
+        },
+        DeviceType.MOBILE,
+      ),
+    ).rejects.toBeInstanceOf(UnauthorizedException);
+    expect(prismaMock.auth_providers.findUnique).not.toHaveBeenCalled();
+    expect(prismaMock.sessions.upsert).not.toHaveBeenCalled();
   });
 
   it('should throw unauthorized exception for missing signin account', async () => {

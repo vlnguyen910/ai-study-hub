@@ -11,14 +11,23 @@ import { SigninDto } from './dto/signin.dto';
 import { SignupDto } from './dto/signup.dto';
 import {
   emailVerificationConfiguration,
+  googleAuthConfiguration,
   jwtConfiguration,
   passwordRecoveryConfiguration,
 } from '../../config';
 import type { ConfigType } from '@nestjs/config';
 import { TokenPayload } from '../../common/interfaces/auth.interface';
 import { JwtTokenType } from '../../common/enums/jwt.enum';
-import { accounts, DeviceType, UserRole, UserStatus } from '@prisma/client';
+import {
+  accounts,
+  AuthProvider,
+  DeviceType,
+  UserRole,
+  UserStatus,
+} from '@prisma/client';
 import argon2 from 'argon2';
+import { randomBytes } from 'node:crypto';
+import { v4 as uuidv4 } from 'uuid';
 import { AccountsService } from '../accounts/accounts.service';
 import { VerifyEmailDto } from './dto/verify-email.dto';
 import { MailQueueService } from '../mail/mail-queue.service';
@@ -26,6 +35,14 @@ import { AuthTokenService } from './services/auth-token.service';
 import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
 import { ChangePasswordDto } from './dto/change-password.dto';
+import { RedisService } from '../../common/redis/redis.service';
+import {
+  GoogleAccountProfile,
+  GoogleAuthService,
+} from './services/google-auth.service';
+import { GoogleMobileSigninDto } from './dto/google-mobile-signin.dto';
+import { GoogleSigninQueryDto } from './dto/google-signin-query.dto';
+import { GoogleCallbackQueryDto } from './dto/google-callback-query.dto';
 
 const VERIFY_EMAIL_TOKEN_PREFIX = 'verify_email';
 const VERIFY_EMAIL_USER_PREFIX = 'verify_email_user';
@@ -33,8 +50,14 @@ const VERIFY_EMAIL_COOLDOWN_PREFIX = 'verify_email_cooldown';
 const PASSWORD_RESET_TOKEN_PREFIX = 'password_reset';
 const PASSWORD_RESET_USER_PREFIX = 'password_reset_user';
 const PASSWORD_RESET_COOLDOWN_PREFIX = 'password_reset_cooldown';
+const GOOGLE_OAUTH_STATE_PREFIX = 'google_oauth_state';
 const PASSWORD_RESET_SUCCESS_MESSAGE =
   'If an account exists for this email, a password reset link has been sent.';
+
+interface GoogleOAuthState {
+  deviceId: string;
+  redirectPath?: string;
+}
 
 type VerificationAccount = Pick<
   accounts,
@@ -55,10 +78,16 @@ export class AuthService {
     private readonly passwordRecoveryConfig: ConfigType<
       typeof passwordRecoveryConfiguration
     >,
+    @Inject(googleAuthConfiguration.KEY)
+    private readonly googleAuthConfig: ConfigType<
+      typeof googleAuthConfiguration
+    >,
     private accountService: AccountsService,
     private prismaService: PrismaService,
     private mailQueueService: MailQueueService,
     private readonly authTokenService: AuthTokenService,
+    private readonly redisService: RedisService,
+    private readonly googleAuthService: GoogleAuthService,
   ) {}
 
   async getCurrentUser(userPayload: TokenPayload) {
@@ -411,6 +440,77 @@ export class AuthService {
     };
   }
 
+  async getGoogleAuthorizationUrl(query: GoogleSigninQueryDto) {
+    const state = uuidv4();
+    const redirectPath = this.getSafeRedirectPath(query.redirectPath);
+
+    await this.redisService.setJson<GoogleOAuthState>(
+      this.getGoogleOAuthStateKey(state),
+      {
+        deviceId: query.deviceId,
+        ...(redirectPath ? { redirectPath } : {}),
+      },
+      this.googleAuthConfig.stateTtlSeconds,
+    );
+
+    return this.googleAuthService.buildAuthorizationUrl(state);
+  }
+
+  async signinWithGoogleCode(query: GoogleCallbackQueryDto) {
+    if (!query.code || !query.state) {
+      throw new BadRequestException(
+        'Google OAuth callback is missing code or state',
+      );
+    }
+
+    const stateKey = this.getGoogleOAuthStateKey(query.state);
+    const state = await this.redisService.getJson<GoogleOAuthState>(stateKey);
+
+    if (!state) {
+      throw new BadRequestException('Google OAuth state is invalid or expired');
+    }
+
+    await this.redisService.del(stateKey);
+    const idToken = await this.googleAuthService.exchangeCodeForIdToken(
+      query.code,
+    );
+    const result = await this.signinWithGoogleIdToken(
+      {
+        idToken,
+        deviceId: state.deviceId,
+      },
+      DeviceType.WEB,
+    );
+
+    return {
+      tokens: result.data,
+      redirectUrl: this.buildGoogleSuccessRedirectUrl(
+        result.data.accessToken,
+        state.redirectPath,
+      ),
+    };
+  }
+
+  async signinWithGoogleIdToken(
+    googleSigninDto: GoogleMobileSigninDto,
+    deviceType: DeviceType,
+  ) {
+    const profile = await this.googleAuthService.verifyIdToken(
+      googleSigninDto.idToken,
+    );
+    const account = await this.resolveGoogleAccount(profile);
+    const tokens = await this.rotateVerifiedSession(
+      account,
+      googleSigninDto.deviceId,
+      deviceType,
+    );
+
+    return {
+      message: 'Google signin successful',
+      data: tokens,
+    };
+  }
+
   async logout(userId: string, deviceId: string) {
     const account = await this.accountService.findOne(userId);
 
@@ -474,6 +574,152 @@ export class AuthService {
     };
   }
 
+  buildGoogleFailureRedirectUrl(message: string) {
+    return this.appendQueryToUrl(this.googleAuthConfig.failureRedirectUrl, {
+      googleError: message,
+    });
+  }
+
+  private async resolveGoogleAccount(profile: GoogleAccountProfile) {
+    if (!profile.emailVerified) {
+      throw new UnauthorizedException('Google email is not verified');
+    }
+
+    const providerIdentity = await this.prismaService.auth_providers.findUnique(
+      {
+        where: {
+          provider_providerAccountId: {
+            provider: AuthProvider.GOOGLE,
+            providerAccountId: profile.providerAccountId,
+          },
+        },
+        include: {
+          account: true,
+        },
+      },
+    );
+
+    if (providerIdentity) {
+      return this.assertGoogleAccountCanSignin(providerIdentity.account);
+    }
+
+    const existingAccount = await this.accountService.findAccountByEmail(
+      profile.email,
+    );
+
+    if (existingAccount) {
+      const account = await this.activateGoogleLinkedAccount(existingAccount);
+      await this.createGoogleProviderIdentity(profile, account.id);
+      return account;
+    }
+
+    const password = await argon2.hash(randomBytes(32).toString('hex'));
+    const account = await this.prismaService.accounts.create({
+      data: {
+        email: profile.email,
+        name: profile.name,
+        password,
+        avatarUrl: profile.picture ?? '',
+        role: UserRole.USER,
+        status: UserStatus.ACTIVE,
+      },
+    });
+    await this.createGoogleProviderIdentity(profile, account.id);
+
+    return account;
+  }
+
+  private assertGoogleAccountCanSignin(account: accounts) {
+    if (
+      account.status === UserStatus.BANNED ||
+      account.status === UserStatus.DELETED
+    ) {
+      throw new UnauthorizedException('Invalid credentials');
+    }
+
+    if (account.status === UserStatus.UNVERIFIED) {
+      return this.prismaService.accounts.update({
+        where: { id: account.id },
+        data: { status: UserStatus.ACTIVE },
+      });
+    }
+
+    return account;
+  }
+
+  private async activateGoogleLinkedAccount(account: accounts) {
+    if (
+      account.status === UserStatus.BANNED ||
+      account.status === UserStatus.DELETED
+    ) {
+      throw new UnauthorizedException('Invalid credentials');
+    }
+
+    if (account.status !== UserStatus.UNVERIFIED) {
+      return account;
+    }
+
+    return this.prismaService.accounts.update({
+      where: { id: account.id },
+      data: { status: UserStatus.ACTIVE },
+    });
+  }
+
+  private createGoogleProviderIdentity(
+    profile: GoogleAccountProfile,
+    accountId: string,
+  ) {
+    return this.prismaService.auth_providers.create({
+      data: {
+        provider: AuthProvider.GOOGLE,
+        providerAccountId: profile.providerAccountId,
+        accountId,
+        email: profile.email,
+      },
+    });
+  }
+
+  private buildGoogleSuccessRedirectUrl(
+    accessToken: string,
+    redirectPath?: string,
+  ) {
+    const baseUrl = this.appendQueryToUrl(
+      this.googleAuthConfig.successRedirectUrl,
+      redirectPath ? { redirect: redirectPath } : {},
+    );
+
+    return `${baseUrl}#googleAccessToken=${encodeURIComponent(accessToken)}`;
+  }
+
+  private appendQueryToUrl(url: string, query: Record<string, string>) {
+    const entries = Object.entries(query).filter(([, value]) => value);
+
+    if (entries.length === 0) {
+      return url;
+    }
+
+    const separator = url.includes('?') ? '&' : '?';
+    const params = new URLSearchParams(entries).toString();
+
+    return `${url}${separator}${params}`;
+  }
+
+  private getGoogleOAuthStateKey(state: string) {
+    return `${GOOGLE_OAUTH_STATE_PREFIX}:${state}`;
+  }
+
+  private getSafeRedirectPath(redirectPath?: string) {
+    if (
+      !redirectPath ||
+      !redirectPath.startsWith('/') ||
+      redirectPath.startsWith('//')
+    ) {
+      return undefined;
+    }
+
+    return redirectPath;
+  }
+
   private async manageUserToken(account: accounts, deviceId: string) {
     const tokenPayload: TokenPayload = {
       sub: account.id,
@@ -481,6 +727,8 @@ export class AuthService {
       status: account.status,
       type: JwtTokenType.AccessToken, // Default to AccessToken, will be overridden in generateToken
       deviceId: deviceId,
+      email: account.email,
+      name: account.name,
     };
 
     const [accessToken, refreshToken] = await Promise.all([

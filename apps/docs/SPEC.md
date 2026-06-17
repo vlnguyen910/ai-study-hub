@@ -27,11 +27,11 @@ Spec này đã được đối chiếu với codebase hiện tại ngày 2026-06
 
 - API: NestJS, Prisma MongoDB, Redis, JWT, refresh token session, role guard, response interceptor, exception filter.
 - API Admin boundary: `AdminModule` owns admin-only account routes, subject mutation routes, and `GET /admin/dashboard`; account and subject route URLs remain backward compatible.
-- Auth: signup tạo account `UNVERIFIED`, tạo token verify email bằng Redis SHA-256 và enqueue mail job; signin cấp session/token cho `ACTIVE` và `UNVERIFIED`, trong đó `UNVERIFIED` chỉ có phiên hạn chế; Web/Mobile redirect về login sau signup để người dùng đăng nhập thủ công; forgot/reset/change password đã có backend.
+- Auth: signup tạo account `UNVERIFIED`, tạo token verify email bằng Redis SHA-256 và enqueue mail job; signin cấp session/token cho `ACTIVE` và `UNVERIFIED`, trong đó `UNVERIFIED` chỉ có phiên hạn chế; Google login hỗ trợ Web OAuth callback và Mobile ID-token flow; Web/Mobile redirect về login sau signup để người dùng đăng nhập thủ công; forgot/reset/change password đã có backend.
 - Mail: `MailModule` enqueue verification/password-reset jobs qua BullMQ và worker dùng Nodemailer SMTP qua cấu hình `MAILTRAP_SMTP_*`; khi thiếu SMTP credentials thì log link trong development hoặc bỏ qua gửi mail ở môi trường khác.
 - Database: MongoDB qua Prisma với models `accounts`, `sessions`, `schools`, `subjects`, `documents`; Redis dùng cho token/cooldown của email verification và password recovery.
-- Web: Next.js App Router, route groups cho auth/app/admin/moderator, shared UI components, Zustand auth store, Axios clients. Auth helpers, public/user document helpers, Admin dashboard summary cards, Admin Users và Moderator document review đã dùng API thật; verify-email route hiện gửi `deviceId` + `deviceType = WEB` để có thể reissue session trên chính device; change-password dùng authenticated API client.
-- Mobile: Expo Router, NativeWind, auth service đã gọi `/api/v1/auth/mobile-signin`, lưu access/refresh token bằng SecureStore, tự refresh access token khi API trả `401`, và có forgot/reset password flow bằng reset-token link; verify-email screen hiện gửi `deviceId` + `deviceType = MOBILE` và lưu token mới nếu backend reissue session; document service mới có create metadata cơ bản; nhiều màn hình document/profile/moderator vẫn là template/mock.
+- Web: Next.js App Router, route groups cho auth/app/admin/moderator, shared UI components, Zustand auth store, Axios clients. Auth helpers, public/user document helpers, Admin dashboard summary cards, Admin Users và Moderator document review đã dùng API thật; login page/modal có Google OAuth entry; verify-email route hiện gửi `deviceId` + `deviceType = WEB` để có thể reissue session trên chính device; change-password dùng authenticated API client.
+- Mobile: Expo Router, NativeWind, auth service đã gọi `/api/v1/auth/mobile-signin` và `/api/v1/auth/google/mobile`, lưu access/refresh token bằng SecureStore, tự refresh access token khi API trả `401`, và có forgot/reset password flow bằng reset-token link; verify-email screen hiện gửi `deviceId` + `deviceType = MOBILE` và lưu token mới nếu backend reissue session; document service mới có create metadata cơ bản; nhiều màn hình document/profile/moderator vẫn là template/mock.
 - Current phase: API đã hoàn thành Phase 4 moderation cơ bản, đã tách boundary `AdminModule` cho Admin MVP hardening, và Web/Mobile auth client đã align với token contract hiện tại cùng luồng verify-email device-aware; Product tổng thể chưa đạt Current MVP DoD vì Admin settings và một số Mobile screens còn mock/template.
 - Chưa có: binary file upload, Cloudinary/storage integration, download endpoint/count, full-text/tag search, AI extraction/summary/keywords/chat/quiz/duplicate detection.
 
@@ -518,6 +518,34 @@ Current Web client behavior:
 - If a protected request returns `401`, the Web interceptor calls `/auth/refresh` with credentials, stores the returned access token, and retries the original request once with `Authorization: Bearer <accessToken>`.
 - Logout calls `/auth/logout` to revoke the current session and clear backend cookies, then clears the local Web auth store.
 
+### `GET /auth/google`
+
+Web Google OAuth start.
+
+Query:
+
+- `deviceId`
+- `redirectPath` optional safe internal path
+
+Behavior:
+
+- Creates a short-lived Redis OAuth state containing `deviceId` and optional redirect path.
+- Redirects to Google OAuth with `openid email profile` scopes.
+
+### `GET /auth/google/callback`
+
+Web Google OAuth callback.
+
+Behavior:
+
+- Validates OAuth state, exchanges Google code for an ID token, and verifies the ID token audience.
+- Requires `email_verified === true`.
+- Resolves account by Google provider identity first.
+- If no provider identity exists, links a verified Google email to an existing non-deleted, non-banned account.
+- If no account exists, creates an `ACTIVE` `USER` account with an unusable random password.
+- Stores only provider identity; Google provider tokens are not persisted.
+- Sets the Web `refreshToken` cookie and redirects to the Web login route with `#googleAccessToken=...`.
+
 ### `POST /auth/mobile-signin`
 
 Mobile sign in.
@@ -532,6 +560,21 @@ Behavior:
 
 - Same credential/session logic as Web signin.
 - Returns `accessToken` and `refreshToken` in body.
+
+### `POST /auth/google/mobile`
+
+Mobile Google sign in.
+
+Request body:
+
+- `idToken`
+- `deviceId`
+
+Behavior:
+
+- Verifies the Google ID token with configured Web/iOS/Android client IDs.
+- Uses the same provider linking and account creation rules as the Web Google callback.
+- Returns `accessToken` and `refreshToken` in body for SecureStore persistence.
 
 ### `POST /auth/logout`
 
