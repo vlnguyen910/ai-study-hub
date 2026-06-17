@@ -544,7 +544,8 @@ Behavior:
 - If no provider identity exists, links a verified Google email to an existing non-deleted, non-banned account.
 - If no account exists, creates an `ACTIVE` `USER` account with an unusable random password.
 - Stores only provider identity; Google provider tokens are not persisted.
-- Sets the Web `refreshToken` cookie and redirects to the Web login route with `#googleAccessToken=...`.
+- Sets the Web `refreshToken` cookie and redirects to `/home#googleAccessToken=...` by default; Web consumes the fragment before route guard redirects.
+- OAuth provider errors redirect to `/google/failure?googleError=...`.
 
 ### `POST /auth/mobile-signin`
 

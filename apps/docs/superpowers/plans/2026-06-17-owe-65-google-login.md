@@ -10,7 +10,7 @@ Add Google login for API, Web, and Mobile while keeping email/password auth and 
 - API stores provider identity only: provider, provider account id, account id, email.
 - API links by provider identity first, then links a verified Google email to an existing non-deleted local account.
 - API rejects unverified Google emails and banned/deleted accounts.
-- Web starts OAuth from the API, API exchanges the callback code, sets the refresh cookie, and redirects back with access token in the URL fragment.
+- Web starts OAuth from the API, API exchanges the callback code, sets the refresh cookie, and redirects to `/home` with access token in the URL fragment.
 - Mobile uses Expo Google auth to get an ID token, then calls `POST /api/v1/auth/google/mobile` and stores returned access/refresh tokens in SecureStore.
 
 ## Env
