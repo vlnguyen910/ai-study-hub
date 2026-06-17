@@ -11,6 +11,7 @@ import { MailModule } from '../mail/mail.module';
 import { JwtStrategy } from './strategies/jwt.strategy';
 import { RefreshTokenStrategy } from './strategies/refresh-token.strategy';
 import { AuthTokenService } from './services/auth-token.service';
+import { GoogleAuthService } from './services/google-auth.service';
 
 @Module({
   imports: [
@@ -28,7 +29,13 @@ import { AuthTokenService } from './services/auth-token.service';
     MailModule,
   ],
   controllers: [AuthController],
-  providers: [AuthService, AuthTokenService, JwtStrategy, RefreshTokenStrategy],
+  providers: [
+    AuthService,
+    AuthTokenService,
+    GoogleAuthService,
+    JwtStrategy,
+    RefreshTokenStrategy,
+  ],
   exports: [AuthService, JwtModule, PassportModule],
 })
 export class AuthModule {}

@@ -6,6 +6,7 @@
 export const API_ENDPOINTS = {
   AUTH: {
     LOGIN: "/api/v1/auth/signin",
+    GOOGLE: "/api/v1/auth/google",
     REGISTER: "/api/v1/auth/signup",
     RESEND_VERIFICATION_EMAIL: "/api/v1/auth/resend-verification-email",
     VERIFY_EMAIL: "/api/v1/auth/verify-email",

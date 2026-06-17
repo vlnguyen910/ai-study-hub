@@ -1,6 +1,7 @@
 export const API_ENDPOINTS = {
   AUTH: {
     MOBILE_SIGN_IN: "/api/v1/auth/mobile-signin",
+    GOOGLE_MOBILE_SIGN_IN: "/api/v1/auth/google/mobile",
     SIGN_UP: "/api/v1/auth/signup",
     VERIFY_EMAIL: "/api/v1/auth/verify-email",
     RESEND_VERIFICATION_EMAIL: "/api/v1/auth/resend-verification-email",

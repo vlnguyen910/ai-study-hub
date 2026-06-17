@@ -8,6 +8,8 @@ export class TokenPayload {
   status!: UserStatus;
   type!: JwtTokenType;
   deviceId!: string;
+  email?: string;
+  name?: string;
 }
 
 export interface AuthenticatedRequest extends Request {

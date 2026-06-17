@@ -11,6 +11,7 @@ import { PrismaModule } from './prisma/prisma.module';
 import { cookieConfiguration } from './config/cookies.config';
 import {
   emailVerificationConfiguration,
+  googleAuthConfiguration,
   mailConfiguration,
   passwordRecoveryConfiguration,
   redisConfiguration,
@@ -28,6 +29,7 @@ import {
         mailConfiguration,
         emailVerificationConfiguration,
         passwordRecoveryConfiguration,
+        googleAuthConfiguration,
       ],
     }),
     PrismaModule,

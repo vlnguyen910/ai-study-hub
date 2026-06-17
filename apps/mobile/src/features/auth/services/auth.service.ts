@@ -3,6 +3,7 @@ import { apiClient } from "@/services";
 import type {
   AuthResponse,
   ForgotPasswordPayload,
+  GoogleSignInPayload,
   RefreshTokenPayload,
   ResetPasswordPayload,
   SignInPayload,
@@ -42,6 +43,33 @@ export const signInService = async (
       throw new AuthServiceError(
         error.response?.data?.message ||
           "Đăng nhập thất bại. Vui lòng kiểm tra lại email và mật khẩu.",
+        error.response?.status,
+      );
+    }
+
+    if (error instanceof Error) {
+      throw new AuthServiceError(error.message);
+    }
+
+    throw new AuthServiceError("Không thể kết nối đến máy chủ");
+  }
+};
+
+export const googleSignInService = async (
+  payload: GoogleSignInPayload,
+  client: ApiClient = apiClient,
+): Promise<AuthResponse> => {
+  try {
+    const response = await client.post<AuthResponse>(
+      API_ENDPOINTS.AUTH.GOOGLE_MOBILE_SIGN_IN,
+      payload,
+    );
+    return response.data;
+  } catch (error) {
+    if (axios.isAxiosError(error)) {
+      throw new AuthServiceError(
+        error.response?.data?.message ||
+          "Đăng nhập Google thất bại. Vui lòng thử lại.",
         error.response?.status,
       );
     }

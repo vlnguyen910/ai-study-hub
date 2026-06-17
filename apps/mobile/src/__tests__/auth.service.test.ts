@@ -1,5 +1,6 @@
 import {
   forgotPasswordService,
+  googleSignInService,
   refreshTokenService,
   resendVerificationEmailService,
   resetPasswordService,
@@ -36,6 +37,30 @@ describe("auth.service", () => {
     expect(client.post).toHaveBeenCalledWith("/api/v1/auth/mobile-signin", {
       email: "student@example.com",
       password: "Password123!",
+      deviceId: "device-1",
+    });
+  });
+
+  it("signs in with Google id token through the mobile Google endpoint", async () => {
+    const client = createClientMock();
+    const response = {
+      message: "Google signin successful",
+      data: { accessToken: "access", refreshToken: "refresh" },
+    };
+    client.post.mockResolvedValue({ data: response });
+
+    await expect(
+      googleSignInService(
+        {
+          idToken: "id-token",
+          deviceId: "device-1",
+        },
+        client,
+      ),
+    ).resolves.toBe(response);
+
+    expect(client.post).toHaveBeenCalledWith("/api/v1/auth/google/mobile", {
+      idToken: "id-token",
       deviceId: "device-1",
     });
   });

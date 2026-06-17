@@ -4,6 +4,11 @@ export interface SignInPayload {
   deviceId: string;
 }
 
+export interface GoogleSignInPayload {
+  idToken: string;
+  deviceId: string;
+}
+
 export interface SignUpPayload {
   name: string;
   email: string;

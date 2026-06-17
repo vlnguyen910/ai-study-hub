@@ -34,6 +34,9 @@ describe('AuthController', () => {
     changePassword: jest.fn(),
     getCurrentUser: jest.fn(),
     signin: jest.fn(),
+    getGoogleAuthorizationUrl: jest.fn(),
+    signinWithGoogleCode: jest.fn(),
+    signinWithGoogleIdToken: jest.fn(),
     logout: jest.fn(),
     refreshToken: jest.fn(),
   };
@@ -43,6 +46,7 @@ describe('AuthController', () => {
       cookie: jest.fn(),
       json: jest.fn(),
       clearCookie: jest.fn(),
+      redirect: jest.fn(),
     }) as unknown as Response;
 
   const userPayload: TokenPayload = {
@@ -360,6 +364,86 @@ describe('AuthController', () => {
     );
     expect(result).toEqual({
       message: 'Signin successful',
+      data: {
+        accessToken: 'mobile-access-token',
+        refreshToken: 'mobile-refresh-token',
+      },
+    });
+  });
+
+  it('redirects to Google authorization URL for web Google signin', async () => {
+    const response = createResponseMock();
+    authServiceMock.getGoogleAuthorizationUrl.mockResolvedValue(
+      'https://accounts.google.com/o/oauth2/v2/auth?state=state',
+    );
+
+    await controller.googleSignin(
+      { deviceId: 'device-1', redirectPath: '/documents' },
+      response,
+    );
+
+    expect(authServiceMock.getGoogleAuthorizationUrl).toHaveBeenCalledWith({
+      deviceId: 'device-1',
+      redirectPath: '/documents',
+    });
+    expect(response.redirect).toHaveBeenCalledWith(
+      'https://accounts.google.com/o/oauth2/v2/auth?state=state',
+    );
+  });
+
+  it('sets refresh cookie and redirects with access token fragment after Google callback', async () => {
+    const response = createResponseMock();
+    authServiceMock.signinWithGoogleCode.mockResolvedValue({
+      redirectUrl: 'http://localhost:3000/user/login#googleAccessToken=access',
+      tokens: {
+        accessToken: 'access',
+        refreshToken: 'refresh',
+      },
+    });
+
+    await controller.googleCallback(
+      { code: 'code-1', state: 'state-1' },
+      response,
+    );
+
+    expect(authServiceMock.signinWithGoogleCode).toHaveBeenCalledWith({
+      code: 'code-1',
+      state: 'state-1',
+    });
+    expect(response.cookie).toHaveBeenCalledWith('refreshToken', 'refresh', {
+      httpOnly: cookieConfigMock.httpOnly,
+      secure: cookieConfigMock.secure,
+      sameSite: cookieConfigMock.sameSite,
+      maxAge: cookieConfigMock.refreshTokenMaxAge,
+    });
+    expect(response.redirect).toHaveBeenCalledWith(
+      'http://localhost:3000/user/login#googleAccessToken=access',
+    );
+  });
+
+  it('returns both tokens and forces mobile device type on mobile Google signin', async () => {
+    authServiceMock.signinWithGoogleIdToken.mockResolvedValue({
+      message: 'Google signin successful',
+      data: {
+        accessToken: 'mobile-access-token',
+        refreshToken: 'mobile-refresh-token',
+      },
+    });
+
+    const result = await controller.mobileGoogleSignin({
+      idToken: 'id-token',
+      deviceId: 'device-1',
+    });
+
+    expect(authServiceMock.signinWithGoogleIdToken).toHaveBeenCalledWith(
+      {
+        idToken: 'id-token',
+        deviceId: 'device-1',
+      },
+      DeviceType.MOBILE,
+    );
+    expect(result).toEqual({
+      message: 'Google signin successful',
       data: {
         accessToken: 'mobile-access-token',
         refreshToken: 'mobile-refresh-token',

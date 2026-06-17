@@ -4,9 +4,9 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import type { ReactElement } from "react";
-import { Button } from "@repo/ui/button";
 import { buildUserFromAccessToken, extractAccessToken } from "@/lib/auth";
 import { apiClient } from "@/lib/axios";
+import { buildGoogleLoginUrl } from "@/modules/google-auth";
 import { ROUTE_PATHS } from "@/routes/router.const";
 import { API_ENDPOINTS } from "@/shared/constants";
 import { useAuthStore } from "@/stores/auth/store";
@@ -137,6 +137,15 @@ export default function LoginModal({
     }
   };
 
+  const handleGoogleSignin = () => {
+    const deviceId = getOrCreateDeviceId();
+
+    window.location.href = buildGoogleLoginUrl({
+      deviceId,
+      redirectPath: ROUTE_PATHS.PROTECTED_ROUTES.HOME,
+    });
+  };
+
   return (
     <div
       className="fixed inset-0 z-50 bg-slate-950/60 px-4 py-8 backdrop-blur-sm"
@@ -255,6 +264,21 @@ export default function LoginModal({
               {isLoading ? "Đang đăng nhập..." : "Đăng nhập"}
             </button>
           </form>
+
+          <div className="my-6 flex items-center gap-3">
+            <div className="h-px flex-1 bg-gray-200" />
+            <span className="text-xs font-semibold text-gray-500">or</span>
+            <div className="h-px flex-1 bg-gray-200" />
+          </div>
+
+          <button
+            type="button"
+            onClick={handleGoogleSignin}
+            className="flex h-12 w-full items-center justify-center gap-3 rounded-full border border-gray-300 bg-white text-sm font-bold text-gray-900 transition-colors hover:bg-gray-50"
+          >
+            <span className="font-bold text-[#EA4335]">G</span>
+            Continue with Google
+          </button>
 
           <p className="text-center text-gray-600 text-sm mt-6">
             Don&apos;t have an account?{" "}
