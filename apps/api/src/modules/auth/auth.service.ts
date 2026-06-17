@@ -484,7 +484,10 @@ export class AuthService {
 
     return {
       tokens: result.data,
-      redirectUrl: this.buildGoogleSuccessRedirectUrl(result.data.accessToken),
+      redirectUrl: this.buildGoogleSuccessRedirectUrl(
+        result.data.accessToken,
+        state.redirectPath,
+      ),
     };
   }
 
@@ -676,8 +679,18 @@ export class AuthService {
     });
   }
 
-  private buildGoogleSuccessRedirectUrl(accessToken: string) {
-    return `${this.googleAuthConfig.successRedirectUrl}#googleAccessToken=${encodeURIComponent(accessToken)}`;
+  private buildGoogleSuccessRedirectUrl(
+    accessToken: string,
+    redirectPath?: string,
+  ) {
+    const successRedirectUrl = redirectPath
+      ? this.withRedirectPath(
+          this.googleAuthConfig.successRedirectUrl,
+          redirectPath,
+        )
+      : this.googleAuthConfig.successRedirectUrl;
+
+    return `${successRedirectUrl}#googleAccessToken=${encodeURIComponent(accessToken)}`;
   }
 
   private appendQueryToUrl(url: string, query: Record<string, string>) {
@@ -691,6 +704,15 @@ export class AuthService {
     const params = new URLSearchParams(entries).toString();
 
     return `${url}${separator}${params}`;
+  }
+
+  private withRedirectPath(url: string, redirectPath: string) {
+    const redirectUrl = new URL(url);
+    redirectUrl.pathname = redirectPath;
+    redirectUrl.search = '';
+    redirectUrl.hash = '';
+
+    return redirectUrl.toString();
   }
 
   private getGoogleOAuthStateKey(state: string) {

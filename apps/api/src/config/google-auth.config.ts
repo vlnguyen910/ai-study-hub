@@ -1,6 +1,13 @@
 import { registerAs } from '@nestjs/config';
 
 const PLACEHOLDER = 'PLACE_HOLDER';
+const DEFAULT_STATE_TTL_SECONDS = 600;
+
+const getPositiveIntegerEnv = (value: string | undefined, fallback: number) => {
+  const parsed = Number(value);
+
+  return Number.isInteger(parsed) && parsed > 0 ? parsed : fallback;
+};
 
 export const googleAuthConfiguration = registerAs('googleAuth', () => ({
   webClientId: process.env.GOOGLE_WEB_CLIENT_ID || PLACEHOLDER,
@@ -14,5 +21,8 @@ export const googleAuthConfiguration = registerAs('googleAuth', () => ({
   failureRedirectUrl:
     process.env.GOOGLE_WEB_FAILURE_REDIRECT_URL ||
     `${process.env.FRONTEND_URL || 'http://localhost:3000'}/google/failure`,
-  stateTtlSeconds: Number(process.env.GOOGLE_OAUTH_STATE_TTL_SECONDS || 600),
+  stateTtlSeconds: getPositiveIntegerEnv(
+    process.env.GOOGLE_OAUTH_STATE_TTL_SECONDS,
+    DEFAULT_STATE_TTL_SECONDS,
+  ),
 }));

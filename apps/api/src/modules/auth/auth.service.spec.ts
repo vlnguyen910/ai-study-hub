@@ -79,6 +79,7 @@ describe('AuthService', () => {
 
   const googleAuthServiceMock = {
     buildAuthorizationUrl: jest.fn(),
+    exchangeCodeForIdToken: jest.fn(),
     verifyIdToken: jest.fn(),
   };
 
@@ -1011,6 +1012,57 @@ describe('AuthService', () => {
           deviceType: DeviceType.MOBILE,
         }),
       }),
+    );
+  });
+
+  it('should use stored redirect path when completing Google OAuth callback', async () => {
+    redisServiceMock.getJson.mockResolvedValue({
+      deviceId: 'device-1',
+      redirectPath: '/documents',
+    });
+    googleAuthServiceMock.exchangeCodeForIdToken.mockResolvedValue('id-token');
+    googleAuthServiceMock.verifyIdToken.mockResolvedValue({
+      providerAccountId: 'google-sub-1',
+      email: 'student@example.com',
+      emailVerified: true,
+      name: 'Student User',
+      picture: null,
+    });
+    prismaMock.auth_providers.findUnique.mockResolvedValue({
+      id: 'provider-1',
+      account: {
+        id: 'user-1',
+        email: 'student@example.com',
+        name: 'Student User',
+        password: 'hashed-password',
+        avatarUrl: '',
+        role: UserRole.USER,
+        status: UserStatus.ACTIVE,
+      },
+    });
+    jwtMock.signAsync
+      .mockResolvedValueOnce('google-access-token')
+      .mockResolvedValueOnce('google-refresh-token');
+    prismaMock.sessions.upsert.mockResolvedValue({ id: 'session-1' });
+
+    await expect(
+      service.signinWithGoogleCode({
+        code: 'oauth-code',
+        state: 'oauth-state',
+      }),
+    ).resolves.toEqual({
+      tokens: {
+        accessToken: 'google-access-token',
+        refreshToken: 'google-refresh-token',
+      },
+      redirectUrl:
+        'http://localhost:3000/documents#googleAccessToken=google-access-token',
+    });
+    expect(redisServiceMock.getJson).toHaveBeenCalledWith(
+      'google_oauth_state:oauth-state',
+    );
+    expect(redisServiceMock.del).toHaveBeenCalledWith(
+      'google_oauth_state:oauth-state',
     );
   });
 
