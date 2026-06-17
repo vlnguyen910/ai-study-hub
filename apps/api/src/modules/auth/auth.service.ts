@@ -22,6 +22,7 @@ import {
   accounts,
   AuthProvider,
   DeviceType,
+  Prisma,
   UserRole,
   UserStatus,
 } from '@prisma/client';
@@ -58,6 +59,15 @@ interface GoogleOAuthState {
   deviceId: string;
   redirectPath?: string;
 }
+
+type GoogleProviderIdentityClient = Pick<
+  Prisma.TransactionClient,
+  'auth_providers'
+>;
+type GoogleAccountLinkClient = Pick<
+  Prisma.TransactionClient,
+  'accounts' | 'auth_providers'
+>;
 
 type VerificationAccount = Pick<
   accounts,
@@ -608,25 +618,28 @@ export class AuthService {
     );
 
     if (existingAccount) {
-      const account = await this.activateGoogleLinkedAccount(existingAccount);
-      await this.createGoogleProviderIdentity(profile, account.id);
-      return account;
+      return this.prismaService.$transaction((transaction) =>
+        this.linkGoogleProviderIdentity(transaction, existingAccount, profile),
+      );
     }
 
     const password = await argon2.hash(randomBytes(32).toString('hex'));
-    const account = await this.prismaService.accounts.create({
-      data: {
-        email: profile.email,
-        name: profile.name,
-        password,
-        avatarUrl: profile.picture ?? '',
-        role: UserRole.USER,
-        status: UserStatus.ACTIVE,
-      },
-    });
-    await this.createGoogleProviderIdentity(profile, account.id);
 
-    return account;
+    return this.prismaService.$transaction(async (transaction) => {
+      const account = await transaction.accounts.create({
+        data: {
+          email: profile.email,
+          name: profile.name,
+          password,
+          avatarUrl: profile.picture ?? '',
+          role: UserRole.USER,
+          status: UserStatus.ACTIVE,
+        },
+      });
+      await this.createGoogleProviderIdentity(transaction, profile, account.id);
+
+      return account;
+    });
   }
 
   private assertGoogleAccountCanSignin(account: accounts) {
@@ -647,7 +660,28 @@ export class AuthService {
     return account;
   }
 
-  private async activateGoogleLinkedAccount(account: accounts) {
+  private async linkGoogleProviderIdentity(
+    transaction: GoogleAccountLinkClient,
+    account: accounts,
+    profile: GoogleAccountProfile,
+  ) {
+    const activeAccount = await this.activateGoogleLinkedAccount(
+      transaction,
+      account,
+    );
+    await this.createGoogleProviderIdentity(
+      transaction,
+      profile,
+      activeAccount.id,
+    );
+
+    return activeAccount;
+  }
+
+  private async activateGoogleLinkedAccount(
+    transaction: Pick<Prisma.TransactionClient, 'accounts'>,
+    account: accounts,
+  ) {
     if (
       account.status === UserStatus.BANNED ||
       account.status === UserStatus.DELETED
@@ -659,17 +693,18 @@ export class AuthService {
       return account;
     }
 
-    return this.prismaService.accounts.update({
+    return transaction.accounts.update({
       where: { id: account.id },
       data: { status: UserStatus.ACTIVE },
     });
   }
 
   private createGoogleProviderIdentity(
+    transaction: GoogleProviderIdentityClient,
     profile: GoogleAccountProfile,
     accountId: string,
   ) {
-    return this.prismaService.auth_providers.create({
+    return transaction.auth_providers.create({
       data: {
         provider: AuthProvider.GOOGLE,
         providerAccountId: profile.providerAccountId,
