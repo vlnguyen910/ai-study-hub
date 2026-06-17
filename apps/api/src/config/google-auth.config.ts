@@ -10,9 +10,9 @@ export const googleAuthConfiguration = registerAs('googleAuth', () => ({
   callbackUrl: process.env.GOOGLE_OAUTH_CALLBACK_URL || PLACEHOLDER,
   successRedirectUrl:
     process.env.GOOGLE_WEB_SUCCESS_REDIRECT_URL ||
-    `${process.env.FRONTEND_URL || 'http://localhost:3000'}/user/login`,
+    `${process.env.FRONTEND_URL || 'http://localhost:3000'}/home`,
   failureRedirectUrl:
     process.env.GOOGLE_WEB_FAILURE_REDIRECT_URL ||
-    `${process.env.FRONTEND_URL || 'http://localhost:3000'}/user/login`,
+    `${process.env.FRONTEND_URL || 'http://localhost:3000'}/google/failure`,
   stateTtlSeconds: Number(process.env.GOOGLE_OAUTH_STATE_TTL_SECONDS || 600),
 }));

@@ -9,7 +9,7 @@ import { buildUserFromAccessToken, extractAccessToken } from "@/lib/auth";
 import { apiClient } from "@/lib/axios";
 import {
   buildGoogleLoginUrl,
-  consumeGoogleAccessTokenFromHash,
+  completeGoogleLoginFromLocation,
 } from "@/modules/google-auth";
 import { ROUTE_PATHS } from "@/routes/router.const";
 import { API_ENDPOINTS } from "@/shared/constants";
@@ -48,34 +48,22 @@ export default function LoginPageClient(): ReactElement {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
-    const accessToken = consumeGoogleAccessTokenFromHash(window.location.hash);
-
-    if (!accessToken) {
+    if (!completeGoogleLoginFromLocation()) {
       return;
     }
 
-    const user = buildUserFromAccessToken(accessToken);
+    const user = useAuthStore.getState().user;
 
-    if (!user) {
-      setErrorMessage("Google login succeeded but token payload was invalid.");
-      return;
-    }
-
-    setAuth(accessToken, user.role, user, null);
-    window.history.replaceState(
-      null,
-      "",
-      `${window.location.pathname}${window.location.search}`,
+    router.replace(
+      getSafeRedirect(searchParams.get("redirect"), user?.role ?? "student"),
     );
-    router.replace(getSafeRedirect(searchParams.get("redirect"), user.role));
-  }, [router, searchParams, setAuth]);
+  }, [router, searchParams]);
 
   const handleGoogleSignin = () => {
     const deviceId = getOrCreateDeviceId();
 
     window.location.href = buildGoogleLoginUrl({
       deviceId,
-      redirectPath: searchParams.get("redirect"),
     });
   };
 

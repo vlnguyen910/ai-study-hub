@@ -142,7 +142,6 @@ export default function LoginModal({
 
     window.location.href = buildGoogleLoginUrl({
       deviceId,
-      redirectPath: ROUTE_PATHS.PROTECTED_ROUTES.HOME,
     });
   };
 
