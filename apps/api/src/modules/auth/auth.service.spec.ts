@@ -32,6 +32,7 @@ describe('AuthService', () => {
   let service: AuthService;
 
   const prismaMock = {
+    $transaction: jest.fn(),
     accounts: {
       create: jest.fn(),
       findUnique: jest.fn(),
@@ -114,6 +115,10 @@ describe('AuthService', () => {
 
   beforeEach(async () => {
     jest.clearAllMocks();
+    prismaMock.$transaction.mockImplementation(
+      async (callback: (transaction: typeof prismaMock) => unknown) =>
+        callback(prismaMock),
+    );
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -996,6 +1001,7 @@ describe('AuthService', () => {
         password: expect.any(String),
       }),
     });
+    expect(prismaMock.$transaction).toHaveBeenCalledTimes(1);
     expect(prismaMock.auth_providers.create).toHaveBeenCalledWith({
       data: {
         provider: 'GOOGLE',
@@ -1013,6 +1019,62 @@ describe('AuthService', () => {
         }),
       }),
     );
+  });
+
+  it('should activate an existing unverified Google email and provider identity in one transaction', async () => {
+    googleAuthServiceMock.verifyIdToken.mockResolvedValue({
+      providerAccountId: 'google-sub-1',
+      email: 'student@example.com',
+      emailVerified: true,
+      name: 'Student User',
+      picture: null,
+    });
+    prismaMock.auth_providers.findUnique.mockResolvedValue(null);
+    accountsServiceMock.findAccountByEmail.mockResolvedValue({
+      id: 'user-1',
+      email: 'student@example.com',
+      name: 'Student User',
+      password: 'hashed-password',
+      avatarUrl: '',
+      role: UserRole.USER,
+      status: UserStatus.UNVERIFIED,
+    });
+    prismaMock.accounts.update.mockResolvedValue({
+      id: 'user-1',
+      email: 'student@example.com',
+      name: 'Student User',
+      password: 'hashed-password',
+      avatarUrl: '',
+      role: UserRole.USER,
+      status: UserStatus.ACTIVE,
+    });
+    prismaMock.auth_providers.create.mockResolvedValue({ id: 'provider-1' });
+    jwtMock.signAsync
+      .mockResolvedValueOnce('google-access-token')
+      .mockResolvedValueOnce('google-refresh-token');
+    prismaMock.sessions.upsert.mockResolvedValue({ id: 'session-1' });
+
+    await service.signinWithGoogleIdToken(
+      {
+        idToken: 'id-token',
+        deviceId: 'device-1',
+      },
+      DeviceType.WEB,
+    );
+
+    expect(prismaMock.$transaction).toHaveBeenCalledTimes(1);
+    expect(prismaMock.accounts.update).toHaveBeenCalledWith({
+      where: { id: 'user-1' },
+      data: { status: UserStatus.ACTIVE },
+    });
+    expect(prismaMock.auth_providers.create).toHaveBeenCalledWith({
+      data: {
+        provider: 'GOOGLE',
+        providerAccountId: 'google-sub-1',
+        accountId: 'user-1',
+        email: 'student@example.com',
+      },
+    });
   });
 
   it('should use stored redirect path when completing Google OAuth callback', async () => {
