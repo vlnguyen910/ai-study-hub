@@ -8,19 +8,7 @@
       "outputs": [".next/**", "!.next/cache/**"]
     },
     "lint": {
-      "dependsOn": ["^lint"],
-      "env": [
-        "PORT",
-        "GOOGLE_WEB_CLIENT_ID",
-        "GOOGLE_IOS_CLIENT_ID",
-        "GOOGLE_ANDROID_CLIENT_ID",
-        "GOOGLE_OAUTH_CLIENT_SECRET",
-        "GOOGLE_OAUTH_CALLBACK_URL",
-        "GOOGLE_WEB_SUCCESS_REDIRECT_URL",
-        "GOOGLE_WEB_FAILURE_REDIRECT_URL",
-        "GOOGLE_OAUTH_STATE_TTL_SECONDS",
-        "FRONTEND_URL"
-      ]
+      "dependsOn": ["^lint"]
     },
     "check-types": {
       "dependsOn": ["^check-types"]

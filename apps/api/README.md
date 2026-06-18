@@ -57,7 +57,7 @@ $ pnpm run test:cov
 ## Auth contract notes
 
 - `POST /api/v1/auth/signin` accepts `ACTIVE` and `UNVERIFIED` accounts. Web sign-in sets the HTTP-only `refreshToken` cookie and returns `data.accessToken`; Mobile sign-in returns both tokens in the response body.
-- `GET /api/v1/auth/google` starts Web Google OAuth with `{ deviceId, redirectPath? }`; the callback links/creates an `ACTIVE` account, sets the Web refresh cookie, and redirects to `/home#googleAccessToken=...` by default. Safe `redirectPath` overrides the final path when provided.
+- `GET /api/v1/auth/google` starts Web Google OAuth with `{ deviceId, redirectPath?, clientState? }`; the callback links/creates an `ACTIVE` account, sets the Web refresh cookie, and redirects to `/home#googleAccessToken=...` by default. Safe `redirectPath` overrides the final path when provided. `clientState` is echoed as `googleState` in the URL fragment so Web can reject forged token fragments.
 - `POST /api/v1/auth/google/mobile` accepts `{ idToken, deviceId }` from the native Google flow and returns the same access/refresh token body shape as mobile password sign-in.
 - Google auth stores only provider identity (`GOOGLE`, provider account id, account id, email). Provider access/refresh tokens are not persisted.
 - `POST /api/v1/auth/verify-email` always accepts `{ token }` and activates the account when the verification token is valid.

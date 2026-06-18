@@ -58,6 +58,7 @@ const PASSWORD_RESET_SUCCESS_MESSAGE =
 interface GoogleOAuthState {
   deviceId: string;
   redirectPath?: string;
+  clientState?: string;
 }
 
 type GoogleProviderIdentityClient = Pick<
@@ -459,6 +460,7 @@ export class AuthService {
       {
         deviceId: query.deviceId,
         ...(redirectPath ? { redirectPath } : {}),
+        ...(query.clientState ? { clientState: query.clientState } : {}),
       },
       this.googleAuthConfig.stateTtlSeconds,
     );
@@ -497,6 +499,7 @@ export class AuthService {
       redirectUrl: this.buildGoogleSuccessRedirectUrl(
         result.data.accessToken,
         state.redirectPath,
+        state.clientState,
       ),
     };
   }
@@ -717,6 +720,7 @@ export class AuthService {
   private buildGoogleSuccessRedirectUrl(
     accessToken: string,
     redirectPath?: string,
+    clientState?: string,
   ) {
     const successRedirectUrl = redirectPath
       ? this.withRedirectPath(
@@ -724,8 +728,13 @@ export class AuthService {
           redirectPath,
         )
       : this.googleAuthConfig.successRedirectUrl;
+    const fragment = new URLSearchParams({ googleAccessToken: accessToken });
 
-    return `${successRedirectUrl}#googleAccessToken=${encodeURIComponent(accessToken)}`;
+    if (clientState) {
+      fragment.set('googleState', clientState);
+    }
+
+    return `${successRedirectUrl}#${fragment.toString()}`;
   }
 
   private appendQueryToUrl(url: string, query: Record<string, string>) {
