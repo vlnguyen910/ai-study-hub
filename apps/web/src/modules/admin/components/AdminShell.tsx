@@ -1,14 +1,15 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import type { ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 
+import { LogoutConfirmDialog } from "@/components/auth/LogoutConfirmDialog";
 import { SideNav } from "@/components/layout/SideNav";
+import { UserInfo } from "@/components/ui/UserInfo";
+import { ADMIN_NAV_ITEMS } from "@/constants/nav.const";
 import { logoutCurrentSession } from "@/modules/auth-api";
 import { ROUTE_PATHS } from "@/routes/router.const";
 import { useAuthStore } from "@/stores/auth/store";
-import { ADMIN_NAV_ITEMS } from "@/constants/nav.const";
-import { UserInfo } from "@/components/ui/UserInfo";
 
 export function AdminShell({
   children,
@@ -17,18 +18,27 @@ export function AdminShell({
 }): React.JSX.Element {
   const router = useRouter();
   const { logout } = useAuthStore();
+  const [isLogoutConfirmOpen, setIsLogoutConfirmOpen] = useState(false);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   const handleLogout = async () => {
+    if (isLoggingOut) return;
+
+    setIsLoggingOut(true);
     try {
       await logoutCurrentSession();
     } finally {
       logout();
-      router.replace(ROUTE_PATHS.AUTH_ROUTES.LOGIN);
+      setIsLogoutConfirmOpen(false);
+      setIsLoggingOut(false);
+      router.replace(ROUTE_PATHS.HOME);
     }
   };
 
   const navItems = ADMIN_NAV_ITEMS.map((item) =>
-    item.href === "#" ? { ...item, action: handleLogout } : item,
+    item.href === "#"
+      ? { ...item, action: () => setIsLogoutConfirmOpen(true) }
+      : item,
   );
 
   return (
@@ -45,6 +55,16 @@ export function AdminShell({
           {children}
         </div>
       </main>
+      <LogoutConfirmDialog
+        open={isLogoutConfirmOpen}
+        isSubmitting={isLoggingOut}
+        onCancel={() => {
+          if (!isLoggingOut) {
+            setIsLogoutConfirmOpen(false);
+          }
+        }}
+        onConfirm={() => void handleLogout()}
+      />
     </div>
   );
 }

@@ -384,6 +384,7 @@ describe('AuthService', () => {
         deviceId: 'device-1',
         email: 'new-user@example.com',
         name: 'New User',
+        avatarUrl: undefined,
       },
       { expiresIn: jwtConfigMock.accessTokenExpiresIn },
     );
@@ -397,6 +398,7 @@ describe('AuthService', () => {
         deviceId: 'device-1',
         email: 'new-user@example.com',
         name: 'New User',
+        avatarUrl: undefined,
       },
       { expiresIn: jwtConfigMock.refreshTokenExpiresIn },
     );
@@ -1102,6 +1104,60 @@ describe('AuthService', () => {
         email: 'student@example.com',
       },
     });
+  });
+
+  it('should hydrate missing avatar when linking an existing Google email', async () => {
+    googleAuthServiceMock.verifyIdToken.mockResolvedValue({
+      providerAccountId: 'google-sub-1',
+      email: 'student@example.com',
+      emailVerified: true,
+      name: 'Student User',
+      picture: 'https://example.com/google-avatar.png',
+    });
+    prismaMock.auth_providers.findUnique.mockResolvedValue(null);
+    accountsServiceMock.findAccountByEmail.mockResolvedValue({
+      id: 'user-1',
+      email: 'student@example.com',
+      name: 'Student User',
+      password: 'hashed-password',
+      avatarUrl: '',
+      role: UserRole.USER,
+      status: UserStatus.ACTIVE,
+    });
+    prismaMock.accounts.update.mockResolvedValue({
+      id: 'user-1',
+      email: 'student@example.com',
+      name: 'Student User',
+      password: 'hashed-password',
+      avatarUrl: 'https://example.com/google-avatar.png',
+      role: UserRole.USER,
+      status: UserStatus.ACTIVE,
+    });
+    prismaMock.auth_providers.create.mockResolvedValue({ id: 'provider-1' });
+    jwtMock.signAsync
+      .mockResolvedValueOnce('google-access-token')
+      .mockResolvedValueOnce('google-refresh-token');
+    prismaMock.sessions.upsert.mockResolvedValue({ id: 'session-1' });
+
+    await service.signinWithGoogleIdToken(
+      {
+        idToken: 'id-token',
+        deviceId: 'device-1',
+      },
+      DeviceType.WEB,
+    );
+
+    expect(prismaMock.accounts.update).toHaveBeenCalledWith({
+      where: { id: 'user-1' },
+      data: { avatarUrl: 'https://example.com/google-avatar.png' },
+    });
+    expect(jwtMock.signAsync).toHaveBeenNthCalledWith(
+      1,
+      expect.objectContaining({
+        avatarUrl: 'https://example.com/google-avatar.png',
+      }),
+      { expiresIn: jwtConfigMock.accessTokenExpiresIn },
+    );
   });
 
   it('should use stored redirect path when completing Google OAuth callback', async () => {

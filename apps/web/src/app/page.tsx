@@ -2,18 +2,36 @@
 
 import Link from "next/link";
 import { useEffect, useState, type ReactElement } from "react";
+import { LogoutConfirmDialog } from "@/components/auth/LogoutConfirmDialog";
+import { ThemeToggle } from "@/components/ThemeToggle";
 import { apiClient } from "@/lib/axios";
 import { API_ENDPOINTS } from "@/shared/constants";
 import { useAuthStore } from "@/stores";
-import { ThemeToggle } from "@/components/ThemeToggle";
 
 export default function Home(): ReactElement {
   const [mounted, setMounted] = useState(false);
+  const [isLogoutConfirmOpen, setIsLogoutConfirmOpen] = useState(false);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
   const { isAuthenticated, user, logout } = useAuthStore();
 
   useEffect(() => {
     setMounted(true);
   }, []);
+
+  const handleLogout = async () => {
+    if (isLoggingOut) return;
+
+    setIsLoggingOut(true);
+    try {
+      await apiClient.post(API_ENDPOINTS.AUTH.LOGOUT, null, {
+        skipToast: true,
+      });
+    } finally {
+      logout();
+      setIsLogoutConfirmOpen(false);
+      setIsLoggingOut(false);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-background text-foreground flex flex-col overflow-x-hidden">
@@ -88,15 +106,7 @@ export default function Home(): ReactElement {
               </Link>
               <button
                 type="button"
-                onClick={async () => {
-                  try {
-                    await apiClient.post(API_ENDPOINTS.AUTH.LOGOUT, null, {
-                      skipToast: true,
-                    });
-                  } finally {
-                    logout();
-                  }
-                }}
+                onClick={() => setIsLogoutConfirmOpen(true)}
                 className="text-xs text-error hover:text-error/85 underline transition-colors cursor-pointer font-medium"
               >
                 Đăng xuất
@@ -222,6 +232,16 @@ export default function Home(): ReactElement {
           </div>
         </section>
       </main>
+      <LogoutConfirmDialog
+        open={isLogoutConfirmOpen}
+        isSubmitting={isLoggingOut}
+        onCancel={() => {
+          if (!isLoggingOut) {
+            setIsLogoutConfirmOpen(false);
+          }
+        }}
+        onConfirm={() => void handleLogout()}
+      />
     </div>
   );
 }

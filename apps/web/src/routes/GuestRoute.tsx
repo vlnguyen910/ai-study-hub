@@ -7,11 +7,18 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect, useState, type FC, type ReactNode } from "react";
+import { Spinner } from "@/components/ui/Spinner";
 import { getAuthSession } from "./guards/auth.guard";
 
 export interface GuestRouteProps {
   children: ReactNode;
 }
+
+const GuestFallback = (): React.JSX.Element => (
+  <div className="flex min-h-screen items-center justify-center bg-background text-on-surface">
+    <Spinner />
+  </div>
+);
 
 export const GuestRoute: FC<GuestRouteProps> = ({
   children,
@@ -31,11 +38,11 @@ export const GuestRoute: FC<GuestRouteProps> = ({
   }, [router]);
 
   if (!mounted) {
-    return null;
+    return <GuestFallback />;
   }
 
   if (isAuthenticated) {
-    return null;
+    return <GuestFallback />;
   }
 
   return <>{children}</>;

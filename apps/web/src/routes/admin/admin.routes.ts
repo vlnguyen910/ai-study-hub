@@ -10,9 +10,9 @@ export const ADMIN_ROUTES = [
   ROUTE_PATHS.ADMIN,
   ROUTE_PATHS.ADMIN_ROUTES.DASHBOARD,
   ROUTE_PATHS.ADMIN_ROUTES.USERS,
-  ROUTE_PATHS.ADMIN_ROUTES.DOCUMENTS,
+  ROUTE_PATHS.ADMIN_ROUTES.CONFIG,
   ROUTE_PATHS.ADMIN_ROUTES.CATEGORIES,
-  ROUTE_PATHS.ADMIN_ROUTES.REPORTS,
+  ROUTE_PATHS.ADMIN_ROUTES.SUBJECTS,
   ROUTE_PATHS.ADMIN_ROUTES.SETTINGS,
 ];
 
@@ -31,13 +31,6 @@ export const adminRouterConfig = {
     requiresAuth: true,
     requiresRole: "admin" as const,
   },
-  DOCUMENTS: {
-    path: ROUTE_PATHS.ADMIN_ROUTES.DOCUMENTS,
-    title: "Quản lý tài liệu",
-    public: false,
-    requiresAuth: true,
-    requiresRole: "admin" as const,
-  },
   CATEGORIES: {
     path: ROUTE_PATHS.ADMIN_ROUTES.CATEGORIES,
     title: "Quản lý danh mục",
@@ -45,9 +38,16 @@ export const adminRouterConfig = {
     requiresAuth: true,
     requiresRole: "admin" as const,
   },
-  REPORTS: {
-    path: ROUTE_PATHS.ADMIN_ROUTES.REPORTS,
-    title: "Báo cáo",
+  SUBJECTS: {
+    path: ROUTE_PATHS.ADMIN_ROUTES.SUBJECTS,
+    title: "Quản lý môn học",
+    public: false,
+    requiresAuth: true,
+    requiresRole: "admin" as const,
+  },
+  CONFIG: {
+    path: ROUTE_PATHS.ADMIN_ROUTES.CONFIG,
+    title: "Cấu hình hệ thống",
     public: false,
     requiresAuth: true,
     requiresRole: "admin" as const,

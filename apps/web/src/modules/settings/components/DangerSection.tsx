@@ -26,7 +26,7 @@ export function DangerSection(): React.JSX.Element {
     try {
       await deleteAccount(user.id);
       logout();
-      router.replace(ROUTE_PATHS.AUTH_ROUTES.LOGIN);
+      router.replace(ROUTE_PATHS.HOME);
     } catch (err) {
       setError(
         err instanceof Error

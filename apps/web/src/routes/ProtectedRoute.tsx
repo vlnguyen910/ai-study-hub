@@ -7,6 +7,7 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect, useState, type FC, type ReactNode } from "react";
+import { Spinner } from "@/components/ui/Spinner";
 import { completeGoogleLoginFromLocation } from "@/modules/google-auth";
 import { getAuthSession } from "./guards/auth.guard";
 import {
@@ -20,6 +21,19 @@ export interface ProtectedRouteProps {
   requiredRole?: UserRole;
 }
 
+type GuardStatus = "checking" | "authorized" | "redirecting";
+
+const GuardFallback = (): React.JSX.Element => (
+  <div className="flex min-h-screen items-center justify-center bg-background text-on-surface">
+    <div className="flex flex-col items-center gap-3">
+      <Spinner />
+      <p className="font-label-sm text-label-sm text-on-surface-variant">
+        Đang tải...
+      </p>
+    </div>
+  </div>
+);
+
 /**
  * Client-side route protection component
  * Usage:
@@ -32,21 +46,17 @@ export const ProtectedRoute: FC<ProtectedRouteProps> = ({
   requiredRole,
 }) => {
   const router = useRouter();
-  const [mounted, setMounted] = useState(false);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [userRole, setUserRole] = useState<UserRole>("guest");
+  const [status, setStatus] = useState<GuardStatus>("checking");
 
   useEffect(() => {
-    setMounted(true);
+    setStatus("checking");
     completeGoogleLoginFromLocation();
     const { isAuthenticated: isAuth, user } = getAuthSession();
     const role = (user?.role || "guest") as UserRole;
 
-    setIsAuthenticated(isAuth);
-    setUserRole(role);
-
     // Check authentication
     if (!isAuth) {
+      setStatus("redirecting");
       router.replace(
         `/login?redirect=${encodeURIComponent(window.location.pathname)}`,
       );
@@ -62,28 +72,16 @@ export const ProtectedRoute: FC<ProtectedRouteProps> = ({
         requiredRoles: [requiredRole],
       })
     ) {
+      setStatus("redirecting");
       router.replace(getRoleRedirect(role));
       return;
     }
+
+    setStatus("authorized");
   }, [requiredRole, router]);
 
-  if (!mounted) {
-    return null;
-  }
-
-  if (!isAuthenticated) {
-    return null;
-  }
-
-  if (
-    requiredRole &&
-    !hasRoleAccess({
-      pathname: typeof window !== "undefined" ? window.location.pathname : "",
-      userRole,
-      requiredRoles: [requiredRole],
-    })
-  ) {
-    return null;
+  if (status !== "authorized") {
+    return <GuardFallback />;
   }
 
   return <>{children}</>;

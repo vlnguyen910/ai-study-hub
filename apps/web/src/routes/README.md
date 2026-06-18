@@ -89,9 +89,9 @@ Administrative routes (requires `admin` role):
 
 - DASHBOARD (`/admin/dashboard`)
 - USERS (`/admin/users`)
-- DOCUMENTS (`/admin/documents`)
+- CONFIG (`/admin/config`)
 - CATEGORIES (`/admin/categories`)
-- REPORTS (`/admin/reports`)
+- SUBJECTS (`/admin/subjects`)
 - SETTINGS (`/admin/settings`)
 
 **Behavior**: Only users with `role: 'admin'` can access. Redirect non-admin users.

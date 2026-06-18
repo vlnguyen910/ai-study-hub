@@ -25,16 +25,16 @@ export const ROLE_BASED_ROUTES = {
     ROUTE_PATHS.ADMIN,
     ROUTE_PATHS.ADMIN_ROUTES.DASHBOARD,
     ROUTE_PATHS.ADMIN_ROUTES.USERS,
-    ROUTE_PATHS.ADMIN_ROUTES.DOCUMENTS,
+    ROUTE_PATHS.ADMIN_ROUTES.CONFIG,
     ROUTE_PATHS.ADMIN_ROUTES.CATEGORIES,
-    ROUTE_PATHS.ADMIN_ROUTES.REPORTS,
+    ROUTE_PATHS.ADMIN_ROUTES.SUBJECTS,
     ROUTE_PATHS.ADMIN_ROUTES.SETTINGS,
   ],
   MODERATOR: [
     ROUTE_PATHS.MODERATOR,
     ROUTE_PATHS.MODERATOR_ROUTES.DASHBOARD,
     ROUTE_PATHS.MODERATOR_ROUTES.DOCUMENTS,
-    ROUTE_PATHS.MODERATOR_ROUTES.POSTS,
+    ROUTE_PATHS.MODERATOR_ROUTES.SETTINGS,
   ],
   STUDENT: [
     ROUTE_PATHS.PROTECTED_ROUTES.PROFILE,
@@ -54,7 +54,7 @@ export const ROLE_BASED_ROUTES = {
  * Check if user has required role for route
  */
 export const hasRoleAccess = (context: RoleGuardContext): boolean => {
-  const { pathname, userRole, requiredRoles = [] } = context;
+  const { userRole, requiredRoles = [] } = context;
 
   // If no specific roles required, everyone with auth can access
   if (requiredRoles.length === 0) {
