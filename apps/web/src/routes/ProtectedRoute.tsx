@@ -14,6 +14,7 @@ import {
   getRoleRedirect,
   type UserRole,
 } from "./guards/role.guard";
+import { isUserProtectedRoute } from "./user/user.routes";
 
 export interface ProtectedRouteProps {
   children: ReactNode;
@@ -46,7 +47,7 @@ export const ProtectedRoute: FC<ProtectedRouteProps> = ({
     setUserRole(role);
 
     // Check authentication
-    if (!isAuth) {
+    if (!isAuth && isUserProtectedRoute(window.location.pathname)) {
       router.replace(
         `/login?redirect=${encodeURIComponent(window.location.pathname)}`,
       );
@@ -71,7 +72,12 @@ export const ProtectedRoute: FC<ProtectedRouteProps> = ({
     return null;
   }
 
-  if (!isAuthenticated) {
+  if (
+    !isAuthenticated &&
+    isUserProtectedRoute(
+      typeof window !== "undefined" ? window.location.pathname : "",
+    )
+  ) {
     return null;
   }
 

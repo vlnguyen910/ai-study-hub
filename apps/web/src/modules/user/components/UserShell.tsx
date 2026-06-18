@@ -88,9 +88,19 @@ export const UserShell: FC<UserShellProps> = ({
     }
   };
 
-  const navItems = USER_NAV_ITEMS.map((item) =>
-    item.href === "#" ? { ...item, action: handleLogout } : item,
-  );
+  const navItems = isAuthenticated
+    ? USER_NAV_ITEMS.map((item) =>
+        item.href === "#" ? { ...item, action: handleLogout } : item,
+      )
+    : [
+        ...USER_NAV_ITEMS.filter((item) => item.label !== "Đăng xuất"),
+        {
+          label: "Đăng nhập",
+          icon: "login",
+          href: ROUTE_PATHS.AUTH_ROUTES.LOGIN,
+          section: "secondary" as const,
+        },
+      ];
   const isUnverified = user?.status === "UNVERIFIED";
 
   return (

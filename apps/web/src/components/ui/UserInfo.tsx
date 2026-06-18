@@ -10,6 +10,34 @@ import { isDefaultAvatar } from "@/shared/constants";
 export const UserInfo: FC = () => {
   const user = useAuthStore((state) => state.user);
 
+  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
+
+  if (!isAuthenticated) {
+    return (
+      <Link
+        href={ROUTE_PATHS.AUTH_ROUTES.LOGIN}
+        className="group flex items-center gap-3 rounded-2xl border border-outline-variant bg-primary/10 p-3 transition-colors hover:bg-primary/20"
+      >
+        <div className="relative flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-full bg-primary/20 ring-2 ring-primary/30">
+          <span className="material-symbols-outlined text-primary text-[20px]">
+            login
+          </span>
+        </div>
+        <div className="min-w-0 flex-1">
+          <p className="truncate font-label-md text-label-md font-semibold text-primary">
+            Đăng nhập
+          </p>
+          <p className="truncate font-label-sm text-label-sm text-on-surface-variant">
+            Đóng góp và quản lý tài liệu
+          </p>
+        </div>
+        <span className="material-symbols-outlined shrink-0 text-[18px] text-primary transition-colors">
+          chevron_right
+        </span>
+      </Link>
+    );
+  }
+
   const initials = (() => {
     if (!user?.name) return "?";
     const parts = user.name.trim().split(/\s+/);
