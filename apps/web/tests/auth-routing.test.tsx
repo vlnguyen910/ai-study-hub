@@ -175,6 +175,7 @@ describe("web auth routing", () => {
     fireEvent.change(screen.getByLabelText("Xác nhận mật khẩu"), {
       target: { value: "Password123!" },
     });
+    fireEvent.click(screen.getByRole("checkbox"));
     fireEvent.click(screen.getByRole("button", { name: "Đăng ký" }));
 
     await waitFor(() => {

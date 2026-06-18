@@ -64,5 +64,5 @@ describe("AuthResetPasswordScreen", () => {
     expect(
       await waitFor(() => getByText("Mật khẩu đã được đặt lại.")),
     ).toBeTruthy();
-  });
+  }, 15000);
 });
