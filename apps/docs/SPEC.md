@@ -545,6 +545,7 @@ Behavior:
 - If no account exists, creates an `ACTIVE` `USER` account with an unusable random password.
 - Stores only provider identity; Google provider tokens are not persisted.
 - Sets the Web `refreshToken` cookie and redirects to `/home#googleAccessToken=...` by default; safe `redirectPath` overrides the final path when present. Web consumes the fragment before route guard redirects.
+- Echoes optional `clientState` as `googleState` in the fragment; Web accepts `googleAccessToken` only when it matches the pending OAuth state.
 - OAuth provider errors redirect to `/google/failure?googleError=...`.
 
 ### `POST /auth/mobile-signin`

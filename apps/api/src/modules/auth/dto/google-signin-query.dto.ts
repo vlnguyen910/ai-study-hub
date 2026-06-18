@@ -8,4 +8,9 @@ export class GoogleSigninQueryDto {
   @IsOptional()
   @IsString()
   redirectPath?: string;
+
+  @IsOptional()
+  @IsString()
+  @MinLength(1)
+  clientState?: string;
 }

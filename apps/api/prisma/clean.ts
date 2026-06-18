@@ -18,6 +18,7 @@ async function main() {
   const sessionsDeleted = await prisma.sessions.deleteMany({});
   const subjectsDeleted = await prisma.subjects.deleteMany({});
   const schoolsDeleted = await prisma.schools.deleteMany({});
+  const AuthProviderDeleted = await prisma.auth_providers.deleteMany({});
   const accountsDeleted = await prisma.accounts.deleteMany({});
 
   console.log(`Deleted ${documentsDeleted.count} documents.`);

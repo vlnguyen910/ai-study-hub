@@ -6,7 +6,10 @@ import { useRouter } from "next/navigation";
 import type { ReactElement } from "react";
 import { buildUserFromAccessToken, extractAccessToken } from "@/lib/auth";
 import { apiClient } from "@/lib/axios";
-import { buildGoogleLoginUrl } from "@/modules/google-auth";
+import {
+  buildGoogleLoginUrl,
+  markGoogleOauthPending,
+} from "@/modules/google-auth";
 import { ROUTE_PATHS } from "@/routes/router.const";
 import { API_ENDPOINTS } from "@/shared/constants";
 import { useAuthStore } from "@/stores/auth/store";
@@ -139,9 +142,11 @@ export default function LoginModal({
 
   const handleGoogleSignin = () => {
     const deviceId = getOrCreateDeviceId();
+    const oauthState = markGoogleOauthPending();
 
     window.location.href = buildGoogleLoginUrl({
       deviceId,
+      oauthState,
     });
   };
 

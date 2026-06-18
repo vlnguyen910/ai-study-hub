@@ -1021,6 +1021,33 @@ describe('AuthService', () => {
     );
   });
 
+  it('should store client OAuth state when creating Google authorization URL', async () => {
+    googleAuthServiceMock.buildAuthorizationUrl.mockReturnValue(
+      'https://accounts.google.com/auth',
+    );
+
+    await expect(
+      service.getGoogleAuthorizationUrl({
+        deviceId: 'device-1',
+        redirectPath: '/documents',
+        clientState: 'client-state',
+      }),
+    ).resolves.toBe('https://accounts.google.com/auth');
+
+    expect(redisServiceMock.setJson).toHaveBeenCalledWith(
+      'google_oauth_state:email-verification-token',
+      {
+        deviceId: 'device-1',
+        redirectPath: '/documents',
+        clientState: 'client-state',
+      },
+      googleAuthConfigMock.stateTtlSeconds,
+    );
+    expect(googleAuthServiceMock.buildAuthorizationUrl).toHaveBeenCalledWith(
+      'email-verification-token',
+    );
+  });
+
   it('should activate an existing unverified Google email and provider identity in one transaction', async () => {
     googleAuthServiceMock.verifyIdToken.mockResolvedValue({
       providerAccountId: 'google-sub-1',
@@ -1081,6 +1108,7 @@ describe('AuthService', () => {
     redisServiceMock.getJson.mockResolvedValue({
       deviceId: 'device-1',
       redirectPath: '/documents',
+      clientState: 'client-state',
     });
     googleAuthServiceMock.exchangeCodeForIdToken.mockResolvedValue('id-token');
     googleAuthServiceMock.verifyIdToken.mockResolvedValue({
@@ -1118,7 +1146,7 @@ describe('AuthService', () => {
         refreshToken: 'google-refresh-token',
       },
       redirectUrl:
-        'http://localhost:3000/documents#googleAccessToken=google-access-token',
+        'http://localhost:3000/documents#googleAccessToken=google-access-token&googleState=client-state',
     });
     expect(redisServiceMock.getJson).toHaveBeenCalledWith(
       'google_oauth_state:oauth-state',

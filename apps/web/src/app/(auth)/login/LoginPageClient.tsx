@@ -10,6 +10,7 @@ import { apiClient } from "@/lib/axios";
 import {
   buildGoogleLoginUrl,
   completeGoogleLoginFromLocation,
+  markGoogleOauthPending,
 } from "@/modules/google-auth";
 import { ROUTE_PATHS } from "@/routes/router.const";
 import { API_ENDPOINTS } from "@/shared/constants";
@@ -61,9 +62,13 @@ export default function LoginPageClient(): ReactElement {
 
   const handleGoogleSignin = () => {
     const deviceId = getOrCreateDeviceId();
+    const redirectPath = searchParams.get("redirect");
+    const oauthState = markGoogleOauthPending();
 
     window.location.href = buildGoogleLoginUrl({
       deviceId,
+      redirectPath,
+      oauthState,
     });
   };
 
