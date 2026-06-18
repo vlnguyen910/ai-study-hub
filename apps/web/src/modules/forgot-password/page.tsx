@@ -3,7 +3,6 @@
 import { useState } from "react";
 import Link from "next/link";
 import type { ReactElement } from "react";
-import { Button } from "@repo/ui/button";
 import { BackButton } from "@/components/ui/BackButton";
 import { forgotPassword } from "../auth-api";
 
@@ -18,12 +17,12 @@ export default function ForgotPasswordPage(): ReactElement {
     event.preventDefault();
 
     if (!email) {
-      setError("Email is required");
+      setError("Vui lòng nhập email.");
       return;
     }
 
     if (!/\S+@\S+\.\S+/.test(email)) {
-      setError("Please enter a valid email address");
+      setError("Vui lòng nhập địa chỉ email hợp lệ.");
       return;
     }
 
@@ -38,7 +37,7 @@ export default function ForgotPasswordPage(): ReactElement {
       setApiError(
         error instanceof Error
           ? error.message
-          : "Could not send password reset link",
+          : "Không thể gửi liên kết đặt lại mật khẩu.",
       );
     } finally {
       setIsSubmitting(false);
@@ -46,75 +45,58 @@ export default function ForgotPasswordPage(): ReactElement {
   };
 
   return (
-    <div className="min-h-screen bg-gray-100 flex flex-col">
-      <div className="flex-1 flex items-center justify-center p-8">
-        <div className="w-full max-w-md bg-white rounded-lg shadow p-12 flex flex-col">
-          <BackButton fallbackHref="/" className="mb-6 self-start" />
-
-          <div className="flex items-center justify-center gap-2 text-2xl font-bold text-blue-600 mb-6">
-            <svg
-              width="24"
-              height="24"
-              viewBox="0 0 24 24"
-              fill="none"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
-                d="M4 19.5V4.5C4 4.10218 4.15804 3.72064 4.43934 3.43934C4.72064 3.15804 5.10218 3 5.5 3H18.5C18.8978 3 19.2794 3.15804 19.5607 3.43934C19.842 3.72064 20 4.10218 20 4.5V19.5"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-              <path
-                d="M4 19.5C4 19.9023 4.15964 20.2882 4.44411 20.5727C4.72859 20.8571 5.11453 21.0167 5.51675 21H18.4832C18.8855 21.0167 19.2714 20.8571 19.5559 20.5727C19.8404 20.2882 20 19.9023 20 19.5"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-              <path
-                d="M8 7H16M8 11H16M8 15H12"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
+    <main className="min-h-screen bg-surface text-on-surface">
+      <div className="mx-auto flex min-h-screen w-full max-w-md flex-col justify-center px-4 py-10">
+        <div className="mb-6 flex items-center justify-between gap-4">
+          <BackButton fallbackHref="/" />
+          <Link
+            href="/"
+            className="inline-flex items-center gap-2 font-headline-sm text-headline-sm font-bold text-primary"
+          >
+            <span className="material-symbols-outlined text-[24px]">
+              school
+            </span>
             AI Study Hub
-          </div>
+          </Link>
+        </div>
 
-          <h1 className="text-2xl font-bold text-center text-gray-900 mb-2">
-            Forgot password
-          </h1>
-          <p className="text-center text-gray-600 text-sm mb-8">
-            Enter your email and we will send a link to reset your password.
-          </p>
+        <section className="rounded-2xl border border-outline-variant bg-surface-container-lowest p-6 shadow-sm shadow-black/5 sm:p-8">
+          <div className="mb-8">
+            <p className="font-label-sm text-label-sm uppercase tracking-[0.18em] text-on-surface-variant">
+              Khôi phục tài khoản
+            </p>
+            <h1 className="mt-2 font-headline-lg text-headline-lg font-bold text-primary">
+              Quên mật khẩu
+            </h1>
+            <p className="mt-2 font-body-md text-body-md text-on-surface-variant">
+              Nhập địa chỉ email của bạn để nhận liên kết đặt lại mật khẩu.
+            </p>
+          </div>
 
           {submitted ? (
             <div className="flex flex-col gap-6">
-              <div className="rounded-lg border border-green-200 bg-green-50 p-4 text-sm text-green-900">
-                We sent a reset link to{" "}
-                <span className="font-semibold">{email}</span>. Check your inbox
-                and spam folder if needed.
+              <div className="rounded-xl border border-green-200/30 bg-green-50/10 p-4 font-label-sm text-label-sm text-green-600 dark:text-green-400">
+                Chúng tôi đã gửi một liên kết đặt lại mật khẩu tới{" "}
+                <span className="font-semibold">{email}</span>. Vui lòng kiểm
+                tra hộp thư đến (và thư rác nếu cần).
               </div>
 
               <div className="flex flex-col gap-3 sm:flex-row">
-                <Button
-                  appName="web"
-                  className="w-full h-12 bg-blue-600 text-white font-semibold hover:bg-blue-700 rounded"
+                <button
+                  type="button"
+                  className="inline-flex h-12 flex-1 items-center justify-center rounded-xl bg-primary px-5 font-label-lg text-label-lg font-semibold text-on-primary transition-colors hover:bg-primary/90"
                   onClick={() => {
                     setApiError("");
                     setSubmitted(false);
                   }}
                 >
-                  Send again
-                </Button>
+                  Gửi lại
+                </button>
                 <Link
                   href="/login"
-                  className="inline-flex h-12 items-center justify-center rounded border border-gray-300 px-4 text-sm font-semibold text-gray-700 hover:bg-gray-50"
+                  className="inline-flex h-12 flex-1 items-center justify-center rounded-xl border border-outline-variant bg-surface px-5 font-label-lg text-label-lg font-semibold text-on-surface transition-colors hover:bg-surface-container"
                 >
-                  Back to sign in
+                  Quay lại đăng nhập
                 </Link>
               </div>
             </div>
@@ -127,15 +109,15 @@ export default function ForgotPasswordPage(): ReactElement {
               <div className="flex flex-col gap-2">
                 <label
                   htmlFor="email"
-                  className="text-sm font-bold text-gray-900"
+                  className="font-label-md text-label-md text-on-surface"
                 >
                   Email
                 </label>
                 <input
                   id="email"
                   type="email"
-                  className={`w-full h-12 px-4 bg-gray-100 border rounded text-gray-900 text-sm focus:outline-none focus:border-blue-600 focus:bg-white transition-all ${
-                    error ? "border-red-600" : "border-gray-300"
+                  className={`w-full h-12 px-4 rounded-xl border bg-surface text-on-surface font-body-md text-body-md outline-none transition-all focus:border-primary ${
+                    error ? "border-error" : "border-outline-variant"
                   }`}
                   placeholder="example@academic.edu"
                   value={email}
@@ -147,38 +129,39 @@ export default function ForgotPasswordPage(): ReactElement {
                   }}
                 />
                 {error ? (
-                  <span className="text-red-600 text-xs mt-1">{error}</span>
+                  <span className="text-error font-label-sm text-label-sm mt-1">
+                    {error}
+                  </span>
                 ) : null}
               </div>
 
               {apiError ? (
-                <div className="rounded border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+                <div className="rounded-xl border border-error/30 bg-error-container p-4 font-label-sm text-label-sm text-error">
                   {apiError}
                 </div>
               ) : null}
 
-              <Button
-                appName="web"
-                className="w-full h-12 bg-blue-600 text-white font-semibold hover:bg-blue-700 rounded mt-2"
+              <button
                 type="submit"
                 disabled={isSubmitting}
+                className="inline-flex h-12 w-full items-center justify-center rounded-xl bg-primary px-5 font-label-lg text-label-lg font-semibold text-on-primary transition-colors hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-60 mt-2"
               >
-                {isSubmitting ? "Sending..." : "Send reset link"}
-              </Button>
+                {isSubmitting ? "Đang gửi..." : "Gửi liên kết đặt lại"}
+              </button>
 
-              <div className="text-center text-sm text-gray-600">
-                Remembered your password?{" "}
+              <div className="text-center font-label-sm text-label-sm text-on-surface-variant">
+                Đã nhớ mật khẩu?{" "}
                 <Link
                   href="/login"
-                  className="text-blue-600 hover:underline font-medium"
+                  className="font-medium text-primary hover:underline"
                 >
-                  Sign in
+                  Đăng nhập
                 </Link>
               </div>
             </form>
           )}
-        </div>
+        </section>
       </div>
-    </div>
+    </main>
   );
 }
