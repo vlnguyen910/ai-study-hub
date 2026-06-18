@@ -43,11 +43,9 @@ export const ROUTE_PATHS = {
   ADMIN_ROUTES: {
     DASHBOARD: "/admin",
     USERS: "/admin/users",
-    DOCUMENTS: "/admin/documents",
+    CONFIG: "/admin/config",
     CATEGORIES: "/admin/categories",
     SUBJECTS: "/admin/subjects",
-    REPORTS: "/admin/reports",
-
     SETTINGS: "/admin/settings",
   },
 
@@ -57,7 +55,6 @@ export const ROUTE_PATHS = {
     DASHBOARD: "/moderator",
     DOCUMENTS: "/moderator/documents",
     DOCUMENT_DETAIL: "/moderator/documents/:id",
-    POSTS: "/moderator/posts",
     SETTINGS: "/moderator/settings",
   },
 } as const;

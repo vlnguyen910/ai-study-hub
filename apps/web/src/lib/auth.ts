@@ -9,6 +9,9 @@ type BackendAuthPayload = {
   name?: string;
   role: BackendAuthRole;
   status?: string;
+  avatarUrl?: string | null;
+  avatar?: string | null;
+  picture?: string | null;
   type?: string;
   jti?: string;
 };
@@ -111,6 +114,7 @@ export const buildUserFromAuthToken = (
     name,
     role: normalizeUserRole(payload.role),
     status: payload.status,
+    avatar: payload.avatarUrl ?? payload.avatar ?? payload.picture ?? undefined,
     createdAt: new Date(),
   };
 };

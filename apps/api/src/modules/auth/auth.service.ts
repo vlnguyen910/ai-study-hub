@@ -613,7 +613,10 @@ export class AuthService {
     );
 
     if (providerIdentity) {
-      return this.assertGoogleAccountCanSignin(providerIdentity.account);
+      return this.assertGoogleAccountCanSignin(
+        providerIdentity.account,
+        profile,
+      );
     }
 
     const existingAccount = await this.accountService.findAccountByEmail(
@@ -645,7 +648,10 @@ export class AuthService {
     });
   }
 
-  private assertGoogleAccountCanSignin(account: accounts) {
+  private assertGoogleAccountCanSignin(
+    account: accounts,
+    profile: GoogleAccountProfile,
+  ) {
     if (
       account.status === UserStatus.BANNED ||
       account.status === UserStatus.DELETED
@@ -653,10 +659,17 @@ export class AuthService {
       throw new UnauthorizedException('Invalid credentials');
     }
 
-    if (account.status === UserStatus.UNVERIFIED) {
+    const shouldHydrateAvatar = !account.avatarUrl && profile.picture;
+
+    if (account.status === UserStatus.UNVERIFIED || shouldHydrateAvatar) {
       return this.prismaService.accounts.update({
         where: { id: account.id },
-        data: { status: UserStatus.ACTIVE },
+        data: {
+          ...(account.status === UserStatus.UNVERIFIED
+            ? { status: UserStatus.ACTIVE }
+            : {}),
+          ...(shouldHydrateAvatar ? { avatarUrl: shouldHydrateAvatar } : {}),
+        },
       });
     }
 
@@ -671,6 +684,7 @@ export class AuthService {
     const activeAccount = await this.activateGoogleLinkedAccount(
       transaction,
       account,
+      profile,
     );
     await this.createGoogleProviderIdentity(
       transaction,
@@ -684,6 +698,7 @@ export class AuthService {
   private async activateGoogleLinkedAccount(
     transaction: Pick<Prisma.TransactionClient, 'accounts'>,
     account: accounts,
+    profile: GoogleAccountProfile,
   ) {
     if (
       account.status === UserStatus.BANNED ||
@@ -692,13 +707,20 @@ export class AuthService {
       throw new UnauthorizedException('Invalid credentials');
     }
 
-    if (account.status !== UserStatus.UNVERIFIED) {
+    const shouldHydrateAvatar = !account.avatarUrl && profile.picture;
+
+    if (account.status !== UserStatus.UNVERIFIED && !shouldHydrateAvatar) {
       return account;
     }
 
     return transaction.accounts.update({
       where: { id: account.id },
-      data: { status: UserStatus.ACTIVE },
+      data: {
+        ...(account.status === UserStatus.UNVERIFIED
+          ? { status: UserStatus.ACTIVE }
+          : {}),
+        ...(shouldHydrateAvatar ? { avatarUrl: shouldHydrateAvatar } : {}),
+      },
     });
   }
 
@@ -784,6 +806,7 @@ export class AuthService {
       deviceId: deviceId,
       email: account.email,
       name: account.name,
+      avatarUrl: account.avatarUrl,
     };
 
     const [accessToken, refreshToken] = await Promise.all([

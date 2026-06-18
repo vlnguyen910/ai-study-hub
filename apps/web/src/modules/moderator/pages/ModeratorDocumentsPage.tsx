@@ -1,13 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { toast } from "sonner";
 
-import {
-  fetchDocuments,
-  approveDocument,
-  rejectDocument,
-} from "@/apis/document.api";
+import { fetchDocuments } from "@/apis/document.api";
 import { Pagination } from "@/components/ui/Pagination";
 import { Table, type TableRow } from "@/components/ui/Table";
 import type { LibraryDocument } from "@/types/document.type";
@@ -20,7 +15,6 @@ import {
   ModeratorBadge,
   ModeratorCard,
 } from "../components/ModeratorPrimitives";
-import { RejectDocumentModal } from "../components/RejectDocumentModal";
 
 const pageSize = 10;
 
@@ -43,9 +37,6 @@ export default function ModeratorDocumentsPage(): React.JSX.Element {
   const [query, setQuery] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [isLoading, setIsLoading] = useState(true);
-  const [actionId, setActionId] = useState<string | null>(null);
-  const [rejectingDocument, setRejectingDocument] =
-    useState<LibraryDocument | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const loadDocuments = useCallback(async () => {
@@ -95,44 +86,7 @@ export default function ModeratorDocumentsPage(): React.JSX.Element {
     currentPage * pageSize,
   );
 
-  const handleApprove = useCallback(
-    async (document: LibraryDocument) => {
-      setActionId(document.id);
-      try {
-        await approveDocument(document.id);
-        toast.success(`Đã phê duyệt ${document.title}`);
-        await loadDocuments();
-      } catch {
-        toast.error(`Không thể phê duyệt ${document.title}`);
-      } finally {
-        setActionId(null);
-      }
-    },
-    [loadDocuments],
-  );
-
-  const handleRejectConfirm = useCallback(
-    async (rejectionReason: string) => {
-      if (!rejectingDocument) return;
-
-      setActionId(rejectingDocument.id);
-      try {
-        await rejectDocument(rejectingDocument.id, { rejectionReason });
-        toast.success(`Đã từ chối ${rejectingDocument.title}`);
-        setRejectingDocument(null);
-        await loadDocuments();
-      } catch {
-        toast.error(`Không thể từ chối ${rejectingDocument.title}`);
-      } finally {
-        setActionId(null);
-      }
-    },
-    [loadDocuments, rejectingDocument],
-  );
-
   const documentRows: TableRow[] = visibleDocuments.map((document) => {
-    const isActing = actionId === document.id;
-
     return {
       id: document.id,
       cells: [
@@ -175,18 +129,6 @@ export default function ModeratorDocumentsPage(): React.JSX.Element {
             icon="visibility"
             label={`Xem chi tiết ${document.title}`}
           />
-          <IconButton
-            icon={isActing ? "hourglass_empty" : "close"}
-            label={`Từ chối ${document.title}`}
-            onClick={() => setRejectingDocument(document)}
-            tone="error"
-          />
-          <IconButton
-            icon={isActing ? "hourglass_empty" : "check"}
-            label={`Phê duyệt ${document.title}`}
-            onClick={() => void handleApprove(document)}
-            tone="primary"
-          />
         </div>,
       ],
     };
@@ -200,7 +142,8 @@ export default function ModeratorDocumentsPage(): React.JSX.Element {
             Kiểm Duyệt Tài Liệu
           </h1>
           <p className="font-body-md text-body-md text-on-surface-variant">
-            Xem, phê duyệt hoặc từ chối các tài liệu công khai đang chờ duyệt.
+            Xem danh sách tài liệu đang chờ duyệt và mở chi tiết trước khi đưa
+            ra quyết định.
           </p>
         </div>
         <div className="flex w-full max-w-sm items-center gap-4 bg-surface-container-high px-4 py-2 lg:w-auto">
@@ -273,16 +216,6 @@ export default function ModeratorDocumentsPage(): React.JSX.Element {
           />
         </div>
       </ModeratorCard>
-
-      <RejectDocumentModal
-        open={rejectingDocument !== null}
-        isSubmitting={actionId === rejectingDocument?.id}
-        onCancel={() => {
-          if (actionId) return;
-          setRejectingDocument(null);
-        }}
-        onConfirm={handleRejectConfirm}
-      />
     </div>
   );
 }

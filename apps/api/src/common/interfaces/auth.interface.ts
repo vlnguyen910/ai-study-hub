@@ -10,6 +10,7 @@ export class TokenPayload {
   deviceId!: string;
   email?: string;
   name?: string;
+  avatarUrl?: string | null;
 }
 
 export interface AuthenticatedRequest extends Request {

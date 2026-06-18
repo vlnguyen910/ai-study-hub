@@ -147,7 +147,7 @@ describe("AdminSystemSettingsPage (single-page settings)", () => {
     });
 
     expect(authStoreMock.logout).toHaveBeenCalledOnce();
-    expect(router.replace).toHaveBeenCalledWith("/login");
+    expect(router.replace).toHaveBeenCalledWith("/");
   });
 
   it("shows an inline error in the danger zone if deleteAccount fails", async () => {

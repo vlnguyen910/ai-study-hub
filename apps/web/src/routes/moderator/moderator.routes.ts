@@ -10,7 +10,7 @@ export const MODERATOR_ROUTES = [
   ROUTE_PATHS.MODERATOR_ROUTES.DASHBOARD,
   ROUTE_PATHS.MODERATOR_ROUTES.DOCUMENTS,
   ROUTE_PATHS.MODERATOR_ROUTES.DOCUMENT_DETAIL,
-  ROUTE_PATHS.MODERATOR_ROUTES.POSTS,
+  ROUTE_PATHS.MODERATOR_ROUTES.SETTINGS,
 ];
 
 export const moderatorRouterConfig = {
@@ -28,9 +28,9 @@ export const moderatorRouterConfig = {
     requiresAuth: true,
     requiresRole: "moderator" as const,
   },
-  POSTS: {
-    path: ROUTE_PATHS.MODERATOR_ROUTES.POSTS,
-    title: "Kiểm duyệt bài viết",
+  SETTINGS: {
+    path: ROUTE_PATHS.MODERATOR_ROUTES.SETTINGS,
+    title: "Cài đặt",
     public: false,
     requiresAuth: true,
     requiresRole: "moderator" as const,

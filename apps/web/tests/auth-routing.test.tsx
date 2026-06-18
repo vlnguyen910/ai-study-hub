@@ -1,10 +1,17 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import {
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+  within,
+} from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import ForgotPasswordPage from "../src/modules/forgot-password/page";
 import ResetPasswordPage from "../src/modules/reset-password/page";
 import LoginPage from "../src/app/(auth)/login/page";
 import RegisterPage from "../src/app/(auth)/register/page";
+import { ModeratorShell } from "../src/modules/moderator/components/ModeratorShell";
 import { UserShell } from "../src/modules/user/components/UserShell";
 import { useAuthStore } from "../src/stores/auth/store";
 import VerifyEmailPage from "../src/app/(auth)/verify-email/[token]/page";
@@ -208,6 +215,36 @@ describe("web auth routing", () => {
     });
   });
 
+  it("keeps the sidebar profile card inside the moderator area", () => {
+    useAuthStore.getState().setAuth(
+      null,
+      "moderator",
+      {
+        id: "moderator-1",
+        email: "moderator@example.com",
+        name: "Moderator User",
+        role: "moderator",
+        avatar: "https://example.com/moderator.png",
+        status: "ACTIVE",
+        createdAt: new Date("2026-06-08T00:00:00.000Z"),
+      },
+      null,
+    );
+
+    render(
+      <ModeratorShell>
+        <div>Moderator content</div>
+      </ModeratorShell>,
+    );
+
+    const profileLink = screen.getByText("Moderator User").closest("a");
+    if (!profileLink) {
+      throw new Error("Moderator profile card link was not rendered.");
+    }
+
+    expect(profileLink).toHaveAttribute("href", "/moderator/settings");
+  });
+
   it("shows a resend verification banner for unverified users", async () => {
     useAuthStore.getState().setAuth(
       "access-token",
@@ -256,7 +293,7 @@ describe("web auth routing", () => {
     });
   });
 
-  it("logs out from the shared sidebar and redirects to /login", async () => {
+  it("confirms logout from the shared sidebar before redirecting to the landing page", async () => {
     useAuthStore.getState().setAuth(
       null,
       "student",
@@ -279,13 +316,26 @@ describe("web auth routing", () => {
 
     fireEvent.click(screen.getByRole("button", { name: /Đăng xuất/i }));
 
+    const dialog = screen.getByRole("dialog", {
+      name: /Xác nhận đăng xuất/i,
+    });
+    expect(apiClientMock.post).not.toHaveBeenCalledWith(
+      "/api/v1/auth/logout",
+      null,
+      { skipToast: true },
+    );
+
+    fireEvent.click(
+      within(dialog).getByRole("button", { name: /^Đăng xuất$/i }),
+    );
+
     await waitFor(() => {
       expect(apiClientMock.post).toHaveBeenCalledWith(
         "/api/v1/auth/logout",
         null,
         { skipToast: true },
       );
-      expect(navigationMocks.router.replace).toHaveBeenCalledWith("/login");
+      expect(navigationMocks.router.replace).toHaveBeenCalledWith("/");
     });
     expect(useAuthStore.getState().isAuthenticated).toBe(false);
   });
