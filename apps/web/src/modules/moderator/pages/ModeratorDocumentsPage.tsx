@@ -159,7 +159,7 @@ export default function ModeratorDocumentsPage(): React.JSX.Element {
       </div>
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
-        <label className="border border-outline-variant bg-white p-4 transition-colors hover:border-primary md:col-span-3">
+        <label className="border border-outline-variant bg-surface-container-lowest p-4 transition-colors hover:border-primary md:col-span-3">
           <span className="mb-2 flex items-center gap-3 font-label-md text-label-md text-on-surface">
             <MaterialIcon className="text-primary" name="search" />
             Tìm kiếm
