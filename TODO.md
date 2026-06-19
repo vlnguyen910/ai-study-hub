@@ -67,15 +67,15 @@ Chưa có ý tưởng chi tiết, cần đề xuất cấu trúc mới.
 
 ### Checklist
 
-- [ ] Tạo page `/login` theo layout 2 cột, full page
-- [ ] Tạo page `/register` theo layout 2 cột, full page
-- [ ] Fix nút "Quay lại" ở trang Register
-- [ ] Thêm validate form (email hợp lệ, password tối thiểu ký tự, confirm password khớp...)
-- [ ] Hiển thị lỗi rõ ràng dưới từng field khi validate fail
-- [ ] Responsive cho mobile (ở mobile có thể ẩn cột phải minh hoạ hoặc thu nhỏ thành banner trên cùng)
-- [ ] Link qua lại giữa Login ↔ Register hoạt động đúng (không reload toàn trang nếu dùng SPA router)
-- [ ] Đồng bộ theme màu với landing page mới
-- [ ] Thêm trạng thái loading khi submit + thông báo thành công/thất bại
+- [ x] Tạo page `/login` theo layout 2 cột, full page
+- [ x] Tạo page `/register` theo layout 2 cột, full page
+- [ x] Fix nút "Quay lại" ở trang Register
+- [ x] Thêm validate form (email hợp lệ, password tối thiểu ký tự, confirm password khớp...)
+- [ x] Hiển thị lỗi rõ ràng dưới từng field khi validate fail
+- [ x] Responsive cho mobile (ở mobile có thể ẩn cột phải minh hoạ hoặc thu nhỏ thành banner trên cùng)
+- [ x] Link qua lại giữa Login ↔ Register hoạt động đúng (không reload toàn trang nếu dùng SPA router)
+- [ x] Đồng bộ theme màu với landing page mới
+- [ x] Thêm trạng thái loading khi submit + thông báo thành công/thất bại
 
 ---
 

@@ -11,9 +11,14 @@ import {
 } from "react";
 
 import AuthLayout from "@/components/layout/AuthLayout";
+import { GoogleAuthButton } from "@/components/auth/GoogleAuthButton";
 import { BackButton } from "@/components/ui/BackButton";
 import { Button } from "@/components/ui/Button";
 import { apiClient } from "@/lib/axios";
+import {
+  buildGoogleLoginUrl,
+  markGoogleOauthPending,
+} from "@/modules/google-auth";
 import { ROUTE_PATHS } from "@/routes/router.const";
 import { API_ENDPOINTS } from "@/shared/constants";
 import { getOrCreateDeviceId } from "@/utils";
@@ -86,52 +91,6 @@ function FloatingInput({
   );
 }
 
-function FriendlyRobotIcon(): ReactElement {
-  return (
-    <div className="mb-5 inline-flex h-14 w-14 items-center justify-center rounded-2xl border border-primary/15 bg-primary/8 shadow-lg shadow-primary/10">
-      <svg
-        aria-hidden="true"
-        className="h-9 w-9"
-        fill="none"
-        viewBox="0 0 48 48"
-        xmlns="http://www.w3.org/2000/svg"
-      >
-        <path
-          d="M24 8v5"
-          stroke="#003EA8"
-          strokeLinecap="round"
-          strokeWidth="2.5"
-        />
-        <circle cx="24" cy="6.5" fill="#3B82F6" r="2.5" />
-        <rect
-          fill="#EFF6FF"
-          height="25"
-          rx="9"
-          stroke="#2563EB"
-          strokeWidth="2.5"
-          width="30"
-          x="9"
-          y="14"
-        />
-        <circle cx="19" cy="25" fill="#003EA8" r="2.2" />
-        <circle cx="29" cy="25" fill="#003EA8" r="2.2" />
-        <path
-          d="M18 31c3.2 3 8.8 3 12 0"
-          stroke="#0EA5E9"
-          strokeLinecap="round"
-          strokeWidth="2.5"
-        />
-        <path
-          d="M7 25h2M39 25h2"
-          stroke="#2563EB"
-          strokeLinecap="round"
-          strokeWidth="2.5"
-        />
-      </svg>
-    </div>
-  );
-}
-
 export default function RegisterPageClient(): ReactElement {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -157,6 +116,7 @@ export default function RegisterPageClient(): ReactElement {
     general: "",
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isGoogleSubmitting, setIsGoogleSubmitting] = useState(false);
 
   const handleBackClick = (event: MouseEvent<HTMLButtonElement>) => {
     event.preventDefault();
@@ -276,6 +236,33 @@ export default function RegisterPageClient(): ReactElement {
     }
   };
 
+  const handleGoogleSignup = () => {
+    if (isGoogleSubmitting) {
+      return;
+    }
+
+    setErrors((prev) => ({ ...prev, general: "" }));
+    setIsGoogleSubmitting(true);
+
+    try {
+      const deviceId = getOrCreateDeviceId();
+      const oauthState = markGoogleOauthPending();
+
+      window.location.href = buildGoogleLoginUrl({
+        deviceId,
+        oauthState,
+        redirectPath: safeRedirect ?? ROUTE_PATHS.PROTECTED_ROUTES.HOME,
+      });
+    } catch {
+      setIsGoogleSubmitting(false);
+      setErrors((prev) => ({
+        ...prev,
+        general:
+          "Không thể bắt đầu đăng ký Google. Vui lòng kiểm tra kết nối và thử lại.",
+      }));
+    }
+  };
+
   return (
     <AuthLayout
       mode="register"
@@ -285,7 +272,7 @@ export default function RegisterPageClient(): ReactElement {
       switchText="Đã có tài khoản?"
       switchCta="Đăng nhập ngay"
     >
-      <div className="mb-8 flex items-center justify-between gap-4">
+      <div className="mb-5 flex items-center justify-between gap-4">
         <BackButton fallbackHref={ROUTE_PATHS.HOME} onClick={handleBackClick} />
         <Link
           href={ROUTE_PATHS.HOME}
@@ -296,21 +283,20 @@ export default function RegisterPageClient(): ReactElement {
         </Link>
       </div>
 
-      <section className="rounded-3xl border border-outline-variant/70 bg-white/85 p-7 shadow-xl shadow-primary/5 backdrop-blur sm:p-9">
-        <div className="mb-10">
-          <FriendlyRobotIcon />
+      <section className="rounded-3xl border border-outline-variant/70 bg-white/85 p-6 shadow-xl shadow-primary/5 backdrop-blur sm:p-7">
+        <div className="mb-6">
           <p className="font-label-sm text-label-sm uppercase tracking-[0.18em] text-on-surface-variant">
             Đăng ký
           </p>
-          <h1 className="mt-3 font-headline-lg text-headline-lg font-bold tracking-wide text-primary">
+          <h1 className="mt-2 font-headline-lg text-headline-lg font-bold tracking-wide text-primary">
             Tạo tài khoản mới
           </h1>
-          <p className="mt-4 font-body-md text-body-md leading-7 text-on-surface-variant">
+          <p className="mt-2 font-body-md text-body-md leading-6 text-on-surface-variant">
             Bắt đầu xây dựng không gian học tập cá nhân với AI Study Hub.
           </p>
         </div>
 
-        <form className="space-y-7" onSubmit={handleSubmit} noValidate>
+        <form className="space-y-5" onSubmit={handleSubmit} noValidate>
           {errors.general ? (
             <p className="rounded-2xl border border-error/30 bg-error-container px-4 py-3 font-label-sm text-label-sm leading-5 text-error">
               {errors.general}
@@ -366,7 +352,7 @@ export default function RegisterPageClient(): ReactElement {
           />
 
           <div>
-            <label className="flex items-start gap-3 font-body-md text-body-md leading-7 text-on-surface">
+            <label className="flex items-start gap-3 font-body-md text-body-md leading-6 text-on-surface">
               <input
                 id="acceptedTerms"
                 type="checkbox"
@@ -401,7 +387,25 @@ export default function RegisterPageClient(): ReactElement {
           </Button>
         </form>
 
-        <p className="mt-7 font-label-sm text-label-sm text-on-surface-variant md:hidden">
+        <div className="my-5 flex items-center gap-3">
+          <div className="h-px flex-1 bg-outline-variant" />
+          <span className="font-label-sm text-label-sm text-on-surface-variant">
+            hoặc
+          </span>
+          <div className="h-px flex-1 bg-outline-variant" />
+        </div>
+
+        <GoogleAuthButton
+          label={
+            isGoogleSubmitting
+              ? "Đang chuyển tới Google..."
+              : "Đăng ký với Google"
+          }
+          onClick={handleGoogleSignup}
+          disabled={isSubmitting || isGoogleSubmitting}
+        />
+
+        <p className="mt-5 font-label-sm text-label-sm text-on-surface-variant md:hidden">
           Đã có tài khoản?{" "}
           <Link
             href={loginHref}

@@ -10,6 +10,7 @@ interface AuthState {
   role: UserRole | null;
   user: User | null;
   isAuthenticated: boolean;
+  hasHydrated: boolean;
   isLoginPromptOpen: boolean;
   setAuth: (
     accessToken: string | null,
@@ -20,6 +21,7 @@ interface AuthState {
   setAccessToken: (accessToken: string | null) => void;
   setUser: (user: User | null) => void;
   logout: () => void;
+  setHasHydrated: (hasHydrated: boolean) => void;
   setLoginPromptOpen: (open: boolean) => void;
 }
 
@@ -31,6 +33,7 @@ export const useAuthStore = create<AuthState>()(
       role: null,
       user: null,
       isAuthenticated: false,
+      hasHydrated: false,
       isLoginPromptOpen: false,
       setAuth: (accessToken, role, user, refreshToken) =>
         set({
@@ -65,6 +68,7 @@ export const useAuthStore = create<AuthState>()(
         localStorage.removeItem("auth_token");
         localStorage.removeItem("user_info");
       },
+      setHasHydrated: (hasHydrated) => set({ hasHydrated }),
       setLoginPromptOpen: (open) => set({ isLoginPromptOpen: open }),
     }),
     {
@@ -79,6 +83,9 @@ export const useAuthStore = create<AuthState>()(
         user: state.user,
         isAuthenticated: state.isAuthenticated,
       }),
+      onRehydrateStorage: () => (state) => {
+        state?.setHasHydrated(true);
+      },
     },
   ),
 );

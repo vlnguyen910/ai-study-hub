@@ -9,6 +9,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import ForgotPasswordPage from "../src/modules/forgot-password/page";
 import ResetPasswordPage from "../src/modules/reset-password/page";
+import Home from "../src/app/page";
 import LoginPage from "../src/app/(auth)/login/page";
 import RegisterPage from "../src/app/(auth)/register/page";
 import { ModeratorShell } from "../src/modules/moderator/components/ModeratorShell";
@@ -40,7 +41,11 @@ vi.mock("../src/modules/auth-api", async (importOriginal) => {
   };
 });
 
-const makeAccessToken = (role = "USER", status = "ACTIVE") => {
+const makeAccessToken = (
+  role = "USER",
+  status = "ACTIVE",
+  exp = Math.floor(Date.now() / 1000) + 3600,
+) => {
   const payload = Buffer.from(
     JSON.stringify({
       sub: "user-1",
@@ -50,10 +55,33 @@ const makeAccessToken = (role = "USER", status = "ACTIVE") => {
       status,
       type: "accessToken",
       deviceId: "device-1",
+      exp,
     }),
   ).toString("base64url");
 
   return `header.${payload}.signature`;
+};
+
+const hydratePersistedAuth = async (accessToken: string, role = "student") => {
+  localStorage.setItem(
+    "auth-storage",
+    JSON.stringify({
+      state: {
+        accessToken,
+        role,
+        user: {
+          id: "user-1",
+          email: "student@example.com",
+          name: "Nguyen Student",
+          role,
+        },
+        isAuthenticated: true,
+      },
+      version: 0,
+    }),
+  );
+
+  await useAuthStore.persist.rehydrate();
 };
 
 describe("web auth routing", () => {
@@ -92,6 +120,48 @@ describe("web auth routing", () => {
     });
     fireEvent.click(screen.getByRole("button", { name: "Đăng nhập" }));
 
+    await waitFor(() => {
+      expect(navigationMocks.router.replace).toHaveBeenCalledWith("/home");
+    });
+  });
+
+  it("renders the landing page for guests without a stored token", async () => {
+    render(<Home />);
+
+    expect(await screen.findAllByText(/AcademiShare/i)).not.toHaveLength(0);
+    expect(navigationMocks.router.replace).not.toHaveBeenCalled();
+  });
+
+  it("redirects authenticated users away from the landing page without flashing content", async () => {
+    await hydratePersistedAuth(makeAccessToken());
+
+    render(<Home />);
+
+    expect(screen.queryByText(/AcademiShare/i)).not.toBeInTheDocument();
+    await waitFor(() => {
+      expect(navigationMocks.router.replace).toHaveBeenCalledWith("/home");
+    });
+  });
+
+  it("redirects authenticated users away from login and register pages", async () => {
+    await hydratePersistedAuth(makeAccessToken());
+
+    const { unmount } = render(<LoginPage />);
+
+    expect(
+      screen.queryByRole("button", { name: "Đăng nhập" }),
+    ).not.toBeInTheDocument();
+    await waitFor(() => {
+      expect(navigationMocks.router.replace).toHaveBeenCalledWith("/home");
+    });
+    unmount();
+
+    navigationMocks.router.replace.mockClear();
+    render(<RegisterPage />);
+
+    expect(
+      screen.queryByRole("button", { name: "Đăng ký" }),
+    ).not.toBeInTheDocument();
     await waitFor(() => {
       expect(navigationMocks.router.replace).toHaveBeenCalledWith("/home");
     });

@@ -11,19 +11,17 @@ describe("Home page", () => {
 
   it("renders the getting started text", () => {
     render(<Home />);
-    expect(screen.getByText(/AcademiShare/i)).toBeInTheDocument();
+    expect(screen.getAllByText(/AcademiShare/i)[0]).toBeInTheDocument();
   });
 
-  it("links unauthenticated users to login and register pages", () => {
+  it("links visitors to login and register pages", () => {
     render(<Home />);
 
-    expect(screen.getByRole("link", { name: "Đăng nhập" })).toHaveAttribute(
-      "href",
-      "/login",
-    );
-    expect(screen.getByRole("link", { name: "Đăng ký" })).toHaveAttribute(
-      "href",
-      "/register",
-    );
+    expect(
+      screen.getAllByRole("link", { name: "Đăng nhập" })[0],
+    ).toHaveAttribute("href", "/login");
+    expect(
+      screen.getAllByRole("link", { name: "Bắt đầu miễn phí" })[0],
+    ).toHaveAttribute("href", "/register");
   });
 });
