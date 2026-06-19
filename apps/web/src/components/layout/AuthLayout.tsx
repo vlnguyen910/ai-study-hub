@@ -135,13 +135,13 @@ export default function AuthLayout({
         </section>
 
         <section
-          className={`relative z-10 flex min-h-screen items-center justify-center bg-[linear-gradient(135deg,#ffffff_0%,#f8fbff_52%,#eef5ff_100%)] px-4 py-10 shadow-2xl shadow-black/20 transition-transform duration-[600ms] sm:px-6 lg:px-10 md:absolute md:inset-y-0 md:left-0 md:w-1/2 ${
+          className={`relative z-10 flex min-h-screen items-center justify-center overflow-y-auto bg-[linear-gradient(135deg,#ffffff_0%,#f8fbff_52%,#eef5ff_100%)] px-4 py-6 shadow-2xl shadow-black/20 transition-transform duration-[600ms] sm:px-6 sm:py-8 lg:px-10 md:absolute md:inset-y-0 md:left-0 md:h-screen md:w-1/2 ${
             panelOnRight ? "md:translate-x-full" : "md:translate-x-0"
           }`}
           style={{ transitionTimingFunction: slideTiming }}
         >
           <div
-            className={`w-full max-w-md ${
+            className={`my-auto w-full max-w-md ${
               isSwitching
                 ? "opacity-0"
                 : "animate-[auth-form-enter_360ms_ease-out]"

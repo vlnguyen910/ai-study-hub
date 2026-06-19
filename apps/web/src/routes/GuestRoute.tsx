@@ -6,43 +6,66 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useEffect, useState, type FC, type ReactNode } from "react";
-import { Spinner } from "@/components/ui/Spinner";
-import { getAuthSession } from "./guards/auth.guard";
+import { useEffect, type FC, type ReactNode } from "react";
+import { decodeJwtPayload } from "@/lib/auth";
+import { useAuthStore } from "@/stores/auth/store";
+import { ROUTE_PATHS } from "./router.const";
+import type { UserRole } from "@/shared/types";
 
 export interface GuestRouteProps {
   children: ReactNode;
 }
 
-const GuestFallback = (): React.JSX.Element => (
-  <div className="flex min-h-screen items-center justify-center bg-background text-on-surface">
-    <Spinner />
-  </div>
-);
+type AccessTokenPayload = {
+  exp?: number;
+};
+
+const isAccessTokenUsable = (accessToken: string | null): boolean => {
+  if (!accessToken?.trim()) {
+    return false;
+  }
+
+  const payload = decodeJwtPayload<AccessTokenPayload>(accessToken);
+  if (!payload?.exp) {
+    return true;
+  }
+
+  return payload.exp * 1000 > Date.now();
+};
+
+const getAuthenticatedRedirect = (role: UserRole | null): string => {
+  if (role === "admin") {
+    return ROUTE_PATHS.ADMIN_ROUTES.DASHBOARD;
+  }
+
+  if (role === "moderator") {
+    return ROUTE_PATHS.MODERATOR_ROUTES.DASHBOARD;
+  }
+
+  return ROUTE_PATHS.PROTECTED_ROUTES.HOME;
+};
 
 export const GuestRoute: FC<GuestRouteProps> = ({
   children,
 }): React.JSX.Element | null => {
   const router = useRouter();
-  const [mounted, setMounted] = useState(false);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const hasHydrated = useAuthStore((state) => state.hasHydrated);
+  const accessToken = useAuthStore((state) => state.accessToken);
+  const role = useAuthStore((state) => state.role);
+  const shouldRedirect = hasHydrated && isAccessTokenUsable(accessToken);
 
   useEffect(() => {
-    setMounted(true);
-    const { isAuthenticated: isAuth } = getAuthSession();
-    setIsAuthenticated(isAuth);
-
-    if (isAuth) {
-      router.replace("/home");
+    if (shouldRedirect) {
+      router.replace(getAuthenticatedRedirect(role));
     }
-  }, [router]);
+  }, [role, router, shouldRedirect]);
 
-  if (!mounted) {
-    return <GuestFallback />;
-  }
-
-  if (isAuthenticated) {
-    return <GuestFallback />;
+  if (!hasHydrated || shouldRedirect) {
+    return (
+      <div className="grid min-h-screen place-items-center bg-background text-foreground">
+        <div className="size-8 animate-spin rounded-full border-2 border-outline-variant border-t-primary" />
+      </div>
+    );
   }
 
   return <>{children}</>;

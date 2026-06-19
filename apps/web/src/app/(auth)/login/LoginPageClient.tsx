@@ -11,11 +11,16 @@ import {
 } from "react";
 
 import AuthLayout from "@/components/layout/AuthLayout";
+import { GoogleAuthButton } from "@/components/auth/GoogleAuthButton";
 import { BackButton } from "@/components/ui/BackButton";
 import { Button } from "@/components/ui/Button";
 import { buildUserFromAccessToken, extractAccessToken } from "@/lib/auth";
 import { apiClient } from "@/lib/axios";
-import { completeGoogleLoginFromLocation } from "@/modules/google-auth";
+import {
+  buildGoogleLoginUrl,
+  completeGoogleLoginFromLocation,
+  markGoogleOauthPending,
+} from "@/modules/google-auth";
 import { ROUTE_PATHS } from "@/routes/router.const";
 import { API_ENDPOINTS } from "@/shared/constants";
 import { useAuthStore } from "@/stores/auth/store";
@@ -99,6 +104,7 @@ export default function LoginPageClient(): ReactElement {
     general: "",
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isGoogleSubmitting, setIsGoogleSubmitting] = useState(false);
 
   useEffect(() => {
     if (!completeGoogleLoginFromLocation()) {
@@ -196,6 +202,33 @@ export default function LoginPageClient(): ReactElement {
     }
   };
 
+  const handleGoogleSignin = () => {
+    if (isGoogleSubmitting) {
+      return;
+    }
+
+    setErrors((prev) => ({ ...prev, general: "" }));
+    setIsGoogleSubmitting(true);
+
+    try {
+      const deviceId = getOrCreateDeviceId();
+      const oauthState = markGoogleOauthPending();
+
+      window.location.href = buildGoogleLoginUrl({
+        deviceId,
+        oauthState,
+        redirectPath: getSafeRedirect(searchParams.get("redirect"), "student"),
+      });
+    } catch {
+      setIsGoogleSubmitting(false);
+      setErrors((prev) => ({
+        ...prev,
+        general:
+          "Không thể bắt đầu đăng nhập Google. Vui lòng kiểm tra kết nối và thử lại.",
+      }));
+    }
+  };
+
   return (
     <AuthLayout
       mode="login"
@@ -205,7 +238,7 @@ export default function LoginPageClient(): ReactElement {
       switchText="Chưa có tài khoản?"
       switchCta="Đăng ký ngay"
     >
-      <div className="mb-8 flex items-center justify-between gap-4">
+      <div className="mb-5 flex items-center justify-between gap-4">
         <BackButton fallbackHref={ROUTE_PATHS.HOME} />
         <Link
           href={ROUTE_PATHS.HOME}
@@ -216,20 +249,20 @@ export default function LoginPageClient(): ReactElement {
         </Link>
       </div>
 
-      <section className="rounded-3xl border border-outline-variant/70 bg-white/85 p-7 shadow-xl shadow-primary/5 backdrop-blur sm:p-9">
-        <div className="mb-10">
+      <section className="rounded-3xl border border-outline-variant/70 bg-white/85 p-6 shadow-xl shadow-primary/5 backdrop-blur sm:p-7">
+        <div className="mb-7">
           <p className="font-label-sm text-label-sm uppercase tracking-[0.18em] text-on-surface-variant">
             Đăng nhập
           </p>
-          <h1 className="mt-3 font-headline-lg text-headline-lg font-bold tracking-wide text-primary">
+          <h1 className="mt-2 font-headline-lg text-headline-lg font-bold tracking-wide text-primary">
             Chào mừng trở lại
           </h1>
-          <p className="mt-4 font-body-md text-body-md leading-7 text-on-surface-variant">
+          <p className="mt-2 font-body-md text-body-md leading-6 text-on-surface-variant">
             Đăng nhập để tiếp tục sử dụng không gian học tập của bạn.
           </p>
         </div>
 
-        <form className="space-y-7" onSubmit={handleSubmit} noValidate>
+        <form className="space-y-6" onSubmit={handleSubmit} noValidate>
           {errors.general ? (
             <p className="rounded-2xl border border-error/30 bg-error-container px-4 py-3 font-label-sm text-label-sm leading-5 text-error">
               {errors.general}
@@ -289,7 +322,25 @@ export default function LoginPageClient(): ReactElement {
           </Button>
         </form>
 
-        <p className="mt-7 font-label-sm text-label-sm text-on-surface-variant md:hidden">
+        <div className="my-5 flex items-center gap-3">
+          <div className="h-px flex-1 bg-outline-variant" />
+          <span className="font-label-sm text-label-sm text-on-surface-variant">
+            hoặc
+          </span>
+          <div className="h-px flex-1 bg-outline-variant" />
+        </div>
+
+        <GoogleAuthButton
+          label={
+            isGoogleSubmitting
+              ? "Đang chuyển tới Google..."
+              : "Đăng nhập với Google"
+          }
+          onClick={handleGoogleSignin}
+          disabled={isSubmitting || isGoogleSubmitting}
+        />
+
+        <p className="mt-5 font-label-sm text-label-sm text-on-surface-variant md:hidden">
           Chưa có tài khoản?{" "}
           <Link
             href={ROUTE_PATHS.AUTH_ROUTES.REGISTER}
