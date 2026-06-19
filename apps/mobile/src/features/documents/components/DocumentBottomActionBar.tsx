@@ -1,17 +1,19 @@
 import { MaterialIcons } from "@expo/vector-icons";
-import { Pressable, Text, View } from "react-native";
+import { Pressable, View } from "react-native";
 import { Button } from "@/components";
 
 interface DocumentBottomActionBarProps {
   readonly onShare: () => void;
   readonly onDownload: () => void;
   readonly downloadLabel: string;
+  readonly isDownloading?: boolean;
 }
 
 export function DocumentBottomActionBar({
   onShare,
   onDownload,
   downloadLabel,
+  isDownloading = false,
 }: DocumentBottomActionBarProps) {
   return (
     <View className="border-t border-outline-variant bg-surface px-4 py-4">
@@ -27,6 +29,7 @@ export function DocumentBottomActionBar({
           <Button
             fullWidth
             onPress={onDownload}
+            loading={isDownloading}
             leftIcon={
               <MaterialIcons name="download" size={18} color="#ffffff" />
             }

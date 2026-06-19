@@ -84,6 +84,21 @@ src/
 - Only route screens and layouts go in src/app.
 - Keep route components thin; move logic into src/features or src/services.
 - Use \_layout.tsx for shared layout; use group folders for feature grouping.
+- Keep route strings in `src/constants/routes.ts`.
+- Public routes live in `(tabs)` or `documents`; guest-only auth routes live in `(auth)`; authenticated routes live in `(protected)`.
+
+### Current user flow
+
+| Access          | Route                                                  | Purpose                                                        |
+| --------------- | ------------------------------------------------------ | -------------------------------------------------------------- |
+| Public          | `/` → `/home`                                          | Default entry; loads `ACTIVE` documents                        |
+| Public          | `/search`, `/library`                                  | Search and browse active documents                             |
+| Public          | `/documents/:id`                                       | Inline preview, direct device download, and original-file link |
+| Guest only      | `/login`, `/register`, `/forgot-password`              | Authentication flow                                            |
+| Authenticated   | `/profile`, `/documents/upload`, `/documents/:id/edit` | Account and document management                                |
+| Moderator/Admin | `/moderator/documents`                                 | Moderation flow                                                |
+
+`SessionProvider` restores tokens, verifies them through `/accounts/me`, and drives redirects. Guest auth screens redirect an authenticated user to Home; protected screens preserve the requested path and send guests to Login.
 
 ## Boilerplate cho dev mới
 
@@ -91,7 +106,6 @@ Bộ boilerplate mẫu đã được thêm sẵn để dev mới có thể tạo
 
 ### Đường dẫn mẫu
 
-- Route demo: `src/app/(templates)/feature-template.tsx`
 - Screen demo: `src/features/template-feature/screens/TemplateFeatureScreen.tsx`
 - Hook demo: `src/features/template-feature/hooks/useTemplateFeature.ts`
 - Service demo: `src/features/template-feature/services/template-feature.service.ts`

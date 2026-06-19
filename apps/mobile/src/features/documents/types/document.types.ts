@@ -32,6 +32,8 @@ export interface DocumentDetail {
   readonly description: string | null;
   readonly fileUrl: string;
   readonly publicId: string;
+  readonly status: DocumentStatus;
+  readonly isPublic: boolean;
   readonly format: string;
   readonly sizeInBytes: number;
   readonly createdAt: string;

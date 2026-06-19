@@ -27,7 +27,7 @@ export const useGoogleSignIn = () => {
     selectAccount: true,
   });
 
-  const signIn = async (onSuccess?: () => void) => {
+  const signIn = async (onSuccess?: () => void | Promise<void>) => {
     setIsLoading(true);
 
     try {
@@ -50,9 +50,7 @@ export const useGoogleSignIn = () => {
         await saveTokens(response.data.accessToken, response.data.refreshToken);
       }
 
-      if (onSuccess) {
-        onSuccess();
-      }
+      await onSuccess?.();
     } catch (error) {
       const message =
         error instanceof AuthServiceError

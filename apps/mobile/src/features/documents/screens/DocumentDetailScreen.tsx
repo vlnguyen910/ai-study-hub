@@ -3,17 +3,27 @@ import { router, useLocalSearchParams } from "expo-router";
 import { useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
+  Alert,
   Linking,
   Pressable,
   ScrollView,
+  Share,
   Text,
   View,
 } from "react-native";
 
-import { PageShell } from "@/components";
+import { Button, PageShell } from "@/components";
+import { ROUTES } from "@/constants/routes";
+import { useSession } from "@/features/auth/context/SessionContext";
 import { DocumentBottomActionBar } from "../components/DocumentBottomActionBar";
+import { DocumentPreview } from "../components/DocumentPreview";
 import { fetchDocumentDetail } from "../services/documents.service";
 import type { DocumentDetail } from "../types/document.types";
+import {
+  buildCloudinaryDownloadUrl,
+  buildDownloadFileName,
+} from "../utils/document-download";
+import { downloadDocumentToDevice } from "../utils/download-document";
 
 const formatBytes = (bytes: number): string => {
   if (!Number.isFinite(bytes) || bytes <= 0) return "0 KB";
@@ -41,6 +51,7 @@ const formatDate = (value: string): string => {
 };
 
 export function DocumentDetailScreen() {
+  const { user } = useSession();
   const params = useLocalSearchParams<{ id?: string }>();
   const documentId = useMemo(() => {
     const value = params.id;
@@ -52,6 +63,7 @@ export function DocumentDetailScreen() {
   const [error, setError] = useState<string | null>(
     documentId ? null : "Thiếu mã tài liệu để tải chi tiết.",
   );
+  const [isDownloading, setIsDownloading] = useState(false);
 
   useEffect(() => {
     if (!documentId) return;
@@ -79,9 +91,56 @@ export function DocumentDetailScreen() {
     };
   }, [documentId]);
 
-  const openFile = async () => {
+  const downloadFile = async () => {
     if (!document?.fileUrl) return;
-    await Linking.openURL(document.fileUrl);
+
+    setIsDownloading(true);
+    try {
+      const downloadUrl = buildCloudinaryDownloadUrl(document.fileUrl);
+      const fileName = buildDownloadFileName(document.title, document.format);
+      await downloadDocumentToDevice({ url: downloadUrl, fileName });
+      Alert.alert(
+        "Tải xuống thành công",
+        `Tệp “${fileName}” đã được lưu vào thư mục bạn chọn.`,
+      );
+    } catch (downloadError) {
+      Alert.alert(
+        "Không thể tải tài liệu",
+        downloadError instanceof Error
+          ? downloadError.message
+          : "Đã xảy ra lỗi khi lưu tài liệu vào thiết bị.",
+      );
+    } finally {
+      setIsDownloading(false);
+    }
+  };
+
+  const openOriginalFile = async () => {
+    if (!document?.fileUrl) return;
+
+    try {
+      const canOpen = await Linking.canOpenURL(document.fileUrl);
+      if (!canOpen) {
+        throw new Error("Thiết bị không hỗ trợ URL này.");
+      }
+      await Linking.openURL(document.fileUrl);
+    } catch (openError) {
+      Alert.alert(
+        "Không thể mở tài liệu",
+        openError instanceof Error
+          ? openError.message
+          : "Không thể mở URL của tài liệu.",
+      );
+    }
+  };
+
+  const shareFile = async () => {
+    if (!document?.fileUrl) return;
+    await Share.share({
+      title: document.title,
+      message: `${document.title}\n${document.fileUrl}`,
+      url: document.fileUrl,
+    });
   };
 
   return (
@@ -96,19 +155,20 @@ export function DocumentDetailScreen() {
             <MaterialIcons name="arrow-back" size={22} color="#191b23" />
           </Pressable>
           <View className="flex-row items-center gap-2">
-            <Pressable
-              accessibilityRole="button"
-              className="rounded-full p-2"
-              onPress={() => {
-                if (document?.id) {
-                  router.push(
-                    `/(templates)/document-edit?id=${document.id}` as never,
-                  );
-                }
-              }}
-            >
-              <MaterialIcons name="edit" size={22} color="#191b23" />
-            </Pressable>
+            {document?.author.id === user?.id ? (
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Edit document"
+                className="rounded-full p-2"
+                onPress={() => {
+                  if (document) {
+                    router.push(ROUTES.DOCUMENT_EDIT(document.id) as never);
+                  }
+                }}
+              >
+                <MaterialIcons name="edit" size={22} color="#191b23" />
+              </Pressable>
+            ) : null}
           </View>
         </View>
 
@@ -136,15 +196,45 @@ export function DocumentDetailScreen() {
               }}
               showsVerticalScrollIndicator={false}
             >
-              <View className="rounded-2xl border border-outline-variant bg-surface-container-lowest p-8">
-                <View className="items-center gap-4">
-                  <MaterialIcons name="description" size={56} color="#004ac6" />
-                  <Text className="text-sm font-semibold uppercase text-primary">
-                    {document.format}
-                  </Text>
-                  <Text className="text-sm text-on-surface-variant">
-                    {formatBytes(document.sizeInBytes)}
-                  </Text>
+              <DocumentPreview document={document} />
+
+              <View className="mt-4 rounded-2xl border border-outline-variant bg-surface-container-lowest p-4">
+                <View className="flex-row items-center gap-3">
+                  <View className="rounded-xl bg-primary/10 p-3">
+                    <MaterialIcons
+                      name="description"
+                      size={28}
+                      color="#004ac6"
+                    />
+                  </View>
+                  <View className="min-w-0 flex-1">
+                    <Text
+                      className="font-semibold text-on-surface"
+                      numberOfLines={1}
+                    >
+                      {buildDownloadFileName(document.title, document.format)}
+                    </Text>
+                    <Text className="mt-1 text-sm text-on-surface-variant">
+                      {document.format.toUpperCase()} ·{" "}
+                      {formatBytes(document.sizeInBytes)}
+                    </Text>
+                  </View>
+                </View>
+                <View className="mt-4">
+                  <Button
+                    fullWidth
+                    variant="outline"
+                    onPress={() => void openOriginalFile()}
+                    leftIcon={
+                      <MaterialIcons
+                        name="open-in-new"
+                        size={18}
+                        color="#191b23"
+                      />
+                    }
+                  >
+                    Xem chi tiết tài liệu
+                  </Button>
                 </View>
               </View>
 
@@ -196,9 +286,10 @@ export function DocumentDetailScreen() {
 
             <View className="absolute bottom-0 left-0 right-0">
               <DocumentBottomActionBar
-                downloadLabel={`Mở tệp (${formatBytes(document.sizeInBytes)})`}
-                onDownload={openFile}
-                onShare={() => {}}
+                downloadLabel={`Tải tài liệu (${formatBytes(document.sizeInBytes)})`}
+                isDownloading={isDownloading}
+                onDownload={() => void downloadFile()}
+                onShare={() => void shareFile()}
               />
             </View>
           </>

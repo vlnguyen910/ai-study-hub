@@ -1,5 +1,5 @@
 import { DocumentReviewScreen } from "@/features/document-review";
 
-export default function ModeratorDocumentReviewRoute() {
+export default function ModeratorDocumentsRoute() {
   return <DocumentReviewScreen />;
 }

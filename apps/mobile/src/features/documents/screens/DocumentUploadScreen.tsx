@@ -6,6 +6,7 @@ import { MaterialIcons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import { Pressable, ScrollView, Text, View } from "react-native";
 import { Button, Card, PageShell } from "@/components";
+import { ROUTES } from "@/constants/routes";
 import { DocumentCategorySelector } from "../components/DocumentCategorySelector";
 import { DocumentTextField } from "../components/DocumentTextField";
 import { DocumentUploadField } from "../components/DocumentUploadField";
@@ -98,11 +99,9 @@ export function DocumentUploadScreen() {
       isPublic: true,
     });
 
-    router.push(
-      document?.id
-        ? (`/(templates)/document-detail?id=${document.id}` as never)
-        : ("/(templates)/document-detail" as never),
-    );
+    if (document.id) {
+      router.push(ROUTES.DOCUMENT_DETAIL(document.id) as never);
+    }
   };
 
   return (
@@ -236,7 +235,7 @@ export function DocumentUploadScreen() {
                   key={item.id}
                   accessibilityRole="button"
                   onPress={() =>
-                    router.push("/(templates)/document-detail" as never)
+                    router.push(ROUTES.DOCUMENT_DETAIL(item.id) as never)
                   }
                 >
                   <View className="flex-row gap-3 rounded-2xl border border-outline-variant bg-surface p-3">

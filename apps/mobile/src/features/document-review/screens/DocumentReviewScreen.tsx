@@ -11,6 +11,7 @@ import {
   type ViewStyle,
 } from "react-native";
 import { PageShell } from "@/components";
+import { ROUTES } from "@/constants/routes";
 import { DocumentFilterChip } from "../components/DocumentFilterChip";
 import { ReviewDocumentCard } from "../components/ReviewDocumentCard";
 import type {
@@ -160,7 +161,9 @@ export function DocumentReviewScreen() {
                 document={document}
                 onReject={() => {}}
                 onSeeDetail={() =>
-                  router.push("/(templates)/moderator-document-detail" as never)
+                  router.push(
+                    ROUTES.MODERATOR_DOCUMENT_DETAIL(document.id) as never,
+                  )
                 }
               />
             ))}
