@@ -8,12 +8,12 @@ export const USER_NAV_ITEMS: SideNavItem[] = [
     href: ROUTE_PATHS.PROTECTED_ROUTES.HOME,
     section: "main",
   },
-  {
-    label: "Thư viện",
-    icon: "local_library",
-    href: ROUTE_PATHS.LIBRARY,
-    section: "main",
-  },
+  // {
+  //   label: "Thư viện",
+  //   icon: "local_library",
+  //   href: ROUTE_PATHS.LIBRARY,
+  //   section: "main",
+  // },
   {
     label: "Tài liệu của tôi",
     icon: "description",

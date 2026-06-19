@@ -6,7 +6,7 @@
 export const ROUTE_PATHS = {
   // ========== PUBLIC ROUTES (Any user can access) ==========
   HOME: "/",
-  LIBRARY: "/library",
+  // LIBRARY: "/library",
   LIBRARY_DETAIL: "/library/:id",
   ABOUT: "/about",
   STYLE_GUIDE: "/style-guide",
