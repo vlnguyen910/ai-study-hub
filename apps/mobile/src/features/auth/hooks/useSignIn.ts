@@ -24,7 +24,10 @@ export const useSignIn = () => {
     },
   });
 
-  const onSubmit = async (values: SignInFormValues, onSuccess?: () => void) => {
+  const onSubmit = async (
+    values: SignInFormValues,
+    onSuccess?: () => void | Promise<void>,
+  ) => {
     setIsLoading(true);
     setErrorMessage(null);
 
@@ -47,9 +50,7 @@ export const useSignIn = () => {
           );
         }
 
-        if (onSuccess) {
-          onSuccess();
-        }
+        await onSuccess?.();
       } else {
         setErrorMessage(response.message || "Đăng nhập thất bại");
         Alert.alert("Lỗi", response.message || "Đăng nhập thất bại");
@@ -70,7 +71,7 @@ export const useSignIn = () => {
     form,
     isLoading,
     errorMessage,
-    submit: (onSuccess?: () => void) =>
+    submit: (onSuccess?: () => void | Promise<void>) =>
       form.handleSubmit((values) => onSubmit(values, onSuccess))(),
   };
 };

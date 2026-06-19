@@ -38,6 +38,18 @@ describe("documents.service", () => {
     });
   });
 
+  it("fetches only active documents for the public home feed", async () => {
+    const client = createClientMock();
+    const response = { documents: [], pagination: { page: 1 } };
+    client.get.mockResolvedValue({ data: { data: response } });
+
+    await fetchDocuments({ page: 1, limit: 10, status: "ACTIVE" }, client);
+
+    expect(client.get).toHaveBeenCalledWith("/api/v1/documents", {
+      params: { page: 1, limit: 10, status: "ACTIVE" },
+    });
+  });
+
   it("fetches current user documents", async () => {
     const client = createClientMock();
     const response = { documents: [], pagination: { page: 1 } };

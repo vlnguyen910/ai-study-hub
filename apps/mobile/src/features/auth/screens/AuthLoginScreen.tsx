@@ -9,27 +9,45 @@ import {
   View,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { router } from "expo-router";
+import { router, useLocalSearchParams } from "expo-router";
 import { Controller } from "react-hook-form";
 import { Button, Card, PageShell } from "@/components";
+import { ROUTES } from "@/constants/routes";
+import { useSession } from "../context/SessionContext";
 import { useSignIn } from "../hooks/useSignIn";
 import { useGoogleSignIn } from "../hooks/useGoogleSignIn";
 
 export function AuthLoginScreen() {
+  const params = useLocalSearchParams<{ redirect?: string }>();
+  const { refreshSession } = useSession();
   const [showPassword, setShowPassword] = useState(false);
   const { form, isLoading, submit } = useSignIn();
   const { isGoogleLoading, isGoogleReady, signInWithGoogle } =
     useGoogleSignIn();
 
+  const finishSignIn = async () => {
+    const isAuthenticated = await refreshSession();
+    if (!isAuthenticated) return;
+
+    const redirectValue = Array.isArray(params.redirect)
+      ? params.redirect[0]
+      : params.redirect;
+    const destination =
+      redirectValue?.startsWith("/") && !redirectValue.startsWith("//")
+        ? redirectValue
+        : ROUTES.HOME;
+    router.replace(destination as never);
+  };
+
   const handleSignIn = () => {
-    submit(() => {
-      router.replace("/" as never);
+    void submit(async () => {
+      await finishSignIn();
     });
   };
 
   const handleGoogleSignIn = () => {
-    signInWithGoogle(() => {
-      router.replace("/" as never);
+    void signInWithGoogle(async () => {
+      await finishSignIn();
     });
   };
 
@@ -232,9 +250,7 @@ export function AuthLoginScreen() {
                   }}
                 >
                   <Pressable
-                    onPress={() =>
-                      router.push("/(templates)/auth-forgot-password" as never)
-                    }
+                    onPress={() => router.push(ROUTES.FORGOT_PASSWORD as never)}
                     accessibilityRole="button"
                   >
                     <Text
@@ -347,9 +363,7 @@ export function AuthLoginScreen() {
                 Don{"'"}t have an account?{" "}
               </Text>
               <Pressable
-                onPress={() =>
-                  router.push("/(templates)/auth-register" as never)
-                }
+                onPress={() => router.push(ROUTES.REGISTER as never)}
                 accessibilityRole="button"
               >
                 <Text

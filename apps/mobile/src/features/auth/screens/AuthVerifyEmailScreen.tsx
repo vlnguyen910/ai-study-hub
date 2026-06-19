@@ -10,6 +10,7 @@ import {
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { router, useLocalSearchParams } from "expo-router";
+import { ROUTES } from "@/constants/routes";
 import { Button, Card, PageShell } from "@/components";
 import {
   AuthServiceError,
@@ -53,7 +54,7 @@ export function AuthVerifyEmailScreen() {
         Alert.alert("Thành công", "Email đã được xác thực.", [
           {
             text: "Đăng nhập",
-            onPress: () => router.replace("/(templates)/auth-login" as never),
+            onPress: () => router.replace(ROUTES.LOGIN as never),
           },
         ]);
       } catch (error) {
@@ -72,7 +73,7 @@ export function AuthVerifyEmailScreen() {
   }, [token, verifyCurrentToken]);
 
   const handleOpenLogin = () => {
-    router.replace("/(templates)/auth-login" as never);
+    router.replace(ROUTES.LOGIN as never);
   };
 
   const handleVerify = async () => {

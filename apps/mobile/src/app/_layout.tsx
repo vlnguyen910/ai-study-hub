@@ -1,7 +1,24 @@
 import "../global.css";
-import { Stack } from "expo-router";
 
-export default function RootLayout() {
+import { Stack } from "expo-router";
+import { ActivityIndicator, Text, View } from "react-native";
+
+import { SessionProvider, useSession } from "@/features/auth";
+
+function RootNavigator() {
+  const { status } = useSession();
+
+  if (status === "loading") {
+    return (
+      <View className="flex-1 items-center justify-center gap-3 bg-surface">
+        <ActivityIndicator size="large" />
+        <Text className="text-sm text-on-surface-variant">
+          Restoring your session...
+        </Text>
+      </View>
+    );
+  }
+
   return (
     <Stack
       screenOptions={{
@@ -9,90 +26,23 @@ export default function RootLayout() {
         headerShadowVisible: false,
       }}
     >
+      <Stack.Screen name="index" options={{ headerShown: false }} />
+      <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+      <Stack.Screen name="(auth)" options={{ headerShown: false }} />
+      <Stack.Screen name="(protected)" options={{ headerShown: false }} />
       <Stack.Screen
-        name="(tabs)"
-        options={{
-          headerShown: false,
-        }}
+        name="documents/[id]"
+        options={{ headerShown: false, title: "Document" }}
       />
-      <Stack.Screen
-        name="(templates)/feature-template"
-        options={{
-          title: "Feature Template",
-        }}
-      />
-      <Stack.Screen
-        name="(templates)/document-upload"
-        options={{
-          title: "Upload Document",
-        }}
-      />
-      <Stack.Screen
-        name="(templates)/document-edit"
-        options={{
-          title: "Edit Document",
-        }}
-      />
-      <Stack.Screen
-        name="(templates)/document-detail"
-        options={{
-          title: "Document Detail",
-        }}
-      />
-      <Stack.Screen
-        name="(templates)/moderator-document-review"
-        options={{
-          title: "Review Queue",
-        }}
-      />
-      <Stack.Screen
-        name="(templates)/moderator-document-detail"
-        options={{
-          title: "Document Detail",
-        }}
-      />
-      <Stack.Screen
-        name="(templates)/auth-login"
-        options={{
-          title: "Login",
-        }}
-      />
-      <Stack.Screen
-        name="(templates)/auth-register"
-        options={{
-          title: "Register",
-        }}
-      />
-      <Stack.Screen
-        name="(templates)/auth-verify-email"
-        options={{
-          title: "Verify Email",
-        }}
-      />
-      <Stack.Screen
-        name="(templates)/auth-forgot-password"
-        options={{
-          title: "Forgot Password",
-        }}
-      />
-      <Stack.Screen
-        name="(templates)/auth-reset-password"
-        options={{
-          title: "Reset Password",
-        }}
-      />
-      <Stack.Screen
-        name="(templates)/profile"
-        options={{
-          title: "Profile",
-        }}
-      />
-      <Stack.Screen
-        name="notFound"
-        options={{
-          title: "Not Found",
-        }}
-      />
+      <Stack.Screen name="notFound" options={{ title: "Not Found" }} />
     </Stack>
+  );
+}
+
+export default function RootLayout() {
+  return (
+    <SessionProvider>
+      <RootNavigator />
+    </SessionProvider>
   );
 }

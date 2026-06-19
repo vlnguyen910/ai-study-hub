@@ -1,73 +1,22 @@
-import { Tabs, router, useFocusEffect } from "expo-router";
-import { Pressable, Alert } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
+import { Tabs } from "expo-router";
+
 import { BottomTabBar } from "@/components/navigation";
-import { removeTokens, getAccessToken } from "@/utils/storage";
-import { useState, useCallback } from "react";
+import { AuthHeaderAction } from "@/features/auth/components/AuthHeaderAction";
 
 export default function TabsLayout() {
-  const [hasToken, setHasToken] = useState(false);
-
-  useFocusEffect(
-    useCallback(() => {
-      let isActive = true;
-      const checkToken = async () => {
-        const token = await getAccessToken();
-        if (isActive) {
-          setHasToken(!!token);
-        }
-      };
-      checkToken();
-      return () => {
-        isActive = false;
-      };
-    }, []),
-  );
-
   return (
     <Tabs
       tabBar={(props) => <BottomTabBar {...props} />}
       screenOptions={{
         headerTitleAlign: "center",
         headerShadowVisible: false,
+        headerRight: () => <AuthHeaderAction />,
         tabBarHideOnKeyboard: true,
       }}
     >
-      <Tabs.Screen
-        name="home"
-        options={{
-          title: "Home",
-          tabBarLabel: "Home",
-          headerRight: () =>
-            hasToken ? (
-              <Pressable
-                onPress={async () => {
-                  await removeTokens();
-                  setHasToken(false);
-                  Alert.alert("Thành công", "Đăng xuất thành công");
-                  router.replace("/home");
-                }}
-                style={{ marginRight: 16 }}
-              >
-                <Ionicons name="log-out-outline" size={24} color="#ef4444" />
-              </Pressable>
-            ) : null,
-        }}
-      />
-      <Tabs.Screen
-        name="search"
-        options={{
-          title: "Search",
-          tabBarLabel: "Search",
-        }}
-      />
-      <Tabs.Screen
-        name="library"
-        options={{
-          title: "Library",
-          tabBarLabel: "Library",
-        }}
-      />
+      <Tabs.Screen name="home" options={{ title: "Home" }} />
+      <Tabs.Screen name="search" options={{ title: "Search" }} />
+      <Tabs.Screen name="library" options={{ title: "Library" }} />
     </Tabs>
   );
 }

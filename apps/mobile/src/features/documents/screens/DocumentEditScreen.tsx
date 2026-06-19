@@ -13,6 +13,7 @@ import {
   View,
 } from "react-native";
 import { Button, Card, PageShell } from "@/components";
+import { ROUTES } from "@/constants/routes";
 import { DocumentCategorySelector } from "../components/DocumentCategorySelector";
 import { DocumentTextField } from "../components/DocumentTextField";
 import { DocumentUploadField } from "../components/DocumentUploadField";
@@ -115,7 +116,7 @@ export function DocumentEditScreen() {
       description: values.description?.trim() || undefined,
     });
 
-    router.push(`/(templates)/document-detail?id=${documentId}` as never);
+    router.push(ROUTES.DOCUMENT_DETAIL(documentId) as never);
   };
 
   const onDelete = () => {

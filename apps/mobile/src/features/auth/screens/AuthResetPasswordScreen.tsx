@@ -9,6 +9,7 @@ import {
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { router, useLocalSearchParams } from "expo-router";
+import { ROUTES } from "@/constants/routes";
 import { Button, Card, PageShell } from "@/components";
 import {
   AuthServiceError,
@@ -156,9 +157,7 @@ export function AuthResetPasswordScreen() {
               <Button
                 variant="ghost"
                 fullWidth
-                onPress={() =>
-                  router.replace("/(templates)/auth-login" as never)
-                }
+                onPress={() => router.replace(ROUTES.LOGIN as never)}
               >
                 Quay lại đăng nhập
               </Button>

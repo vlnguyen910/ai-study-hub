@@ -10,6 +10,7 @@ import {
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
+import { ROUTES } from "@/constants/routes";
 import { Controller } from "react-hook-form";
 import { Button, Card, PageShell } from "@/components";
 import { useSignUp } from "../hooks/useSignUp";
@@ -22,7 +23,7 @@ export function AuthRegisterScreen() {
 
   const handleRegister = () => {
     submit(() => {
-      router.replace("/(templates)/auth-login" as never);
+      router.replace(ROUTES.LOGIN as never);
     });
   };
 
@@ -313,7 +314,7 @@ export function AuthRegisterScreen() {
               Already have an account?{" "}
             </Text>
             <Pressable
-              onPress={() => router.replace("/(templates)/auth-login" as never)}
+              onPress={() => router.replace(ROUTES.LOGIN as never)}
               accessibilityRole="button"
             >
               <Text className="text-xs font-bold text-primary">Login</Text>
