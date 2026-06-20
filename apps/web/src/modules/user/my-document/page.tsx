@@ -4,9 +4,7 @@
  * MyDocumentPage (/my-documents)
  *
  * Responsible for data fetching and coordinating state.
- * Rendering is fully delegated to child components:
- *   - DocumentStats  -> stats row
- *   - DocumentTable  -> search + table + pagination
+ * Rendering is fully delegated to the document collection and modal components.
  */
 
 import { useCallback, useEffect, useState } from "react";
@@ -26,8 +24,7 @@ import type {
 
 import { DocumentEditModal } from "./components/DocumentEditModal";
 import { DeleteDocumentModal } from "./components/DeleteDocumentModal";
-import { DocumentStats } from "./components/DocumentStats";
-import { DocumentTable } from "./components/DocumentTable";
+import { DocumentCollection } from "./components/DocumentCollection";
 
 const ITEMS_PER_PAGE = 4;
 
@@ -118,12 +115,7 @@ export default function MyDocumentPage(): React.JSX.Element {
         </p>
       </div>
 
-      <DocumentStats
-        totalDocuments={pagination?.total ?? 0}
-        isLoading={isLoading}
-      />
-
-      <DocumentTable
+      <DocumentCollection
         documents={documents}
         pagination={pagination}
         isLoading={isLoading}
