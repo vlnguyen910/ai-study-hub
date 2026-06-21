@@ -13,5 +13,27 @@ export class GoogleCallbackQueryDto {
 
   @IsOptional()
   @IsString()
+  @MinLength(1)
   error?: string;
+
+  // Additional optional parameters returned by Google OAuth that we need to allow
+  @IsOptional()
+  @IsString()
+  @MinLength(1)
+  iss?: string;
+
+  @IsOptional()
+  @IsString()
+  @MinLength(1)
+  scope?: string;
+
+  @IsOptional()
+  @IsString()
+  @MinLength(1)
+  authuser?: string;
+
+  @IsOptional()
+  @IsString()
+  @MinLength(1)
+  prompt?: string;
 }
