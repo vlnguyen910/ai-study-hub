@@ -28,6 +28,14 @@ export class MailProcessor implements OnModuleInit, OnModuleDestroy {
   ) {}
 
   onModuleInit() {
+    const isWorkerEnabled = process.env.ENABLE_WORKERS === 'true';
+    if (!isWorkerEnabled) {
+      this.logger.log(
+        'MailProcessor worker consumption disabled (ENABLE_WORKERS is not true)',
+      );
+      return;
+    }
+
     if (!this.redisService) {
       return;
     }
@@ -46,6 +54,7 @@ export class MailProcessor implements OnModuleInit, OnModuleDestroy {
     if (this.queueService) {
       this.queueService.getQueue(QUEUE_NAMES.mail);
     }
+    this.logger.log('MailProcessor worker consumption enabled and listening.');
   }
 
   async onModuleDestroy() {

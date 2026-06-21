@@ -1,5 +1,6 @@
 export const QUEUE_NAMES = {
   mail: 'mail',
+  document: 'document',
 } as const;
 
 export const DEFAULT_QUEUE_JOB_OPTIONS = {
