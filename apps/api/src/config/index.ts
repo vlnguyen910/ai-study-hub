@@ -6,3 +6,4 @@ export * from './mail.config';
 export * from './email-verification.config';
 export * from './password-recovery.config';
 export * from './google-auth.config';
+export * from './ai.config';
