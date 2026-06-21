@@ -49,6 +49,8 @@ model accounts {
   authProviders     auth_providers[]
   documents         documents[]      @relation("authorId")
   reviewedDocuments documents[]      @relation("reviewedById")
+  quizSessions      quiz_sessions[]
+  chatSessions      chat_sessions[]
 }
 
 model auth_providers {
@@ -179,6 +181,7 @@ model quiz_sessions {
   documentId    String    @db.ObjectId
   document      documents @relation(fields: [documentId], references: [id], onDelete: Cascade)
   userId        String    @db.ObjectId
+  user          accounts  @relation(fields: [userId], references: [id], onDelete: Cascade)
   status        String
   questionCount Int
   quizPayload   Json
@@ -192,6 +195,7 @@ model chat_sessions {
   documentId    String          @db.ObjectId
   document      documents       @relation(fields: [documentId], references: [id], onDelete: Cascade)
   userId        String          @db.ObjectId
+  user          accounts        @relation(fields: [userId], references: [id], onDelete: Cascade)
   title         String
   status        String
   model         String
@@ -211,13 +215,5 @@ model chat_messages {
   tokensUsed Int?
   status     String?
   createdAt  DateTime      @default(now())
-}
-
-model settings {
-  id        String   @id @default(auto()) @map("_id") @db.ObjectId
-  key       String   @unique
-  value     String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
 }
 

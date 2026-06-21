@@ -10,36 +10,48 @@ export class DocumentProcessingService {
   constructor(private readonly queueService: QueueService) {}
 
   async enqueueUploadProcessing(documentId: string) {
-    await this.queueService
-      .getQueue(QUEUE_NAMES.document)
-      .add(DOCUMENT_JOB_NAMES.processUpload, {
+    await this.queueService.getQueue(QUEUE_NAMES.document).add(
+      DOCUMENT_JOB_NAMES.processUpload,
+      {
         type: DOCUMENT_JOB_NAMES.processUpload,
         documentId,
-      });
+      },
+      {
+        jobId: `${DOCUMENT_JOB_NAMES.processUpload}:${documentId}`,
+      },
+    );
     this.logger.log(
       `Enqueued upload processing job for document ID: ${documentId}`,
     );
   }
 
   async enqueueDescriptionGeneration(documentId: string) {
-    await this.queueService
-      .getQueue(QUEUE_NAMES.document)
-      .add(DOCUMENT_JOB_NAMES.generateDescription, {
+    await this.queueService.getQueue(QUEUE_NAMES.document).add(
+      DOCUMENT_JOB_NAMES.generateDescription,
+      {
         type: DOCUMENT_JOB_NAMES.generateDescription,
         documentId,
-      });
+      },
+      {
+        jobId: `${DOCUMENT_JOB_NAMES.generateDescription}:${documentId}`,
+      },
+    );
     this.logger.log(
       `Enqueued description generation job for document ID: ${documentId}`,
     );
   }
 
   async enqueueSummaryGeneration(documentId: string) {
-    await this.queueService
-      .getQueue(QUEUE_NAMES.document)
-      .add(DOCUMENT_JOB_NAMES.generateSummary, {
+    await this.queueService.getQueue(QUEUE_NAMES.document).add(
+      DOCUMENT_JOB_NAMES.generateSummary,
+      {
         type: DOCUMENT_JOB_NAMES.generateSummary,
         documentId,
-      });
+      },
+      {
+        jobId: `${DOCUMENT_JOB_NAMES.generateSummary}:${documentId}`,
+      },
+    );
     this.logger.log(
       `Enqueued summary generation job for document ID: ${documentId}`,
     );
