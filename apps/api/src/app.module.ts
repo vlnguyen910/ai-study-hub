@@ -8,10 +8,12 @@ import { SubjectsModule } from './modules/subjects/subjects.module';
 import { AdminModule } from './modules/admin/admin.module';
 import { DocumentProcessingModule } from './modules/document-processing/document-processing.module';
 import { SettingsModule } from './modules/settings';
+import { AIModule } from './modules/ai/ai.module';
 import { jwtConfiguration } from './config/jwt.config';
 import { PrismaModule } from './prisma/prisma.module';
 import { cookieConfiguration } from './config/cookies.config';
 import {
+  aiConfiguration,
   emailVerificationConfiguration,
   googleAuthConfiguration,
   mailConfiguration,
@@ -32,6 +34,7 @@ import {
         emailVerificationConfiguration,
         passwordRecoveryConfiguration,
         googleAuthConfiguration,
+        aiConfiguration,
       ],
     }),
     PrismaModule,
@@ -42,6 +45,7 @@ import {
     AdminModule,
     DocumentProcessingModule,
     SettingsModule,
+    AIModule,
   ],
   controllers: [AppController],
 })
