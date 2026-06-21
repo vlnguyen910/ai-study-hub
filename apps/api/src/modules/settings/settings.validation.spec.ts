@@ -15,18 +15,28 @@ describe('Settings request validation', () => {
       defaultSchoolCode: ' fptu ',
     });
     const upload = plainToInstance(UpdateUploadSettingsDto, {
-      allowedFileTypes: ['pdf', 'DOCX'],
+      fileTypes: [
+        { extension: '.pdf', enabled: true },
+        { extension: ' xlsx ', enabled: false },
+      ],
     });
 
     await expect(validate(general)).resolves.toHaveLength(0);
     await expect(validate(upload)).resolves.toHaveLength(0);
     expect(general.defaultSchoolCode).toBe('FPTU');
-    expect(upload.allowedFileTypes).toEqual(['PDF', 'DOCX']);
+    expect(upload.fileTypes).toEqual([
+      { extension: 'PDF', enabled: true },
+      { extension: 'XLSX', enabled: false },
+    ]);
   });
 
   it.each([
     [UpdateModerationSettingsDto, { duplicateSimilarityThreshold: 101 }],
     [UpdateUploadSettingsDto, { maxFileSizeMb: 0 }],
+    [
+      UpdateUploadSettingsDto,
+      { fileTypes: [{ extension: 'PDF!', enabled: true }] },
+    ],
     [UpdateAiSettingsDto, { maxAiRequestsPerUserPerDay: 10001 }],
     [UpdateAccountSettingsDto, { defaultRoleAfterSignup: 'ADMIN' }],
     [UpdateGeneralSettingsDto, { supportEmail: 'not-an-email' }],

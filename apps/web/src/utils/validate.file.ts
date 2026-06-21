@@ -9,10 +9,9 @@ export const validateFile = (
   file: File,
   config: UploadConfig,
 ): ValidateFileResult => {
-  // validate mime type
-  const validMime = config.allowedMimeTypes.includes(file.type);
-
-  // validate extension
+  // The admin config is extension-based. MIME remains an input hint, but it
+  // cannot be required because browsers return an empty/unknown MIME for many
+  // custom academic file formats.
   const extension = file.name.includes(".")
     ? `.${file.name.split(".").pop()?.toLowerCase()}`
     : "";
@@ -22,7 +21,7 @@ export const validateFile = (
 
   const validExtension = normalizedAllowedExtensions.includes(extension);
 
-  if (!validMime || !validExtension) {
+  if (!validExtension) {
     return {
       valid: false,
       error: "Unsupported file type",

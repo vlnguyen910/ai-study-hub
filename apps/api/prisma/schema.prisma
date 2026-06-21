@@ -230,9 +230,8 @@ model system_settings {
   supportEmail      String  @default("support@aistudyhub.local")
 
   // Upload config
-  maxFileSizeMb     Int      @default(100)
-  allowedFileTypes  String[] @default(["PDF", "DOCX", "PPTX"])
-  allowMobileUpload Boolean  @default(true)
+  maxFileSizeMb     Int     @default(100)
+  allowMobileUpload Boolean @default(true)
 
   // Document visibility and review config
   requireModerationForPublicDocuments Boolean @default(true)
@@ -270,6 +269,16 @@ model system_settings {
   enableMobileAiFeatures Boolean @default(true)
 
   version   Int      @default(1)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+/// Admin-managed upload extensions. Disabled entries are kept so an admin can
+/// re-enable them without recreating the configuration.
+model upload_file_types {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  extension String   @unique
+  enabled   Boolean  @default(true)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }

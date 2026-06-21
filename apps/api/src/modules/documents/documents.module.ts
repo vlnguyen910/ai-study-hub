@@ -6,9 +6,10 @@ import { SubjectsModule } from '../subjects';
 import { AuthGuard } from '../../common/guards/auth.guard';
 import { OptionalJwtGuard } from '../../common/guards/optional-jwt.guard';
 import { VerifiedAccountGuard } from '../../common/guards/verified-account.guard';
+import { SettingsModule } from '../settings';
 
 @Module({
-  imports: [AuthModule, SubjectsModule],
+  imports: [AuthModule, SubjectsModule, SettingsModule],
   controllers: [DocumentsController],
   providers: [
     DocumentsService,

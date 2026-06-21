@@ -38,6 +38,13 @@ const settings: AdminSettings = {
   upload: {
     maxFileSizeMb: 100,
     allowedFileTypes: ["PDF", "DOCX", "PPTX"],
+    fileTypes: [
+      { extension: "PDF", enabled: true },
+      { extension: "DOCX", enabled: true },
+      { extension: "PPTX", enabled: true },
+      { extension: "TXT", enabled: false },
+      { extension: "XLSX", enabled: false },
+    ],
     allowMobileUpload: true,
   },
   documentVisibility: {
@@ -85,12 +92,29 @@ describe("AdminConfigPage", () => {
     settingsApiMock.fetchAdminSettings.mockResolvedValue(settings);
     settingsApiMock.updateAdminSettings.mockImplementation(
       (group: keyof AdminSettings, payload: object) =>
-        Promise.resolve({
-          ...settings,
-          [group]: payload,
-          version: 2,
-          updatedAt: "2026-06-21T09:00:00.000Z",
-        }),
+        Promise.resolve(
+          group === "upload"
+            ? {
+                ...settings,
+                upload: {
+                  ...settings.upload,
+                  ...payload,
+                  allowedFileTypes: (
+                    payload as AdminSettings["upload"]
+                  ).fileTypes
+                    .filter((fileType) => fileType.enabled)
+                    .map((fileType) => fileType.extension),
+                },
+                version: 2,
+                updatedAt: "2026-06-21T09:00:00.000Z",
+              }
+            : {
+                ...settings,
+                [group]: payload,
+                version: 2,
+                updatedAt: "2026-06-21T09:00:00.000Z",
+              },
+        ),
     );
   });
 
@@ -159,6 +183,43 @@ describe("AdminConfigPage", () => {
 
     expect(screen.getByLabelText("Tên hệ thống")).toHaveValue("AI Study Hub");
     expect(settingsApiMock.updateAdminSettings).not.toHaveBeenCalled();
+  });
+
+  it("adds and enables dynamic upload extensions", async () => {
+    render(<AdminConfigPage />);
+    await screen.findByDisplayValue("AI Study Hub");
+    const region = screen.getByRole("region", { name: "Tải lên tài liệu" });
+
+    fireEvent.change(within(region).getByLabelText(/^Thêm định dạng mới/), {
+      target: { value: ".epub" },
+    });
+    fireEvent.click(
+      within(region).getByRole("button", { name: "Thêm định dạng" }),
+    );
+    fireEvent.click(
+      within(region).getByRole("switch", { name: "Cho phép TXT" }),
+    );
+    fireEvent.click(
+      within(region).getByRole("button", { name: "Lưu thay đổi" }),
+    );
+
+    await waitFor(() => {
+      expect(settingsApiMock.updateAdminSettings).toHaveBeenCalledWith(
+        "upload",
+        {
+          maxFileSizeMb: 100,
+          allowMobileUpload: true,
+          fileTypes: [
+            { extension: "PDF", enabled: true },
+            { extension: "DOCX", enabled: true },
+            { extension: "PPTX", enabled: true },
+            { extension: "TXT", enabled: true },
+            { extension: "XLSX", enabled: false },
+            { extension: "EPUB", enabled: true },
+          ],
+        },
+      );
+    });
   });
 
   it("blocks an invalid AI quiz limit before sending the request", async () => {

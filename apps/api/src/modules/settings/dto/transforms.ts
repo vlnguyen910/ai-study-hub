@@ -12,3 +12,10 @@ export const uppercaseStringArray = ({ value }: TransformFnParams): unknown =>
         typeof item === 'string' ? item.trim().toUpperCase() : item,
       )
     : value;
+
+export const normalizeFileExtension = ({
+  value,
+}: TransformFnParams): unknown =>
+  typeof value === 'string'
+    ? value.trim().replace(/^\.+/, '').toUpperCase()
+    : value;

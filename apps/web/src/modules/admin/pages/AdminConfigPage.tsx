@@ -13,11 +13,8 @@ import {
   type AdminSettings,
   type AdminSettingsGroup,
   type AdminSettingsGroupPayloadMap,
-  type AllowedFileType,
 } from "../settings-api";
 import { AdminCard, MaterialIcon } from "../components/AdminPrimitives";
-
-const fileTypes: readonly AllowedFileType[] = ["PDF", "DOCX", "PPTX"];
 
 const groupSuccessMessages: Record<AdminSettingsGroup, string> = {
   general: "Đã lưu cấu hình hệ thống.",
@@ -35,6 +32,7 @@ const cloneSettings = (settings: AdminSettings): AdminSettings => ({
   upload: {
     ...settings.upload,
     allowedFileTypes: [...settings.upload.allowedFileTypes],
+    fileTypes: settings.upload.fileTypes.map((fileType) => ({ ...fileType })),
   },
   documentVisibility: { ...settings.documentVisibility },
   ai: { ...settings.ai },
@@ -69,6 +67,7 @@ export default function AdminConfigPage(): React.JSX.Element {
   const [groupErrors, setGroupErrors] = useState<
     Partial<Record<AdminSettingsGroup, string>>
   >({});
+  const [newFileExtension, setNewFileExtension] = useState("");
 
   const loadSettings = useCallback(async () => {
     setIsLoading(true);
@@ -149,7 +148,7 @@ export default function AdminConfigPage(): React.JSX.Element {
         ) {
           return "Dung lượng tối đa phải là số nguyên từ 1 đến 1024 MB.";
         }
-        if (draft.upload.allowedFileTypes.length === 0) {
+        if (!draft.upload.fileTypes.some((fileType) => fileType.enabled)) {
           return "Cần chọn ít nhất một định dạng tài liệu.";
         }
         return "";
@@ -200,9 +199,17 @@ export default function AdminConfigPage(): React.JSX.Element {
     setGroupErrors((current) => ({ ...current, [group]: "" }));
 
     try {
+      const payload =
+        group === "upload"
+          ? {
+              maxFileSizeMb: draft.upload.maxFileSizeMb,
+              fileTypes: draft.upload.fileTypes,
+              allowMobileUpload: draft.upload.allowMobileUpload,
+            }
+          : draft[group];
       const updated = await updateAdminSettings(
         group,
-        draft[group] as AdminSettingsGroupPayloadMap[T],
+        payload as AdminSettingsGroupPayloadMap[T],
       );
       const serverSettings = cloneSettings(updated);
 
@@ -238,6 +245,48 @@ export default function AdminConfigPage(): React.JSX.Element {
         : current,
     );
     setGroupErrors((current) => ({ ...current, [group]: "" }));
+    if (group === "upload") setNewFileExtension("");
+  };
+
+  const handleAddFileType = () => {
+    if (!draft) return;
+
+    const extension = newFileExtension.trim().replace(/^\.+/, "").toUpperCase();
+
+    if (!/^[A-Z0-9]{1,10}$/.test(extension)) {
+      setGroupErrors((current) => ({
+        ...current,
+        upload:
+          "Extension phải gồm 1–10 chữ cái hoặc số, không bao gồm dấu chấm.",
+      }));
+      return;
+    }
+
+    if (
+      draft.upload.fileTypes.some(
+        (fileType) => fileType.extension === extension,
+      )
+    ) {
+      setGroupErrors((current) => ({
+        ...current,
+        upload: `Định dạng ${extension} đã có trong danh sách.`,
+      }));
+      return;
+    }
+
+    if (draft.upload.fileTypes.length >= 50) {
+      setGroupErrors((current) => ({
+        ...current,
+        upload: "Chỉ được cấu hình tối đa 50 định dạng.",
+      }));
+      return;
+    }
+
+    updateGroup("upload", (current) => ({
+      ...current,
+      fileTypes: [...current.fileTypes, { extension, enabled: true }],
+    }));
+    setNewFileExtension("");
   };
 
   if (isLoading) {
@@ -396,37 +445,65 @@ export default function AdminConfigPage(): React.JSX.Element {
             />
             <div>
               <p className="mb-2 font-label-sm text-label-sm text-on-surface-variant">
-                Định dạng được phép
+                Định dạng tài liệu
               </p>
-              <div className="flex flex-wrap gap-2">
-                {fileTypes.map((type) => {
-                  const selected = draft.upload.allowedFileTypes.includes(type);
-                  return (
-                    <button
-                      aria-pressed={selected}
-                      className={`rounded-full border px-4 py-2 font-label-sm text-label-sm transition-colors ${
-                        selected
-                          ? "border-primary bg-primary text-on-primary"
-                          : "border-outline-variant bg-surface text-on-surface-variant hover:border-primary"
-                      }`}
-                      key={type}
-                      onClick={() =>
+              <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                {draft.upload.fileTypes.map((fileType) => (
+                  <div
+                    className="flex items-center justify-between gap-3 rounded-lg border border-outline-variant bg-surface px-3 py-2.5"
+                    key={fileType.extension}
+                  >
+                    <div className="min-w-0">
+                      <p className="font-label-md text-label-md text-on-surface tracking-normal">
+                        .{fileType.extension.toLowerCase()}
+                      </p>
+                      <p
+                        className={`font-label-sm text-label-sm tracking-normal ${
+                          fileType.enabled
+                            ? "text-primary"
+                            : "text-on-surface-variant"
+                        }`}
+                      >
+                        {fileType.enabled ? "Đang cho phép" : "Đã vô hiệu hóa"}
+                      </p>
+                    </div>
+                    <Switch
+                      ariaLabel={`Cho phép ${fileType.extension}`}
+                      checked={fileType.enabled}
+                      onChange={(enabled) =>
                         updateGroup("upload", (current) => ({
                           ...current,
-                          allowedFileTypes: selected
-                            ? current.allowedFileTypes.filter(
-                                (item) => item !== type,
-                              )
-                            : [...current.allowedFileTypes, type],
+                          fileTypes: current.fileTypes.map((item) =>
+                            item.extension === fileType.extension
+                              ? { ...item, enabled }
+                              : item,
+                          ),
                         }))
                       }
-                      type="button"
-                    >
-                      {type}
-                    </button>
-                  );
-                })}
+                    />
+                  </div>
+                ))}
               </div>
+            </div>
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-[1fr_auto] sm:items-end">
+              <InputField
+                helperText="Ví dụ: TXT, XLSX, CSV, EPUB. Không nhập dấu chấm."
+                label="Thêm định dạng mới"
+                maxLength={10}
+                onChange={(event) => setNewFileExtension(event.target.value)}
+                placeholder="EPUB"
+                value={newFileExtension}
+              />
+              <Button
+                // Thêm sm:mb-[24px] hoặc sm:mb-6 vào đây để bù trừ chiều cao của helperText
+                className="h-[38px] sm:mb-[24px]"
+                disabled={!newFileExtension.trim()}
+                onClick={handleAddFileType}
+                variant="outline"
+              >
+                <MaterialIcon className="mr-1 text-[18px]" name="add" />
+                Thêm định dạng
+              </Button>
             </div>
             <SettingToggle
               checked={draft.upload.allowMobileUpload}

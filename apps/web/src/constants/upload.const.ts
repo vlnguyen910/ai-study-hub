@@ -1,5 +1,5 @@
 export const DEFAULT_UPLOAD_CONFIG = {
-  maxFileSize: 10 * 1024 * 1024,
+  maxFileSize: 100 * 1024 * 1024,
 
   maxFiles: 5,
 
@@ -8,14 +8,10 @@ export const DEFAULT_UPLOAD_CONFIG = {
 
     "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
 
-    "text/plain",
-
-    "image/png",
-
-    "image/jpeg",
+    "application/vnd.openxmlformats-officedocument.presentationml.presentation",
   ],
 
-  allowedExtensions: [".pdf", ".docx", ".txt", ".png", ".jpg", ".jpeg"],
+  allowedExtensions: [".pdf", ".docx", ".pptx"],
 };
 
 /**

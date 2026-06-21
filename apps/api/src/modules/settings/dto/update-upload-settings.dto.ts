@@ -5,15 +5,28 @@ import {
   ArrayUnique,
   IsArray,
   IsBoolean,
-  IsIn,
   IsInt,
   IsOptional,
+  IsString,
+  Matches,
   Max,
   Min,
+  ValidateNested,
 } from 'class-validator';
-import { uppercaseStringArray } from './transforms';
+import { normalizeFileExtension } from './transforms';
 
-export const ALLOWED_DOCUMENT_FILE_TYPES = ['PDF', 'DOCX', 'PPTX'] as const;
+export class UploadFileTypeSettingDto {
+  @Transform(normalizeFileExtension)
+  @IsString()
+  @Matches(/^[A-Z0-9]{1,10}$/, {
+    message:
+      'fileTypes.extension must contain 1 to 10 letters or numbers without a dot',
+  })
+  extension!: string;
+
+  @IsBoolean()
+  enabled!: boolean;
+}
 
 export class UpdateUploadSettingsDto {
   @IsOptional()
@@ -24,13 +37,13 @@ export class UpdateUploadSettingsDto {
   maxFileSizeMb?: number;
 
   @IsOptional()
-  @Transform(uppercaseStringArray)
   @IsArray()
   @ArrayMinSize(1)
-  @ArrayMaxSize(ALLOWED_DOCUMENT_FILE_TYPES.length)
-  @ArrayUnique()
-  @IsIn(ALLOWED_DOCUMENT_FILE_TYPES, { each: true })
-  allowedFileTypes?: string[];
+  @ArrayMaxSize(50)
+  @ArrayUnique((item: UploadFileTypeSettingDto) => item.extension)
+  @ValidateNested({ each: true })
+  @Type(() => UploadFileTypeSettingDto)
+  fileTypes?: UploadFileTypeSettingDto[];
 
   @IsOptional()
   @IsBoolean()
