@@ -128,8 +128,96 @@ model documents {
   updatedAt       DateTime       @updatedAt
   deletedAt       DateTime?
 
+  // AI & Analytics Fields
+  aiSummary       String?
+  aiKeywords      String[]
+  duplicateScore  Float?
+  isAiFlagged     Boolean?       @default(false)
+  downloadCount   Int            @default(0)
+  viewCount       Int            @default(0)
+
   //Relationships
-  subject  subjects? @relation(fields: [subjectId], references: [id])
-  author   accounts  @relation("authorId", fields: [authorId], references: [id])
-  reviewer accounts? @relation("reviewedById", fields: [reviewedById], references: [id])
+  subject       subjects?        @relation(fields: [subjectId], references: [id])
+  author        accounts         @relation("authorId", fields: [authorId], references: [id])
+  reviewer      accounts?        @relation("reviewedById", fields: [reviewedById], references: [id])
+  chunks        document_chunks[]
+  aiReviews     ai_reviews[]
+  quizSessions  quiz_sessions[]
+  chatSessions  chat_sessions[]
 }
+
+model document_chunks {
+  id          String    @id @default(auto()) @map("_id") @db.ObjectId
+  documentId  String    @db.ObjectId
+  document    documents @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  chunkIndex  Int
+  chunkText   String
+  tokenCount  Int
+  embedding   Float[]
+  pageStart   Int?
+  pageEnd     Int?
+  createdAt   DateTime  @default(now())
+
+  @@unique([documentId, chunkIndex])
+}
+
+model ai_reviews {
+  id                   String    @id @default(auto()) @map("_id") @db.ObjectId
+  documentId           String    @db.ObjectId
+  document             documents @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  summary              String?
+  duplicateWarnings    String?
+  subjectSuggestion    String?
+  moderationSuggestion String?
+  generatedDescription String?
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+}
+
+model quiz_sessions {
+  id            String    @id @default(auto()) @map("_id") @db.ObjectId
+  documentId    String    @db.ObjectId
+  document      documents @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  userId        String    @db.ObjectId
+  status        String
+  questionCount Int
+  quizPayload   Json
+  score         Int?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}
+
+model chat_sessions {
+  id            String          @id @default(auto()) @map("_id") @db.ObjectId
+  documentId    String          @db.ObjectId
+  document      documents       @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  userId        String          @db.ObjectId
+  title         String
+  status        String
+  model         String
+  lastMessageAt DateTime        @default(now())
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+  messages      chat_messages[]
+}
+
+model chat_messages {
+  id         String        @id @default(auto()) @map("_id") @db.ObjectId
+  sessionId  String        @db.ObjectId
+  session    chat_sessions @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  role       String
+  content    String
+  citations  Json?
+  tokensUsed Int?
+  status     String?
+  createdAt  DateTime      @default(now())
+}
+
+model settings {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  key       String   @unique
+  value     String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
