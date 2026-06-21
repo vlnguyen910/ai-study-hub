@@ -64,7 +64,7 @@ function FloatingInput({
     <label className="group block">
       <div className="relative pt-4">
         <input
-          className={`peer h-12 w-full border-0 border-b border-outline/55 bg-transparent px-0 pb-2 pt-4 font-body-md text-body-md text-on-surface outline-none transition-colors placeholder:text-transparent focus:border-primary ${className}`}
+          className={`peer h-12 w-full border-0 border-b border-border/70 bg-transparent px-0 pb-2 pt-4 font-body-md text-body-md text-foreground outline-none transition-colors placeholder:text-muted-foreground/70 focus:border-primary ${className}`}
           placeholder=" "
           required={required}
           aria-invalid={Boolean(errorText)}
@@ -249,7 +249,7 @@ export default function LoginPageClient(): ReactElement {
         </Link>
       </div>
 
-      <section className="rounded-3xl border border-outline-variant/70 bg-white/85 p-6 shadow-xl shadow-primary/5 backdrop-blur sm:p-7">
+      <section className="rounded-3xl border border-border/70 bg-card/90 p-6 shadow-xl shadow-black/5 backdrop-blur sm:p-7">
         <div className="mb-7">
           <p className="font-label-sm text-label-sm uppercase tracking-[0.18em] text-on-surface-variant">
             Đăng nhập
@@ -294,13 +294,13 @@ export default function LoginPageClient(): ReactElement {
           />
 
           <div className="flex flex-wrap items-center justify-between gap-3">
-            <label className="flex items-center gap-3 font-body-md text-body-md text-on-surface">
+            <label className="flex items-center gap-3 font-body-md text-body-md text-foreground">
               <input
                 id="rememberMe"
                 type="checkbox"
                 checked={formData.rememberMe}
                 onChange={handleRememberChange}
-                className="h-4 w-4 rounded border-outline text-primary focus:ring-primary"
+                className="h-4 w-4 rounded border-border bg-background text-primary accent-primary focus:ring-primary"
               />
               <span>Ghi nhớ đăng nhập</span>
             </label>
@@ -315,7 +315,7 @@ export default function LoginPageClient(): ReactElement {
           <Button
             type="submit"
             variant="primary"
-            className="h-12 w-full rounded-2xl bg-gradient-to-r from-[#003ea8] via-[#0053db] to-[#3b82f6] font-label-lg text-on-primary shadow-xl shadow-primary/25 transition-all hover:-translate-y-0.5 hover:shadow-2xl hover:shadow-primary/30 disabled:translate-y-0"
+            className="h-12 w-full rounded-2xl bg-gradient-to-r from-primary via-primary to-primary/80 font-label-lg text-primary-foreground shadow-xl shadow-primary/20 transition-all hover:-translate-y-0.5 hover:shadow-2xl hover:shadow-primary/25 disabled:translate-y-0"
             disabled={isSubmitting}
           >
             {isSubmitting ? "Đang đăng nhập..." : "Đăng nhập"}

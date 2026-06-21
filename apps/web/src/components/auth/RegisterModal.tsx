@@ -140,11 +140,11 @@ export default function RegisterModal({
 
   return (
     <div
-      className="fixed inset-0 z-50 bg-slate-950/60 px-4 py-8 backdrop-blur-sm"
+      className="fixed inset-0 z-50 bg-black/60 px-4 py-8 backdrop-blur-sm"
       onClick={handleBackdropClick}
     >
       <div className="flex min-h-full items-center justify-center">
-        <div className="relative w-full max-w-md rounded-3xl border border-white/70 bg-white p-8 shadow-2xl shadow-slate-950/20">
+        <div className="relative w-full max-w-md rounded-3xl border border-border bg-card p-8 text-card-foreground shadow-2xl shadow-black/20">
           <button
             type="button"
             onClick={() => {
@@ -152,7 +152,7 @@ export default function RegisterModal({
               onClose();
             }}
             aria-label="Close register modal"
-            className="absolute right-4 top-4 inline-flex h-9 w-9 items-center justify-center rounded-full border border-gray-200 bg-white text-gray-500 shadow-sm transition-colors hover:bg-gray-50 hover:text-gray-900"
+            className="absolute right-4 top-4 inline-flex h-9 w-9 items-center justify-center rounded-full border border-border bg-background text-muted-foreground shadow-sm transition-colors hover:bg-muted hover:text-foreground"
           >
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
               <path
@@ -165,14 +165,14 @@ export default function RegisterModal({
             </svg>
           </button>
 
-          <div className="flex items-center justify-center gap-2 text-2xl font-bold text-blue-600 mb-6">
+          <div className="mb-6 flex items-center justify-center gap-2 text-2xl font-bold text-primary">
             AI Study Hub
           </div>
 
-          <h1 className="text-2xl font-bold text-center text-gray-900 mb-2">
+          <h1 className="mb-2 text-center text-2xl font-bold text-foreground">
             Create Account
           </h1>
-          <p className="text-center text-gray-600 text-sm mb-8">
+          <p className="mb-8 text-center text-sm text-muted-foreground">
             Join our community to start learning and sharing.
           </p>
 
@@ -182,7 +182,7 @@ export default function RegisterModal({
             noValidate
           >
             {errors.general && (
-              <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-900">
+              <div className="rounded-lg border border-error/30 bg-error-container p-3 text-sm text-error">
                 {errors.general}
               </div>
             )}
@@ -192,7 +192,7 @@ export default function RegisterModal({
                 <div key={field} className="flex flex-col gap-2">
                   <label
                     htmlFor={field}
-                    className="text-sm font-bold text-gray-900"
+                    className="text-sm font-bold text-foreground"
                   >
                     {field === "name"
                       ? "Full Name"
@@ -209,7 +209,7 @@ export default function RegisterModal({
                           ? "email"
                           : "text"
                     }
-                    className={`w-full h-12 px-4 bg-gray-100 border rounded text-gray-900 text-sm focus:outline-none focus:border-blue-600 focus:bg-white transition-all ${errors[field] ? "border-red-600" : "border-gray-300"}`}
+                    className={`h-12 w-full rounded border px-4 text-sm text-foreground outline-none transition-all placeholder:text-muted-foreground/70 focus:border-primary focus:bg-background ${errors[field] ? "border-error" : "border-border bg-background"}`}
                     placeholder={
                       field === "email" ? "example@academic.edu" : "••••••••"
                     }
@@ -217,7 +217,7 @@ export default function RegisterModal({
                     onChange={handleChange}
                   />
                   {errors[field] && (
-                    <span className="text-red-600 text-xs mt-1">
+                    <span className="mt-1 text-xs text-error">
                       {errors[field]}
                     </span>
                   )}
@@ -228,13 +228,13 @@ export default function RegisterModal({
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full h-12 mt-2 text-base bg-[#004ac6] hover:bg-[#2c5b9e] disabled:opacity-60 disabled:cursor-not-allowed text-white font-bold rounded-full transition-colors"
+              className="mt-2 h-12 w-full rounded-full bg-primary text-base font-bold text-primary-foreground transition-colors hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
             >
               {isLoading ? "Đang đăng ký..." : "Đăng ký"}
             </button>
           </form>
 
-          <p className="text-center text-gray-600 text-sm mt-6">
+          <p className="mt-6 text-center text-sm text-muted-foreground">
             Already have an account?{" "}
             <button
               onClick={() => {
@@ -242,7 +242,7 @@ export default function RegisterModal({
                 onClose();
                 onOpenLogin();
               }}
-              className="text-blue-600 hover:underline font-medium"
+              className="font-medium text-primary hover:underline"
             >
               Sign in
             </button>

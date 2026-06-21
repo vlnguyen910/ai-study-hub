@@ -152,11 +152,11 @@ export default function LoginModal({
 
   return (
     <div
-      className="fixed inset-0 z-50 bg-slate-950/60 px-4 py-8 backdrop-blur-sm"
+      className="fixed inset-0 z-50 bg-black/60 px-4 py-8 backdrop-blur-sm"
       onClick={handleBackdropClick}
     >
       <div className="flex min-h-full items-center justify-center">
-        <div className="relative w-full max-w-md rounded-3xl border border-white/70 bg-white p-8 shadow-2xl shadow-slate-950/20">
+        <div className="relative w-full max-w-md rounded-3xl border border-border bg-card p-8 text-card-foreground shadow-2xl shadow-black/20">
           <button
             type="button"
             onClick={() => {
@@ -164,7 +164,7 @@ export default function LoginModal({
               onClose();
             }}
             aria-label="Close login modal"
-            className="absolute right-4 top-4 inline-flex h-9 w-9 items-center justify-center rounded-full border border-gray-200 bg-white text-gray-500 shadow-sm transition-colors hover:bg-gray-50 hover:text-gray-900"
+            className="absolute right-4 top-4 inline-flex h-9 w-9 items-center justify-center rounded-full border border-border bg-background text-muted-foreground shadow-sm transition-colors hover:bg-muted hover:text-foreground"
           >
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
               <path
@@ -177,14 +177,14 @@ export default function LoginModal({
             </svg>
           </button>
 
-          <div className="flex items-center justify-center gap-2 text-2xl font-bold text-blue-600 mb-6">
+          <div className="mb-6 flex items-center justify-center gap-2 text-2xl font-bold text-primary">
             AI Study Hub
           </div>
 
-          <h1 className="text-2xl font-bold text-center text-gray-900 mb-2">
+          <h1 className="mb-2 text-center text-2xl font-bold text-foreground">
             Welcome back
           </h1>
-          <p className="text-center text-gray-600 text-sm mb-8">
+          <p className="mb-8 text-center text-sm text-muted-foreground">
             Please login to continue learning and sharing.
           </p>
 
@@ -194,7 +194,7 @@ export default function LoginModal({
             noValidate
           >
             {errors.general && (
-              <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-900">
+              <div className="rounded-lg border border-error/30 bg-error-container p-3 text-sm text-error">
                 {errors.general}
               </div>
             )}
@@ -202,22 +202,20 @@ export default function LoginModal({
             <div className="flex flex-col gap-2">
               <label
                 htmlFor="email"
-                className="text-sm font-bold text-gray-900"
+                className="text-sm font-bold text-foreground"
               >
                 Email
               </label>
               <input
                 id="email"
                 type="email"
-                className={`w-full h-12 px-4 bg-gray-100 border rounded text-gray-900 text-sm focus:outline-none focus:border-blue-600 focus:bg-white transition-all ${errors.email ? "border-red-600" : "border-gray-300"}`}
+                className={`h-12 w-full rounded border px-4 text-sm text-foreground outline-none transition-all placeholder:text-muted-foreground/70 focus:border-primary focus:bg-background ${errors.email ? "border-error" : "border-border bg-background"}`}
                 placeholder="example@academic.edu"
                 value={formData.email}
                 onChange={handleChange}
               />
               {errors.email && (
-                <span className="text-red-600 text-xs mt-1">
-                  {errors.email}
-                </span>
+                <span className="mt-1 text-xs text-error">{errors.email}</span>
               )}
             </div>
 
@@ -225,13 +223,13 @@ export default function LoginModal({
               <div className="flex justify-between items-end">
                 <label
                   htmlFor="password"
-                  className="text-sm font-bold text-gray-900"
+                  className="text-sm font-bold text-foreground"
                 >
                   Password
                 </label>
                 <Link
                   href="/forgot-password"
-                  className="text-xs text-blue-600 hover:underline font-medium"
+                  className="text-xs font-medium text-primary hover:underline"
                 >
                   Forgot password?
                 </Link>
@@ -240,7 +238,7 @@ export default function LoginModal({
                 <input
                   id="password"
                   type={showPassword ? "text" : "password"}
-                  className={`w-full h-12 px-4 pr-12 bg-gray-100 border rounded text-gray-900 text-sm focus:outline-none focus:border-blue-600 focus:bg-white transition-all ${errors.password ? "border-red-600" : "border-gray-300"}`}
+                  className={`h-12 w-full rounded border px-4 pr-12 text-sm text-foreground outline-none transition-all placeholder:text-muted-foreground/70 focus:border-primary focus:bg-background ${errors.password ? "border-error" : "border-border bg-background"}`}
                   placeholder="••••••"
                   value={formData.password}
                   onChange={handleChange}
@@ -248,13 +246,13 @@ export default function LoginModal({
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
                 >
                   {showPassword ? "👁" : "🙈"}
                 </button>
               </div>
               {errors.password && (
-                <span className="text-red-600 text-xs mt-1">
+                <span className="mt-1 text-xs text-error">
                   {errors.password}
                 </span>
               )}
@@ -263,28 +261,30 @@ export default function LoginModal({
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full h-12 text-base bg-[#004ac6] hover:bg-[#2c5b9e] disabled:opacity-60 disabled:cursor-not-allowed text-white font-bold rounded-full transition-colors"
+              className="h-12 w-full rounded-full bg-primary text-base font-bold text-primary-foreground transition-colors hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
             >
               {isLoading ? "Đang đăng nhập..." : "Đăng nhập"}
             </button>
           </form>
 
           <div className="my-6 flex items-center gap-3">
-            <div className="h-px flex-1 bg-gray-200" />
-            <span className="text-xs font-semibold text-gray-500">or</span>
-            <div className="h-px flex-1 bg-gray-200" />
+            <div className="h-px flex-1 bg-border" />
+            <span className="text-xs font-semibold text-muted-foreground">
+              or
+            </span>
+            <div className="h-px flex-1 bg-border" />
           </div>
 
           <button
             type="button"
             onClick={handleGoogleSignin}
-            className="flex h-12 w-full items-center justify-center gap-3 rounded-full border border-gray-300 bg-white text-sm font-bold text-gray-900 transition-colors hover:bg-gray-50"
+            className="flex h-12 w-full items-center justify-center gap-3 rounded-full border border-border bg-background text-sm font-bold text-foreground transition-colors hover:bg-muted"
           >
             <span className="font-bold text-[#EA4335]">G</span>
             Continue with Google
           </button>
 
-          <p className="text-center text-gray-600 text-sm mt-6">
+          <p className="mt-6 text-center text-sm text-muted-foreground">
             Don&apos;t have an account?{" "}
             <button
               onClick={() => {
@@ -292,7 +292,7 @@ export default function LoginModal({
                 onClose();
                 onOpenRegister();
               }}
-              className="text-blue-600 hover:underline font-medium"
+              className="font-medium text-primary hover:underline"
             >
               Sign up
             </button>
