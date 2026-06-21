@@ -1,0 +1,587 @@
+openapi: 3.0.3
+info:
+  title: AI Study Hub Admin Settings API
+  version: 1.0.0
+  description: Runtime configuration API for the AI Study Hub MVP.
+servers:
+  - url: /api/v1
+tags:
+  - name: Settings
+  - name: Admin Settings
+paths:
+  /settings:
+    get:
+      tags: [Settings]
+      summary: Get public runtime settings
+      operationId: getPublicSettings
+      responses:
+        '200':
+          $ref: '#/components/responses/SettingsSuccess'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /admin/settings:
+    get:
+      tags: [Admin Settings]
+      summary: Get all settings for administration
+      operationId: getAdminSettings
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          $ref: '#/components/responses/SettingsSuccess'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /admin/settings/general:
+    patch:
+      tags: [Admin Settings]
+      summary: Update general system settings
+      operationId: updateGeneralSettings
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateGeneralSettingsRequest'
+      responses:
+        '200':
+          $ref: '#/components/responses/SettingsSuccess'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /admin/settings/upload:
+    patch:
+      tags: [Admin Settings]
+      summary: Update upload settings
+      operationId: updateUploadSettings
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateUploadSettingsRequest'
+      responses:
+        '200':
+          $ref: '#/components/responses/SettingsSuccess'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /admin/settings/document-visibility:
+    patch:
+      tags: [Admin Settings]
+      summary: Update document visibility and review settings
+      operationId: updateDocumentVisibilitySettings
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateDocumentVisibilitySettingsRequest'
+      responses:
+        '200':
+          $ref: '#/components/responses/SettingsSuccess'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /admin/settings/ai:
+    patch:
+      tags: [Admin Settings]
+      summary: Update AI feature flags and quotas
+      operationId: updateAiSettings
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateAiSettingsRequest'
+      responses:
+        '200':
+          $ref: '#/components/responses/SettingsSuccess'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /admin/settings/moderation:
+    patch:
+      tags: [Admin Settings]
+      summary: Update moderation settings
+      operationId: updateModerationSettings
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateModerationSettingsRequest'
+      responses:
+        '200':
+          $ref: '#/components/responses/SettingsSuccess'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /admin/settings/account:
+    patch:
+      tags: [Admin Settings]
+      summary: Update registration and account settings
+      operationId: updateAccountSettings
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateAccountSettingsRequest'
+      responses:
+        '200':
+          $ref: '#/components/responses/SettingsSuccess'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /admin/settings/mobile:
+    patch:
+      tags: [Admin Settings]
+      summary: Update mobile application settings
+      operationId: updateMobileSettings
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateMobileSettingsRequest'
+      responses:
+        '200':
+          $ref: '#/components/responses/SettingsSuccess'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  responses:
+    SettingsSuccess:
+      description: Settings returned or updated successfully.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/SettingsResponse'
+    BadRequest:
+      description: Invalid request syntax, type, format, or empty patch body.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    Unauthorized:
+      description: Missing or invalid access token.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    Forbidden:
+      description: Authenticated user is not an administrator.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    UnprocessableEntity:
+      description: Semantically invalid settings combination or reference.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    InternalServerError:
+      description: Unexpected server error.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+  schemas:
+    UpdateGeneralSettingsRequest:
+      type: object
+      minProperties: 1
+      additionalProperties: false
+      properties:
+        systemName:
+          type: string
+          minLength: 2
+          maxLength: 100
+        maintenanceMode:
+          type: boolean
+        defaultSchoolCode:
+          type: string
+          minLength: 2
+          maxLength: 20
+          pattern: '^[A-Z0-9_-]+$'
+        supportEmail:
+          type: string
+          format: email
+          maxLength: 254
+    UpdateUploadSettingsRequest:
+      type: object
+      minProperties: 1
+      additionalProperties: false
+      properties:
+        maxFileSizeMb:
+          type: integer
+          minimum: 1
+          maximum: 1024
+        allowedFileTypes:
+          type: array
+          minItems: 1
+          maxItems: 3
+          uniqueItems: true
+          items:
+            type: string
+            enum: [PDF, DOCX, PPTX]
+        allowMobileUpload:
+          type: boolean
+    UpdateDocumentVisibilitySettingsRequest:
+      type: object
+      minProperties: 1
+      additionalProperties: false
+      properties:
+        requireModerationForPublicDocuments:
+          type: boolean
+        allowPrivateDocuments:
+          type: boolean
+        allowSharedLink:
+          type: boolean
+        privateToPublicRequiresReview:
+          type: boolean
+        replaceFileRequiresReview:
+          type: boolean
+    UpdateAiSettingsRequest:
+      type: object
+      minProperties: 1
+      additionalProperties: false
+      properties:
+        enableAiFeatures:
+          type: boolean
+        enableAiSummary:
+          type: boolean
+        enableAiQuiz:
+          type: boolean
+        enableAiSearch:
+          type: boolean
+        enableAiChat:
+          type: boolean
+        enableAiModeratorAssistant:
+          type: boolean
+        maxAiRequestsPerUserPerDay:
+          type: integer
+          minimum: 1
+          maximum: 10000
+        maxQuizQuestions:
+          type: integer
+          minimum: 1
+          maximum: 100
+        defaultQuizQuestions:
+          type: integer
+          minimum: 1
+          maximum: 100
+          description: Must not exceed the effective maxQuizQuestions.
+    UpdateModerationSettingsRequest:
+      type: object
+      minProperties: 1
+      additionalProperties: false
+      properties:
+        autoFlagDuplicateDocuments:
+          type: boolean
+        duplicateSimilarityThreshold:
+          type: integer
+          minimum: 0
+          maximum: 100
+        requireRejectionReason:
+          type: boolean
+        allowModeratorToApproveAiFlaggedDocument:
+          type: boolean
+    UpdateAccountSettingsRequest:
+      type: object
+      minProperties: 1
+      additionalProperties: false
+      properties:
+        allowGmailRegistration:
+          type: boolean
+        requireEmailVerification:
+          type: boolean
+        allowUnverifiedLoginWithLimitedAccess:
+          type: boolean
+        defaultRoleAfterSignup:
+          type: string
+          enum: [USER]
+    UpdateMobileSettingsRequest:
+      type: object
+      minProperties: 1
+      additionalProperties: false
+      properties:
+        enableMobileAppAccess:
+          type: boolean
+        enableMobileUpload:
+          type: boolean
+        enableMobileAiFeatures:
+          type: boolean
+    SettingsResponse:
+      type: object
+      required: [success, message, data, errors]
+      properties:
+        success:
+          type: boolean
+          example: true
+        message:
+          type: string
+          example: System settings fetched successfully
+        data:
+          $ref: '#/components/schemas/SystemSettings'
+        errors:
+          type: array
+          nullable: true
+          items:
+            type: string
+          example: null
+    ErrorResponse:
+      type: object
+      required: [success, message, data, errors]
+      properties:
+        success:
+          type: boolean
+          example: false
+        message:
+          type: string
+          example: Validation failed
+        data:
+          type: object
+          nullable: true
+          example: null
+        errors:
+          type: array
+          nullable: true
+          items:
+            type: string
+          example:
+            - duplicateSimilarityThreshold must not be greater than 100
+    SystemSettings:
+      type: object
+      required:
+        - general
+        - upload
+        - documentVisibility
+        - ai
+        - moderation
+        - account
+        - mobile
+        - version
+        - updatedAt
+      properties:
+        general:
+          $ref: '#/components/schemas/GeneralSettings'
+        upload:
+          $ref: '#/components/schemas/UploadSettings'
+        documentVisibility:
+          $ref: '#/components/schemas/DocumentVisibilitySettings'
+        ai:
+          $ref: '#/components/schemas/AiSettings'
+        moderation:
+          $ref: '#/components/schemas/ModerationSettings'
+        account:
+          $ref: '#/components/schemas/AccountSettings'
+        mobile:
+          $ref: '#/components/schemas/MobileSettings'
+        version:
+          type: integer
+          minimum: 1
+        updatedAt:
+          type: string
+          format: date-time
+    GeneralSettings:
+      type: object
+      required: [systemName, maintenanceMode, defaultSchoolCode, supportEmail]
+      properties:
+        systemName:
+          type: string
+          example: AI Study Hub
+        maintenanceMode:
+          type: boolean
+          example: false
+        defaultSchoolCode:
+          type: string
+          example: FPTU
+        supportEmail:
+          type: string
+          format: email
+    UploadSettings:
+      type: object
+      required: [maxFileSizeMb, allowedFileTypes, allowMobileUpload]
+      properties:
+        maxFileSizeMb:
+          type: integer
+          example: 100
+        allowedFileTypes:
+          type: array
+          items:
+            type: string
+            enum: [PDF, DOCX, PPTX]
+        allowMobileUpload:
+          type: boolean
+    DocumentVisibilitySettings:
+      type: object
+      required:
+        - requireModerationForPublicDocuments
+        - allowPrivateDocuments
+        - allowSharedLink
+        - privateToPublicRequiresReview
+        - replaceFileRequiresReview
+      properties:
+        requireModerationForPublicDocuments:
+          type: boolean
+        allowPrivateDocuments:
+          type: boolean
+        allowSharedLink:
+          type: boolean
+        privateToPublicRequiresReview:
+          type: boolean
+        replaceFileRequiresReview:
+          type: boolean
+    AiSettings:
+      type: object
+      required:
+        - enableAiFeatures
+        - enableAiSummary
+        - enableAiQuiz
+        - enableAiSearch
+        - enableAiChat
+        - enableAiModeratorAssistant
+        - maxAiRequestsPerUserPerDay
+        - maxQuizQuestions
+        - defaultQuizQuestions
+      properties:
+        enableAiFeatures:
+          type: boolean
+        enableAiSummary:
+          type: boolean
+        enableAiQuiz:
+          type: boolean
+        enableAiSearch:
+          type: boolean
+        enableAiChat:
+          type: boolean
+        enableAiModeratorAssistant:
+          type: boolean
+        maxAiRequestsPerUserPerDay:
+          type: integer
+        maxQuizQuestions:
+          type: integer
+        defaultQuizQuestions:
+          type: integer
+    ModerationSettings:
+      type: object
+      required:
+        - autoFlagDuplicateDocuments
+        - duplicateSimilarityThreshold
+        - requireRejectionReason
+        - allowModeratorToApproveAiFlaggedDocument
+      properties:
+        autoFlagDuplicateDocuments:
+          type: boolean
+        duplicateSimilarityThreshold:
+          type: integer
+          minimum: 0
+          maximum: 100
+        requireRejectionReason:
+          type: boolean
+        allowModeratorToApproveAiFlaggedDocument:
+          type: boolean
+    AccountSettings:
+      type: object
+      required:
+        - allowGmailRegistration
+        - requireEmailVerification
+        - allowUnverifiedLoginWithLimitedAccess
+        - defaultRoleAfterSignup
+      properties:
+        allowGmailRegistration:
+          type: boolean
+        requireEmailVerification:
+          type: boolean
+        allowUnverifiedLoginWithLimitedAccess:
+          type: boolean
+        defaultRoleAfterSignup:
+          type: string
+          enum: [USER]
+    MobileSettings:
+      type: object
+      required:
+        - enableMobileAppAccess
+        - enableMobileUpload
+        - enableMobileAiFeatures
+      properties:
+        enableMobileAppAccess:
+          type: boolean
+        enableMobileUpload:
+          type: boolean
+        enableMobileAiFeatures:
+          type: boolean

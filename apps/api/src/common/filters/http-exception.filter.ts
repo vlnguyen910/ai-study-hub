@@ -18,6 +18,7 @@ export class HttpExceptionFilter implements ExceptionFilter {
 
     let status = 500;
     let message = 'Internal server error';
+    let errors: string[] | null = null;
 
     if (exception instanceof HttpException) {
       status = exception.getStatus();
@@ -27,7 +28,8 @@ export class HttpExceptionFilter implements ExceptionFilter {
       if (typeof exceptionResponse === 'object') {
         const responseObj = exceptionResponse as any;
         if (Array.isArray(responseObj.message)) {
-          message = responseObj.message.join(', ');
+          errors = responseObj.message.map(String);
+          message = 'Validation failed';
         } else if (typeof responseObj.message === 'string') {
           message = responseObj.message;
         }
@@ -49,6 +51,6 @@ export class HttpExceptionFilter implements ExceptionFilter {
     );
 
     // Trả về ResponseDto format
-    response.status(status).json(new ResponseDto(false, status, message, null));
+    response.status(status).json(new ResponseDto(false, message, null, errors));
   }
 }

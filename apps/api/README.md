@@ -54,6 +54,12 @@ $ pnpm run test
 $ pnpm run test:cov
 ```
 
+## Admin settings API
+
+- Database design, endpoints, and validation rules: [docs/admin-settings-api.md](docs/admin-settings-api.md)
+- Importable OpenAPI 3.0 contract: [openapi/admin-settings.openapi.yaml](openapi/admin-settings.openapi.yaml)
+- Apply the MongoDB schema with `pnpm run db:sync`, then optionally run `pnpm run db:seed` to create the global settings singleton.
+
 ## Auth contract notes
 
 - `POST /api/v1/auth/signin` accepts `ACTIVE` and `UNVERIFIED` accounts. Web sign-in sets the HTTP-only `refreshToken` cookie and returns `data.accessToken`; Mobile sign-in returns both tokens in the response body.

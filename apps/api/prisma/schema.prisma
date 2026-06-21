@@ -217,3 +217,59 @@ model chat_messages {
   createdAt  DateTime      @default(now())
 }
 
+/// Singleton collection containing the runtime configuration for AI Study Hub.
+/// `key` is fixed to `GLOBAL` by the repository, which makes upserts idempotent.
+model system_settings {
+  id  String @id @default(auto()) @map("_id") @db.ObjectId
+  key String @unique @default("GLOBAL")
+
+  // General system config
+  systemName        String  @default("AI Study Hub")
+  maintenanceMode   Boolean @default(false)
+  defaultSchoolCode String  @default("FPTU")
+  supportEmail      String  @default("support@aistudyhub.local")
+
+  // Upload config
+  maxFileSizeMb     Int      @default(100)
+  allowedFileTypes  String[] @default(["PDF", "DOCX", "PPTX"])
+  allowMobileUpload Boolean  @default(true)
+
+  // Document visibility and review config
+  requireModerationForPublicDocuments Boolean @default(true)
+  allowPrivateDocuments               Boolean @default(true)
+  allowSharedLink                     Boolean @default(true)
+  privateToPublicRequiresReview       Boolean @default(true)
+  replaceFileRequiresReview           Boolean @default(true)
+
+  // AI config
+  enableAiFeatures           Boolean @default(true)
+  enableAiSummary            Boolean @default(true)
+  enableAiQuiz               Boolean @default(true)
+  enableAiSearch             Boolean @default(true)
+  enableAiChat               Boolean @default(true)
+  enableAiModeratorAssistant Boolean @default(true)
+  maxAiRequestsPerUserPerDay Int     @default(20)
+  maxQuizQuestions           Int     @default(20)
+  defaultQuizQuestions       Int     @default(10)
+
+  // Moderation config
+  autoFlagDuplicateDocuments               Boolean @default(true)
+  duplicateSimilarityThreshold             Int     @default(85)
+  requireRejectionReason                   Boolean @default(true)
+  allowModeratorToApproveAiFlaggedDocument Boolean @default(true)
+
+  // Account config
+  allowGmailRegistration                Boolean  @default(true)
+  requireEmailVerification              Boolean  @default(true)
+  allowUnverifiedLoginWithLimitedAccess Boolean  @default(true)
+  defaultRoleAfterSignup                UserRole @default(USER)
+
+  // Mobile config
+  enableMobileAppAccess  Boolean @default(true)
+  enableMobileUpload     Boolean @default(true)
+  enableMobileAiFeatures Boolean @default(true)
+
+  version   Int      @default(1)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}

@@ -12,7 +12,7 @@ describe('ResponseInterceptor', () => {
   }
 
   it('returns ResponseDto unchanged when already ResponseDto', (done) => {
-    const dto = new ResponseDto(true, 200, 'ok', { a: 1 });
+    const dto = new ResponseDto(true, 'ok', { a: 1 });
     const next: any = { handle: () => of(dto) };
 
     interceptor.intercept(mockContext(200), next).subscribe((res) => {
@@ -26,7 +26,7 @@ describe('ResponseInterceptor', () => {
     const next: any = { handle: () => of(data) };
 
     interceptor.intercept(mockContext(200), next).subscribe((res) => {
-      expect(res).toEqual(new ResponseDto(true, 200, 'Hello', { x: 1 }));
+      expect(res).toEqual(new ResponseDto(true, 'Hello', { x: 1 }));
       done();
     });
   });
@@ -37,7 +37,7 @@ describe('ResponseInterceptor', () => {
 
     interceptor.intercept(mockContext(200), next).subscribe((res) => {
       expect(res).toEqual(
-        new ResponseDto(true, 200, 'Data retrieval successful', data),
+        new ResponseDto(true, 'Data retrieval successful', data),
       );
       done();
     });
@@ -48,7 +48,7 @@ describe('ResponseInterceptor', () => {
     const next: any = { handle: () => of(data) };
 
     interceptor.intercept(mockContext(500), next).subscribe((res) => {
-      expect(res).toEqual(new ResponseDto(false, 500, 'Error occurred', null));
+      expect(res).toEqual(new ResponseDto(false, 'Error occurred', null));
       done();
     });
   });

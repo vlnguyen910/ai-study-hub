@@ -25,18 +25,16 @@ export class ResponseInterceptor implements NestInterceptor {
         if (data?.message && typeof data.message === 'string') {
           return new ResponseDto(
             statusCode < 400,
-            statusCode,
             data.message,
-            data.data || null,
+            data.data ?? null,
           );
         }
 
         // Trường hợp mặc định
         return new ResponseDto(
           statusCode < 400,
-          statusCode,
           'Data retrieval successful',
-          data || null,
+          data ?? null,
         );
       }),
     );
