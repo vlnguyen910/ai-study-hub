@@ -1,18 +1,18 @@
 export class ResponseDto<T = any> {
   success: boolean;
-  status_code: number;
   message: string;
-  data?: T | null;
+  data: T | null;
+  errors: string[] | null;
 
   constructor(
     success: boolean,
-    status_code: number,
     message: string,
-    data?: T | null,
+    data: T | null = null,
+    errors: string[] | null = null,
   ) {
     this.success = success;
-    this.status_code = status_code;
     this.message = message;
-    this.data = data ?? null;
+    this.data = data;
+    this.errors = errors;
   }
 }

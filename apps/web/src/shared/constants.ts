@@ -22,6 +22,16 @@ export const API_ENDPOINTS = {
   },
   ADMIN: {
     DASHBOARD: "/api/v1/admin/dashboard",
+    SETTINGS: {
+      BASE: "/api/v1/admin/settings",
+      GENERAL: "/api/v1/admin/settings/general",
+      UPLOAD: "/api/v1/admin/settings/upload",
+      DOCUMENT_VISIBILITY: "/api/v1/admin/settings/document-visibility",
+      AI: "/api/v1/admin/settings/ai",
+      MODERATION: "/api/v1/admin/settings/moderation",
+      ACCOUNT: "/api/v1/admin/settings/account",
+      MOBILE: "/api/v1/admin/settings/mobile",
+    },
   },
   DOCUMENTS: {
     BASE: "/api/v1/documents",

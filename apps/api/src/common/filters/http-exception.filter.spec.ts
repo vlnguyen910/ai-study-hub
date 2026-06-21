@@ -25,7 +25,7 @@ describe('HttpExceptionFilter', () => {
     filter.catch(ex, ctx as any);
 
     expect(status).toHaveBeenCalledWith(400);
-    expect(json).toHaveBeenCalledWith(new ResponseDto(false, 400, 'bad', null));
+    expect(json).toHaveBeenCalledWith(new ResponseDto(false, 'bad', null));
   });
 
   it('handles HttpException with array message', () => {
@@ -36,7 +36,7 @@ describe('HttpExceptionFilter', () => {
 
     expect(status).toHaveBeenCalledWith(400);
     expect(json).toHaveBeenCalledWith(
-      new ResponseDto(false, 400, 'a, b', null),
+      new ResponseDto(false, 'Validation failed', null, ['a', 'b']),
     );
   });
 
@@ -47,9 +47,7 @@ describe('HttpExceptionFilter', () => {
     filter.catch(ex, ctx as any);
 
     expect(status).toHaveBeenCalledWith(400);
-    expect(json).toHaveBeenCalledWith(
-      new ResponseDto(false, 400, 'oops', null),
-    );
+    expect(json).toHaveBeenCalledWith(new ResponseDto(false, 'oops', null));
   });
 
   it('handles non-http exception as internal error', () => {
@@ -60,7 +58,7 @@ describe('HttpExceptionFilter', () => {
 
     expect(status).toHaveBeenCalledWith(500);
     expect(json).toHaveBeenCalledWith(
-      new ResponseDto(false, 500, 'Internal server error', null),
+      new ResponseDto(false, 'Internal server error', null),
     );
   });
 });

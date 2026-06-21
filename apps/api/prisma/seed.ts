@@ -149,9 +149,19 @@ async function main() {
     ),
   );
 
+  await prisma.system_settings.upsert({
+    where: { key: 'GLOBAL' },
+    update: {},
+    create: {
+      key: 'GLOBAL',
+      defaultSchoolCode: school.code,
+    },
+  });
+
   console.log(`Seeded ${accounts.length} accounts.`);
   console.log(`Ensured school: ${school.name} (${school.code})`);
   console.log(`Ensured ${subjects.length} subjects for ${school.name}`);
+  console.log('Ensured global system settings.');
   console.log(`Admin account: admin@${SEED_EMAIL_DOMAIN}`);
   console.log(`Seed password: ${SEED_PASSWORD}`);
 }
