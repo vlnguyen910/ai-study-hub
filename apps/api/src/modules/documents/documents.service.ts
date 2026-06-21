@@ -17,6 +17,8 @@ import {
 import { SubjectsService } from '../subjects';
 import { TokenPayload } from '../../common/interfaces/auth.interface';
 import { SettingsService } from '../settings';
+import { DocumentExtractorService } from '../document-processing/document-extractor.service';
+import { AIService } from '../ai/ai.service';
 
 @Injectable()
 export class DocumentsService {
@@ -26,6 +28,8 @@ export class DocumentsService {
     private readonly prismaService: PrismaService,
     private readonly subjectsService: SubjectsService,
     private readonly settingsService: SettingsService,
+    private readonly documentExtractorService: DocumentExtractorService,
+    private readonly aiService: AIService,
   ) {}
 
   private readonly cloudinaryCloudName =
@@ -600,6 +604,77 @@ export class DocumentsService {
 
     return {
       message: 'Document deleted successfully',
+    };
+  }
+
+  async generateDescription(id: string, userId: string) {
+    const document = await this.prismaService.documents.findUnique({
+      where: {
+        id,
+        status: {
+          not: DocumentStatus.DELETED,
+        },
+      },
+    });
+
+    if (!document) {
+      throw new NotFoundException(`Document with ID ${id} not found`);
+    }
+
+    if (document.authorId !== userId) {
+      throw new ForbiddenException(
+        'Only the document author can generate a description for this document',
+      );
+    }
+
+    this.logger.log(`Extracting text for document ID: ${id}`);
+    const rawText = await this.documentExtractorService.extractText(
+      document.fileUrl,
+      document.format,
+    );
+
+    if (!rawText || rawText.trim().length === 0) {
+      throw new BadRequestException(
+        'The document contains no readable text for description generation',
+      );
+    }
+
+    this.logger.log(`Generating AI description for document ID: ${id}`);
+    const generatedDescription =
+      await this.aiService.generateDescription(rawText);
+
+    return {
+      message: 'Description generated successfully',
+      data: {
+        description: generatedDescription,
+      },
+    };
+  }
+
+  async generateDescriptionFromUrl(fileUrl: string, format: string) {
+    this.logger.log(
+      `Extracting text for description from file URL: ${fileUrl}`,
+    );
+    const rawText = await this.documentExtractorService.extractText(
+      fileUrl,
+      format,
+    );
+
+    if (!rawText || rawText.trim().length === 0) {
+      throw new BadRequestException(
+        'The document contains no readable text for description generation',
+      );
+    }
+
+    this.logger.log(`Generating AI description from text`);
+    const generatedDescription =
+      await this.aiService.generateDescription(rawText);
+
+    return {
+      message: 'Description generated successfully',
+      data: {
+        description: generatedDescription,
+      },
     };
   }
 }

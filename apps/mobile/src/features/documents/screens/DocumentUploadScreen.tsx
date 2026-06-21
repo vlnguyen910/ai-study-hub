@@ -57,6 +57,7 @@ const relatedDocuments = [
 
 export function DocumentUploadScreen() {
   const [pickedFileName, setPickedFileName] = useState<string | null>(null);
+  const [isAiLoading, setIsAiLoading] = useState(false);
 
   const {
     control,
@@ -192,11 +193,27 @@ export function DocumentUploadScreen() {
                 render={({ field }) => (
                   <DocumentTextField
                     label="Mô tả (Không bắt buộc)"
-                    placeholder="Tóm tắt ngắn gọn nội dung..."
+                    placeholder="Nhập mô tả hoặc chạm 'Tạo bằng AI' để tự động tóm tắt tài liệu..."
                     value={field.value ?? ""}
                     onChangeText={field.onChange}
                     multiline
                     errorMessage={errors.description?.message}
+                    onPressAi={
+                      fileName
+                        ? () => {
+                            setIsAiLoading(true);
+                            setTimeout(() => {
+                              setValue(
+                                "description",
+                                "Tài liệu hướng dẫn chi tiết về cấu trúc dữ liệu và giải thuật, bao gồm danh sách liên kết, ngăn xếp, hàng đợi, cây và đồ thị kèm theo ví dụ minh họa chi tiết.",
+                                { shouldValidate: true },
+                              );
+                              setIsAiLoading(false);
+                            }, 1200);
+                          }
+                        : undefined
+                    }
+                    isAiLoading={isAiLoading}
                   />
                 )}
               />

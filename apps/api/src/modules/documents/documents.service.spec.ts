@@ -2,6 +2,8 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { DocumentsService } from './documents.service';
 import { PrismaService } from '../../prisma/prisma.service';
 import { SubjectsService } from '../subjects';
+import { DocumentExtractorService } from '../document-processing/document-extractor.service';
+import { AIService } from '../ai/ai.service';
 import { DocumentStatus, UserRole, UserStatus } from '@prisma/client';
 import { JwtTokenType } from '../../common/enums/jwt.enum';
 import { TokenPayload } from '../../common/interfaces/auth.interface';
@@ -53,12 +55,21 @@ describe('DocumentsService', () => {
     global.fetch = jest.fn();
     settingsServiceMock.validateDocumentUpload.mockResolvedValue(undefined);
 
+    const documentExtractorMock = {
+      extractText: jest.fn(),
+    };
+    const aiServiceMock = {
+      generateDescription: jest.fn(),
+    };
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         DocumentsService,
         { provide: PrismaService, useValue: prismaMock },
         { provide: SubjectsService, useValue: subjectsServiceMock },
         { provide: SettingsService, useValue: settingsServiceMock },
+        { provide: DocumentExtractorService, useValue: documentExtractorMock },
+        { provide: AIService, useValue: aiServiceMock },
       ],
     }).compile();
 

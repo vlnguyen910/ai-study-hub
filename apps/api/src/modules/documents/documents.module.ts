@@ -7,9 +7,11 @@ import { AuthGuard } from '../../common/guards/auth.guard';
 import { OptionalJwtGuard } from '../../common/guards/optional-jwt.guard';
 import { VerifiedAccountGuard } from '../../common/guards/verified-account.guard';
 import { SettingsModule } from '../settings';
+import { DocumentProcessingModule } from '../document-processing/document-processing.module';
+import { AIModule } from '../ai/ai.module';
 
 @Module({
-  imports: [AuthModule, SubjectsModule, SettingsModule],
+  imports: [AuthModule, SubjectsModule, DocumentProcessingModule, AIModule, SettingsModule],
   controllers: [DocumentsController],
   providers: [
     DocumentsService,

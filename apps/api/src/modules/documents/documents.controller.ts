@@ -16,6 +16,7 @@ import {
   UpdateDocumentDto,
   ListDocumentsQueryDto,
   RejectDocumentDto,
+  GenerateDescriptionDto,
 } from './dto';
 import { Public } from '../../common/decorators/public.decorator';
 import { OptionalJwtGuard } from '../../common/guards/optional-jwt.guard';
@@ -38,6 +39,18 @@ export class DocumentsController {
     @User() user: TokenPayload,
   ) {
     return this.documentsService.create(createDocumentDto, user.sub);
+  }
+
+  @Version('1')
+  @UseGuards(JwtAuthGuard, VerifiedAccountGuard)
+  @Post('generate-description-from-url')
+  generateDescriptionFromUrl(
+    @Body() generateDescriptionDto: GenerateDescriptionDto,
+  ) {
+    return this.documentsService.generateDescriptionFromUrl(
+      generateDescriptionDto.fileUrl,
+      generateDescriptionDto.format,
+    );
   }
 
   @Version('1')
@@ -108,5 +121,15 @@ export class DocumentsController {
     @User() user: TokenPayload,
   ) {
     return this.documentsService.delete(id, user.sub);
+  }
+
+  @Version('1')
+  @UseGuards(JwtAuthGuard, VerifiedAccountGuard)
+  @Post(':id/generate-description')
+  generateDescription(
+    @Param('id', new ParseMongoIdPipe()) id: string,
+    @User() user: TokenPayload,
+  ) {
+    return this.documentsService.generateDescription(id, user.sub);
   }
 }
