@@ -2,6 +2,7 @@ export const DOCUMENT_JOB_NAMES = {
   processUpload: 'process-upload',
   generateDescription: 'generate-description',
   generateSummary: 'generate-summary',
+  generateEmbeddings: 'generate-embeddings',
 } as const;
 
 export type ProcessUploadJobData = {
@@ -19,7 +20,13 @@ export type GenerateSummaryJobData = {
   documentId: string;
 };
 
+export type GenerateEmbeddingsJobData = {
+  type: typeof DOCUMENT_JOB_NAMES.generateEmbeddings;
+  documentId: string;
+};
+
 export type DocumentJobData =
   | ProcessUploadJobData
   | GenerateDescriptionJobData
-  | GenerateSummaryJobData;
+  | GenerateSummaryJobData
+  | GenerateEmbeddingsJobData;

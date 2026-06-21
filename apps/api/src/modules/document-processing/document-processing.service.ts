@@ -17,7 +17,7 @@ export class DocumentProcessingService {
         documentId,
       },
       {
-        jobId: `${DOCUMENT_JOB_NAMES.processUpload}:${documentId}`,
+        jobId: `${DOCUMENT_JOB_NAMES.processUpload}-${documentId}`,
       },
     );
     this.logger.log(
@@ -33,7 +33,7 @@ export class DocumentProcessingService {
         documentId,
       },
       {
-        jobId: `${DOCUMENT_JOB_NAMES.generateDescription}:${documentId}`,
+        jobId: `${DOCUMENT_JOB_NAMES.generateDescription}-${documentId}`,
       },
     );
     this.logger.log(
@@ -49,11 +49,27 @@ export class DocumentProcessingService {
         documentId,
       },
       {
-        jobId: `${DOCUMENT_JOB_NAMES.generateSummary}:${documentId}`,
+        jobId: `${DOCUMENT_JOB_NAMES.generateSummary}-${documentId}`,
       },
     );
     this.logger.log(
       `Enqueued summary generation job for document ID: ${documentId}`,
+    );
+  }
+
+  async enqueueEmbeddingsGeneration(documentId: string) {
+    await this.queueService.getQueue(QUEUE_NAMES.document).add(
+      DOCUMENT_JOB_NAMES.generateEmbeddings,
+      {
+        type: DOCUMENT_JOB_NAMES.generateEmbeddings,
+        documentId,
+      },
+      {
+        jobId: `${DOCUMENT_JOB_NAMES.generateEmbeddings}-${documentId}`,
+      },
+    );
+    this.logger.log(
+      `Enqueued embeddings generation job for document ID: ${documentId}`,
     );
   }
 }

@@ -8,6 +8,7 @@ import { DocumentStatus, UserRole, UserStatus } from '@prisma/client';
 import { JwtTokenType } from '../../common/enums/jwt.enum';
 import { TokenPayload } from '../../common/interfaces/auth.interface';
 import { SettingsService } from '../settings';
+import { DocumentProcessingService } from '../document-processing/document-processing.service';
 
 jest.mock('uuid', () => ({
   v4: jest.fn(() => 'test-jti'),
@@ -61,6 +62,9 @@ describe('DocumentsService', () => {
     const aiServiceMock = {
       generateDescription: jest.fn(),
     };
+    const documentProcessingMock = {
+      enqueueUploadProcessing: jest.fn(),
+    };
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -70,6 +74,10 @@ describe('DocumentsService', () => {
         { provide: SettingsService, useValue: settingsServiceMock },
         { provide: DocumentExtractorService, useValue: documentExtractorMock },
         { provide: AIService, useValue: aiServiceMock },
+        {
+          provide: DocumentProcessingService,
+          useValue: documentProcessingMock,
+        },
       ],
     }).compile();
 
