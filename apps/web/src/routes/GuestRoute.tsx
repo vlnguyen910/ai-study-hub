@@ -26,8 +26,12 @@ const isAccessTokenUsable = (accessToken: string | null): boolean => {
   }
 
   const payload = decodeJwtPayload<AccessTokenPayload>(accessToken);
-  if (!payload?.exp) {
-    return true;
+  if (!payload) {
+    return false;
+  }
+
+  if (typeof payload.exp !== "number" || !Number.isFinite(payload.exp)) {
+    return false;
   }
 
   return payload.exp * 1000 > Date.now();

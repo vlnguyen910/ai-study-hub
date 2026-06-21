@@ -12,6 +12,7 @@ import ResetPasswordPage from "../src/modules/reset-password/page";
 import Home from "../src/app/page";
 import LoginPage from "../src/app/(auth)/login/page";
 import RegisterPage from "../src/app/(auth)/register/page";
+import { GuestRoute } from "../src/routes/GuestRoute";
 import { ModeratorShell } from "../src/modules/moderator/components/ModeratorShell";
 import { UserShell } from "../src/modules/user/components/UserShell";
 import { useAuthStore } from "../src/stores/auth/store";
@@ -165,6 +166,19 @@ describe("web auth routing", () => {
     await waitFor(() => {
       expect(navigationMocks.router.replace).toHaveBeenCalledWith("/home");
     });
+  });
+
+  it("does not redirect guests when the stored access token is malformed", async () => {
+    await hydratePersistedAuth("not-a-jwt");
+
+    render(
+      <GuestRoute>
+        <div>Guest content</div>
+      </GuestRoute>,
+    );
+
+    expect(screen.getByText("Guest content")).toBeInTheDocument();
+    expect(navigationMocks.router.replace).not.toHaveBeenCalled();
   });
 
   it("redirects to a safe redirect query after successful login", async () => {
