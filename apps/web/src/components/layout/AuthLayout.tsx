@@ -50,7 +50,7 @@ export default function AuthLayout({
   };
 
   return (
-    <main className="min-h-screen overflow-hidden bg-[#041437] font-body-md text-on-surface">
+    <main className="min-h-screen overflow-hidden bg-background font-body-md text-foreground">
       <style>{`
         @keyframes auth-data-drift {
           0% { transform: translate3d(-8%, 12%, 0); opacity: 0.12; }
@@ -81,18 +81,18 @@ export default function AuthLayout({
       `}</style>
 
       <div className="relative min-h-screen overflow-hidden">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_15%,rgba(80,150,255,0.28),transparent_28%),radial-gradient(circle_at_76%_72%,rgba(34,211,238,0.16),transparent_32%),linear-gradient(135deg,#061130_0%,#082a68_48%,#0b5ed7_100%)]" />
-        <div className="absolute inset-0 opacity-[0.22] [background-image:linear-gradient(rgba(219,225,255,0.18)_1px,transparent_1px),linear-gradient(90deg,rgba(219,225,255,0.18)_1px,transparent_1px)] [background-size:44px_44px]" />
-        <div className="absolute bottom-[-18%] left-[4%] h-[58%] w-[92%] origin-bottom rounded-[50%] border border-cyan-200/10 bg-[linear-gradient(rgba(180,197,255,0.15)_1px,transparent_1px),linear-gradient(90deg,rgba(180,197,255,0.15)_1px,transparent_1px)] bg-[length:48px_48px] blur-[0.2px] [animation:auth-grid-breathe_12s_ease-in-out_infinite]" />
-        <div className="absolute left-[18%] top-[18%] h-1 w-1 rounded-full bg-cyan-100/70 shadow-[72px_28px_0_rgba(219,225,255,0.38),164px_92px_0_rgba(125,211,252,0.30),238px_20px_0_rgba(255,255,255,0.26),320px_160px_0_rgba(147,197,253,0.30),420px_64px_0_rgba(255,255,255,0.20)] [animation:auth-data-drift_18s_linear_infinite]" />
-        <div className="absolute left-[8%] top-[58%] h-px w-28 bg-gradient-to-r from-transparent via-cyan-100/45 to-transparent [animation:auth-data-drift_22s_linear_infinite]" />
-        <div className="absolute right-[16%] top-[28%] h-px w-36 bg-gradient-to-r from-transparent via-blue-100/35 to-transparent [animation:auth-data-drift_26s_linear_infinite_reverse]" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_15%,color-mix(in_oklch,var(--primary)_22%,transparent),transparent_28%),radial-gradient(circle_at_76%_72%,color-mix(in_oklch,var(--secondary)_20%,transparent),transparent_32%),linear-gradient(135deg,var(--background)_0%,color-mix(in_oklch,var(--background)_92%,var(--primary)_8%)_52%,color-mix(in_oklch,var(--background)_86%,var(--primary)_14%)_100%)]" />
+        <div className="absolute inset-0 opacity-[0.16] [background-image:linear-gradient(color-mix(in_oklch,var(--foreground)_10%,transparent)_1px,transparent_1px),linear-gradient(90deg,color-mix(in_oklch,var(--foreground)_10%,transparent)_1px,transparent_1px)] [background-size:44px_44px]" />
+        <div className="absolute bottom-[-18%] left-[4%] h-[58%] w-[92%] origin-bottom rounded-[50%] border border-border/20 bg-[linear-gradient(color-mix(in_oklch,var(--foreground)_10%,transparent)_1px,transparent_1px),linear-gradient(90deg,color-mix(in_oklch,var(--foreground)_10%,transparent)_1px,transparent_1px)] bg-[length:48px_48px] blur-[0.2px] [animation:auth-grid-breathe_12s_ease-in-out_infinite]" />
+        <div className="absolute left-[18%] top-[18%] h-1 w-1 rounded-full bg-primary/70 shadow-[72px_28px_0_color-mix(in_oklch,var(--primary)_38%,transparent),164px_92px_0_color-mix(in_oklch,var(--secondary)_30%,transparent),238px_20px_0_color-mix(in_oklch,var(--foreground)_26%,transparent),320px_160px_0_color-mix(in_oklch,var(--primary)_30%,transparent),420px_64px_0_color-mix(in_oklch,var(--foreground)_20%,transparent)] [animation:auth-data-drift_18s_linear_infinite]" />
+        <div className="absolute left-[8%] top-[58%] h-px w-28 bg-gradient-to-r from-transparent via-primary/45 to-transparent [animation:auth-data-drift_22s_linear_infinite]" />
+        <div className="absolute right-[16%] top-[28%] h-px w-36 bg-gradient-to-r from-transparent via-primary/35 to-transparent [animation:auth-data-drift_26s_linear_infinite_reverse]" />
         <div
           aria-hidden="true"
           className={`pointer-events-none absolute inset-y-0 left-1/2 z-20 hidden w-[180px] -translate-x-1/2 backdrop-blur-[20px] md:block ${
             panelOnRight
-              ? "bg-[linear-gradient(270deg,rgba(255,255,255,0.92)_0%,rgba(255,255,255,0.64)_28%,rgba(178,210,255,0.30)_54%,rgba(5,49,120,0.10)_78%,rgba(4,20,55,0)_100%),radial-gradient(circle_at_50%_18%,rgba(255,255,255,0.36),transparent_46%),radial-gradient(circle_at_50%_82%,rgba(59,130,246,0.22),transparent_48%)]"
-              : "bg-[linear-gradient(90deg,rgba(255,255,255,0.92)_0%,rgba(255,255,255,0.64)_28%,rgba(178,210,255,0.30)_54%,rgba(5,49,120,0.10)_78%,rgba(4,20,55,0)_100%),radial-gradient(circle_at_50%_18%,rgba(255,255,255,0.36),transparent_46%),radial-gradient(circle_at_50%_82%,rgba(59,130,246,0.22),transparent_48%)]"
+              ? "bg-[linear-gradient(270deg,color-mix(in_oklch,var(--foreground)_92%,transparent)_0%,color-mix(in_oklch,var(--foreground)_60%,transparent)_28%,color-mix(in_oklch,var(--primary)_22%,transparent)_54%,color-mix(in_oklch,var(--background)_10%,transparent)_78%,transparent_100%),radial-gradient(circle_at_50%_18%,color-mix(in_oklch,var(--foreground)_18%,transparent),transparent_46%),radial-gradient(circle_at_50%_82%,color-mix(in_oklch,var(--primary)_22%,transparent),transparent_48%)]"
+              : "bg-[linear-gradient(90deg,color-mix(in_oklch,var(--foreground)_92%,transparent)_0%,color-mix(in_oklch,var(--foreground)_60%,transparent)_28%,color-mix(in_oklch,var(--primary)_22%,transparent)_54%,color-mix(in_oklch,var(--background)_10%,transparent)_78%,transparent_100%),radial-gradient(circle_at_50%_18%,color-mix(in_oklch,var(--foreground)_18%,transparent),transparent_46%),radial-gradient(circle_at_50%_82%,color-mix(in_oklch,var(--primary)_22%,transparent),transparent_48%)]"
           } bg-[length:220%_100%,100%_120%,100%_120%] [animation:auth-fluid-divider_9s_ease-in-out_infinite]`}
         />
 
@@ -135,7 +135,7 @@ export default function AuthLayout({
         </section>
 
         <section
-          className={`relative z-10 flex min-h-screen items-center justify-center overflow-y-auto bg-[linear-gradient(135deg,#ffffff_0%,#f8fbff_52%,#eef5ff_100%)] px-4 py-6 shadow-2xl shadow-black/20 transition-transform duration-[600ms] sm:px-6 sm:py-8 lg:px-10 md:absolute md:inset-y-0 md:left-0 md:h-screen md:w-1/2 ${
+          className={`relative z-10 flex min-h-screen items-center justify-center overflow-y-auto bg-background px-4 py-6 shadow-2xl shadow-black/10 transition-transform duration-[600ms] sm:px-6 sm:py-8 lg:px-10 md:absolute md:inset-y-0 md:left-0 md:h-screen md:w-1/2 md:bg-card ${
             panelOnRight ? "md:translate-x-full" : "md:translate-x-0"
           }`}
           style={{ transitionTimingFunction: slideTiming }}
@@ -189,24 +189,24 @@ function GlassPanel({
         </div>
       </div>
 
-      <div className="rounded-3xl border border-white/10 bg-white/[0.18] p-8 shadow-2xl shadow-black/25 backdrop-blur-xl ring-1 ring-white/10">
-        <h1 className="font-display text-display font-bold leading-tight tracking-wide text-white">
+      <div className="rounded-3xl border border-border/40 bg-card/80 p-8 shadow-2xl shadow-black/10 backdrop-blur-xl ring-1 ring-border/40">
+        <h1 className="font-display text-display font-bold leading-tight tracking-wide text-card-foreground">
           {title}
         </h1>
         {subtitle ? (
-          <p className="mt-5 font-body-lg text-body-lg leading-8 text-white/82">
+          <p className="mt-5 font-body-lg text-body-lg leading-8 text-muted-foreground">
             {subtitle}
           </p>
         ) : null}
 
         <div className="mt-10 flex flex-wrap items-center gap-4">
-          <span className="font-label-md text-label-md text-white/80">
+          <span className="font-label-md text-label-md text-muted-foreground">
             {switchText}
           </span>
           <Link
             href={switchHref}
             onClick={onSwitch}
-            className="inline-flex h-12 items-center justify-center rounded-xl border border-white/20 bg-white px-5 font-label-md text-label-md font-semibold text-primary shadow-lg shadow-black/15 transition-colors hover:bg-white/90"
+            className="inline-flex h-12 items-center justify-center rounded-xl border border-border bg-background px-5 font-label-md text-label-md font-semibold text-primary shadow-lg shadow-black/10 transition-colors hover:bg-muted"
           >
             {switchCta}
           </Link>
