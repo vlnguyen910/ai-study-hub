@@ -132,4 +132,11 @@ export class DocumentsController {
   ) {
     return this.documentsService.generateDescription(id, user.sub);
   }
+
+  @Version('1')
+  @UseGuards(JwtAuthGuard, VerifiedAccountGuard)
+  @Post(':id/generate-summary')
+  generateSummary(@Param('id', new ParseMongoIdPipe()) id: string) {
+    return this.documentsService.generateSummary(id);
+  }
 }

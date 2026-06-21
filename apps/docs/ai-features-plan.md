@@ -12,6 +12,15 @@ AI Study Hub có nhiều tính năng AI tiềm năng, tuy nhiên không nên tri
 - Chi phí AI
 - Giá trị khi demo đồ án
 
+## Current Status
+
+- [x] **Priority 1 — AI Description Generation** (Implemented: verified for DOCX, PDF, and TXT files)
+- [x] **Priority 2 — AI Summary (On-Demand)** (Implemented: verified synchronous Gemini 2.5-Flash summarization on-demand, saved in database, and beautifully rendered on Document Detail page)
+- [ ] **Priority 3 — AI Moderator Assistant**
+- [ ] **Priority 4 — AI Semantic Search**
+- [ ] **Priority 5 — AI Chat With Document**
+- [ ] **Priority 6 — AI Quiz Generation**
+
 ---
 
 # Priority 1 — AI Description Generation

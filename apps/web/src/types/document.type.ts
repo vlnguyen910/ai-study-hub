@@ -127,4 +127,5 @@ export interface DocumentDetail {
     avatarUrl: string | null;
   };
   subject: DocumentSubject | null;
+  aiSummary?: string | null;
 }

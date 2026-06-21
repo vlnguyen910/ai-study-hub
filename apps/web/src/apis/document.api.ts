@@ -142,7 +142,18 @@ export const generateDescriptionFromUrl = async (
   const result = await apiClient.post(
     `${API_ENDPOINTS.DOCUMENTS.BASE}/generate-description-from-url`,
     { fileUrl, format },
+    { timeout: 60_000 },
   );
   const data = result as unknown as { description: string };
   return data.description;
+};
+
+export const generateDocumentSummary = async (id: string): Promise<string> => {
+  const result = await apiClient.post(
+    `${API_ENDPOINTS.DOCUMENTS.BASE}/${id}/generate-summary`,
+    null,
+    { timeout: 60_000 },
+  );
+  const data = result as unknown as { summary: string };
+  return data.summary;
 };

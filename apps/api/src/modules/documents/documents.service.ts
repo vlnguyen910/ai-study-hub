@@ -392,6 +392,7 @@ export class DocumentsService {
         reviewedAt: true,
         rejectionReason: true,
         createdAt: true,
+        aiSummary: true,
         author: {
           select: {
             id: true,
@@ -674,6 +675,57 @@ export class DocumentsService {
       message: 'Description generated successfully',
       data: {
         description: generatedDescription,
+      },
+    };
+  }
+
+  async generateSummary(id: string) {
+    const document = await this.prismaService.documents.findFirst({
+      where: {
+        id,
+        status: {
+          not: DocumentStatus.DELETED,
+        },
+      },
+    });
+
+    if (!document) {
+      throw new NotFoundException(`Document with ID ${id} not found`);
+    }
+
+    if (document.aiSummary) {
+      return {
+        message: 'Summary retrieved successfully',
+        data: {
+          summary: document.aiSummary,
+        },
+      };
+    }
+
+    this.logger.log(`Extracting text for summary document ID: ${id}`);
+    const rawText = await this.documentExtractorService.extractText(
+      document.fileUrl,
+      document.format,
+    );
+
+    if (!rawText || rawText.trim().length === 0) {
+      throw new BadRequestException(
+        'The document contains no readable text for summary generation',
+      );
+    }
+
+    this.logger.log(`Generating AI summary for document ID: ${id}`);
+    const generatedSummary = await this.aiService.generateSummary(rawText);
+
+    await this.prismaService.documents.update({
+      where: { id },
+      data: { aiSummary: generatedSummary },
+    });
+
+    return {
+      message: 'Summary generated successfully',
+      data: {
+        summary: generatedSummary,
       },
     };
   }

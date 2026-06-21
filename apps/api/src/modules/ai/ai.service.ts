@@ -83,4 +83,30 @@ Nhiệm vụ: Hãy viết một đoạn mô tả (description) ngắn gọn tron
 
     return this.generateText(prompt);
   }
+
+  /**
+   * Generates a structured summary in Vietnamese based on the document text.
+   */
+  async generateSummary(documentText: string): Promise<string> {
+    const sampleText = documentText.slice(0, 16000);
+    const prompt = `Bạn là một trợ lý học tập thông minh chuyên nghiệp. Dưới đây là nội dung của một tài liệu học tập:
+     
+-----
+Nội dung:
+${sampleText}
+-----
+
+Nhiệm vụ: Hãy viết một bản tóm tắt (summary) chi tiết, rõ ràng và có cấu trúc bằng tiếng Việt cho tài liệu này. Bản tóm tắt nên bao gồm:
+1. Một đoạn giới thiệu ngắn (2-3 câu) về chủ đề chính của tài liệu.
+2. Các điểm chính hoặc nội dung quan trọng nhất dưới dạng danh sách gạch đầu dòng (bullet points).
+3. Một câu kết luận tóm gọn giá trị học tập của tài liệu.
+
+Yêu cầu:
+- Trình bày mạch lạc, khách quan, chuyên nghiệp, sử dụng ngôn ngữ dễ hiểu.
+- Không tự suy diễn hay thêm thông tin ngoài tài liệu.
+- Phản hồi bằng định dạng Markdown sạch (sử dụng gạch đầu dòng, in đậm cho các từ khóa quan trọng).
+- Chỉ trả về bản tóm tắt, không thêm lời chào, giải thích hay ký hiệu khác.`;
+
+    return this.generateText(prompt);
+  }
 }
