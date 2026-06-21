@@ -5,6 +5,7 @@ import { SubjectsService } from '../subjects';
 import { DocumentStatus, UserRole, UserStatus } from '@prisma/client';
 import { JwtTokenType } from '../../common/enums/jwt.enum';
 import { TokenPayload } from '../../common/interfaces/auth.interface';
+import { SettingsService } from '../settings';
 
 jest.mock('uuid', () => ({
   v4: jest.fn(() => 'test-jti'),
@@ -40,18 +41,24 @@ describe('DocumentsService', () => {
     findOne: jest.fn(),
   };
 
+  const settingsServiceMock = {
+    validateDocumentUpload: jest.fn(),
+  };
+
   beforeEach(async () => {
     jest.clearAllMocks();
     process.env.CLOUDINARY_CLOUD_NAME = 'demo';
     process.env.CLOUDINARY_API_KEY = 'key';
     process.env.CLOUDINARY_API_SECRET = 'secret';
     global.fetch = jest.fn();
+    settingsServiceMock.validateDocumentUpload.mockResolvedValue(undefined);
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         DocumentsService,
         { provide: PrismaService, useValue: prismaMock },
         { provide: SubjectsService, useValue: subjectsServiceMock },
+        { provide: SettingsService, useValue: settingsServiceMock },
       ],
     }).compile();
 
@@ -73,11 +80,38 @@ describe('DocumentsService', () => {
 
     const res = await service.create(dto, authorId);
 
+    expect(settingsServiceMock.validateDocumentUpload).toHaveBeenCalledWith(
+      dto.format,
+      dto.sizeInBytes,
+    );
     expect(prismaMock.documents.create).toHaveBeenCalled();
     expect(res).toEqual({
       message: 'Document created successfully',
       data: created,
     });
+  });
+
+  it('does not create metadata when the configured upload type is disabled', async () => {
+    settingsServiceMock.validateDocumentUpload.mockRejectedValue(
+      new Error('File type EXE is not enabled for upload'),
+    );
+
+    await expect(
+      service.create(
+        {
+          title: 'Unsafe',
+          fileUrl: 'https://example.com/file.exe',
+          publicId: 'file',
+          sizeInBytes: 100,
+          format: 'exe',
+          resourceType: 'raw',
+          isPublic: false,
+        },
+        'u1',
+      ),
+    ).rejects.toThrow('File type EXE is not enabled for upload');
+
+    expect(prismaMock.documents.create).not.toHaveBeenCalled();
   });
 
   it('create throws BadRequest when subjectId provided but not found', async () => {

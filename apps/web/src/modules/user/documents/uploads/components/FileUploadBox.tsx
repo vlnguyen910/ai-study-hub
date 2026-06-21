@@ -136,12 +136,16 @@ export default function FileUploadBox({
               Hoặc nhấn để chọn từ máy tính
             </p>
             <p className="text-xs text-on-surface-variant">
-              Hỗ trợ PDF, DOCX, PPTX (Max 50MB)
+              Hỗ trợ {config.allowedExtensions.join(", ")} (Tối đa{" "}
+              {config.maxFileSize / 1024 / 1024}MB)
             </p>
             <input
               type="file"
               className="sr-only"
-              accept={config.allowedMimeTypes.join(",")}
+              accept={[
+                ...config.allowedMimeTypes,
+                ...config.allowedExtensions,
+              ].join(",")}
               onChange={onInputChange}
               disabled={isSubmitting}
             />

@@ -158,10 +158,32 @@ async function main() {
     },
   });
 
+  const uploadFileTypes = [
+    { extension: 'PDF', enabled: true },
+    { extension: 'DOCX', enabled: true },
+    { extension: 'PPTX', enabled: true },
+    { extension: 'DOC', enabled: false },
+    { extension: 'XLS', enabled: false },
+    { extension: 'XLSX', enabled: false },
+    { extension: 'TXT', enabled: false },
+    { extension: 'CSV', enabled: false },
+  ];
+
+  await Promise.all(
+    uploadFileTypes.map((fileType) =>
+      prisma.upload_file_types.upsert({
+        where: { extension: fileType.extension },
+        update: {},
+        create: fileType,
+      }),
+    ),
+  );
+
   console.log(`Seeded ${accounts.length} accounts.`);
   console.log(`Ensured school: ${school.name} (${school.code})`);
   console.log(`Ensured ${subjects.length} subjects for ${school.name}`);
   console.log('Ensured global system settings.');
+  console.log(`Ensured ${uploadFileTypes.length} upload file type configs.`);
   console.log(`Admin account: admin@${SEED_EMAIL_DOMAIN}`);
   console.log(`Seed password: ${SEED_PASSWORD}`);
 }

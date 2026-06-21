@@ -60,11 +60,12 @@ Path `PATCH /admin/settings/general`, schema `UpdateGeneralSettingsRequest` tron
 
 ### [1] Database schema
 
-| Field               | Prisma/Mongo type | Default           |
-| ------------------- | ----------------- | ----------------- |
-| `maxFileSizeMb`     | `Int`             | `100`             |
-| `allowedFileTypes`  | `String[]`        | `PDF, DOCX, PPTX` |
-| `allowMobileUpload` | `Boolean`         | `true`            |
+| Collection/model    | Field               | Prisma/Mongo type | Default |
+| ------------------- | ------------------- | ----------------- | ------- |
+| `system_settings`   | `maxFileSizeMb`     | `Int`             | `100`   |
+| `system_settings`   | `allowMobileUpload` | `Boolean`         | `true`  |
+| `upload_file_types` | `extension`         | `String @unique`  | —       |
+| `upload_file_types` | `enabled`           | `Boolean`         | `true`  |
 
 ### [2] API endpoint
 
@@ -74,11 +75,26 @@ Path `PATCH /admin/settings/general`, schema `UpdateGeneralSettingsRequest` tron
 
 ### [3] Validation
 
-`maxFileSizeMb`: số nguyên 1-1024; `allowedFileTypes`: mảng 1-3 phần tử duy nhất, được uppercase, chỉ nhận `PDF`, `DOCX`, `PPTX`; `allowMobileUpload`: boolean. Body không được rỗng.
+`maxFileSizeMb`: số nguyên 1-1024; `fileTypes`: mảng 1-50 phần tử duy nhất theo `extension`; extension được bỏ dấu chấm, uppercase và chỉ nhận 1-10 chữ cái/số; `enabled`: boolean; `allowMobileUpload`: boolean. Phải còn ít nhất một extension được bật. Body không được rỗng.
+
+Ví dụ thêm `XLSX`, bật `TXT` và vô hiệu hóa `DOCX`:
+
+```json
+{
+  "fileTypes": [
+    { "extension": "PDF", "enabled": true },
+    { "extension": "DOCX", "enabled": false },
+    { "extension": "TXT", "enabled": true },
+    { "extension": "XLSX", "enabled": true }
+  ]
+}
+```
+
+Response vẫn có `allowedFileTypes` là danh sách extension đang bật để tương thích với client upload cũ, đồng thời trả `fileTypes` đầy đủ để Admin quản lý trạng thái.
 
 ### [4] Backend implementation
 
-DTO `dto/update-upload-settings.dto.ts`; route, service và repository dùng chung của SettingsModule.
+DTO `dto/update-upload-settings.dto.ts`; `upload_file_types` giữ cả extension đang bật và đã vô hiệu hóa; repository upsert theo extension nên Admin có thể thêm hoặc bật lại mà không tạo bản ghi trùng.
 
 ### [5] OpenAPI
 
@@ -142,7 +158,7 @@ Feature flags là boolean; daily requests là số nguyên 1-10000; các giới 
 
 ### [4] Backend implementation
 
-DTO `dto/update-ai-settings.dto.ts`; `SettingsService.updateAi` tính giá trị hiệu lực từ payload và bản ghi hiện tại trước khi ghi.
+DTO `dto/update-ai-settings.dto.ts`; `SettingsService.updateAi` dùng optimistic locking trên `version`. Nếu snapshot thay đổi giữa validate và update, service đọc lại, validate lại và chỉ ghi khi version vẫn khớp.
 
 ### [5] OpenAPI
 
@@ -236,4 +252,4 @@ Path `PATCH /admin/settings/mobile`, schema `UpdateMobileSettingsRequest`.
 
 ## Tích hợp trang Admin Config
 
-Trang `/admin/config` đã gọi `GET /api/v1/admin/settings` khi mount, bind từng section vào bảy object trong `data`, và gọi PATCH tương ứng khi lưu từng section. UI dùng trực tiếp field `maxFileSizeMb`; danh sách file type được gửi dưới dạng array thay vì chuỗi phân cách dấu phẩy.
+Trang `/admin/config` đã gọi `GET /api/v1/admin/settings` khi mount, bind từng section vào bảy object trong `data`, và gọi PATCH tương ứng khi lưu từng section. Upload Config cho phép nhập extension mới và bật/tắt từng extension; UI gửi registry `fileTypes` thay vì danh sách hardcode.

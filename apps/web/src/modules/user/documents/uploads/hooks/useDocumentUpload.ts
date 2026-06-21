@@ -16,7 +16,7 @@
 import { useCallback, useRef, useState } from "react";
 import { validateFile } from "@/utils/validate.file";
 import { createDocument } from "@/apis/document.api";
-import { DEFAULT_UPLOAD_CONFIG } from "@/constants/upload.const";
+import { useUploadConfig } from "./useUploadConfig";
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -43,6 +43,7 @@ const UPLOAD_PRESET = process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET ?? "";
 // ── Hook ─────────────────────────────────────────────────────────────────────
 
 export function useDocumentUpload() {
+  const uploadConfig = useUploadConfig();
   // File state
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isDragging, setIsDragging] = useState(false);
@@ -64,16 +65,19 @@ export function useDocumentUpload() {
   // ── File selection helpers ───────────────────────────────────────────────
 
   /** Validates and stores a single File from any input source. */
-  const selectFile = useCallback((file: File) => {
-    const result = validateFile(file, DEFAULT_UPLOAD_CONFIG);
-    if (!result.valid) {
-      setFileError(result.error ?? "Tệp không hợp lệ.");
-      setSelectedFile(null);
-      return;
-    }
-    setFileError(null);
-    setSelectedFile(file);
-  }, []);
+  const selectFile = useCallback(
+    (file: File) => {
+      const result = validateFile(file, uploadConfig);
+      if (!result.valid) {
+        setFileError(result.error ?? "Tệp không hợp lệ.");
+        setSelectedFile(null);
+        return;
+      }
+      setFileError(null);
+      setSelectedFile(file);
+    },
+    [uploadConfig],
+  );
 
   const onFileInputChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {

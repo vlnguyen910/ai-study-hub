@@ -1,7 +1,10 @@
 import { apiClient } from "@/lib/axios";
 import { API_ENDPOINTS } from "@/shared/constants";
 
-export type AllowedFileType = "PDF" | "DOCX" | "PPTX";
+export interface UploadFileTypeSetting {
+  extension: string;
+  enabled: boolean;
+}
 
 export interface GeneralSettings {
   systemName: string;
@@ -12,9 +15,12 @@ export interface GeneralSettings {
 
 export interface UploadSettings {
   maxFileSizeMb: number;
-  allowedFileTypes: AllowedFileType[];
+  allowedFileTypes: string[];
+  fileTypes: UploadFileTypeSetting[];
   allowMobileUpload: boolean;
 }
+
+export type UpdateUploadSettings = Omit<UploadSettings, "allowedFileTypes">;
 
 export interface DocumentVisibilitySettings {
   requireModerationForPublicDocuments: boolean;
@@ -79,7 +85,7 @@ export type AdminSettingsGroup =
 
 export interface AdminSettingsGroupPayloadMap {
   general: GeneralSettings;
-  upload: UploadSettings;
+  upload: UpdateUploadSettings;
   documentVisibility: DocumentVisibilitySettings;
   ai: AiSettings;
   moderation: ModerationSettings;

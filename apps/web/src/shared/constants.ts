@@ -4,6 +4,7 @@
  */
 
 export const API_ENDPOINTS = {
+  SETTINGS: "/api/v1/settings",
   AUTH: {
     LOGIN: "/api/v1/auth/signin",
     GOOGLE: "/api/v1/auth/google",

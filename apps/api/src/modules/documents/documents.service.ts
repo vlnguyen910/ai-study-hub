@@ -16,6 +16,7 @@ import {
 } from './dto';
 import { SubjectsService } from '../subjects';
 import { TokenPayload } from '../../common/interfaces/auth.interface';
+import { SettingsService } from '../settings';
 
 @Injectable()
 export class DocumentsService {
@@ -24,6 +25,7 @@ export class DocumentsService {
   constructor(
     private readonly prismaService: PrismaService,
     private readonly subjectsService: SubjectsService,
+    private readonly settingsService: SettingsService,
   ) {}
 
   private readonly cloudinaryCloudName =
@@ -225,6 +227,11 @@ export class DocumentsService {
   }
 
   async create(createDocumentDto: CreateDocumentDto, authorId: string) {
+    await this.settingsService.validateDocumentUpload(
+      createDocumentDto.format,
+      createDocumentDto.sizeInBytes,
+    );
+
     if (createDocumentDto.subjectId) {
       const subject = await this.subjectsService.findOne(
         createDocumentDto.subjectId,

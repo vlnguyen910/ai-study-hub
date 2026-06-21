@@ -17,11 +17,12 @@ import { useState } from "react";
 import { Button } from "@/components/ui/Button";
 import FileUploadBox from "../components/FileUploadBox";
 import { DocumentUploadForm } from "../components/DocumentUploadForm";
-import { DEFAULT_UPLOAD_CONFIG } from "@/constants/upload.const";
+import { useUploadConfig } from "../hooks/useUploadConfig";
 
 export default function UploadPage(): React.JSX.Element {
   /** File picked by FileUploadBox; passed to DocumentUploadForm for submission. */
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const uploadConfig = useUploadConfig();
 
   /**
    * Mirrors DocumentUploadForm's submitting state so FileUploadBox can
@@ -77,7 +78,7 @@ export default function UploadPage(): React.JSX.Element {
       <div className="grid grid-cols-1 gap-8 lg:grid-cols-2 lg:items-start">
         {/* Left — file selection only (no upload button) */}
         <FileUploadBox
-          config={DEFAULT_UPLOAD_CONFIG}
+          config={uploadConfig}
           selectedFile={selectedFile}
           onFileChange={setSelectedFile}
           isSubmitting={isSubmitting}

@@ -1,20 +1,45 @@
 "use client";
 
 import { DEFAULT_UPLOAD_CONFIG } from "@/constants/upload.const";
+import { apiClient } from "@/lib/axios";
+import { API_ENDPOINTS } from "@/shared/constants";
 import { UploadConfig } from "@/types/upload";
 import { useEffect, useState } from "react";
 
-const isUploadConfig = (value: unknown): value is UploadConfig => {
-  if (!value || typeof value !== "object") return false;
-  const v = value as Record<string, unknown>;
-  return (
-    typeof v.maxFileSize === "number" &&
-    typeof v.maxFiles === "number" &&
-    Array.isArray(v.allowedMimeTypes) &&
-    v.allowedMimeTypes.every((x) => typeof x === "string") &&
-    Array.isArray(v.allowedExtensions) &&
-    v.allowedExtensions.every((x) => typeof x === "string")
+const mimeTypesByExtension: Record<string, string> = {
+  PDF: "application/pdf",
+  DOC: "application/msword",
+  DOCX: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  XLS: "application/vnd.ms-excel",
+  XLSX: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+  PPT: "application/vnd.ms-powerpoint",
+  PPTX: "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+  TXT: "text/plain",
+  CSV: "text/csv",
+};
+
+interface RuntimeSettings {
+  upload: {
+    maxFileSizeMb: number;
+    allowedFileTypes: string[];
+  };
+}
+
+const toUploadConfig = (settings: RuntimeSettings): UploadConfig => {
+  const extensions = settings.upload.allowedFileTypes.map((extension) =>
+    extension.trim().replace(/^\.+/, "").toUpperCase(),
   );
+
+  return {
+    maxFileSize: settings.upload.maxFileSizeMb * 1024 * 1024,
+    maxFiles: 1,
+    allowedExtensions: extensions.map(
+      (extension) => `.${extension.toLowerCase()}`,
+    ),
+    allowedMimeTypes: extensions
+      .map((extension) => mimeTypesByExtension[extension])
+      .filter((mimeType): mimeType is string => Boolean(mimeType)),
+  };
 };
 
 export const useUploadConfig = () => {
@@ -23,14 +48,11 @@ export const useUploadConfig = () => {
   useEffect(() => {
     const fetchConfig = async () => {
       try {
-        const response = await fetch("/api/upload-config");
-        if (!response.ok) throw new Error("Failed to fetch upload config");
-
-        const data: unknown = await response.json();
-        if (!isUploadConfig(data))
-          throw new Error("Invalid upload config payload");
-
-        setConfig(data);
+        const settings = await apiClient.get<unknown, RuntimeSettings>(
+          API_ENDPOINTS.SETTINGS,
+          { skipToast: true },
+        );
+        setConfig(toUploadConfig(settings));
       } catch {
         // fallback default config
       }
