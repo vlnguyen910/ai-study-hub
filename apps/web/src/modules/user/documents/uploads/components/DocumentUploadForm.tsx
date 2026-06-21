@@ -32,7 +32,11 @@
 import { useEffect, useState, useCallback } from "react";
 import { Button } from "@/components/ui/Button";
 import { InputField } from "@/components/ui/InputField";
-import { fetchSubjects, createDocument } from "@/apis/document.api";
+import {
+  fetchSubjects,
+  createDocument,
+  generateDescriptionFromUrl,
+} from "@/apis/document.api";
 import { UPLOAD_ERROR_MESSAGES } from "@/constants/upload.const";
 import { getErrorMessage } from "@/utils/error";
 import type { Subject } from "@/types/document.type";
@@ -114,6 +118,48 @@ export function DocumentUploadForm({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
 
+  // AI generation state & cached Cloudinary result
+  const [isGeneratingAi, setIsGeneratingAi] = useState(false);
+  const [uploadedCloudResult, setUploadedCloudResult] =
+    useState<CloudinaryUploadResult | null>(null);
+
+  // Clear cached Cloudinary result if selected file changes
+  useEffect(() => {
+    setUploadedCloudResult(null);
+  }, [selectedFile]);
+
+  // AI Description Generation Handler
+  const handleGenerateAiDescription = useCallback(async () => {
+    if (!selectedFile) return;
+
+    setIsGeneratingAi(true);
+    setSubmitError(null);
+
+    try {
+      let cloudResult = uploadedCloudResult;
+      if (!cloudResult) {
+        cloudResult = await uploadToCloudinary(selectedFile);
+        setUploadedCloudResult(cloudResult);
+      }
+
+      const desc = await generateDescriptionFromUrl(
+        cloudResult.url,
+        cloudResult.format ||
+          selectedFile.name.split(".").pop()?.toLowerCase() ||
+          "pdf",
+      );
+
+      setDescription(desc);
+    } catch (err) {
+      console.error("AI description generation failed:", err);
+      setSubmitError(
+        "Không thể tạo mô tả bằng AI. Vui lòng thử lại sau hoặc nhập mô tả thủ công.",
+      );
+    } finally {
+      setIsGeneratingAi(false);
+    }
+  }, [selectedFile, uploadedCloudResult]);
+
   // ── Submit handler ────────────────────────────────────────────────────────
 
   const handleSubmit = useCallback(async () => {
@@ -136,15 +182,18 @@ export function DocumentUploadForm({
     setSubmitError(null);
 
     // Phase 1 — upload file to Cloudinary
-    let cloudResult: CloudinaryUploadResult;
-    try {
-      cloudResult = await uploadToCloudinary(selectedFile);
-    } catch (err) {
-      console.error("Cloudinary upload failed:", err);
-      setSubmitError(UPLOAD_ERROR_MESSAGES.CLOUDINARY_UPLOAD_FAILED);
-      setIsSubmitting(false);
-      onSubmittingChange(false);
-      return;
+    let cloudResult = uploadedCloudResult;
+    if (!cloudResult) {
+      try {
+        cloudResult = await uploadToCloudinary(selectedFile);
+        setUploadedCloudResult(cloudResult);
+      } catch (err) {
+        console.error("Cloudinary upload failed:", err);
+        setSubmitError(UPLOAD_ERROR_MESSAGES.CLOUDINARY_UPLOAD_FAILED);
+        setIsSubmitting(false);
+        onSubmittingChange(false);
+        return;
+      }
     }
 
     // Phase 2 — create document record in the API
@@ -166,6 +215,7 @@ export function DocumentUploadForm({
       setSubjectId("");
       setDescription("");
       setIsPublic(false);
+      setUploadedCloudResult(null);
       onSuccess();
     } catch (err) {
       // Logged for debugging — the user only sees a mapped message,
@@ -189,6 +239,7 @@ export function DocumentUploadForm({
     isPublic,
     onSubmittingChange,
     onSuccess,
+    uploadedCloudResult,
   ]);
 
   // ── Render ────────────────────────────────────────────────────────────────
@@ -247,16 +298,41 @@ export function DocumentUploadForm({
       </div>
 
       {/* Description */}
-      <label className="block">
-        <span className="mb-1 block text-xs font-medium text-on-surface-variant">
-          Mô tả chi tiết
-        </span>
+      <div className="block space-y-1">
+        <div className="flex items-center justify-between">
+          <span className="text-xs font-medium text-on-surface-variant">
+            Mô tả chi tiết
+          </span>
+          {/* AI Generator Button */}
+          <button
+            type="button"
+            onClick={handleGenerateAiDescription}
+            disabled={!selectedFile || isSubmitting || isGeneratingAi}
+            className="
+              flex items-center gap-1.5 rounded-lg px-2 py-1 text-xs font-semibold
+              text-primary hover:bg-primary/10 active:bg-primary/20 transition-all duration-200
+              disabled:opacity-40 disabled:hover:bg-transparent cursor-pointer disabled:cursor-not-allowed
+            "
+            title={
+              selectedFile
+                ? "Tự động tạo mô tả bằng AI"
+                : "Vui lòng chọn tệp trước để tạo mô tả bằng AI"
+            }
+          >
+            <span
+              className={`material-symbols-outlined text-[16px] ${isGeneratingAi ? "animate-spin" : ""}`}
+            >
+              {isGeneratingAi ? "sync" : "auto_awesome"}
+            </span>
+            {isGeneratingAi ? "Đang tạo..." : "Tạo bằng AI"}
+          </button>
+        </div>
         <textarea
-          placeholder="Tóm tắt nội dung tài liệu để người khác dễ tìm thấy..."
+          placeholder="Nhập mô tả hoặc nhấn 'Tạo bằng AI' để tự động tóm tắt nội dung tài liệu..."
           value={description}
           onChange={(e) => setDescription(e.target.value)}
           rows={4}
-          disabled={isSubmitting}
+          disabled={isSubmitting || isGeneratingAi}
           className="
             w-full resize-none rounded-xl border border-outline bg-surface
             p-3 text-sm text-on-surface placeholder:text-on-surface-variant/60
@@ -264,7 +340,7 @@ export function DocumentUploadForm({
             disabled:cursor-not-allowed disabled:opacity-50
           "
         />
-      </label>
+      </div>
 
       {/* Visibility toggle */}
       <div className="flex items-center justify-between rounded-xl border border-outline bg-surface-variant/40 px-4 py-3">

@@ -134,3 +134,15 @@ export const fetchSubjects = async (
   });
   return result as unknown as SubjectsListResponse;
 };
+
+export const generateDescriptionFromUrl = async (
+  fileUrl: string,
+  format: string,
+): Promise<string> => {
+  const result = await apiClient.post(
+    `${API_ENDPOINTS.DOCUMENTS.BASE}/generate-description-from-url`,
+    { fileUrl, format },
+  );
+  const data = result as unknown as { description: string };
+  return data.description;
+};

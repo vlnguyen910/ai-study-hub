@@ -10,6 +10,7 @@ import { useEffect, useState, type FC, type ReactNode } from "react";
 import { Spinner } from "@/components/ui/Spinner";
 import { completeGoogleLoginFromLocation } from "@/modules/google-auth";
 import { getAuthSession } from "./guards/auth.guard";
+import { useAuthStore } from "@/stores/auth/store";
 import {
   hasRoleAccess,
   getRoleRedirect,
@@ -47,8 +48,11 @@ export const ProtectedRoute: FC<ProtectedRouteProps> = ({
 }) => {
   const router = useRouter();
   const [status, setStatus] = useState<GuardStatus>("checking");
+  const hasHydrated = useAuthStore((state) => state.hasHydrated);
 
   useEffect(() => {
+    if (!hasHydrated) return;
+
     setStatus("checking");
     completeGoogleLoginFromLocation();
     const { isAuthenticated: isAuth, user } = getAuthSession();
@@ -78,9 +82,9 @@ export const ProtectedRoute: FC<ProtectedRouteProps> = ({
     }
 
     setStatus("authorized");
-  }, [requiredRole, router]);
+  }, [requiredRole, router, hasHydrated]);
 
-  if (status !== "authorized") {
+  if (!hasHydrated || status !== "authorized") {
     return <GuardFallback />;
   }
 
