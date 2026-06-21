@@ -151,7 +151,7 @@ export const generateDescriptionFromUrl = async (
 export const generateDocumentSummary = async (id: string): Promise<string> => {
   const result = await apiClient.post(
     `${API_ENDPOINTS.DOCUMENTS.BASE}/${id}/generate-summary`,
-    null,
+    {},
     { timeout: 60_000 },
   );
   const data = result as unknown as { summary: string };

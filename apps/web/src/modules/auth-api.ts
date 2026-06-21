@@ -137,9 +137,13 @@ export const resetPassword = async (payload: {
 
 export const logoutCurrentSession = async (): Promise<void> => {
   try {
-    await apiClient.post(API_ENDPOINTS.AUTH.LOGOUT, null, {
-      skipToast: true,
-    });
+    await apiClient.post(
+      API_ENDPOINTS.AUTH.LOGOUT,
+      {},
+      {
+        skipToast: true,
+      },
+    );
   } catch {
     // Logout must still clear client auth when the server session is already
     // expired, missing, or otherwise cannot be revoked.
