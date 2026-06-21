@@ -698,7 +698,35 @@ export class DocumentsService {
       throw new NotFoundException(`Document with ID ${id} not found`);
     }
 
+    // 1. Query ai_reviews first
+    const existingReview = await this.prismaService.ai_reviews.findFirst({
+      where: { documentId: id },
+    });
+
+    if (existingReview?.summary) {
+      return {
+        message: 'Summary retrieved successfully',
+        data: {
+          summary: existingReview.summary,
+        },
+      };
+    }
+
+    // 2. Fallback to documents.aiSummary
     if (document.aiSummary) {
+      if (existingReview) {
+        await this.prismaService.ai_reviews.update({
+          where: { id: existingReview.id },
+          data: { summary: document.aiSummary },
+        });
+      } else {
+        await this.prismaService.ai_reviews.create({
+          data: {
+            documentId: id,
+            summary: document.aiSummary,
+          },
+        });
+      }
       return {
         message: 'Summary retrieved successfully',
         data: {
@@ -707,25 +735,43 @@ export class DocumentsService {
       };
     }
 
-    this.logger.log(`Extracting text for summary document ID: ${id}`);
-    const rawText = await this.documentExtractorService.extractText(
-      document.fileUrl,
-      document.format,
-    );
+    // 3. Query document_chunks for raw text
+    const chunks = await this.prismaService.document_chunks.findMany({
+      where: { documentId: id },
+      orderBy: { chunkIndex: 'asc' },
+    });
 
-    if (!rawText || rawText.trim().length === 0) {
+    if (chunks.length === 0) {
       throw new BadRequestException(
-        'The document contains no readable text for summary generation',
+        'The document text chunks have not been processed yet. Please wait for upload processing to complete.',
       );
     }
+
+    const rawText = chunks.map((chunk) => chunk.chunkText).join('\n');
 
     this.logger.log(`Generating AI summary for document ID: ${id}`);
     const generatedSummary = await this.aiService.generateSummary(rawText);
 
+    // 4. Update documents table
     await this.prismaService.documents.update({
       where: { id },
       data: { aiSummary: generatedSummary },
     });
+
+    // 5. Save/Update ai_reviews table
+    if (existingReview) {
+      await this.prismaService.ai_reviews.update({
+        where: { id: existingReview.id },
+        data: { summary: generatedSummary },
+      });
+    } else {
+      await this.prismaService.ai_reviews.create({
+        data: {
+          documentId: id,
+          summary: generatedSummary,
+        },
+      });
+    }
 
     return {
       message: 'Summary generated successfully',
