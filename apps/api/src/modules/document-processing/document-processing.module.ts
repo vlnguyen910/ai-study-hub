@@ -5,9 +5,10 @@ import { RedisModule } from '../../common/redis/redis.module';
 import { DocumentProcessingService } from './document-processing.service';
 import { DocumentProcessingProcessor } from './document-processing.processor';
 import { DocumentExtractorService } from './document-extractor.service';
+import { AIModule } from '../ai/ai.module';
 
 @Module({
-  imports: [ConfigModule, QueueModule, RedisModule],
+  imports: [ConfigModule, QueueModule, RedisModule, AIModule],
   providers: [
     DocumentProcessingService,
     DocumentProcessingProcessor,

@@ -12,15 +12,6 @@ AI Study Hub có nhiều tính năng AI tiềm năng, tuy nhiên không nên tri
 - Chi phí AI
 - Giá trị khi demo đồ án
 
-## Current Status
-
-- [x] **Priority 1 — AI Description Generation** (Implemented: verified for DOCX, PDF, and TXT files)
-- [x] **Priority 2 — AI Summary (On-Demand)** (Implemented: verified synchronous Gemini 2.5-Flash summarization on-demand, saved in database, and beautifully rendered on Document Detail page)
-- [ ] **Priority 3 — AI Moderator Assistant**
-- [ ] **Priority 4 — AI Semantic Search**
-- [ ] **Priority 5 — AI Chat With Document**
-- [ ] **Priority 6 — AI Quiz Generation**
-
 ---
 
 # Priority 1 — AI Description Generation
@@ -124,7 +115,6 @@ Approve / Reject
 ## AI Responsibilities
 
 - Generate summary.
-- Suggest subject.
 - Detect duplicates.
 - Flag suspicious content.
 - Suggest moderation decision.
@@ -146,6 +136,22 @@ Moderator luôn là người quyết định cuối cùng.
 - Khác biệt với các project CRUD thông thường.
 - Dùng lại kết quả từ Summary và Duplicate Detection.
 - Có giá trị lớn khi bảo vệ đồ án.
+
+## Technical Requirements
+
+- Leverage existing document text extraction pipeline.
+- Call Gemini API to generate summary, duplicate detection, and content risk flags.
+- Provide an endpoint `/moderator/analysis` that returns:
+  - `summary`: string
+  - `flags`: string[]
+
+## MVP Scope
+
+- Moderator opens a document detail page.
+- Clicks **“Run AI Analysis”**.
+- UI shows the AI‑generated summary, and any suspicious‑content flags.
+- Moderator may edit the suggested action before confirming approve/reject.
+- No automatic decision; moderator remains the final authority.
 
 ---
 
@@ -293,7 +299,7 @@ Extract Text
 Chunking
 Embedding Generation
 Duplicate Detection (Public Documents)
-AI Moderator Analysis
+AI Moderator Analysis if (they upload document public)
 ```
 
 ## User Triggered Processing

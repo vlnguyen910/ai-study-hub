@@ -19,6 +19,7 @@ import { TokenPayload } from '../../common/interfaces/auth.interface';
 import { SettingsService } from '../settings';
 import { DocumentExtractorService } from '../document-processing/document-extractor.service';
 import { AIService } from '../ai/ai.service';
+import { DocumentProcessingService } from '../document-processing/document-processing.service';
 
 @Injectable()
 export class DocumentsService {
@@ -30,6 +31,7 @@ export class DocumentsService {
     private readonly settingsService: SettingsService,
     private readonly documentExtractorService: DocumentExtractorService,
     private readonly aiService: AIService,
+    private readonly documentProcessingService: DocumentProcessingService,
   ) {}
 
   private readonly cloudinaryCloudName =
@@ -264,6 +266,9 @@ export class DocumentsService {
         },
       },
     });
+
+    // Auto-trigger background processing
+    await this.documentProcessingService.enqueueUploadProcessing(document.id);
 
     return {
       message: 'Document created successfully',
