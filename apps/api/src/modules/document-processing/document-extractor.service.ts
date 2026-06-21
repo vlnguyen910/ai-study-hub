@@ -1,5 +1,5 @@
 import { Injectable, Logger, BadRequestException } from '@nestjs/common';
-import * as pdf from 'pdf-parse';
+import { PDFParse } from 'pdf-parse';
 import mammoth from 'mammoth';
 
 @Injectable()
@@ -22,7 +22,8 @@ export class DocumentExtractorService {
       const normalizedFormat = format.toLowerCase();
       if (normalizedFormat === 'pdf') {
         this.logger.log('Extracting text from PDF...');
-        const parsed = await (pdf as any)(buffer);
+        const parser = new PDFParse({ data: buffer });
+        const parsed = await parser.getText();
         return parsed.text || '';
       } else if (normalizedFormat === 'docx' || normalizedFormat === 'doc') {
         this.logger.log('Extracting text from Word document...');
