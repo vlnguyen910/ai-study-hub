@@ -2,6 +2,8 @@ import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import type { DocumentDetail } from "@/types/document.type";
 import { formatDate } from "@/utils";
+import { useAuthStore } from "@/stores/auth/store";
+import { toast } from "sonner";
 
 import {
   buildCloudinaryDownloadUrl,
@@ -18,6 +20,7 @@ interface Props {
  * and action buttons (Open document / Download / Save).
  */
 export function DocumentHero({ document }: Props): React.JSX.Element {
+  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
   const downloadUrl = buildCloudinaryDownloadUrl(document.fileUrl);
   const downloadFileName = buildDownloadFileName(
     document.title,
@@ -93,7 +96,16 @@ export function DocumentHero({ document }: Props): React.JSX.Element {
             </Button>
           </a>
 
-          <Button variant="outline">
+          <Button
+            variant="outline"
+            onClick={() => {
+              if (!isAuthenticated) {
+                toast.error("Vui lòng đăng nhập để lưu tài liệu.");
+              } else {
+                toast.info("Tính năng lưu tài liệu đang được phát triển.");
+              }
+            }}
+          >
             <span className="flex items-center gap-2">
               <span className="material-symbols-outlined text-[18px]">
                 bookmark
