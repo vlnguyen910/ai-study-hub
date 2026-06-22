@@ -267,8 +267,15 @@ export class DocumentsService {
       },
     });
 
-    // Auto-trigger background processing
-    await this.documentProcessingService.enqueueUploadProcessing(document.id);
+    // Auto-trigger background processing asynchronously (without blocking response or causing document creation failure)
+    this.documentProcessingService
+      .enqueueUploadProcessing(document.id)
+      .catch((err) => {
+        this.logger.error(
+          `Failed to enqueue upload processing for document ID ${document.id}: ${err.message}`,
+          err.stack,
+        );
+      });
 
     return {
       message: 'Document created successfully',

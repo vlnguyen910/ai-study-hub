@@ -150,11 +150,6 @@ export class DocumentProcessingProcessor
       `Generated ${chunks.length} chunks for document ID: ${documentId}`,
     );
 
-    // Make processUpload idempotent by deleting existing chunks
-    await this.prismaService.document_chunks.deleteMany({
-      where: { documentId },
-    });
-
     const chunkEntities = chunks.map((chunkText, index) => ({
       documentId,
       chunkIndex: index,
@@ -163,9 +158,15 @@ export class DocumentProcessingProcessor
       embedding: [],
     }));
 
-    await this.prismaService.document_chunks.createMany({
-      data: chunkEntities,
-    });
+    // Make processUpload idempotent by deleting existing chunks and saving new chunks atomically in a transaction
+    await this.prismaService.$transaction([
+      this.prismaService.document_chunks.deleteMany({
+        where: { documentId },
+      }),
+      this.prismaService.document_chunks.createMany({
+        data: chunkEntities,
+      }),
+    ]);
 
     this.logger.log(
       `Successfully saved chunks to database for document ID: ${documentId}`,

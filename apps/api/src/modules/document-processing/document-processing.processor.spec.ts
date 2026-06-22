@@ -20,6 +20,7 @@ describe('DocumentProcessingProcessor', () => {
     jest.clearAllMocks();
 
     prismaMock = {
+      $transaction: jest.fn((promises) => Promise.all(promises)),
       documents: {
         findUnique: jest.fn(),
       },
@@ -111,6 +112,7 @@ describe('DocumentProcessingProcessor', () => {
       } as any);
 
       expect(prismaMock.documents.findUnique).toHaveBeenCalled();
+      expect(prismaMock.$transaction).toHaveBeenCalled();
       expect(documentExtractorMock.extractText).toHaveBeenCalledWith(
         'https://cloudinary.com/doc.pdf',
         'pdf',
