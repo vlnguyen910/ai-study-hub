@@ -699,7 +699,7 @@ export class DocumentsService {
     }
 
     // 1. Query ai_reviews first
-    const existingReview = await this.prismaService.ai_reviews.findFirst({
+    const existingReview = await this.prismaService.ai_reviews.findUnique({
       where: { documentId: id },
     });
 
@@ -714,19 +714,14 @@ export class DocumentsService {
 
     // 2. Fallback to documents.aiSummary
     if (document.aiSummary) {
-      if (existingReview) {
-        await this.prismaService.ai_reviews.update({
-          where: { id: existingReview.id },
-          data: { summary: document.aiSummary },
-        });
-      } else {
-        await this.prismaService.ai_reviews.create({
-          data: {
-            documentId: id,
-            summary: document.aiSummary,
-          },
-        });
-      }
+      await this.prismaService.ai_reviews.upsert({
+        where: { documentId: id },
+        update: { summary: document.aiSummary },
+        create: {
+          documentId: id,
+          summary: document.aiSummary,
+        },
+      });
       return {
         message: 'Summary retrieved successfully',
         data: {
@@ -759,19 +754,14 @@ export class DocumentsService {
     });
 
     // 5. Save/Update ai_reviews table
-    if (existingReview) {
-      await this.prismaService.ai_reviews.update({
-        where: { id: existingReview.id },
-        data: { summary: generatedSummary },
-      });
-    } else {
-      await this.prismaService.ai_reviews.create({
-        data: {
-          documentId: id,
-          summary: generatedSummary,
-        },
-      });
-    }
+    await this.prismaService.ai_reviews.upsert({
+      where: { documentId: id },
+      update: { summary: generatedSummary },
+      create: {
+        documentId: id,
+        summary: generatedSummary,
+      },
+    });
 
     return {
       message: 'Summary generated successfully',
@@ -802,7 +792,7 @@ export class DocumentsService {
     }
 
     // 1. Query ai_reviews first for cached result
-    const existingReview = await this.prismaService.ai_reviews.findFirst({
+    const existingReview = await this.prismaService.ai_reviews.findUnique({
       where: { documentId: id },
     });
 
@@ -838,27 +828,22 @@ export class DocumentsService {
     const analysis = await this.aiService.analyzeDocumentForModerator(rawText);
 
     // 3. Save/Update ai_reviews table
-    if (existingReview) {
-      await this.prismaService.ai_reviews.update({
-        where: { id: existingReview.id },
-        data: {
-          summary: analysis.summary,
-          warningFlags: analysis.flags,
-          moderationSuggestion: analysis.moderationSuggestion,
-          moderationReason: analysis.reason,
-        },
-      });
-    } else {
-      await this.prismaService.ai_reviews.create({
-        data: {
-          documentId: id,
-          summary: analysis.summary,
-          warningFlags: analysis.flags,
-          moderationSuggestion: analysis.moderationSuggestion,
-          moderationReason: analysis.reason,
-        },
-      });
-    }
+    await this.prismaService.ai_reviews.upsert({
+      where: { documentId: id },
+      update: {
+        summary: analysis.summary,
+        warningFlags: analysis.flags,
+        moderationSuggestion: analysis.moderationSuggestion,
+        moderationReason: analysis.reason,
+      },
+      create: {
+        documentId: id,
+        summary: analysis.summary,
+        warningFlags: analysis.flags,
+        moderationSuggestion: analysis.moderationSuggestion,
+        moderationReason: analysis.reason,
+      },
+    });
 
     return {
       message: 'Moderator analysis completed successfully',
