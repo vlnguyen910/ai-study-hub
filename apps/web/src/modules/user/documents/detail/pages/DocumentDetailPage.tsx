@@ -13,6 +13,7 @@ import {
 } from "@/apis/document.api";
 import { toast } from "sonner";
 import type { DocumentDetail, LibraryDocument } from "@/types/document.type";
+import { useAuthStore } from "@/stores/auth/store";
 
 import { DocumentHero } from "../components/DocumentHero";
 import { DocumentPreview } from "../components/DocumentPreview";
@@ -111,10 +112,15 @@ export default function DocumentDetailPage(): React.JSX.Element {
     loadData();
   }, [id]);
 
+  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
   const [isGeneratingSummary, setIsGeneratingSummary] = useState(false);
 
   const handleGenerateSummary = async () => {
     if (!document) return;
+    if (!isAuthenticated) {
+      toast.error("Vui lòng đăng nhập để tạo tóm tắt tài liệu bằng AI.");
+      return;
+    }
     setIsGeneratingSummary(true);
     try {
       const summaryText = await generateDocumentSummary(document.id);

@@ -1,3 +1,6 @@
+"use client";
+
+import { usePathname } from "next/navigation";
 import { UserShell } from "@/modules/user/components/UserShell";
 import { ProtectedRoute } from "@/routes/ProtectedRoute";
 import type { ReactNode } from "react";
@@ -7,6 +10,21 @@ export default function UserLayout({
 }: {
   readonly children: ReactNode;
 }): React.JSX.Element {
+  const pathname = usePathname();
+  const isPublicPath =
+    pathname === "/home" || pathname.startsWith("/documents/");
+
+  if (isPublicPath) {
+    return (
+      <UserShell
+        title="Không gian học tập"
+        subtitle="Quản lý tài liệu và đóng góp của bạn"
+      >
+        {children}
+      </UserShell>
+    );
+  }
+
   return (
     <ProtectedRoute>
       <UserShell
