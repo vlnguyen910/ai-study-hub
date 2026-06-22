@@ -240,7 +240,7 @@ Hãy đảm bảo đầu ra là JSON sạch để có thể parse bằng JSON.pa
       };
     } catch (error) {
       this.logger.error(
-        `Failed to parse AI moderator response: ${responseText}`,
+        `Failed to parse AI moderator response`,
         (error as Error).stack,
       );
       // Fallback response if parsing fails

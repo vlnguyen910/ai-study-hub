@@ -46,8 +46,10 @@ describe('DocumentsService', () => {
     },
     ai_reviews: {
       findFirst: jest.fn(),
+      findUnique: jest.fn(),
       create: jest.fn(),
       update: jest.fn(),
+      upsert: jest.fn(),
     },
     document_chunks: {
       findMany: jest.fn(),
@@ -1061,7 +1063,7 @@ describe('DocumentsService', () => {
     it('returns cached summary from ai_reviews if present', async () => {
       const mockDoc = { id: docId, aiSummary: null };
       prismaMock.documents.findFirst.mockResolvedValue(mockDoc);
-      prismaMock.ai_reviews.findFirst.mockResolvedValue({
+      prismaMock.ai_reviews.findUnique.mockResolvedValue({
         id: 'review-1',
         summary: 'cached summary from review',
       });
@@ -1072,17 +1074,17 @@ describe('DocumentsService', () => {
         message: 'Summary retrieved successfully',
         data: { summary: 'cached summary from review' },
       });
-      expect(prismaMock.ai_reviews.findFirst).toHaveBeenCalledWith({
+      expect(prismaMock.ai_reviews.findUnique).toHaveBeenCalledWith({
         where: { documentId: docId },
       });
       expect(aiServiceMock.generateSummary).not.toHaveBeenCalled();
     });
 
-    it('returns cached summary fallback from documents.aiSummary and creates ai_reviews', async () => {
+    it('returns cached summary fallback from documents.aiSummary and upserts ai_reviews', async () => {
       const mockDoc = { id: docId, aiSummary: 'fallback summary' };
       prismaMock.documents.findFirst.mockResolvedValue(mockDoc);
-      prismaMock.ai_reviews.findFirst.mockResolvedValue(null);
-      prismaMock.ai_reviews.create.mockResolvedValue({});
+      prismaMock.ai_reviews.findUnique.mockResolvedValue(null);
+      prismaMock.ai_reviews.upsert.mockResolvedValue({});
 
       const result = await service.generateSummary(docId);
 
@@ -1090,34 +1092,17 @@ describe('DocumentsService', () => {
         message: 'Summary retrieved successfully',
         data: { summary: 'fallback summary' },
       });
-      expect(prismaMock.ai_reviews.create).toHaveBeenCalledWith({
-        data: { documentId: docId, summary: 'fallback summary' },
-      });
-    });
-
-    it('returns cached summary fallback from documents.aiSummary and updates existing ai_reviews', async () => {
-      const mockDoc = { id: docId, aiSummary: 'fallback summary' };
-      const mockReview = { id: 'review-1', summary: null };
-      prismaMock.documents.findFirst.mockResolvedValue(mockDoc);
-      prismaMock.ai_reviews.findFirst.mockResolvedValue(mockReview);
-      prismaMock.ai_reviews.update.mockResolvedValue({});
-
-      const result = await service.generateSummary(docId);
-
-      expect(result).toEqual({
-        message: 'Summary retrieved successfully',
-        data: { summary: 'fallback summary' },
-      });
-      expect(prismaMock.ai_reviews.update).toHaveBeenCalledWith({
-        where: { id: 'review-1' },
-        data: { summary: 'fallback summary' },
+      expect(prismaMock.ai_reviews.upsert).toHaveBeenCalledWith({
+        where: { documentId: docId },
+        update: { summary: 'fallback summary' },
+        create: { documentId: docId, summary: 'fallback summary' },
       });
     });
 
     it('throws BadRequestException if document chunks are not processed yet', async () => {
       const mockDoc = { id: docId, aiSummary: null };
       prismaMock.documents.findFirst.mockResolvedValue(mockDoc);
-      prismaMock.ai_reviews.findFirst.mockResolvedValue(null);
+      prismaMock.ai_reviews.findUnique.mockResolvedValue(null);
       prismaMock.document_chunks.findMany.mockResolvedValue([]);
 
       await expect(service.generateSummary(docId)).rejects.toThrow(
@@ -1129,7 +1114,7 @@ describe('DocumentsService', () => {
     it('generates summary via Gemini and saves to DB if no cache exists', async () => {
       const mockDoc = { id: docId, aiSummary: null };
       prismaMock.documents.findFirst.mockResolvedValue(mockDoc);
-      prismaMock.ai_reviews.findFirst.mockResolvedValue(null);
+      prismaMock.ai_reviews.findUnique.mockResolvedValue(null);
 
       const mockChunks = [
         { chunkIndex: 0, chunkText: 'hello ' },
@@ -1140,7 +1125,7 @@ describe('DocumentsService', () => {
         'generated hello world summary',
       );
       prismaMock.documents.update.mockResolvedValue({});
-      prismaMock.ai_reviews.create.mockResolvedValue({});
+      prismaMock.ai_reviews.upsert.mockResolvedValue({});
 
       const result = await service.generateSummary(docId);
 
@@ -1155,8 +1140,10 @@ describe('DocumentsService', () => {
         where: { id: docId },
         data: { aiSummary: 'generated hello world summary' },
       });
-      expect(prismaMock.ai_reviews.create).toHaveBeenCalledWith({
-        data: { documentId: docId, summary: 'generated hello world summary' },
+      expect(prismaMock.ai_reviews.upsert).toHaveBeenCalledWith({
+        where: { documentId: docId },
+        update: { summary: 'generated hello world summary' },
+        create: { documentId: docId, summary: 'generated hello world summary' },
       });
     });
   });
@@ -1175,7 +1162,7 @@ describe('DocumentsService', () => {
         id: docId,
         status: DocumentStatus.PENDING,
       });
-      prismaMock.ai_reviews.findFirst.mockResolvedValue(mockReview);
+      prismaMock.ai_reviews.findUnique.mockResolvedValue(mockReview);
 
       const result = await service.runModeratorAnalysis(docId);
 
@@ -1188,7 +1175,7 @@ describe('DocumentsService', () => {
           moderationReason: 'cached reason',
         },
       });
-      expect(prismaMock.ai_reviews.findFirst).toHaveBeenCalledWith({
+      expect(prismaMock.ai_reviews.findUnique).toHaveBeenCalledWith({
         where: { documentId: docId },
       });
     });
@@ -1198,7 +1185,7 @@ describe('DocumentsService', () => {
         id: docId,
         status: DocumentStatus.PENDING,
       });
-      prismaMock.ai_reviews.findFirst.mockResolvedValue(null);
+      prismaMock.ai_reviews.findUnique.mockResolvedValue(null);
 
       const mockChunks = [
         { chunkIndex: 0, chunkText: 'hello ' },
@@ -1211,7 +1198,7 @@ describe('DocumentsService', () => {
         moderationSuggestion: 'APPROVE',
         reason: 'generated reason',
       });
-      prismaMock.ai_reviews.create.mockResolvedValue({});
+      prismaMock.ai_reviews.upsert.mockResolvedValue({});
 
       const result = await service.runModeratorAnalysis(docId);
 
@@ -1227,8 +1214,15 @@ describe('DocumentsService', () => {
       expect(aiServiceMock.analyzeDocumentForModerator).toHaveBeenCalledWith(
         'hello \nworld',
       );
-      expect(prismaMock.ai_reviews.create).toHaveBeenCalledWith({
-        data: {
+      expect(prismaMock.ai_reviews.upsert).toHaveBeenCalledWith({
+        where: { documentId: docId },
+        update: {
+          summary: 'generated summary',
+          warningFlags: [WarningFlag.SPAM],
+          moderationSuggestion: 'APPROVE',
+          moderationReason: 'generated reason',
+        },
+        create: {
           documentId: docId,
           summary: 'generated summary',
           warningFlags: [WarningFlag.SPAM],

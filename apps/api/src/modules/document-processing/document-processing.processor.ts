@@ -122,7 +122,7 @@ export class DocumentProcessingProcessor
       return;
     }
 
-    this.logger.log(`Extracting text from url: ${document.fileUrl}`);
+    this.logger.log(`Extracting text from document ID: ${documentId}`);
     const rawText = await this.documentExtractorService.extractText(
       document.fileUrl,
       document.format,
