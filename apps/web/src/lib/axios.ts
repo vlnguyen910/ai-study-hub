@@ -65,7 +65,7 @@ let refreshTokenPromise: Promise<string | null> | null = null;
 const refreshAccessToken = async (): Promise<string | null> => {
   if (!refreshTokenPromise) {
     refreshTokenPromise = apiClient
-      .post(API_ENDPOINTS.AUTH.REFRESH, {}, { skipToast: true })
+      .post(API_ENDPOINTS.AUTH.REFRESH, null, { skipToast: true })
       .then((response) => {
         const data = response as unknown as { accessToken?: unknown };
 
