@@ -4,7 +4,12 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { SubjectsService } from '../subjects';
 import { DocumentExtractorService } from '../document-processing/document-extractor.service';
 import { AIService } from '../ai/ai.service';
-import { DocumentStatus, UserRole, UserStatus } from '@prisma/client';
+import {
+  DocumentStatus,
+  UserRole,
+  UserStatus,
+  WarningFlag,
+} from '@prisma/client';
 import { JwtTokenType } from '../../common/enums/jwt.enum';
 import { TokenPayload } from '../../common/interfaces/auth.interface';
 import { SettingsService } from '../settings';
@@ -1152,6 +1157,84 @@ describe('DocumentsService', () => {
       });
       expect(prismaMock.ai_reviews.create).toHaveBeenCalledWith({
         data: { documentId: docId, summary: 'generated hello world summary' },
+      });
+    });
+  });
+
+  describe('runModeratorAnalysis', () => {
+    const docId = '654321098765432109876543';
+
+    it('returns cached analysis from ai_reviews if present', async () => {
+      const mockReview = {
+        summary: 'cached summary',
+        moderationSuggestion: 'APPROVE',
+        warningFlags: [WarningFlag.SPAM, WarningFlag.TOXIC],
+        moderationReason: 'cached reason',
+      };
+      prismaMock.documents.findFirst.mockResolvedValue({
+        id: docId,
+        status: DocumentStatus.PENDING,
+      });
+      prismaMock.ai_reviews.findFirst.mockResolvedValue(mockReview);
+
+      const result = await service.runModeratorAnalysis(docId);
+
+      expect(result).toEqual({
+        message: 'Moderator analysis retrieved from cache',
+        data: {
+          summary: 'cached summary',
+          flags: [WarningFlag.SPAM, WarningFlag.TOXIC],
+          moderationSuggestion: 'APPROVE',
+          moderationReason: 'cached reason',
+        },
+      });
+      expect(prismaMock.ai_reviews.findFirst).toHaveBeenCalledWith({
+        where: { documentId: docId },
+      });
+    });
+
+    it('generates analysis via Gemini and saves to DB if no cache exists', async () => {
+      prismaMock.documents.findFirst.mockResolvedValue({
+        id: docId,
+        status: DocumentStatus.PENDING,
+      });
+      prismaMock.ai_reviews.findFirst.mockResolvedValue(null);
+
+      const mockChunks = [
+        { chunkIndex: 0, chunkText: 'hello ' },
+        { chunkIndex: 1, chunkText: 'world' },
+      ];
+      prismaMock.document_chunks.findMany.mockResolvedValue(mockChunks);
+      aiServiceMock.analyzeDocumentForModerator = jest.fn().mockResolvedValue({
+        summary: 'generated summary',
+        flags: [WarningFlag.SPAM],
+        moderationSuggestion: 'APPROVE',
+        reason: 'generated reason',
+      });
+      prismaMock.ai_reviews.create.mockResolvedValue({});
+
+      const result = await service.runModeratorAnalysis(docId);
+
+      expect(result).toEqual({
+        message: 'Moderator analysis completed successfully',
+        data: {
+          summary: 'generated summary',
+          flags: [WarningFlag.SPAM],
+          moderationSuggestion: 'APPROVE',
+          moderationReason: 'generated reason',
+        },
+      });
+      expect(aiServiceMock.analyzeDocumentForModerator).toHaveBeenCalledWith(
+        'hello \nworld',
+      );
+      expect(prismaMock.ai_reviews.create).toHaveBeenCalledWith({
+        data: {
+          documentId: docId,
+          summary: 'generated summary',
+          warningFlags: [WarningFlag.SPAM],
+          moderationSuggestion: 'APPROVE',
+          moderationReason: 'generated reason',
+        },
       });
     });
   });

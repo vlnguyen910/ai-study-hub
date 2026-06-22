@@ -164,16 +164,22 @@ model document_chunks {
 }
 
 model ai_reviews {
-  id                   String    @id @default(auto()) @map("_id") @db.ObjectId
-  documentId           String    @db.ObjectId
-  document             documents @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  id                   String        @id @default(auto()) @map("_id") @db.ObjectId
+  documentId           String        @db.ObjectId
+  document             documents     @relation(fields: [documentId], references: [id], onDelete: Cascade)
   summary              String?
-  duplicateWarnings    String?
-  subjectSuggestion    String?
+  warningFlags         WarningFlag[]
   moderationSuggestion String?
+  moderationReason     String?
   generatedDescription String?
-  createdAt            DateTime  @default(now())
-  updatedAt            DateTime  @updatedAt
+  createdAt            DateTime      @default(now())
+  updatedAt            DateTime      @updatedAt
+}
+
+enum WarningFlag {
+  SPAM
+  TOXIC
+  ACADEMIC_INTEGRITY_RISK
 }
 
 model quiz_sessions {

@@ -780,4 +780,94 @@ export class DocumentsService {
       },
     };
   }
+
+  async runModeratorAnalysis(id: string) {
+    const document = await this.prismaService.documents.findFirst({
+      where: {
+        id,
+        status: {
+          not: DocumentStatus.DELETED,
+        },
+      },
+    });
+
+    if (!document) {
+      throw new NotFoundException(`Document with ID ${id} not found`);
+    }
+
+    if (document.status !== DocumentStatus.PENDING) {
+      throw new BadRequestException(
+        `Docuemnt is not in PENDING status to review`,
+      );
+    }
+
+    // 1. Query ai_reviews first for cached result
+    const existingReview = await this.prismaService.ai_reviews.findFirst({
+      where: { documentId: id },
+    });
+
+    if (existingReview?.summary && existingReview?.moderationSuggestion) {
+      return {
+        message: 'Moderator analysis retrieved from cache',
+        data: {
+          summary: existingReview.summary,
+          flags: existingReview.warningFlags,
+          moderationSuggestion: existingReview.moderationSuggestion as
+            | 'APPROVE'
+            | 'REJECT',
+          moderationReason: existingReview.moderationReason ?? '',
+        },
+      };
+    }
+
+    // 2. Retrieve document chunks
+    const chunks = await this.prismaService.document_chunks.findMany({
+      where: { documentId: id },
+      orderBy: { chunkIndex: 'asc' },
+    });
+
+    if (chunks.length === 0) {
+      throw new BadRequestException(
+        'The document text chunks have not been processed yet. Please wait for upload processing to complete.',
+      );
+    }
+
+    const rawText = chunks.map((chunk) => chunk.chunkText).join('\n');
+
+    this.logger.log(`Running AI moderator analysis for document ID: ${id}`);
+    const analysis = await this.aiService.analyzeDocumentForModerator(rawText);
+
+    // 3. Save/Update ai_reviews table
+    if (existingReview) {
+      await this.prismaService.ai_reviews.update({
+        where: { id: existingReview.id },
+        data: {
+          summary: analysis.summary,
+          warningFlags: analysis.flags,
+          moderationSuggestion: analysis.moderationSuggestion,
+          moderationReason: analysis.reason,
+        },
+      });
+    } else {
+      await this.prismaService.ai_reviews.create({
+        data: {
+          documentId: id,
+          summary: analysis.summary,
+          warningFlags: analysis.flags,
+          moderationSuggestion: analysis.moderationSuggestion,
+          moderationReason: analysis.reason,
+        },
+      });
+    }
+
+    return {
+      message: 'Moderator analysis completed successfully',
+      data: {
+        summary: analysis.summary,
+        flags: analysis.flags,
+        moderationSuggestion: analysis.moderationSuggestion,
+        moderationReason: analysis.reason,
+      },
+    };
+  }
 }

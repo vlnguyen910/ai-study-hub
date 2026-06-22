@@ -26,6 +26,7 @@ import { RolesGuard } from '../../common/guards/roles.guard';
 import { VerifiedAccountGuard } from '../../common/guards/verified-account.guard';
 import { TokenPayload } from '../../common/interfaces/auth.interface';
 import { Roles, User } from '../../common/decorators';
+import { UserRole } from '@prisma/client';
 
 @Controller('documents')
 export class DocumentsController {
@@ -138,5 +139,13 @@ export class DocumentsController {
   @Post(':id/generate-summary')
   generateSummary(@Param('id', new ParseMongoIdPipe()) id: string) {
     return this.documentsService.generateSummary(id);
+  }
+
+  @Version('1')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.MODERATOR)
+  @Post(':id/moderator-analysis')
+  runModeratorAnalysis(@Param('id', new ParseMongoIdPipe()) id: string) {
+    return this.documentsService.runModeratorAnalysis(id);
   }
 }

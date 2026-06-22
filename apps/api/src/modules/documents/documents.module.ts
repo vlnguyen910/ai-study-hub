@@ -11,7 +11,13 @@ import { DocumentProcessingModule } from '../document-processing/document-proces
 import { AIModule } from '../ai/ai.module';
 
 @Module({
-  imports: [AuthModule, SubjectsModule, DocumentProcessingModule, AIModule, SettingsModule],
+  imports: [
+    AuthModule,
+    SubjectsModule,
+    DocumentProcessingModule,
+    AIModule,
+    SettingsModule,
+  ],
   controllers: [DocumentsController],
   providers: [
     DocumentsService,
