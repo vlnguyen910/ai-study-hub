@@ -18,6 +18,7 @@ interface Props {
   readonly onCancel: () => void;
   readonly onConfirm: (rejectionReason: string) => Promise<void>;
   readonly isSubmitting?: boolean;
+  readonly initialReason?: string;
 }
 
 export function RejectDocumentModal({
@@ -26,16 +27,30 @@ export function RejectDocumentModal({
   onCancel,
   onConfirm,
   isSubmitting = false,
+  initialReason = "",
 }: Props): React.JSX.Element | null {
   const [selectedReason, setSelectedReason] = useState<ReasonOption | "">("");
   const [customReason, setCustomReason] = useState("");
 
   useEffect(() => {
-    if (!open) {
+    if (open) {
+      if (initialReason) {
+        if ((REASON_OPTIONS as readonly string[]).includes(initialReason)) {
+          setSelectedReason(initialReason as ReasonOption);
+          setCustomReason("");
+        } else {
+          setSelectedReason("Khác");
+          setCustomReason(initialReason);
+        }
+      } else {
+        setSelectedReason("");
+        setCustomReason("");
+      }
+    } else {
       setSelectedReason("");
       setCustomReason("");
     }
-  }, [open]);
+  }, [open, initialReason]);
 
   if (!open) return null;
 

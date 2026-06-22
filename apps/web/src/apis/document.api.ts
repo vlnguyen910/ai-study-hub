@@ -157,3 +157,23 @@ export const generateDocumentSummary = async (id: string): Promise<string> => {
   const data = result as unknown as { summary: string };
   return data.summary;
 };
+
+export type WarningFlag = "SPAM" | "TOXIC" | "ACADEMIC_INTEGRITY_RISK";
+
+export interface ModeratorAnalysisData {
+  summary: string;
+  flags: WarningFlag[];
+  moderationSuggestion: "APPROVE" | "REJECT";
+  moderationReason: string;
+}
+
+export const runModeratorAnalysis = async (
+  id: string,
+): Promise<ModeratorAnalysisData> => {
+  const result = await apiClient.post(
+    `${API_ENDPOINTS.DOCUMENTS.BASE}/${id}/moderator-analysis`,
+    {},
+    { timeout: 60_000 },
+  );
+  return result as unknown as ModeratorAnalysisData;
+};
