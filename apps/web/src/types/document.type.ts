@@ -22,6 +22,8 @@ export interface DocumentSubject {
 export interface LibraryDocument {
   id: string;
   title: string;
+  /** Direct URL of the uploaded file, used as the card cover when renderable. */
+  fileUrl: string;
   /** Cloudinary public ID — usable for thumbnail generation */
   publicId: string;
   status: DocumentStatus;
