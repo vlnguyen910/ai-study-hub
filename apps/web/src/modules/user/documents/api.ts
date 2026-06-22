@@ -23,6 +23,7 @@ const unwrap = <T>(response: { data: ApiEnvelope<T> | T }): T => {
 export interface DocumentListItem {
   readonly id: string;
   readonly title: string;
+  readonly fileUrl: string;
   readonly publicId?: string;
   readonly status?: string;
   readonly isPublic?: boolean;

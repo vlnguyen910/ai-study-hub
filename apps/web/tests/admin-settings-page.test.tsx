@@ -1,11 +1,5 @@
 import "@testing-library/jest-dom";
-import {
-  fireEvent,
-  render,
-  screen,
-  waitFor,
-  within,
-} from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import AdminSystemSettingsPage from "../src/modules/admin/pages/AdminSystemSettingsPage";
@@ -16,11 +10,12 @@ const themeMock = vi.hoisted(() => ({ toggle: vi.fn() }));
 const languageMock = vi.hoisted(() => ({ changeLanguage: vi.fn() }));
 const settingsApiMock = vi.hoisted(() => ({ deleteAccount: vi.fn() }));
 const authStoreMock = vi.hoisted(() => ({
+  role: "student" as "student" | "teacher" | "moderator" | "admin" | "guest",
   user: {
     id: "usr-1",
     email: "test@example.com",
     name: "Test User",
-    role: "student" as const,
+    role: "student" as "student" | "teacher" | "moderator" | "admin" | "guest",
     createdAt: new Date(),
   },
   logout: vi.fn(),
@@ -52,6 +47,8 @@ vi.mock("../src/stores/auth/store", () => ({
 describe("AdminSystemSettingsPage (single-page settings)", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    authStoreMock.role = "student";
+    authStoreMock.user.role = "student";
     settingsApiMock.deleteAccount.mockResolvedValue(undefined);
   });
 
@@ -71,6 +68,21 @@ describe("AdminSystemSettingsPage (single-page settings)", () => {
 
     expect(screen.queryByRole("navigation")).not.toBeInTheDocument();
   });
+
+  it.each(["admin", "moderator"] as const)(
+    "does not show account deletion controls for the %s role",
+    (role) => {
+      authStoreMock.role = role;
+      authStoreMock.user.role = role;
+
+      render(<AdminSystemSettingsPage />);
+
+      expect(screen.queryByText("Vùng nguy hiểm")).not.toBeInTheDocument();
+      expect(
+        screen.queryByRole("button", { name: "Xóa tài khoản" }),
+      ).not.toBeInTheDocument();
+    },
+  );
 
   it("no longer contains old system-settings controls", () => {
     render(<AdminSystemSettingsPage />);

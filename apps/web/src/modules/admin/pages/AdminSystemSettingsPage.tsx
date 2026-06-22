@@ -1,2 +1,2 @@
-// All roles now share the same settings page (theme, language, account).
+// All roles share the visual settings; role-specific actions are filtered inside.
 export { SettingsPage as default } from "@/modules/settings";

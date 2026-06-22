@@ -3,7 +3,6 @@ import { Button } from "@/components/ui/Button";
 import { DocumentCard } from "../components/DocumentCard";
 import { DocumentCarousel } from "../components/DocumentCarousel";
 import { DocumentCardSkeleton } from "../components/DocumentSkeleton";
-import { CommentCard } from "../components/CommentCard";
 import { fetchDocuments } from "../../documents/api";
 
 export default async function HomePage(): Promise<React.JSX.Element> {
@@ -44,7 +43,7 @@ export default async function HomePage(): Promise<React.JSX.Element> {
                         : "Tài liệu học tập mới"
                   }
                   coverImage={
-                    doc.author?.avatarUrl ||
+                    doc.fileUrl ||
                     "https://images.unsplash.com/photo-1551288049-bebda4e38f71"
                   }
                   pageCount={1}
