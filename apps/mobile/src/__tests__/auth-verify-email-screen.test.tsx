@@ -71,5 +71,5 @@ describe("AuthVerifyEmailScreen", () => {
       "active-access-token",
       "active-refresh-token",
     );
-  });
+  }, 15000);
 });

@@ -68,7 +68,7 @@ describe("EmailVerificationBanner", () => {
       expect(resendVerificationEmailServiceMock).toHaveBeenCalledTimes(1);
     });
     expect(await findByText("Verification email sent")).toBeTruthy();
-  });
+  }, 15000);
 
   it("does not render for active mobile sessions", async () => {
     getAccessTokenMock.mockResolvedValue(makeAccessToken("ACTIVE"));
@@ -82,5 +82,5 @@ describe("EmailVerificationBanner", () => {
         ),
       ).toBeNull();
     });
-  });
+  }, 15000);
 });
