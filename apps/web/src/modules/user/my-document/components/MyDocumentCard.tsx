@@ -14,18 +14,6 @@ import {
   getDocumentStatusDisplay,
 } from "./documentCollection.utils";
 
-const CLOUD_NAME = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME ?? null;
-
-const IMAGE_EXTENSIONS = new Set([
-  "png",
-  "jpg",
-  "jpeg",
-  "gif",
-  "webp",
-  "bmp",
-  "svg",
-]);
-
 const SUBJECT_GRADIENTS = [
   "from-[#667eea]/20 to-[#764ba2]/20",
   "from-[#f093fb]/20 to-[#f5576c]/20",
@@ -41,12 +29,6 @@ function getGradient(seed: string): string {
     hash = (hash * 31 + seed.charCodeAt(index)) & 0xffff;
   }
   return SUBJECT_GRADIENTS[hash % SUBJECT_GRADIENTS.length] as string;
-}
-
-function buildCloudinaryThumbnailUrl(publicId: string): string {
-  if (!CLOUD_NAME) return "";
-  const normalized = publicId.replace(/\.[a-z0-9]+$/i, "");
-  return `https://res.cloudinary.com/${CLOUD_NAME}/image/upload/c_fill,g_auto,w_640,h_320,q_auto,f_auto/${normalized}`;
 }
 
 interface Props {
@@ -74,15 +56,7 @@ export function MyDocumentCard({
   const gradient = getGradient(document.subject?.code ?? document.id);
   const fileIcon = getDocumentFileIcon(document.publicId);
   const status = getDocumentStatusDisplay(document.status, document.isPublic);
-  const shouldShowImage =
-    !imageFailed &&
-    IMAGE_EXTENSIONS.has(
-      document.publicId.split(".").pop()?.toLowerCase() ?? "",
-    );
-  const thumbnailUrl =
-    shouldShowImage && CLOUD_NAME
-      ? buildCloudinaryThumbnailUrl(document.publicId)
-      : null;
+  const thumbnailUrl = imageFailed ? null : document.fileUrl;
 
   return (
     <article className="group flex min-w-0 flex-col overflow-hidden rounded-2xl border border-outline-variant/60 bg-surface/80 shadow-sm shadow-black/5 backdrop-blur-md transition-all duration-200 hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-md hover:shadow-black/10 focus-within:ring-2 focus-within:ring-primary/40">

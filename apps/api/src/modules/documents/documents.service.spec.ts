@@ -202,6 +202,7 @@ describe('DocumentsService', () => {
           ],
         }),
         select: expect.objectContaining({
+          fileUrl: true,
           status: true,
           isPublic: true,
           updatedAt: true,

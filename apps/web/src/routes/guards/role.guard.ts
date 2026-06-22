@@ -10,7 +10,7 @@ export type UserRole = "guest" | "student" | "teacher" | "moderator" | "admin";
 export interface RoleGuardContext {
   pathname: string;
   userRole?: UserRole;
-  requiredRoles?: UserRole[];
+  requiredRoles?: readonly UserRole[];
 }
 
 const matchesRouteSegment = (pathname: string, route: string): boolean => {

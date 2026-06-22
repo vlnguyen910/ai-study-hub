@@ -12,18 +12,6 @@ interface DocumentCardProps {
   document: LibraryDocument;
 }
 
-const CLOUD_NAME = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME ?? null;
-
-const IMAGE_EXTENSIONS = new Set([
-  "png",
-  "jpg",
-  "jpeg",
-  "gif",
-  "webp",
-  "bmp",
-  "svg",
-]);
-
 const getFileIcon = (publicId: string): string => {
   const lower = publicId.toLowerCase();
   if (lower.endsWith(".pdf") || lower.includes("pdf")) return "picture_as_pdf";
@@ -54,28 +42,12 @@ const getGradient = (seed: string): string => {
   return subjectGradients[hash % subjectGradients.length] as string;
 };
 
-const buildCloudinaryThumbnailUrl = (publicId: string): string => {
-  if (!CLOUD_NAME) {
-    return "";
-  }
-  const normalized = publicId.replace(/\.[a-z0-9]+$/i, "");
-  return `https://res.cloudinary.com/${CLOUD_NAME}/image/upload/c_fill,g_auto,w_640,h_320,q_auto,f_auto/${normalized}`;
-};
-
 export const DocumentCard: FC<DocumentCardProps> = ({ document }) => {
   const gradient = getGradient(document.subject?.code ?? document.id);
   const fileIcon = getFileIcon(document.publicId);
   const [imageFailed, setImageFailed] = useState(false);
 
-  const shouldShowImage =
-    !imageFailed &&
-    IMAGE_EXTENSIONS.has(
-      document.publicId.split(".").pop()?.toLowerCase() ?? "",
-    );
-  const thumbnailUrl =
-    shouldShowImage && CLOUD_NAME
-      ? buildCloudinaryThumbnailUrl(document.publicId)
-      : null;
+  const thumbnailUrl = imageFailed ? null : document.fileUrl;
 
   return (
     <Link

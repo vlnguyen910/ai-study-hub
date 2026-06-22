@@ -20,6 +20,7 @@ import {
 export interface ProtectedRouteProps {
   children: ReactNode;
   requiredRole?: UserRole;
+  requiredRoles?: readonly UserRole[];
 }
 
 type GuardStatus = "checking" | "authorized" | "redirecting";
@@ -45,6 +46,7 @@ const GuardFallback = (): React.JSX.Element => (
 export const ProtectedRoute: FC<ProtectedRouteProps> = ({
   children,
   requiredRole,
+  requiredRoles,
 }) => {
   const router = useRouter();
   const [status, setStatus] = useState<GuardStatus>("checking");
@@ -68,12 +70,15 @@ export const ProtectedRoute: FC<ProtectedRouteProps> = ({
     }
 
     // Check role-based access
+    const allowedRoles =
+      requiredRoles ?? (requiredRole ? [requiredRole] : undefined);
+
     if (
-      requiredRole &&
+      allowedRoles &&
       !hasRoleAccess({
         pathname: window.location.pathname,
         userRole: role,
-        requiredRoles: [requiredRole],
+        requiredRoles: allowedRoles,
       })
     ) {
       setStatus("redirecting");
@@ -82,7 +87,7 @@ export const ProtectedRoute: FC<ProtectedRouteProps> = ({
     }
 
     setStatus("authorized");
-  }, [requiredRole, router, hasHydrated]);
+  }, [requiredRole, requiredRoles, router, hasHydrated]);
 
   if (!hasHydrated || status !== "authorized") {
     return <GuardFallback />;
