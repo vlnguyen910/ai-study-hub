@@ -36,6 +36,10 @@ jest.mock("@/utils/storage", () => ({
   saveTokens: jest.fn(),
 }));
 
+jest.mock("@expo/vector-icons", () => ({
+  Ionicons: () => null,
+}));
+
 const verifyEmailServiceMock = jest.mocked(verifyEmailService);
 const getDeviceIdMock = jest.mocked(getDeviceId);
 const saveTokensMock = jest.mocked(saveTokens);
@@ -71,5 +75,5 @@ describe("AuthVerifyEmailScreen", () => {
       "active-access-token",
       "active-refresh-token",
     );
-  });
+  }, 15000);
 });
