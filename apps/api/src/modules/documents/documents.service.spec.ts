@@ -80,7 +80,7 @@ describe('DocumentsService', () => {
       generateSummary: jest.fn(),
     };
     const documentProcessingMock = {
-      enqueueUploadProcessing: jest.fn(),
+      enqueueUploadProcessing: jest.fn().mockResolvedValue(undefined),
     };
 
     const module: TestingModule = await Test.createTestingModule({
