@@ -3,9 +3,23 @@
 import { DocumentPreviewData } from "../type";
 import { DocxPreview } from "./DocxPreview";
 import { ImageCarouselPreview } from "./ImageCarouselPreview";
-import { PdfPreview } from "./PdfPreview";
 import { TxtPreview } from "./TxtPreview";
 import { UnsupportedPreview } from "./UnsupportedPreview";
+import dynamic from "next/dynamic";
+
+const PdfPreview = dynamic(
+  () => import("./PdfPreview").then((mod) => mod.PdfPreview),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="flex justify-center w-full">
+        <div className="text-white/70 animate-pulse text-sm font-medium py-10">
+          Đang tải tài liệu PDF...
+        </div>
+      </div>
+    ),
+  },
+);
 
 interface Props {
   readonly preview: DocumentPreviewData;

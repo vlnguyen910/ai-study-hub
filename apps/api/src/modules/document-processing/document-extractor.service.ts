@@ -8,7 +8,7 @@ export class DocumentExtractorService {
 
   async extractText(fileUrl: string, format: string): Promise<string> {
     try {
-      this.logger.log(`Fetching document content from: ${fileUrl}`);
+      this.logger.log('Fetching document content...');
       const response = await fetch(fileUrl);
       if (!response.ok) {
         throw new Error(

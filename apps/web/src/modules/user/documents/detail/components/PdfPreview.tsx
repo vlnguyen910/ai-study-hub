@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { pdfjs, Document, Page } from "react-pdf";
 import "react-pdf/dist/Page/AnnotationLayer.css";
 import "react-pdf/dist/Page/TextLayer.css";
@@ -16,6 +16,10 @@ pdfjs.GlobalWorkerOptions.workerSrc = new URL(
 export function PdfPreview({ fileUrl }: Props): React.JSX.Element {
   const [error, setError] = useState<string | null>(null);
 
+  useEffect(() => {
+    setError(null);
+  }, [fileUrl]);
+
   if (error) {
     return (
       <div className="flex min-h-[500px] flex-col items-center justify-center gap-4 rounded-2xl bg-surface p-6 w-full">
@@ -27,8 +31,7 @@ export function PdfPreview({ fileUrl }: Props): React.JSX.Element {
             Không thể hiển thị PDF
           </h3>
           <p className="mt-2 text-sm text-on-surface-variant max-w-sm">
-            Tài liệu này không tồn tại hoặc đường dẫn tải lên đã bị thay đổi
-            (Lỗi 404).
+            {error}
           </p>
         </div>
       </div>
@@ -55,8 +58,7 @@ export function PdfPreview({ fileUrl }: Props): React.JSX.Element {
                 Không thể hiển thị PDF
               </h3>
               <p className="mt-2 text-sm text-on-surface-variant max-w-sm">
-                Tài liệu này không tồn tại hoặc đường dẫn tải lên đã bị thay đổi
-                (Lỗi 404).
+                {error}
               </p>
             </div>
           </div>
