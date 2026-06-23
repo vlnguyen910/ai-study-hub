@@ -95,7 +95,19 @@ export const DocumentCard: FC<DocumentCardProps> = ({ document }) => {
             </span>
           ) : null}
 
-          {document.status !== "ACTIVE" ? (
+          {document.aiScore !== undefined ? (
+            <span className="absolute right-3 top-3">
+              <Badge
+                tone="neutral"
+                className="flex items-center gap-0.5 text-[11px] bg-linear-to-r from-cyan-500 to-blue-500 text-white border-none shadow-xs font-extrabold"
+              >
+                <span className="material-symbols-outlined text-[10px] !text-white">
+                  bolt
+                </span>
+                <span>{document.aiScore}% Match</span>
+              </Badge>
+            </span>
+          ) : document.status !== "ACTIVE" ? (
             <span className="absolute right-3 top-3">
               <Badge
                 tone={document.status === "PENDING" ? "warning" : "error"}

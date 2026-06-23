@@ -6,6 +6,7 @@ import { useLibraryStore } from "../store/useLibraryStore";
 import { FilterBar } from "../components/FilterBar";
 import { LibraryHeader } from "../components/LibraryHeader";
 import { DocumentGrid } from "../components/DocumentGrid";
+import { TopSearchBar } from "../components/TopSearchBar";
 
 /**
  * LibraryPage — main entry point for /library.
@@ -37,13 +38,14 @@ export default function LibraryPage(): React.JSX.Element {
 
   /**
    * Client-side search filter — applied on top of the server page.
-   * Matching is case-insensitive and trims whitespace.
+   * If AI Semantic Search is active, the documents are already filtered and ordered on the server.
    */
   const visibleDocuments = useMemo(() => {
+    if (filters.isSemantic) return documents;
     const term = filters.search.trim().toLowerCase();
     if (!term) return documents;
     return documents.filter((doc) => doc.title.toLowerCase().includes(term));
-  }, [documents, filters.search]);
+  }, [documents, filters.search, filters.isSemantic]);
 
   /** Resolve the active subject label for the header */
   const activeSubjectName = useMemo(() => {
@@ -79,6 +81,9 @@ export default function LibraryPage(): React.JSX.Element {
         activeSubjectName={activeSubjectName}
         isLoading={isLoading}
       />
+
+      {/* Top Search Bar */}
+      <TopSearchBar />
 
       {/* Two-column row — fills all remaining height */}
       <div className="flex flex-1 min-h-0 gap-6 overflow-hidden">

@@ -1,5 +1,12 @@
-import { IsOptional, IsNumber, IsString, Min, IsEnum } from 'class-validator';
-import { Type } from 'class-transformer';
+import {
+  IsOptional,
+  IsNumber,
+  IsString,
+  Min,
+  IsEnum,
+  IsBoolean,
+} from 'class-validator';
+import { Transform, Type } from 'class-transformer';
 import { DocumentStatus } from '@prisma/client';
 
 export class ListDocumentsQueryDto {
@@ -30,4 +37,13 @@ export class ListDocumentsQueryDto {
   @IsOptional()
   @IsString()
   include?: string;
+
+  @IsOptional()
+  @IsString()
+  search?: string;
+
+  @IsOptional()
+  @Transform(({ value }) => value === 'true' || value === true)
+  @IsBoolean()
+  isSemantic?: boolean;
 }

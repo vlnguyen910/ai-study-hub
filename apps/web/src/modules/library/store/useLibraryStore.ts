@@ -22,6 +22,7 @@ interface LibraryFilters {
   search: string;
   subjectId: string;
   page: number;
+  isSemantic: boolean;
 }
 
 interface LibraryState {
@@ -39,6 +40,8 @@ interface LibraryState {
   fetchSubjects: () => Promise<void>;
   /** Update the free-text search term (client-side filter only, no re-fetch) */
   setSearch: (search: string) => void;
+  /** Toggle semantic search */
+  setIsSemantic: (isSemantic: boolean) => void;
   /** Switch active subject filter and re-fetch from page 1 */
   setSubjectId: (subjectId: string) => void;
   /** Jump to a specific page and re-fetch */
@@ -56,6 +59,7 @@ export const useLibraryStore = create<LibraryState>((set, get) => ({
     search: "",
     subjectId: "",
     page: 1,
+    isSemantic: false,
   },
 
   fetchDocuments: async () => {
@@ -68,6 +72,8 @@ export const useLibraryStore = create<LibraryState>((set, get) => ({
         page: filters.page,
         limit: 9, // 3×3 grid fits in a fixed viewport without page scroll
         subjectId: filters.subjectId || undefined,
+        search: filters.isSemantic ? filters.search || undefined : undefined,
+        isSemantic: filters.isSemantic || undefined,
       });
 
       set({
@@ -96,7 +102,16 @@ export const useLibraryStore = create<LibraryState>((set, get) => ({
   },
 
   setSearch: (search) => {
-    set((state) => ({ filters: { ...state.filters, search } }));
+    const isSemantic = get().filters.isSemantic;
+    set((state) => ({ filters: { ...state.filters, search, page: 1 } }));
+    if (isSemantic) {
+      get().fetchDocuments();
+    }
+  },
+
+  setIsSemantic: (isSemantic) => {
+    set((state) => ({ filters: { ...state.filters, isSemantic, page: 1 } }));
+    get().fetchDocuments();
   },
 
   setSubjectId: (subjectId) => {

@@ -157,7 +157,7 @@ describe("web auth api helpers", () => {
 
     expect(apiClientMock.post).toHaveBeenCalledWith(
       "/api/v1/auth/logout",
-      null,
+      {},
       { skipToast: true },
     );
   });

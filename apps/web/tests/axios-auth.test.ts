@@ -57,7 +57,7 @@ describe("web api auth interceptors", () => {
     const adapter = vi.fn<ReturnType<AxiosAdapter>, Parameters<AxiosAdapter>>(
       async (config) => {
         if (config.url === API_ENDPOINTS.AUTH.REFRESH) {
-          expect(config.data).toBe("null");
+          expect(config.data).toBe("{}");
 
           return {
             data: {
