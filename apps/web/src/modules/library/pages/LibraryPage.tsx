@@ -53,25 +53,6 @@ export default function LibraryPage(): React.JSX.Element {
     return subjects.find((s) => s.id === filters.subjectId)?.name ?? null;
   }, [filters.subjectId, subjects]);
 
-  /**
-   * Fixed viewport layout — nothing scrolls at page level.
-   *
-   * Height budget: UserShell <main> has py-6 top + py-6 bottom = 3rem total.
-   * The outer container claims exactly that remaining height with flex-col so
-   * LibraryHeader (shrink-0) and the two-column row (flex-1 min-h-0) together
-   * never exceed the viewport.
-   *
-   *  ┌─────────────────────────────────────────┐  ← h-[calc(100vh-3rem)]
-   *  │ LibraryHeader          shrink-0          │
-   *  ├────────────┬────────────────────────────┤  ← flex-1 min-h-0
-   *  │ FilterBar  │  DocumentGrid              │
-   *  │ overflow-y │  overflow-hidden (fixed)   │
-   *  │ -auto      │  ──────────────────────────│
-   *  │ (scrolls   │  Pagination  shrink-0      │
-   *  │  only when │                            │
-   *  │  needed)   │                            │
-   *  └────────────┴────────────────────────────┘
-   */
   return (
     <div className="flex h-[calc(100vh-3rem)] flex-col gap-6 overflow-hidden">
       {/* Header — takes its natural height, never shrinks away */}

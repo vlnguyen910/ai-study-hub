@@ -42,12 +42,43 @@ const getGradient = (seed: string): string => {
   return subjectGradients[hash % subjectGradients.length] as string;
 };
 
+const formatBytes = (bytes?: number): string => {
+  if (!bytes) return "";
+  const k = 1024;
+  const sizes = ["B", "KB", "MB", "GB"];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + " " + sizes[i];
+};
+
 export const DocumentCard: FC<DocumentCardProps> = ({ document }) => {
   const gradient = getGradient(document.subject?.code ?? document.id);
   const fileIcon = getFileIcon(document.publicId);
   const [imageFailed, setImageFailed] = useState(false);
 
-  const thumbnailUrl = imageFailed ? null : document.fileUrl;
+  const getThumbnailUrl = (url: string | undefined): string | null => {
+    if (!url) return null;
+    const lower = url.toLowerCase();
+
+    // Cloudinary PDF to JPG first-page thumbnail transformation
+    if (lower.includes("cloudinary.com") && lower.endsWith(".pdf")) {
+      return url.slice(0, -4) + ".jpg";
+    }
+
+    // Images can be rendered directly
+    if (
+      lower.endsWith(".jpg") ||
+      lower.endsWith(".jpeg") ||
+      lower.endsWith(".png") ||
+      lower.endsWith(".webp") ||
+      lower.endsWith(".gif")
+    ) {
+      return url;
+    }
+
+    return null;
+  };
+
+  const thumbnailUrl = imageFailed ? null : getThumbnailUrl(document.fileUrl);
 
   return (
     <Link
@@ -68,7 +99,7 @@ export const DocumentCard: FC<DocumentCardProps> = ({ document }) => {
         "
       >
         <div
-          className={`relative flex h-28 items-center justify-center overflow-hidden bg-linear-to-br ${gradient} border-b border-outline-variant/40`}
+          className={`relative flex h-48 items-center justify-center overflow-hidden bg-linear-to-br ${gradient} border-b border-outline-variant/40`}
         >
           {thumbnailUrl ? (
             <Image
@@ -137,10 +168,31 @@ export const DocumentCard: FC<DocumentCardProps> = ({ document }) => {
             </p>
           ) : null}
 
+          {document.description && (
+            <p className="line-clamp-2 text-xs text-on-surface-variant/75 mt-0.5 leading-relaxed">
+              {document.description}
+            </p>
+          )}
+
           <div className="mt-auto flex items-center justify-between border-t border-outline-variant/40 pt-2">
-            <span className="text-[11px] text-on-surface-variant">
-              {formatDate(document.createdAt)}
-            </span>
+            <div className="flex flex-wrap items-center gap-1.5 text-[11px] text-on-surface-variant">
+              <span>{formatDate(document.createdAt)}</span>
+              {document.format && (
+                <>
+                  <span className="text-outline-variant/40">•</span>
+                  <span className="uppercase font-semibold text-primary">
+                    {document.format}
+                  </span>
+                </>
+              )}
+              {document.sizeInBytes !== undefined &&
+                document.sizeInBytes > 0 && (
+                  <>
+                    <span className="text-outline-variant/40">•</span>
+                    <span>{formatBytes(document.sizeInBytes)}</span>
+                  </>
+                )}
+            </div>
             <span className="material-symbols-outlined text-[16px] text-on-surface-variant/60 transition-colors group-hover:text-primary">
               arrow_forward
             </span>

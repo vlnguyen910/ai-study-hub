@@ -479,6 +479,7 @@ describe("web auth routing", () => {
   });
 
   it("replaces the stale unverified token after email verification succeeds", async () => {
+    const activeToken = makeAccessToken("USER", "ACTIVE");
     useAuthStore.getState().setAuth(
       makeAccessToken("USER", "UNVERIFIED"),
       "student",
@@ -495,7 +496,7 @@ describe("web auth routing", () => {
     authApiMocks.verifyEmail.mockResolvedValue({
       message: "Email đã được xác thực.",
       data: {
-        accessToken: makeAccessToken("USER", "ACTIVE"),
+        accessToken: activeToken,
       },
     });
 
@@ -512,9 +513,7 @@ describe("web auth routing", () => {
       deviceId: expect.any(String),
       deviceType: "WEB",
     });
-    expect(useAuthStore.getState().accessToken).toBe(
-      makeAccessToken("USER", "ACTIVE"),
-    );
+    expect(useAuthStore.getState().accessToken).toBe(activeToken);
     expect(useAuthStore.getState().user?.status).toBe("ACTIVE");
   });
 });

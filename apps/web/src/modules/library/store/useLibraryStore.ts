@@ -70,9 +70,9 @@ export const useLibraryStore = create<LibraryState>((set, get) => ({
     try {
       const response = await fetchDocuments({
         page: filters.page,
-        limit: 9, // 3×3 grid fits in a fixed viewport without page scroll
+        limit: 15,
         subjectId: filters.subjectId || undefined,
-        search: filters.isSemantic ? filters.search || undefined : undefined,
+        search: filters.search || undefined,
         isSemantic: filters.isSemantic || undefined,
       });
 
@@ -102,11 +102,8 @@ export const useLibraryStore = create<LibraryState>((set, get) => ({
   },
 
   setSearch: (search) => {
-    const isSemantic = get().filters.isSemantic;
     set((state) => ({ filters: { ...state.filters, search, page: 1 } }));
-    if (isSemantic) {
-      get().fetchDocuments();
-    }
+    get().fetchDocuments();
   },
 
   setIsSemantic: (isSemantic) => {

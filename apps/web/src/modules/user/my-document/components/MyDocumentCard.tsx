@@ -31,6 +31,14 @@ function getGradient(seed: string): string {
   return SUBJECT_GRADIENTS[hash % SUBJECT_GRADIENTS.length] as string;
 }
 
+const formatBytes = (bytes?: number): string => {
+  if (!bytes) return "";
+  const k = 1024;
+  const sizes = ["B", "KB", "MB", "GB"];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + " " + sizes[i];
+};
+
 interface Props {
   readonly document: LibraryDocument;
   readonly isMenuOpen: boolean;
@@ -56,7 +64,31 @@ export function MyDocumentCard({
   const gradient = getGradient(document.subject?.code ?? document.id);
   const fileIcon = getDocumentFileIcon(document.publicId);
   const status = getDocumentStatusDisplay(document.status, document.isPublic);
-  const thumbnailUrl = imageFailed ? null : document.fileUrl;
+
+  const getThumbnailUrl = (url: string | undefined): string | null => {
+    if (!url) return null;
+    const lower = url.toLowerCase();
+
+    // Cloudinary PDF to JPG first-page thumbnail transformation
+    if (lower.includes("cloudinary.com") && lower.endsWith(".pdf")) {
+      return url.slice(0, -4) + ".jpg";
+    }
+
+    // Images can be rendered directly
+    if (
+      lower.endsWith(".jpg") ||
+      lower.endsWith(".jpeg") ||
+      lower.endsWith(".png") ||
+      lower.endsWith(".webp") ||
+      lower.endsWith(".gif")
+    ) {
+      return url;
+    }
+
+    return null;
+  };
+
+  const thumbnailUrl = imageFailed ? null : getThumbnailUrl(document.fileUrl);
 
   return (
     <article className="group flex min-w-0 flex-col overflow-hidden rounded-2xl border border-outline-variant/60 bg-surface/80 shadow-sm shadow-black/5 backdrop-blur-md transition-all duration-200 hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-md hover:shadow-black/10 focus-within:ring-2 focus-within:ring-primary/40">
@@ -65,7 +97,7 @@ export function MyDocumentCard({
         className="block focus:outline-none"
       >
         <div
-          className={`relative flex h-28 items-center justify-center overflow-hidden border-b border-outline-variant/40 bg-linear-to-br ${gradient}`}
+          className={`relative flex h-48 items-center justify-center overflow-hidden border-b border-outline-variant/40 bg-linear-to-br ${gradient}`}
         >
           {thumbnailUrl ? (
             <Image
@@ -116,13 +148,33 @@ export function MyDocumentCard({
               {document.subject.name}
             </p>
           ) : null}
+
+          {document.description && (
+            <p className="line-clamp-2 text-xs text-on-surface-variant/75 mt-0.5 leading-relaxed">
+              {document.description}
+            </p>
+          )}
         </div>
       </Link>
 
       <div className="relative mx-4 mt-auto flex min-h-9 items-center justify-between border-t border-outline-variant/40 py-1">
-        <span className="text-[11px] text-on-surface-variant">
-          {formatDate(document.createdAt)}
-        </span>
+        <div className="flex flex-wrap items-center gap-1.5 text-[11px] text-on-surface-variant">
+          <span>{formatDate(document.createdAt)}</span>
+          {document.format && (
+            <>
+              <span className="text-outline-variant/40">•</span>
+              <span className="uppercase font-semibold text-primary">
+                {document.format}
+              </span>
+            </>
+          )}
+          {document.sizeInBytes !== undefined && document.sizeInBytes > 0 && (
+            <>
+              <span className="text-outline-variant/40">•</span>
+              <span>{formatBytes(document.sizeInBytes)}</span>
+            </>
+          )}
+        </div>
 
         <IconButton
           type="button"
