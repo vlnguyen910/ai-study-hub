@@ -34,20 +34,6 @@ export const FilterBar: FC = () => {
         Bộ lọc
       </h2>
 
-      {/* ── Search ── */}
-      <div className="mb-5">
-        <InputField
-          placeholder="Tìm kiếm tài liệu..."
-          value={filters.search}
-          onChange={(e) => setSearch(e.target.value)}
-          leftIcon={
-            <span className="material-symbols-outlined text-[18px]">
-              search
-            </span>
-          }
-        />
-      </div>
-
       {/* ── Subject filter ── */}
       <div className="mb-5">
         <p className="mb-2 text-xs font-semibold uppercase tracking-widest text-on-surface-variant">

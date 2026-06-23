@@ -406,7 +406,7 @@ describe("web auth routing", () => {
     });
     expect(apiClientMock.post).not.toHaveBeenCalledWith(
       "/api/v1/auth/logout",
-      null,
+      {},
       { skipToast: true },
     );
 
@@ -417,7 +417,7 @@ describe("web auth routing", () => {
     await waitFor(() => {
       expect(apiClientMock.post).toHaveBeenCalledWith(
         "/api/v1/auth/logout",
-        null,
+        {},
         { skipToast: true },
       );
       expect(navigationMocks.router.replace).toHaveBeenCalledWith("/");

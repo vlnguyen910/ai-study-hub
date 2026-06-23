@@ -31,7 +31,7 @@ export class AIService {
    */
   async generateText(
     prompt: string,
-    modelName = 'gemini-2.5-flash',
+    modelName = 'gemini-2.5-flash-lite',
   ): Promise<string> {
     let lastError: any;
     const maxAttempts = 3;

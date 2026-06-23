@@ -4,6 +4,7 @@ import {
   ForbiddenException,
   BadRequestException,
   Logger,
+  HttpException,
 } from '@nestjs/common';
 import { createHash } from 'node:crypto';
 import { DocumentStatus, Prisma, UserRole } from '@prisma/client';
@@ -285,13 +286,21 @@ export class DocumentsService {
   }
 
   async findAll(query: ListDocumentsQueryDto, user?: TokenPayload) {
-    const { page = 1, limit = 10, authorId, subjectId, status } = query;
+    const {
+      page = 1,
+      limit = 10,
+      authorId,
+      subjectId,
+      status,
+      search,
+      isSemantic,
+    } = query;
     const skip = (page - 1) * limit;
 
     const where: Prisma.documentsWhereInput = {
-      status: {
-        not: DocumentStatus.DELETED,
-      },
+      status: status
+        ? { equals: status, not: DocumentStatus.DELETED }
+        : { not: DocumentStatus.DELETED },
       OR: this.buildVisibleDocumentFilters(user),
     };
 
@@ -303,10 +312,102 @@ export class DocumentsService {
       where.subjectId = subjectId;
     }
 
-    if (status) {
-      where.status = {
-        equals: status,
-        not: DocumentStatus.DELETED,
+    if (search && isSemantic) {
+      // 1. Generate query embedding
+      const queryEmbedding = await this.aiService.getEmbedding(search);
+
+      // 2. Fetch all matching active chunks with embeddings
+      const chunks = await this.prismaService.document_chunks.findMany({
+        where: {
+          embedding: {
+            isEmpty: false,
+          },
+          document: {
+            status: status
+              ? { equals: status, not: DocumentStatus.DELETED }
+              : { not: DocumentStatus.DELETED },
+            authorId: authorId || undefined,
+            subjectId: subjectId || undefined,
+            OR: this.buildVisibleDocumentFilters(user),
+          },
+        },
+        select: {
+          documentId: true,
+          embedding: true,
+        },
+      });
+
+      // 3. Compute dot product similarity scores (Gemini vectors are pre-normalized)
+      const dotProduct = (a: number[], b: number[]) => {
+        let sum = 0;
+        const len = Math.min(a.length, b.length);
+        for (let i = 0; i < len; i++) {
+          sum += a[i] * b[i];
+        }
+        return sum;
+      };
+
+      const docScores: Record<string, number> = {};
+      for (const chunk of chunks) {
+        if (!chunk.embedding || chunk.embedding.length === 0) continue;
+        const score = dotProduct(queryEmbedding, chunk.embedding);
+        if (
+          !docScores[chunk.documentId] ||
+          score > docScores[chunk.documentId]
+        ) {
+          docScores[chunk.documentId] = score;
+        }
+      }
+
+      // 4. Sort and paginate matching documents (threshold: >= 70% match)
+      const matchedDocIds = Object.keys(docScores).filter(
+        (id) => docScores[id] >= 0.7,
+      );
+      const total = matchedDocIds.length;
+      const sortedDocIds = matchedDocIds.sort(
+        (a, b) => docScores[b] - docScores[a],
+      );
+      const pageDocIds = sortedDocIds.slice(skip, skip + limit);
+
+      // 5. Fetch details and maintain descending order
+      const dbDocs = await this.prismaService.documents.findMany({
+        where: {
+          id: { in: pageDocIds },
+        },
+        select: this.listDocumentSelect,
+      });
+
+      const docMap = new Map(dbDocs.map((d) => [d.id, d]));
+      const documents = pageDocIds
+        .map((id) => {
+          const doc = docMap.get(id);
+          if (!doc) return null;
+          return {
+            ...doc,
+            aiScore: Math.round(docScores[id] * 100),
+          };
+        })
+        .filter(Boolean);
+
+      return {
+        message: 'Documents fetched successfully via AI Semantic Search',
+        data: {
+          documents,
+          pagination: {
+            page,
+            limit,
+            total,
+            totalPages: Math.ceil(total / limit),
+          },
+        },
+      };
+    }
+
+    // Keyword Search Fallback
+    if (search) {
+      where.title = {
+        contains: search,
+        mode: 'insensitive',
       };
     }
 
@@ -324,7 +425,7 @@ export class DocumentsService {
     return {
       message: 'Documents fetched successfully',
       data: {
-        documents: documents,
+        documents: documents.map((d) => ({ ...d, aiScore: undefined })),
         pagination: {
           page,
           limit,
@@ -666,30 +767,53 @@ export class DocumentsService {
   }
 
   async generateDescriptionFromUrl(fileUrl: string, format: string) {
-    this.logger.log(
-      `Extracting text for description from file URL: ${fileUrl}`,
-    );
-    const rawText = await this.documentExtractorService.extractText(
-      fileUrl,
-      format,
-    );
+    try {
+      this.logger.log(
+        `Extracting text for description from file URL: ${fileUrl}`,
+      );
+      let rawText: string;
+      try {
+        rawText = await this.documentExtractorService.extractText(
+          fileUrl,
+          format,
+        );
+      } catch (error) {
+        if (error instanceof HttpException) {
+          throw error;
+        }
+        throw new BadRequestException(
+          `Failed to extract text from the document: ${(error as Error).message}`,
+        );
+      }
 
-    if (!rawText || rawText.trim().length === 0) {
+      if (!rawText || rawText.trim().length === 0) {
+        throw new BadRequestException(
+          'The document contains no readable text for description generation',
+        );
+      }
+
+      this.logger.log(`Generating AI description from text`);
+      const generatedDescription =
+        await this.aiService.generateDescription(rawText);
+
+      return {
+        message: 'Description generated successfully',
+        data: {
+          description: generatedDescription,
+        },
+      };
+    } catch (error) {
+      this.logger.error(
+        `Failed in generateDescriptionFromUrl for fileUrl=${fileUrl}: ${(error as Error).message}`,
+        (error as Error).stack,
+      );
+      if (error instanceof HttpException) {
+        throw error;
+      }
       throw new BadRequestException(
-        'The document contains no readable text for description generation',
+        `AI description generation failed: ${(error as Error).message}`,
       );
     }
-
-    this.logger.log(`Generating AI description from text`);
-    const generatedDescription =
-      await this.aiService.generateDescription(rawText);
-
-    return {
-      message: 'Description generated successfully',
-      data: {
-        description: generatedDescription,
-      },
-    };
   }
 
   async generateSummary(id: string) {

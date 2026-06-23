@@ -14,6 +14,7 @@ import { JwtTokenType } from '../../common/enums/jwt.enum';
 import { TokenPayload } from '../../common/interfaces/auth.interface';
 import { SettingsService } from '../settings';
 import { DocumentProcessingService } from '../document-processing/document-processing.service';
+import { BadRequestException } from '@nestjs/common';
 
 jest.mock('uuid', () => ({
   v4: jest.fn(() => 'test-jti'),
@@ -1050,6 +1051,25 @@ describe('DocumentsService', () => {
     expect(res.data.pagination.totalPages).toBe(0);
   });
 
+  it('findAll performs semantic search when isSemantic is true and search query is provided', async () => {
+    aiServiceMock.getEmbedding = jest.fn().mockResolvedValue([1.0, 0.0]);
+    prismaMock.document_chunks.findMany.mockResolvedValue([
+      { documentId: 'doc-1', embedding: [1.0, 0.0] },
+    ]);
+    prismaMock.documents.findMany.mockResolvedValue([
+      { id: 'doc-1', title: 'Doc 1', author: { name: 'A' } },
+    ]);
+
+    const res = await service.findAll({
+      search: 'hello',
+      isSemantic: true,
+    } as any);
+
+    expect(aiServiceMock.getEmbedding).toHaveBeenCalledWith('hello');
+    expect(res.data.documents[0]).toHaveProperty('aiScore');
+    expect(res.data?.documents?.[0]?.id).toBe('doc-1');
+  });
+
   describe('generateSummary', () => {
     const docId = '507f1f77bcf86cd799439011';
 
@@ -1231,6 +1251,73 @@ describe('DocumentsService', () => {
           moderationReason: 'generated reason',
         },
       });
+    });
+  });
+
+  describe('generateDescriptionFromUrl', () => {
+    it('returns generated description on success', async () => {
+      const extractorMock = service['documentExtractorService'] as any;
+      extractorMock.extractText.mockResolvedValue('extracted text');
+      aiServiceMock.generateDescription.mockResolvedValue(
+        'generated AI description',
+      );
+
+      const result = await service.generateDescriptionFromUrl(
+        'http://cloudinary.com/doc.pdf',
+        'pdf',
+      );
+
+      expect(extractorMock.extractText).toHaveBeenCalledWith(
+        'http://cloudinary.com/doc.pdf',
+        'pdf',
+      );
+      expect(aiServiceMock.generateDescription).toHaveBeenCalledWith(
+        'extracted text',
+      );
+      expect(result).toEqual({
+        message: 'Description generated successfully',
+        data: { description: 'generated AI description' },
+      });
+    });
+
+    it('throws BadRequestException if raw text is empty', async () => {
+      const extractorMock = service['documentExtractorService'] as any;
+      extractorMock.extractText.mockResolvedValue('');
+
+      let thrownError: any = null;
+      try {
+        await service.generateDescriptionFromUrl(
+          'http://cloudinary.com/doc.pdf',
+          'pdf',
+        );
+      } catch (error) {
+        thrownError = error;
+      }
+
+      expect(thrownError).toBeInstanceOf(BadRequestException);
+      expect(thrownError.message).toBe(
+        'The document contains no readable text for description generation',
+      );
+    });
+
+    it('throws BadRequestException if extractText throws a generic Error', async () => {
+      const extractorMock = service['documentExtractorService'] as any;
+      extractorMock.extractText.mockRejectedValue(new Error('Network error'));
+
+      let thrownError: any = null;
+      try {
+        await service.generateDescriptionFromUrl(
+          'http://cloudinary.com/doc.pdf',
+          'pdf',
+        );
+      } catch (error) {
+        thrownError = error;
+      }
+
+      expect(thrownError).toBeInstanceOf(BadRequestException);
+      expect(thrownError.message).toBe(
+        'Failed to extract text from the document: Network error',
+      );
     });
   });
 });

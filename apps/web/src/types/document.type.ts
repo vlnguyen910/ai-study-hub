@@ -36,6 +36,7 @@ export interface LibraryDocument {
   rejectionDetail?: string | null;
   author: DocumentAuthor;
   subject: DocumentSubject | null;
+  aiScore?: number;
 }
 
 /** Pagination metadata returned alongside every paginated list */
@@ -99,6 +100,8 @@ export interface ListDocumentsQuery {
   subjectId?: string;
   authorId?: string;
   status?: DocumentStatus;
+  search?: string;
+  isSemantic?: boolean;
 }
 
 /**
