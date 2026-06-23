@@ -44,9 +44,12 @@ export class DocumentsService {
   private readonly listDocumentSelect = {
     id: true,
     title: true,
+    description: true,
     fileUrl: true,
     publicId: true,
     status: true,
+    format: true,
+    sizeInBytes: true,
     isPublic: true,
     createdAt: true,
     updatedAt: true,

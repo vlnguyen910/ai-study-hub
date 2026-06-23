@@ -14,7 +14,7 @@ export const DocumentCardSkeleton: FC = () => {
       "
     >
       {/* Thumbnail placeholder */}
-      <div className="h-28 bg-surface-variant" />
+      <div className="h-48 bg-surface-variant" />
 
       {/* Content placeholder */}
       <div className="flex flex-col gap-3 p-4">
@@ -33,9 +33,15 @@ export const DocumentCardSkeleton: FC = () => {
         {/* Subject */}
         <div className="h-3 w-2/3 rounded bg-surface-variant" />
 
+        {/* Description placeholder */}
+        <div className="space-y-1 mt-0.5">
+          <div className="h-2.5 w-full rounded bg-surface-variant/60" />
+          <div className="h-2.5 w-5/6 rounded bg-surface-variant/60" />
+        </div>
+
         {/* Footer */}
         <div className="mt-auto flex items-center justify-between border-t border-outline-variant/40 pt-2">
-          <div className="h-3 w-1/4 rounded bg-surface-variant" />
+          <div className="h-3 w-1/3 rounded bg-surface-variant" />
           <div className="h-3 w-3 rounded bg-surface-variant" />
         </div>
       </div>

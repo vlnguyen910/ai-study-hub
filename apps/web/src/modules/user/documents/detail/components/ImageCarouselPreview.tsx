@@ -108,6 +108,8 @@ export function ImageCarouselPreview({ images }: Props): React.JSX.Element {
               src={images[currentIndex]}
               alt={`Preview ${currentIndex + 1}`}
               fill
+              priority={currentIndex === 0}
+              loading={currentIndex === 0 ? "eager" : "lazy"}
               className="
                 object-contain
                 transition-all

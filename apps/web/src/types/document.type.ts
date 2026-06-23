@@ -26,6 +26,9 @@ export interface LibraryDocument {
   fileUrl: string;
   /** Cloudinary public ID — usable for thumbnail generation */
   publicId: string;
+  description?: string | null;
+  format?: string;
+  sizeInBytes?: number;
   status: DocumentStatus;
   isPublic: boolean;
   createdAt: string;
