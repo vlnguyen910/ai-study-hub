@@ -139,7 +139,7 @@ export class DocumentsService {
       !this.cloudinaryApiSecret
     ) {
       this.logger.warn(
-        `Skipping Cloudinary destroy for ${document.publicId}: missing server credentials`,
+        'Skipping Cloudinary destroy: missing server credentials',
       );
       return;
     }
@@ -149,7 +149,7 @@ export class DocumentsService {
     );
 
     this.logger.log(
-      `Starting Cloudinary destroy for document=${document.publicId}, resourceType=${document.resourceType}, candidates=${candidates.join(',')}`,
+      `Starting Cloudinary destroy, resourceType=${document.resourceType}, candidates=${candidates.join(',')}`,
     );
 
     const timestamp = Math.floor(Date.now() / 1000).toString();
@@ -185,7 +185,7 @@ export class DocumentsService {
 
       const url = `https://api.cloudinary.com/v1_1/${this.cloudinaryCloudName}/${resourceType}/destroy`;
       this.logger.log(
-        `Cloudinary destroy request: url=${url}, publicId=${document.publicId}, resourceType=${resourceType}`,
+        `Cloudinary destroy request: resourceType=${resourceType}`,
       );
 
       try {
@@ -196,7 +196,7 @@ export class DocumentsService {
 
         const bodyText = await readResponseBody(response as Response);
         this.logger.log(
-          `Cloudinary destroy response: status=${response.status}, ok=${response.ok}, resourceType=${resourceType}, body=${bodyText}`,
+          `Cloudinary destroy response: status=${response.status}, ok=${response.ok}, resourceType=${resourceType}, body=[Redacted]`,
         );
 
         if (!response.ok) {
@@ -210,30 +210,30 @@ export class DocumentsService {
             : {};
         } catch {
           this.logger.warn(
-            `Cloudinary destroy response was not JSON for publicId=${document.publicId}, resourceType=${resourceType}`,
+            `Cloudinary destroy response was not JSON for resourceType=${resourceType}`,
           );
         }
 
         if (parsed.result === 'ok' || parsed.result === 'not found') {
           this.logger.log(
-            `Cloudinary destroy completed for publicId=${document.publicId}, resourceType=${resourceType}, result=${parsed.result}`,
+            `Cloudinary destroy completed for resourceType=${resourceType}, result=${parsed.result}`,
           );
           return;
         }
 
         this.logger.warn(
-          `Cloudinary destroy returned unexpected result for publicId=${document.publicId}, resourceType=${resourceType}, result=${parsed.result ?? 'unknown'}`,
+          `Cloudinary destroy returned unexpected result for resourceType=${resourceType}, result=${parsed.result ?? 'unknown'}`,
         );
       } catch (error) {
         this.logger.error(
-          `Cloudinary destroy threw for publicId=${document.publicId}, resourceType=${resourceType}`,
+          `Cloudinary destroy threw for resourceType=${resourceType}`,
           error instanceof Error ? error.stack : String(error),
         );
       }
     }
 
     this.logger.warn(
-      `Cloudinary destroy exhausted all candidates for publicId=${document.publicId}. The DB record will still be deleted.`,
+      'Cloudinary destroy exhausted all candidates. The DB record will still be deleted.',
     );
   }
 
@@ -277,7 +277,7 @@ export class DocumentsService {
       .enqueueUploadProcessing(document.id)
       .catch((err) => {
         this.logger.error(
-          `Failed to enqueue upload processing for document ID ${document.id}: ${err.message}`,
+          `Failed to enqueue upload processing for document: ${err.message}`,
           err.stack,
         );
       });
@@ -342,9 +342,9 @@ export class DocumentsService {
 
       // 3. Compute dot product similarity scores (Gemini vectors are pre-normalized)
       const dotProduct = (a: number[], b: number[]) => {
+        if (a.length !== b.length) return 0;
         let sum = 0;
-        const len = Math.min(a.length, b.length);
-        for (let i = 0; i < len; i++) {
+        for (let i = 0; i < a.length; i++) {
           sum += a[i] * b[i];
         }
         return sum;
@@ -745,7 +745,7 @@ export class DocumentsService {
       );
     }
 
-    this.logger.log(`Extracting text for document ID: ${id}`);
+    this.logger.log('Extracting text for document');
     const rawText = await this.documentExtractorService.extractText(
       document.fileUrl,
       document.format,
@@ -757,7 +757,7 @@ export class DocumentsService {
       );
     }
 
-    this.logger.log(`Generating AI description for document ID: ${id}`);
+    this.logger.log('Generating AI description for document');
     const generatedDescription =
       await this.aiService.generateDescription(rawText);
 
@@ -771,9 +771,7 @@ export class DocumentsService {
 
   async generateDescriptionFromUrl(fileUrl: string, format: string) {
     try {
-      this.logger.log(
-        `Extracting text for description from file URL: ${fileUrl}`,
-      );
+      this.logger.log('Extracting text for description from file');
       let rawText: string;
       try {
         rawText = await this.documentExtractorService.extractText(
@@ -807,7 +805,7 @@ export class DocumentsService {
       };
     } catch (error) {
       this.logger.error(
-        `Failed in generateDescriptionFromUrl for fileUrl=${fileUrl}: ${(error as Error).message}`,
+        `Failed in generateDescriptionFromUrl: ${(error as Error).message}`,
         (error as Error).stack,
       );
       if (error instanceof HttpException) {
@@ -879,7 +877,7 @@ export class DocumentsService {
 
     const rawText = chunks.map((chunk) => chunk.chunkText).join('\n');
 
-    this.logger.log(`Generating AI summary for document ID: ${id}`);
+    this.logger.log('Generating AI summary for document');
     const generatedSummary = await this.aiService.generateSummary(rawText);
 
     // 4. Update documents table
@@ -959,7 +957,7 @@ export class DocumentsService {
 
     const rawText = chunks.map((chunk) => chunk.chunkText).join('\n');
 
-    this.logger.log(`Running AI moderator analysis for document ID: ${id}`);
+    this.logger.log('Running AI moderator analysis for document');
     const analysis = await this.aiService.analyzeDocumentForModerator(rawText);
 
     // 3. Save/Update ai_reviews table

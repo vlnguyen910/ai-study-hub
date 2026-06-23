@@ -20,9 +20,7 @@ export class DocumentProcessingService {
         jobId: `${DOCUMENT_JOB_NAMES.processUpload}-${documentId}`,
       },
     );
-    this.logger.log(
-      `Enqueued upload processing job for document ID: ${documentId}`,
-    );
+    this.logger.log('Enqueued upload processing job for document');
   }
 
   async enqueueDescriptionGeneration(documentId: string) {
@@ -36,9 +34,7 @@ export class DocumentProcessingService {
         jobId: `${DOCUMENT_JOB_NAMES.generateDescription}-${documentId}`,
       },
     );
-    this.logger.log(
-      `Enqueued description generation job for document ID: ${documentId}`,
-    );
+    this.logger.log('Enqueued description generation job for document');
   }
 
   async enqueueSummaryGeneration(documentId: string) {
@@ -52,9 +48,7 @@ export class DocumentProcessingService {
         jobId: `${DOCUMENT_JOB_NAMES.generateSummary}-${documentId}`,
       },
     );
-    this.logger.log(
-      `Enqueued summary generation job for document ID: ${documentId}`,
-    );
+    this.logger.log('Enqueued summary generation job for document');
   }
 
   async enqueueEmbeddingsGeneration(documentId: string) {
@@ -68,8 +62,6 @@ export class DocumentProcessingService {
         jobId: `${DOCUMENT_JOB_NAMES.generateEmbeddings}-${documentId}`,
       },
     );
-    this.logger.log(
-      `Enqueued embeddings generation job for document ID: ${documentId}`,
-    );
+    this.logger.log('Enqueued embeddings generation job for document');
   }
 }
