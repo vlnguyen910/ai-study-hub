@@ -40,6 +40,15 @@ export interface CreateCollectionPayload {
   name: string;
   description?: string;
   isPublic?: boolean;
+  documentId?: string;
 }
 
-export type UpdateCollectionPayload = Partial<CreateCollectionPayload>;
+export type UpdateCollectionPayload = Partial<
+  Omit<CreateCollectionPayload, "documentId">
+>;
+
+export interface DocumentSaveStatus {
+  documentId: string;
+  isSaved: boolean;
+  collectionIds: string[];
+}

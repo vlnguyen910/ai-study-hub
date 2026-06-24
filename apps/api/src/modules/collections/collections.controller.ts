@@ -45,6 +45,15 @@ export class CollectionsController {
   }
 
   @Version('1')
+  @Get('documents/:documentId/status')
+  getDocumentSaveStatus(
+    @Param('documentId', new ParseMongoIdPipe()) documentId: string,
+    @User() user: TokenPayload,
+  ) {
+    return this.collectionsService.getDocumentSaveStatus(documentId, user.sub);
+  }
+
+  @Version('1')
   @Get(':id')
   findOne(
     @Param('id', new ParseMongoIdPipe()) id: string,

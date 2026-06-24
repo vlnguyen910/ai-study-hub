@@ -64,14 +64,14 @@ export default function ProfilePage(): React.JSX.Element {
         ))}
       </div>
 
-      {activeTab === "account" ? (
-        <>
-          <PersonalInfoForm user={user} />
-          <SecurityForm />
-        </>
-      ) : (
+      <div className={activeTab === "account" ? "space-y-6" : "hidden"}>
+        <PersonalInfoForm user={user} />
+        <SecurityForm />
+      </div>
+
+      <div className={activeTab === "collections" ? "block" : "hidden"}>
         <CollectionsTab userId={user.id} isOwnProfile />
-      )}
+      </div>
     </div>
   );
 }
