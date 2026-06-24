@@ -179,23 +179,42 @@ export class CollectionsService {
   }
 
   async create(createCollectionDto: CreateCollectionDto, authorId: string) {
-    const collection = await this.prismaService.collections.create({
-      data: {
-        name: createCollectionDto.name.trim(),
-        description: createCollectionDto.description?.trim() || null,
-        isPublic: createCollectionDto.isPublic ?? false,
-        authorId,
-      },
-      include: {
-        author: {
-          select: this.collectionAuthorSelect,
+    if (createCollectionDto.documentId) {
+      await this.findReadableDocument(createCollectionDto.documentId, authorId);
+    }
+
+    const collection = await this.prismaService.$transaction(async (tx) => {
+      const created = await tx.collections.create({
+        data: {
+          name: createCollectionDto.name.trim(),
+          description: createCollectionDto.description?.trim() || null,
+          isPublic: createCollectionDto.isPublic ?? false,
+          authorId,
         },
-        items: {
-          select: {
-            documentId: true,
+      });
+
+      if (createCollectionDto.documentId) {
+        await tx.collection_documents.create({
+          data: {
+            collectionId: created.id,
+            documentId: createCollectionDto.documentId,
+          },
+        });
+      }
+
+      return tx.collections.findUniqueOrThrow({
+        where: { id: created.id },
+        include: {
+          author: {
+            select: this.collectionAuthorSelect,
+          },
+          items: {
+            select: {
+              documentId: true,
+            },
           },
         },
-      },
+      });
     });
 
     return {
@@ -364,15 +383,42 @@ export class CollectionsService {
   async delete(id: string, userId: string) {
     await this.findOwnedCollection(id, userId);
 
-    await this.prismaService.collection_documents.deleteMany({
-      where: { collectionId: id },
-    });
-    await this.prismaService.collections.delete({
-      where: { id },
-    });
+    await this.prismaService.$transaction([
+      this.prismaService.collection_documents.deleteMany({
+        where: { collectionId: id },
+      }),
+      this.prismaService.collections.delete({
+        where: { id },
+      }),
+    ]);
 
     return {
       message: 'Collection deleted successfully',
+    };
+  }
+
+  async getDocumentSaveStatus(documentId: string, userId: string) {
+    await this.findReadableDocument(documentId, userId);
+
+    const links = await this.prismaService.collection_documents.findMany({
+      where: {
+        documentId,
+        collection: {
+          authorId: userId,
+        },
+      },
+      select: {
+        collectionId: true,
+      },
+    });
+
+    return {
+      message: 'Document collection save status fetched successfully',
+      data: {
+        documentId,
+        isSaved: links.length > 0,
+        collectionIds: links.map((link) => link.collectionId),
+      },
     };
   }
 
@@ -384,18 +430,25 @@ export class CollectionsService {
     await this.findOwnedCollection(id, userId);
     await this.findReadableDocument(addDocumentDto.documentId, userId);
 
-    await this.prismaService.collection_documents.upsert({
-      where: {
-        collectionId_documentId: {
+    await this.prismaService.$transaction(async (tx) => {
+      await tx.collection_documents.upsert({
+        where: {
+          collectionId_documentId: {
+            collectionId: id,
+            documentId: addDocumentDto.documentId,
+          },
+        },
+        update: {},
+        create: {
           collectionId: id,
           documentId: addDocumentDto.documentId,
         },
-      },
-      update: {},
-      create: {
-        collectionId: id,
-        documentId: addDocumentDto.documentId,
-      },
+      });
+
+      await tx.collections.update({
+        where: { id },
+        data: { updatedAt: new Date() },
+      });
     });
 
     const collection = await this.findOne(id, userId);
@@ -409,11 +462,22 @@ export class CollectionsService {
   async removeDocument(id: string, documentId: string, userId: string) {
     await this.findOwnedCollection(id, userId);
 
-    const result = await this.prismaService.collection_documents.deleteMany({
-      where: {
-        collectionId: id,
-        documentId,
-      },
+    const result = await this.prismaService.$transaction(async (tx) => {
+      const deleteResult = await tx.collection_documents.deleteMany({
+        where: {
+          collectionId: id,
+          documentId,
+        },
+      });
+
+      if (deleteResult.count > 0) {
+        await tx.collections.update({
+          where: { id },
+          data: { updatedAt: new Date() },
+        });
+      }
+
+      return deleteResult;
     });
 
     if (result.count === 0) {

@@ -1,7 +1,7 @@
 import { Type } from 'class-transformer';
 import {
   IsMongoId,
-  IsNumber,
+  IsInt,
   IsOptional,
   IsString,
   Max,
@@ -12,13 +12,13 @@ import {
 export class ListCollectionsQueryDto {
   @IsOptional()
   @Type(() => Number)
-  @IsNumber()
+  @IsInt()
   @Min(1)
   page?: number = 1;
 
   @IsOptional()
   @Type(() => Number)
-  @IsNumber()
+  @IsInt()
   @Min(1)
   @Max(100)
   limit?: number = 20;

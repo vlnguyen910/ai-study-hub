@@ -6,12 +6,16 @@ import type { FC } from "react";
 import { useState } from "react";
 
 import { Badge } from "@/components/ui/Badge";
-import { QuickSavePopover } from "@/modules/collections/components/QuickSavePopover";
+import {
+  QuickSavePopover,
+  type QuickSaveMembershipChange,
+} from "@/modules/collections/components/QuickSavePopover";
 import type { LibraryDocument } from "@/types/document.type";
 import { formatDate } from "@/utils";
 
 interface DocumentCardProps {
   document: LibraryDocument;
+  onCollectionMembershipChange?: (change: QuickSaveMembershipChange) => void;
 }
 
 const getFileIcon = (publicId: string): string => {
@@ -53,7 +57,10 @@ const formatBytes = (bytes?: number): string => {
   return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + " " + sizes[i];
 };
 
-export const DocumentCard: FC<DocumentCardProps> = ({ document }) => {
+export const DocumentCard: FC<DocumentCardProps> = ({
+  document,
+  onCollectionMembershipChange,
+}) => {
   const gradient = getGradient(document.subject?.code ?? document.id);
   const fileIcon = getFileIcon(document.publicId);
   const [imageFailed, setImageFailed] = useState(false);
@@ -188,6 +195,7 @@ export const DocumentCard: FC<DocumentCardProps> = ({ document }) => {
           <QuickSavePopover
             documentId={document.id}
             documentTitle={document.title}
+            onMembershipChange={onCollectionMembershipChange}
           />
           <Link
             href={`/documents/${document.id}`}

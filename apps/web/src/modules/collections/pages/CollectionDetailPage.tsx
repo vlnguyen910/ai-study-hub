@@ -2,11 +2,12 @@
 
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 import { fetchCollectionDetail } from "@/apis/collection.api";
 import { Badge } from "@/components/ui/Badge";
 import { Card } from "@/components/ui/Card";
+import type { QuickSaveMembershipChange } from "@/modules/collections/components/QuickSavePopover";
 import { DocumentCard } from "@/modules/library/components/DocumentCard";
 import type { CollectionDetail } from "@/types/collection.type";
 import { formatDate } from "@/utils";
@@ -17,6 +18,30 @@ export default function CollectionDetailPage(): React.JSX.Element {
   const [collection, setCollection] = useState<CollectionDetail | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  const handleMembershipChange = useCallback(
+    (change: QuickSaveMembershipChange) => {
+      if (change.collectionId !== collectionId || change.containsDocument) {
+        return;
+      }
+
+      setCollection((current) => {
+        if (!current) return current;
+
+        const nextDocuments = current.documents.filter(
+          (document) => document.id !== change.documentId,
+        );
+
+        return {
+          ...current,
+          documents: nextDocuments,
+          documentCount: nextDocuments.length,
+          updatedAt: new Date().toISOString(),
+        };
+      });
+    },
+    [collectionId],
+  );
 
   useEffect(() => {
     let isMounted = true;
@@ -148,7 +173,11 @@ export default function CollectionDetailPage(): React.JSX.Element {
       ) : (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
           {collection.documents.map((document) => (
-            <DocumentCard key={document.id} document={document} />
+            <DocumentCard
+              key={document.id}
+              document={document}
+              onCollectionMembershipChange={handleMembershipChange}
+            />
           ))}
         </div>
       )}

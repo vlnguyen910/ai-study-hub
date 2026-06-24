@@ -5,6 +5,7 @@ import type {
   CollectionSummary,
   CollectionsListResponse,
   CreateCollectionPayload,
+  DocumentSaveStatus,
   ListCollectionsQuery,
   UpdateCollectionPayload,
 } from "@/types/collection.type";
@@ -29,6 +30,16 @@ export const fetchCollectionDetail = async (
 ): Promise<CollectionDetail> => {
   const result = await apiClient.get(API_ENDPOINTS.COLLECTIONS.DETAIL(id));
   return result as unknown as CollectionDetail;
+};
+
+export const fetchDocumentSaveStatus = async (
+  documentId: string,
+): Promise<DocumentSaveStatus> => {
+  const result = await apiClient.get(
+    `${API_ENDPOINTS.COLLECTIONS.BASE}/documents/${documentId}/status`,
+    { skipToast: true },
+  );
+  return result as unknown as DocumentSaveStatus;
 };
 
 export const createCollection = async (

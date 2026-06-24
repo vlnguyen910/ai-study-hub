@@ -158,7 +158,7 @@ export function CollectionsTab({
         </div>
       ) : null}
 
-      {isLoading ? (
+      {error ? null : isLoading ? (
         <div className="mt-5 grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
           {Array.from({ length: 3 }).map((_, index) => (
             <div
