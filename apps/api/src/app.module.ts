@@ -9,6 +9,7 @@ import { AdminModule } from './modules/admin/admin.module';
 import { DocumentProcessingModule } from './modules/document-processing/document-processing.module';
 import { SettingsModule } from './modules/settings';
 import { AIModule } from './modules/ai/ai.module';
+import { CollectionsModule } from './modules/collections';
 import { jwtConfiguration } from './config/jwt.config';
 import { PrismaModule } from './prisma/prisma.module';
 import { cookieConfiguration } from './config/cookies.config';
@@ -46,6 +47,7 @@ import {
     DocumentProcessingModule,
     SettingsModule,
     AIModule,
+    CollectionsModule,
   ],
   controllers: [AppController],
 })

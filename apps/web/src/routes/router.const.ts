@@ -32,6 +32,8 @@ export const ROUTE_PATHS = {
     PROFILE: "/profile",
     SETTINGS: "/settings",
     UPLOADS: "/uploads",
+    COLLECTIONS: "/collections",
+    COLLECTION_DETAIL: "/collections/:id",
     FAVORITES: "/favorites",
     MY_DOCUMENTS: "/my-documents",
     MY_UPLOADS: "/my-uploads",

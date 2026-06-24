@@ -6,6 +6,7 @@ import { useState } from "react";
 
 import { Badge } from "@/components/ui/Badge";
 import { IconButton } from "@/components/ui/IconButton";
+import { QuickSavePopover } from "@/modules/collections/components/QuickSavePopover";
 import type { LibraryDocument } from "@/types/document.type";
 import { formatDate } from "@/utils";
 
@@ -69,12 +70,10 @@ export function MyDocumentCard({
     if (!url) return null;
     const lower = url.toLowerCase();
 
-    // Cloudinary PDF to JPG first-page thumbnail transformation
     if (lower.includes("cloudinary.com") && lower.endsWith(".pdf")) {
       return url.slice(0, -4) + ".jpg";
     }
 
-    // Images can be rendered directly
     if (
       lower.endsWith(".jpg") ||
       lower.endsWith(".jpeg") ||
@@ -149,47 +148,53 @@ export function MyDocumentCard({
             </p>
           ) : null}
 
-          {document.description && (
-            <p className="line-clamp-2 text-xs text-on-surface-variant/75 mt-0.5 leading-relaxed">
+          {document.description ? (
+            <p className="mt-0.5 line-clamp-2 text-xs leading-relaxed text-on-surface-variant/75">
               {document.description}
             </p>
-          )}
+          ) : null}
         </div>
       </Link>
 
-      <div className="relative mx-4 mt-auto flex min-h-9 items-center justify-between border-t border-outline-variant/40 py-1">
+      <div className="relative mx-4 mt-auto flex min-h-9 items-center justify-between gap-3 border-t border-outline-variant/40 py-1">
         <div className="flex flex-wrap items-center gap-1.5 text-[11px] text-on-surface-variant">
           <span>{formatDate(document.createdAt)}</span>
-          {document.format && (
+          {document.format ? (
             <>
               <span className="text-outline-variant/40">•</span>
-              <span className="uppercase font-semibold text-primary">
+              <span className="font-semibold uppercase text-primary">
                 {document.format}
               </span>
             </>
-          )}
-          {document.sizeInBytes !== undefined && document.sizeInBytes > 0 && (
+          ) : null}
+          {document.sizeInBytes !== undefined && document.sizeInBytes > 0 ? (
             <>
               <span className="text-outline-variant/40">•</span>
               <span>{formatBytes(document.sizeInBytes)}</span>
             </>
-          )}
+          ) : null}
         </div>
 
-        <IconButton
-          type="button"
-          ariaLabel={`Mở thao tác cho ${document.title}`}
-          aria-expanded={isMenuOpen}
-          aria-haspopup="menu"
-          disabled={isBusy}
-          className="bg-transparent shadow-none hover:bg-surface-container"
-          icon={
-            <span className="material-symbols-outlined text-[20px]">
-              more_vert
-            </span>
-          }
-          onClick={onMenuToggle}
-        />
+        <div className="flex shrink-0 items-center gap-1">
+          <QuickSavePopover
+            documentId={document.id}
+            documentTitle={document.title}
+          />
+          <IconButton
+            type="button"
+            ariaLabel={`Mở thao tác cho ${document.title}`}
+            aria-expanded={isMenuOpen}
+            aria-haspopup="menu"
+            disabled={isBusy}
+            className="bg-transparent shadow-none hover:bg-surface-container"
+            icon={
+              <span className="material-symbols-outlined text-[20px]">
+                more_vert
+              </span>
+            }
+            onClick={onMenuToggle}
+          />
+        </div>
 
         {isMenuOpen ? (
           <div

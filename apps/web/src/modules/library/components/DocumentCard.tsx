@@ -4,9 +4,11 @@ import Image from "next/image";
 import Link from "next/link";
 import type { FC } from "react";
 import { useState } from "react";
+
 import { Badge } from "@/components/ui/Badge";
-import { formatDate } from "@/utils";
+import { QuickSavePopover } from "@/modules/collections/components/QuickSavePopover";
 import type { LibraryDocument } from "@/types/document.type";
+import { formatDate } from "@/utils";
 
 interface DocumentCardProps {
   document: LibraryDocument;
@@ -19,8 +21,9 @@ const getFileIcon = (publicId: string): string => {
     lower.endsWith(".docx") ||
     lower.endsWith(".doc") ||
     lower.includes("docx")
-  )
+  ) {
     return "description";
+  }
   if (lower.includes("ppt")) return "slideshow";
   return "draft";
 };
@@ -59,12 +62,10 @@ export const DocumentCard: FC<DocumentCardProps> = ({ document }) => {
     if (!url) return null;
     const lower = url.toLowerCase();
 
-    // Cloudinary PDF to JPG first-page thumbnail transformation
     if (lower.includes("cloudinary.com") && lower.endsWith(".pdf")) {
       return url.slice(0, -4) + ".jpg";
     }
 
-    // Images can be rendered directly
     if (
       lower.endsWith(".jpg") ||
       lower.endsWith(".jpeg") ||
@@ -81,25 +82,13 @@ export const DocumentCard: FC<DocumentCardProps> = ({ document }) => {
   const thumbnailUrl = imageFailed ? null : getThumbnailUrl(document.fileUrl);
 
   return (
-    <Link
-      href={`/documents/${document.id}`}
-      className="group block focus:outline-none"
-    >
-      <article
-        className="
-          relative flex flex-col overflow-hidden
-          rounded-2xl
-          border border-outline-variant/60
-          bg-surface/80 backdrop-blur-md
-          shadow-sm shadow-black/5
-          transition-all duration-200
-          hover:-translate-y-0.5 hover:shadow-md hover:shadow-black/10
-          hover:border-primary/30
-          focus-within:ring-2 focus-within:ring-primary/40
-        "
+    <article className="group relative flex flex-col overflow-hidden rounded-2xl border border-outline-variant/60 bg-surface/80 shadow-sm shadow-black/5 backdrop-blur-md transition-all duration-200 hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-md hover:shadow-black/10 focus-within:ring-2 focus-within:ring-primary/40">
+      <Link
+        href={`/documents/${document.id}`}
+        className="block focus:outline-none"
       >
         <div
-          className={`relative flex h-48 items-center justify-center overflow-hidden bg-linear-to-br ${gradient} border-b border-outline-variant/40`}
+          className={`relative flex h-48 items-center justify-center overflow-hidden border-b border-outline-variant/40 bg-linear-to-br ${gradient}`}
         >
           {thumbnailUrl ? (
             <Image
@@ -130,7 +119,7 @@ export const DocumentCard: FC<DocumentCardProps> = ({ document }) => {
             <span className="absolute right-3 top-3">
               <Badge
                 tone="neutral"
-                className="flex items-center gap-0.5 text-[11px] bg-linear-to-r from-cyan-500 to-blue-500 text-white border-none shadow-xs font-extrabold"
+                className="flex items-center gap-0.5 border-none bg-linear-to-r from-cyan-500 to-blue-500 text-[11px] font-extrabold text-white shadow-xs"
               >
                 <span className="material-symbols-outlined text-[10px] !text-white">
                   bolt
@@ -150,13 +139,13 @@ export const DocumentCard: FC<DocumentCardProps> = ({ document }) => {
           ) : null}
         </div>
 
-        <div className="flex flex-1 flex-col gap-2 p-4">
+        <div className="flex flex-1 flex-col gap-2 p-4 pb-2">
           <h3 className="line-clamp-2 text-sm font-semibold leading-snug text-on-surface transition-colors group-hover:text-primary">
             {document.title}
           </h3>
 
           <div className="flex items-center gap-2 text-xs text-on-surface-variant">
-            <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary/10 text-[10px] font-bold text-primary uppercase">
+            <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary/10 text-[10px] font-bold uppercase text-primary">
               {document.author.name.charAt(0)}
             </span>
             <span className="truncate">{document.author.name}</span>
@@ -168,37 +157,49 @@ export const DocumentCard: FC<DocumentCardProps> = ({ document }) => {
             </p>
           ) : null}
 
-          {document.description && (
-            <p className="line-clamp-2 text-xs text-on-surface-variant/75 mt-0.5 leading-relaxed">
+          {document.description ? (
+            <p className="mt-0.5 line-clamp-2 text-xs leading-relaxed text-on-surface-variant/75">
               {document.description}
             </p>
-          )}
+          ) : null}
+        </div>
+      </Link>
 
-          <div className="mt-auto flex items-center justify-between border-t border-outline-variant/40 pt-2">
-            <div className="flex flex-wrap items-center gap-1.5 text-[11px] text-on-surface-variant">
-              <span>{formatDate(document.createdAt)}</span>
-              {document.format && (
-                <>
-                  <span className="text-outline-variant/40">•</span>
-                  <span className="uppercase font-semibold text-primary">
-                    {document.format}
-                  </span>
-                </>
-              )}
-              {document.sizeInBytes !== undefined &&
-                document.sizeInBytes > 0 && (
-                  <>
-                    <span className="text-outline-variant/40">•</span>
-                    <span>{formatBytes(document.sizeInBytes)}</span>
-                  </>
-                )}
-            </div>
-            <span className="material-symbols-outlined text-[16px] text-on-surface-variant/60 transition-colors group-hover:text-primary">
+      <div className="mx-4 mt-auto flex items-center justify-between gap-3 border-t border-outline-variant/40 py-2">
+        <div className="flex flex-wrap items-center gap-1.5 text-[11px] text-on-surface-variant">
+          <span>{formatDate(document.createdAt)}</span>
+          {document.format ? (
+            <>
+              <span className="text-outline-variant/40">•</span>
+              <span className="font-semibold uppercase text-primary">
+                {document.format}
+              </span>
+            </>
+          ) : null}
+          {document.sizeInBytes !== undefined && document.sizeInBytes > 0 ? (
+            <>
+              <span className="text-outline-variant/40">•</span>
+              <span>{formatBytes(document.sizeInBytes)}</span>
+            </>
+          ) : null}
+        </div>
+
+        <div className="flex shrink-0 items-center gap-1">
+          <QuickSavePopover
+            documentId={document.id}
+            documentTitle={document.title}
+          />
+          <Link
+            href={`/documents/${document.id}`}
+            aria-label={`Mở ${document.title}`}
+            className="inline-flex h-9 w-9 items-center justify-center rounded-full text-on-surface-variant/60 transition-colors hover:bg-surface-container hover:text-primary"
+          >
+            <span className="material-symbols-outlined text-[16px]">
               arrow_forward
             </span>
-          </div>
+          </Link>
         </div>
-      </article>
-    </Link>
+      </div>
+    </article>
   );
 };
