@@ -40,6 +40,13 @@ export const API_ENDPOINTS = {
     APPROVE: (id: string) => `/api/v1/documents/${id}/approve`,
     REJECT: (id: string) => `/api/v1/documents/${id}/reject`,
   },
+  COLLECTIONS: {
+    BASE: "/api/v1/collections",
+    DETAIL: (id: string) => `/api/v1/collections/${id}`,
+    DOCUMENTS: (id: string) => `/api/v1/collections/${id}/documents`,
+    DOCUMENT: (id: string, documentId: string) =>
+      `/api/v1/collections/${id}/documents/${documentId}`,
+  },
   SUBJECTS: {
     BASE: "/api/v1/subjects",
     DETAIL: (id: string) => `/api/v1/subjects/${id}`,

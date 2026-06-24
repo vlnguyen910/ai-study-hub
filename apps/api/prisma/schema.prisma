@@ -49,6 +49,7 @@ model accounts {
   authProviders     auth_providers[]
   documents         documents[]      @relation("authorId")
   reviewedDocuments documents[]      @relation("reviewedById")
+  collections       collections[]
   quizSessions      quiz_sessions[]
   chatSessions      chat_sessions[]
 }
@@ -131,34 +132,66 @@ model documents {
   deletedAt       DateTime?
 
   // AI & Analytics Fields
-  aiSummary       String?
-  aiKeywords      String[]
-  duplicateScore  Float?
-  isAiFlagged     Boolean?       @default(false)
-  downloadCount   Int            @default(0)
-  viewCount       Int            @default(0)
+  aiSummary      String?
+  aiKeywords     String[]
+  duplicateScore Float?
+  isAiFlagged    Boolean? @default(false)
+  downloadCount  Int      @default(0)
+  viewCount      Int      @default(0)
 
   //Relationships
-  subject       subjects?        @relation(fields: [subjectId], references: [id])
-  author        accounts         @relation("authorId", fields: [authorId], references: [id])
-  reviewer      accounts?        @relation("reviewedById", fields: [reviewedById], references: [id])
-  chunks        document_chunks[]
-  aiReview      ai_reviews?
-  quizSessions  quiz_sessions[]
-  chatSessions  chat_sessions[]
+  subject         subjects?              @relation(fields: [subjectId], references: [id])
+  author          accounts               @relation("authorId", fields: [authorId], references: [id])
+  reviewer        accounts?              @relation("reviewedById", fields: [reviewedById], references: [id])
+  chunks          document_chunks[]
+  aiReview        ai_reviews?
+  collectionLinks collection_documents[]
+  quizSessions    quiz_sessions[]
+  chatSessions    chat_sessions[]
+}
+
+model collections {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  name        String
+  description String?
+  isPublic    Boolean  @default(false)
+  authorId    String   @db.ObjectId
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  //Relationships
+  author accounts               @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  items  collection_documents[]
+
+  @@index([authorId])
+  @@index([isPublic])
+}
+
+model collection_documents {
+  id           String   @id @default(auto()) @map("_id") @db.ObjectId
+  collectionId String   @db.ObjectId
+  documentId   String   @db.ObjectId
+  addedAt      DateTime @default(now())
+
+  //Relationships
+  collection collections @relation(fields: [collectionId], references: [id], onDelete: Cascade)
+  document   documents   @relation(fields: [documentId], references: [id], onDelete: Cascade)
+
+  @@unique([collectionId, documentId])
+  @@index([documentId])
 }
 
 model document_chunks {
-  id          String    @id @default(auto()) @map("_id") @db.ObjectId
-  documentId  String    @db.ObjectId
-  document    documents @relation(fields: [documentId], references: [id], onDelete: Cascade)
-  chunkIndex  Int
-  chunkText   String
-  tokenCount  Int
-  embedding   Float[]
-  pageStart   Int?
-  pageEnd     Int?
-  createdAt   DateTime  @default(now())
+  id         String    @id @default(auto()) @map("_id") @db.ObjectId
+  documentId String    @db.ObjectId
+  document   documents @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  chunkIndex Int
+  chunkText  String
+  tokenCount Int
+  embedding  Float[]
+  pageStart  Int?
+  pageEnd    Int?
+  createdAt  DateTime  @default(now())
 
   @@unique([documentId, chunkIndex])
 }
