@@ -16,7 +16,13 @@ import { TopSearchBar } from "../components/TopSearchBar";
  *  - Compute the client-side filtered document list (search by title)
  *  - Compose FilterBar + LibraryHeader + DocumentGrid + Pagination
  */
-export default function LibraryPage(): React.JSX.Element {
+interface Props {
+  readonly initialSubjectId?: string;
+}
+
+export default function LibraryPage({
+  initialSubjectId = "",
+}: Props): React.JSX.Element {
   const {
     documents,
     subjects,
@@ -26,12 +32,17 @@ export default function LibraryPage(): React.JSX.Element {
     filters,
     fetchDocuments: loadDocuments,
     fetchSubjects: loadSubjects,
+    setSubjectId,
     setPage,
   } = useLibraryStore();
 
   /** Bootstrap data on first render */
   useEffect(() => {
-    loadDocuments();
+    if (initialSubjectId) {
+      setSubjectId(initialSubjectId);
+    } else {
+      loadDocuments();
+    }
     loadSubjects();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
