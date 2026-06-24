@@ -3,14 +3,14 @@ import { Pressable, Text, View } from "react-native";
 
 interface DocumentUploadFieldProps {
   readonly fileName: string | null;
-  readonly onPickSample: () => void;
+  readonly onPick: () => void;
   readonly onClear: () => void;
   readonly errorMessage?: string;
 }
 
 export function DocumentUploadField({
   fileName,
-  onPickSample,
+  onPick,
   onClear,
   errorMessage,
 }: DocumentUploadFieldProps) {
@@ -18,7 +18,7 @@ export function DocumentUploadField({
     <View className="gap-2">
       <Pressable
         accessibilityRole="button"
-        onPress={onPickSample}
+        onPress={onPick}
         className="rounded-2xl border-2 border-dashed border-secondary bg-surface-container-lowest p-6"
       >
         <View className="items-center gap-3 text-center">
@@ -27,7 +27,7 @@ export function DocumentUploadField({
             {fileName ? "Tệp đã chọn" : "Nhấn để chọn tệp"}
           </Text>
           <Text className="text-sm text-on-surface-variant">
-            Hỗ trợ PDF, DOCX, PPTX. Tối đa 50MB.
+            Hỗ trợ PDF, DOCX, PPTX. Tối đa 10MB.
           </Text>
           {fileName ? (
             <View className="mt-2 w-full rounded-2xl bg-surface-container-low px-4 py-3">

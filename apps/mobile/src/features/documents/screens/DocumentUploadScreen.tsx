@@ -4,13 +4,15 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { MaterialIcons } from "@expo/vector-icons";
 import { router } from "expo-router";
-import { Pressable, ScrollView, Text, View } from "react-native";
+import { Alert, Pressable, ScrollView, Text, View } from "react-native";
 import { Button, Card, PageShell } from "@/components";
 import { ROUTES } from "@/constants/routes";
 import { DocumentCategorySelector } from "../components/DocumentCategorySelector";
 import { DocumentTextField } from "../components/DocumentTextField";
 import { DocumentUploadField } from "../components/DocumentUploadField";
 import { createDocument } from "../services/documents.service";
+import * as DocumentPicker from "expo-document-picker";
+import { uploadToCloudinary } from "../../../services/cloudinary.service";
 import type {
   DocumentCategoryOption,
   DocumentCategoryValue,
@@ -33,9 +35,6 @@ const documentUploadSchema = z.object({
 type DocumentUploadFormInput = z.input<typeof documentUploadSchema>;
 type DocumentUploadFormOutput = z.output<typeof documentUploadSchema>;
 
-const sampleFileName = "data-structures-guide.pdf";
-const sampleFileUrl = "https://example.com/uploads/data-structures-guide.pdf";
-
 const relatedDocuments = [
   {
     id: "related-1",
@@ -56,7 +55,11 @@ const relatedDocuments = [
 ] as const;
 
 export function DocumentUploadScreen() {
-  const [pickedFileName, setPickedFileName] = useState<string | null>(null);
+  const [pickedFile, setPickedFile] = useState<{
+    uri: string;
+    name: string;
+    size: number;
+  } | null>(null);
   const [isAiLoading, setIsAiLoading] = useState(false);
 
   const {
@@ -78,30 +81,90 @@ export function DocumentUploadScreen() {
   const fileName = watch("fileName");
   const category = watch("category");
 
-  const handlePickSampleFile = () => {
-    setPickedFileName(sampleFileName);
-    setValue("fileName", sampleFileName, { shouldValidate: true });
+  const handlePickDocument = async () => {
+    try {
+      const result = await DocumentPicker.getDocumentAsync({
+        type: [
+          "application/pdf",
+          "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+          "application/msword",
+          "text/plain",
+          "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+          "application/vnd.ms-powerpoint",
+        ],
+        copyToCacheDirectory: true,
+      });
+
+      if (result.canceled || !result.assets || result.assets.length === 0) {
+        return;
+      }
+
+      const asset = result.assets[0];
+      const maxSizeBytes = 10485760; // 10MB (10,485,760 bytes) Cloudinary free raw limit
+
+      if (asset.size && asset.size > maxSizeBytes) {
+        Alert.alert(
+          "Lỗi",
+          "Kích thước tệp vượt quá giới hạn 10MB (Mức tối đa cho phép của dịch vụ lưu trữ là 10MB).",
+        );
+        return;
+      }
+
+      setPickedFile({
+        uri: asset.uri,
+        name: asset.name,
+        size: asset.size || 0,
+      });
+      setValue("fileName", asset.name, { shouldValidate: true });
+    } catch (error) {
+      Alert.alert("Lỗi", "Có lỗi xảy ra khi chọn tệp.");
+    }
   };
 
   const handleClearFile = () => {
-    setPickedFileName(null);
+    setPickedFile(null);
     setValue("fileName", "", { shouldValidate: true });
   };
 
   const onSubmit = async (values: DocumentUploadFormOutput) => {
-    const document = await createDocument({
-      title: values.title,
-      description: values.description?.trim() || undefined,
-      fileUrl: sampleFileUrl,
-      publicId: `mobile-${Date.now()}`,
-      sizeInBytes: 2 * 1024 * 1024,
-      format: values.fileName.split(".").pop()?.toLowerCase() || "pdf",
-      resourceType: "document",
-      isPublic: true,
-    });
+    if (!pickedFile) {
+      Alert.alert("Lỗi", "Vui lòng chọn một tệp hợp lệ để tải lên.");
+      return;
+    }
 
-    if (document.id) {
-      router.push(ROUTES.DOCUMENT_DETAIL(document.id) as never);
+    try {
+      const fileExtension =
+        pickedFile.name.split(".").pop()?.toLowerCase() || "pdf";
+
+      // Step 1: Upload to Cloudinary
+      const cloudinaryRes = await uploadToCloudinary(
+        pickedFile.uri,
+        pickedFile.name,
+        fileExtension,
+      );
+
+      // Step 2: Create document on backend
+      const payload = {
+        title: values.title,
+        description: values.description?.trim() || undefined,
+        fileUrl: cloudinaryRes.secureUrl,
+        publicId: cloudinaryRes.publicId,
+        sizeInBytes: cloudinaryRes.bytes || pickedFile.size || 0,
+        format: cloudinaryRes.format || fileExtension,
+        resourceType: cloudinaryRes.resourceType,
+        isPublic: true,
+      };
+
+      const document = await createDocument(payload);
+
+      if (document.id) {
+        router.push(ROUTES.DOCUMENT_DETAIL(document.id) as never);
+      }
+    } catch (error: any) {
+      Alert.alert(
+        "Lỗi",
+        "Tải lên thất bại. Vui lòng kiểm tra lại cấu hình mạng hoặc tài khoản Cloudinary.",
+      );
     }
   };
 
@@ -150,8 +213,8 @@ export function DocumentUploadScreen() {
                 name="fileName"
                 render={({ field }) => (
                   <DocumentUploadField
-                    fileName={pickedFileName ?? field.value ?? null}
-                    onPickSample={handlePickSampleFile}
+                    fileName={pickedFile?.name ?? field.value ?? null}
+                    onPick={handlePickDocument}
                     onClear={handleClearFile}
                     errorMessage={errors.fileName?.message}
                   />

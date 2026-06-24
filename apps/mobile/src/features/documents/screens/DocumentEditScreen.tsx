@@ -198,7 +198,7 @@ export function DocumentEditScreen() {
                   render={({ field }) => (
                     <DocumentUploadField
                       fileName={field.value ?? null}
-                      onPickSample={() => {}}
+                      onPick={() => {}}
                       onClear={handleClearFile}
                       errorMessage={errors.fileName?.message}
                     />
