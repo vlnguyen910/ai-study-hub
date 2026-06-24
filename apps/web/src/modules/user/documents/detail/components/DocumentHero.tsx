@@ -1,3 +1,6 @@
+import Image from "next/image";
+import Link from "next/link";
+
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import type { DocumentDetail } from "@/types/document.type";
@@ -21,6 +24,11 @@ interface Props {
  */
 export function DocumentHero({ document }: Props): React.JSX.Element {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
+  const currentUserId = useAuthStore((state) => state.user?.id);
+  const authorHref =
+    currentUserId === document.author.id
+      ? "/my-documents"
+      : `/documents/author/${document.author.id}`;
   const downloadUrl = buildCloudinaryDownloadUrl(document.fileUrl);
   const downloadFileName = buildDownloadFileName(
     document.title,
@@ -28,10 +36,12 @@ export function DocumentHero({ document }: Props): React.JSX.Element {
   );
 
   const avatarContent = document.author.avatarUrl ? (
-    <img
+    <Image
       src={document.author.avatarUrl}
       alt={document.author.name}
-      className="h-full w-full rounded-full object-cover"
+      className="rounded-full object-cover"
+      height={40}
+      width={40}
     />
   ) : (
     <span className="text-sm font-semibold text-white">
@@ -48,17 +58,21 @@ export function DocumentHero({ document }: Props): React.JSX.Element {
           </h1>
 
           <div className="flex flex-wrap items-center gap-4 text-sm text-on-surface-variant">
-            <div className="flex items-center gap-3">
+            <Link
+              href={authorHref}
+              className="group/author flex items-center gap-3 rounded-xl outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+              aria-label={`Xem tài liệu của ${document.author.name}`}
+            >
               <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary">
                 {avatarContent}
               </div>
               <div>
-                <p className="font-medium text-on-surface">
+                <p className="font-medium text-on-surface transition-colors group-hover/author:text-primary">
                   {document.author.name}
                 </p>
                 <p className="text-xs">{document.author.email}</p>
               </div>
-            </div>
+            </Link>
 
             {document.subject ? (
               <Badge tone="neutral">{document.subject.name}</Badge>
@@ -86,7 +100,7 @@ export function DocumentHero({ document }: Props): React.JSX.Element {
           </a>
 
           <a href={downloadUrl} download={downloadFileName}>
-            <Button variant="primary">
+            <Button variant="primary" className="text-white hover:text-white">
               <span className="flex items-center gap-2">
                 <span className="material-symbols-outlined text-[18px]">
                   download
