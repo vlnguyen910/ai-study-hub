@@ -9,6 +9,8 @@ import { VerifiedAccountGuard } from '../../common/guards/verified-account.guard
 import { SettingsModule } from '../settings';
 import { DocumentProcessingModule } from '../document-processing/document-processing.module';
 import { AIModule } from '../ai/ai.module';
+import { DocumentGateway } from './document.gateway';
+import { JwtModule } from '@nestjs/jwt';
 
 @Module({
   imports: [
@@ -17,13 +19,16 @@ import { AIModule } from '../ai/ai.module';
     DocumentProcessingModule,
     AIModule,
     SettingsModule,
+    JwtModule,
   ],
   controllers: [DocumentsController],
   providers: [
     DocumentsService,
+    DocumentGateway,
     AuthGuard,
     OptionalJwtGuard,
     VerifiedAccountGuard,
   ],
+  exports: [DocumentGateway],
 })
 export class DocumentsModule {}

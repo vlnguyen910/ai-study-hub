@@ -21,6 +21,7 @@ import { SettingsService } from '../settings';
 import { DocumentExtractorService } from '../document-processing/document-extractor.service';
 import { AIService } from '../ai/ai.service';
 import { DocumentProcessingService } from '../document-processing/document-processing.service';
+import { DocumentGateway } from './document.gateway';
 
 @Injectable()
 export class DocumentsService {
@@ -33,6 +34,7 @@ export class DocumentsService {
     private readonly documentExtractorService: DocumentExtractorService,
     private readonly aiService: AIService,
     private readonly documentProcessingService: DocumentProcessingService,
+    private readonly documentGateway: DocumentGateway,
   ) {}
 
   private readonly cloudinaryCloudName =
@@ -281,6 +283,20 @@ export class DocumentsService {
           err.stack,
         );
       });
+
+    // Broadcast real-time event to connected moderators when a new document is pending review
+    if (document.status === DocumentStatus.PENDING) {
+      this.documentGateway.broadcastDocumentCreated({
+        id: document.id,
+        title: document.title,
+        status: document.status,
+        createdAt: document.createdAt,
+        author: {
+          name: document.author.name,
+          avatarUrl: document.author.avatarUrl ?? null,
+        },
+      });
+    }
 
     return {
       message: 'Document created successfully',

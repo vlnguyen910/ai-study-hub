@@ -1,6 +1,7 @@
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe, VersioningType } from '@nestjs/common';
 import cookieParser from 'cookie-parser';
+import { IoAdapter } from '@nestjs/platform-socket.io';
 import { AppModule } from './app.module';
 import { ResponseInterceptor } from './common/interceptors/response.interceptor';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
@@ -9,6 +10,9 @@ import { getAppConfig } from './config/app.config';
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   const { appPort, corsOrigins } = getAppConfig();
+
+  // WebSocket adapter (Socket.io)
+  app.useWebSocketAdapter(new IoAdapter(app));
 
   // Enable API Versioning (URI versioning: /api/v1, /api/v2, etc.)
   app.enableVersioning({
