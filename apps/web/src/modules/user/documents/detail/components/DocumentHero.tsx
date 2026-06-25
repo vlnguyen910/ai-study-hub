@@ -3,10 +3,10 @@ import Link from "next/link";
 
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
+import { QuickSavePopover } from "@/modules/collections/components/QuickSavePopover";
+import { useAuthStore } from "@/stores/auth/store";
 import type { DocumentDetail } from "@/types/document.type";
 import { formatDate } from "@/utils";
-import { useAuthStore } from "@/stores/auth/store";
-import { toast } from "sonner";
 
 import {
   buildCloudinaryDownloadUrl,
@@ -17,13 +17,7 @@ interface Props {
   readonly document: DocumentDetail;
 }
 
-/**
- * Page hero for the document detail view.
- * Renders the document title, author row, subject badge, upload date,
- * and action buttons (Open document / Download / Save).
- */
 export function DocumentHero({ document }: Props): React.JSX.Element {
-  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
   const currentUserId = useAuthStore((state) => state.user?.id);
   const authorHref =
     currentUserId === document.author.id
@@ -51,9 +45,9 @@ export function DocumentHero({ document }: Props): React.JSX.Element {
 
   return (
     <section className="rounded-2xl border border-outline-variant bg-surface p-6">
-      <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
-        <div className="space-y-4">
-          <h1 className="max-w-3xl text-3xl font-bold leading-tight text-on-surface">
+      <div className="flex flex-col gap-6 xl:flex-row xl:items-start xl:justify-between">
+        <div className="min-w-0 space-y-4">
+          <h1 className="max-w-4xl text-3xl font-bold leading-tight text-on-surface">
             {document.title}
           </h1>
 
@@ -110,23 +104,12 @@ export function DocumentHero({ document }: Props): React.JSX.Element {
             </Button>
           </a>
 
-          <Button
-            variant="outline"
-            onClick={() => {
-              if (!isAuthenticated) {
-                toast.error("Vui lòng đăng nhập để lưu tài liệu.");
-              } else {
-                toast.info("Tính năng lưu tài liệu đang được phát triển.");
-              }
-            }}
-          >
-            <span className="flex items-center gap-2">
-              <span className="material-symbols-outlined text-[18px]">
-                bookmark
-              </span>
-              Lưu lại
-            </span>
-          </Button>
+          <QuickSavePopover
+            documentId={document.id}
+            documentTitle={document.title}
+            triggerLabel="Lưu vào bộ sưu tập"
+            className="border border-primary shadow-none"
+          />
         </div>
       </div>
     </section>

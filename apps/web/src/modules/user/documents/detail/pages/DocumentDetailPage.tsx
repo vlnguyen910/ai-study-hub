@@ -19,17 +19,17 @@ import { loadDocumentPreview } from "../utils/document-preview";
 
 function DetailPageSkeleton(): React.JSX.Element {
   return (
-    <main className="mx-auto max-w-7xl animate-pulse space-y-6 px-6 py-8">
+    <main className="mx-auto max-w-[1500px] animate-pulse space-y-6 px-6 py-8">
       <div className="h-10 w-28 rounded-full bg-surface-variant" />
       <div className="h-36 rounded-2xl bg-surface-variant" />
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1fr_320px]">
+      <div className="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1fr)_380px]">
         <div className="space-y-6">
           <div className="h-80 rounded-2xl bg-surface-variant" />
           <div className="h-40 rounded-2xl bg-surface-variant" />
         </div>
         <div className="space-y-6">
-          <div className="h-28 rounded-2xl bg-surface-variant" />
           <div className="h-48 rounded-2xl bg-surface-variant" />
+          <div className="h-28 rounded-2xl bg-surface-variant" />
           <div className="h-40 rounded-2xl bg-surface-variant" />
         </div>
       </div>
@@ -123,12 +123,12 @@ export default function DocumentDetailPage(): React.JSX.Element {
   }
 
   return (
-    <main className="mx-auto max-w-7xl space-y-6 px-6 py-8">
+    <main className="mx-auto max-w-[1500px] space-y-6 px-6 py-8">
       <BackButton fallbackHref="/home" />
       <DocumentHero document={document} />
 
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1fr_320px]">
-        <div className="space-y-6">
+      <div className="grid grid-cols-1 items-start gap-6 xl:grid-cols-[minmax(0,1fr)_380px]">
+        <div className="min-w-0 space-y-6 xl:pr-2">
           <DocumentPreview preview={preview ?? { type: "unsupported" }} />
 
           {document.description ? (
@@ -149,7 +149,11 @@ export default function DocumentDetailPage(): React.JSX.Element {
           ) : null}
         </div>
 
-        <aside className="space-y-6">
+        <aside className="space-y-6 xl:sticky xl:top-6">
+          <DocumentSummaryCard
+            documentId={document.id}
+            initialSummary={document.aiSummary}
+          />
           <FileInfoCard
             format={document.format}
             sizeInBytes={document.sizeInBytes}
@@ -157,10 +161,6 @@ export default function DocumentDetailPage(): React.JSX.Element {
           <RelatedDocumentsSection
             documents={relatedDocuments}
             subject={document.subject}
-          />
-          <DocumentSummaryCard
-            documentId={document.id}
-            initialSummary={document.aiSummary}
           />
         </aside>
       </div>

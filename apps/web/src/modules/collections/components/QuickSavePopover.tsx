@@ -31,6 +31,7 @@ interface QuickSavePopoverProps {
   readonly documentId: string;
   readonly documentTitle: string;
   readonly className?: string;
+  readonly triggerLabel?: string;
   readonly onMembershipChange?: (change: QuickSaveMembershipChange) => void;
 }
 
@@ -61,6 +62,7 @@ export function QuickSavePopover({
   documentId,
   documentTitle,
   className = "",
+  triggerLabel,
   onMembershipChange,
 }: QuickSavePopoverProps): React.JSX.Element {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
@@ -79,6 +81,8 @@ export function QuickSavePopover({
   const [isCreating, setIsCreating] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const triggerText = triggerLabel ? (isSaved ? "Đã lưu" : triggerLabel) : null;
+  const triggerIcon = isSaved ? "bookmark_added" : "bookmark_add";
 
   useEffect(() => {
     setIsMounted(true);
@@ -537,16 +541,23 @@ export function QuickSavePopover({
             : `Lưu nhanh ${documentTitle}`
         }
         title={isSaved ? "Đã lưu vào bộ sưu tập" : "Lưu nhanh"}
-        className={`inline-flex h-9 w-9 items-center justify-center rounded-full shadow-sm shadow-black/10 backdrop-blur transition focus:outline-none focus:ring-2 focus:ring-primary/40 ${
+        className={`inline-flex items-center justify-center shadow-sm shadow-black/10 backdrop-blur transition focus:outline-none focus:ring-2 focus:ring-primary/40 ${
+          triggerText
+            ? "h-10 gap-2 rounded-xl px-4 text-sm font-semibold"
+            : "h-9 w-9 rounded-full"
+        } ${
           isSaved
             ? "bg-primary text-on-primary hover:bg-primary/90"
-            : "bg-surface/90 text-on-surface-variant hover:bg-primary hover:text-on-primary"
+            : triggerText
+              ? "bg-transparent text-primary hover:bg-primary hover:text-on-primary"
+              : "bg-surface/90 text-on-surface-variant hover:bg-primary hover:text-on-primary"
         } ${className}`}
         onClick={openPopover}
       >
         <span className="material-symbols-outlined text-[20px]">
-          {isSaved ? "bookmark_added" : "bookmark_add"}
+          {triggerIcon}
         </span>
+        {triggerText ? <span>{triggerText}</span> : null}
       </button>
 
       {isOpen && isMounted ? createPortal(popover, document.body) : null}
