@@ -41,8 +41,6 @@ describe('AuditLogService', () => {
       action: AuditAction.BAN_USER,
       targetType: AuditTargetType.USER,
       targetId: 'user-2',
-      metadata: { reason: 'spam' },
-      ipAddress: '127.0.0.1',
     };
 
     prismaMock.audit_logs.create.mockResolvedValue({ id: 'log-1', ...params });
@@ -56,8 +54,6 @@ describe('AuditLogService', () => {
         action: AuditAction.BAN_USER,
         targetType: AuditTargetType.USER,
         targetId: 'user-2',
-        metadata: { reason: 'spam' },
-        ipAddress: '127.0.0.1',
       },
     });
     expect(result).toEqual({ id: 'log-1', ...params });
@@ -69,8 +65,6 @@ describe('AuditLogService', () => {
       action: AuditAction.BAN_USER,
       targetType: AuditTargetType.USER,
       targetId: 'user-2',
-      metadata: { reason: 'spam' },
-      ipAddress: '127.0.0.1',
     };
 
     prismaMock.accounts.findUnique.mockResolvedValue({
@@ -95,8 +89,6 @@ describe('AuditLogService', () => {
         action: AuditAction.BAN_USER,
         targetType: AuditTargetType.USER,
         targetId: 'user-2',
-        metadata: { reason: 'spam' },
-        ipAddress: '127.0.0.1',
       },
     });
     expect(result).toEqual({

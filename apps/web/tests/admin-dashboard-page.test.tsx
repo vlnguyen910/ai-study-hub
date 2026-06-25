@@ -5,6 +5,7 @@ import AdminDashboardPage from "../src/modules/admin/pages/AdminDashboardPage";
 
 const adminApiMock = vi.hoisted(() => ({
   fetchAdminDashboardStats: vi.fn(),
+  fetchAuditLogs: vi.fn(),
 }));
 
 vi.mock("../src/modules/admin/api", () => adminApiMock);
@@ -16,6 +17,10 @@ describe("AdminDashboardPage", () => {
       accounts: { total: 12, active: 7, banned: 2, unverified: 3 },
       subjects: { total: 5 },
       documents: { total: 20, active: 14, pending: 4, rejected: 2 },
+    });
+    adminApiMock.fetchAuditLogs.mockResolvedValue({
+      logs: [],
+      pagination: { page: 1, limit: 5, total: 0, totalPages: 0 },
     });
   });
 
@@ -33,6 +38,7 @@ describe("AdminDashboardPage", () => {
     expect(screen.queryByText("12,840")).not.toBeInTheDocument();
 
     expect(adminApiMock.fetchAdminDashboardStats).toHaveBeenCalledWith();
+    expect(adminApiMock.fetchAuditLogs).toHaveBeenCalledWith({ limit: 5 });
   });
 
   it("shows an error state when dashboard stats cannot be loaded", async () => {
