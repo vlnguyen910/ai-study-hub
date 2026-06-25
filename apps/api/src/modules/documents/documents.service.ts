@@ -84,21 +84,11 @@ export class DocumentsService {
       return visibilityFilters;
     }
 
-    visibilityFilters.push(
-      {
-        status: DocumentStatus.ACTIVE,
-        isPublic: false,
-        authorId: user.sub,
-      },
-      {
-        status: DocumentStatus.PENDING,
-        authorId: user.sub,
-      },
-      {
-        status: DocumentStatus.REJECTED,
-        authorId: user.sub,
-      },
-    );
+    visibilityFilters.push({
+      status: DocumentStatus.ACTIVE,
+      isPublic: false,
+      authorId: user.sub,
+    });
 
     if (user.role === UserRole.MODERATOR) {
       visibilityFilters.push(
