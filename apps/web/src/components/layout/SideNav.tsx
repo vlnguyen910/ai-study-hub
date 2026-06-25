@@ -1,6 +1,7 @@
 "use client";
 
 import { SideNavItem } from "@/types/sideNav";
+import { ROUTE_PATHS } from "@/routes/router.const";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState, type FC, type ReactNode } from "react";
@@ -98,7 +99,9 @@ export const SideNav: FC<SideNavProps> = ({
     <>
       <div className="lg:hidden border-b border-outline-variant bg-surface-container-high/95 px-4 py-3 backdrop-blur-xl transition-all duration-200">
         <div className="flex items-center justify-between">
-          <Logo />
+          <Link href={ROUTE_PATHS.HOME} aria-label="AI Study Hub home">
+            <Logo />
+          </Link>
           <button
             type="button"
             aria-label="Open navigation"
@@ -132,7 +135,9 @@ export const SideNav: FC<SideNavProps> = ({
       >
         <div className="mb-8">
           <div className="mb-6">
-            <Logo />
+            <Link href={ROUTE_PATHS.HOME} aria-label="AI Study Hub home">
+              <Logo />
+            </Link>
           </div>
 
           <h2 className="mb-2 font-headline-md text-headline-md font-bold text-primary">
@@ -165,7 +170,9 @@ export const SideNav: FC<SideNavProps> = ({
         <div className="fixed inset-0 z-50 overflow-hidden bg-surface/80 backdrop-blur-sm lg:hidden">
           <div className="absolute inset-y-0 left-0 w-72 overflow-y-auto border-r border-outline-variant bg-surface p-6 shadow-2xl">
             <div className="mb-8 flex items-start justify-between gap-4">
-              <Logo />
+              <Link href={ROUTE_PATHS.HOME} aria-label="AI Study Hub home">
+                <Logo />
+              </Link>
               <button
                 type="button"
                 aria-label="Close navigation"

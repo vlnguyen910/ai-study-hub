@@ -7,6 +7,7 @@ import { Pagination } from "@/components/ui/Pagination";
 import type { LibraryDocument, PaginationMeta } from "@/types/document.type";
 
 import { DocumentCardView } from "./DocumentCardView";
+import { DocumentContributionBanner } from "./DocumentContributionBanner";
 import { DocumentCollectionError } from "./DocumentCollectionState";
 import {
   DocumentCollectionToolbar,
@@ -41,7 +42,7 @@ export function DocumentCollection({
   savingId,
 }: Props): React.JSX.Element {
   const [searchTerm, setSearchTerm] = useState("");
-  const [viewMode, setViewMode] = useState<DocumentViewMode>("table");
+  const [viewMode, setViewMode] = useState<DocumentViewMode>("card");
   const [reasonDocument, setReasonDocument] = useState<LibraryDocument | null>(
     null,
   );
@@ -111,6 +112,10 @@ export function DocumentCollection({
           />
         </div>
       ) : null}
+
+      <DocumentContributionBanner
+        isVisible={!isLoading && !error && visibleDocuments.length > 0}
+      />
 
       <DocumentReasonModal
         document={reasonDocument}

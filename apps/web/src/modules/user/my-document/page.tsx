@@ -22,15 +22,42 @@ import type {
   UpdateDocumentPayload,
 } from "@/types/document.type";
 
+import { DocumentCollection } from "./components/DocumentCollection";
 import { DocumentEditModal } from "./components/DocumentEditModal";
 import { DeleteDocumentModal } from "./components/DeleteDocumentModal";
-import { DocumentCollection } from "./components/DocumentCollection";
+import { DocumentStatsBar } from "./components/DocumentStatsBar";
 
 const ITEMS_PER_PAGE = 4;
+
+interface DocumentStats {
+  readonly total: number;
+  readonly approved: number;
+  readonly pending: number;
+}
+
+const INITIAL_STATS: DocumentStats = {
+  total: 0,
+  approved: 0,
+  pending: 0,
+};
+
+const countDocumentStats = (documents: LibraryDocument[]): DocumentStats => {
+  return documents.reduce(
+    (acc, document) => ({
+      total: acc.total + 1,
+      approved:
+        acc.approved +
+        (document.status === "ACTIVE" && document.isPublic ? 1 : 0),
+      pending: acc.pending + (document.status === "PENDING" ? 1 : 0),
+    }),
+    INITIAL_STATS,
+  );
+};
 
 export default function MyDocumentPage(): React.JSX.Element {
   const [documents, setDocuments] = useState<LibraryDocument[]>([]);
   const [pagination, setPagination] = useState<PaginationMeta | null>(null);
+  const [stats, setStats] = useState<DocumentStats>(INITIAL_STATS);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
@@ -46,12 +73,18 @@ export default function MyDocumentPage(): React.JSX.Element {
   const load = useCallback(async (page: number) => {
     setIsLoading(true);
     setError(null);
+
     try {
       const res = await fetchMyDocuments({ page, limit: ITEMS_PER_PAGE });
       setDocuments(res.documents);
       setPagination(res.pagination);
+
+      const totalLimit = Math.max(res.pagination.total, 1);
+      const statsRes = await fetchMyDocuments({ page: 1, limit: totalLimit });
+      setStats(countDocumentStats(statsRes.documents));
     } catch {
       setError("Không thể tải danh sách tài liệu. Vui lòng thử lại.");
+      setStats(INITIAL_STATS);
     } finally {
       setIsLoading(false);
     }
@@ -114,6 +147,13 @@ export default function MyDocumentPage(): React.JSX.Element {
           Quản lý tài liệu bạn đã tải lên.
         </p>
       </div>
+
+      <DocumentStatsBar
+        total={stats.total}
+        approved={stats.approved}
+        pending={stats.pending}
+        isLoading={isLoading}
+      />
 
       <DocumentCollection
         documents={documents}
