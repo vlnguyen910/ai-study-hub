@@ -25,8 +25,7 @@ export const SelectionSection: FC<SelectionSectionProps> = ({ title }) => {
           options={selectOptions}
           value={controls.city}
           onChange={controls.setCity}
-          expanded
-          widthClassName="w-64"
+          className="w-64"
         />
       </div>
       <div className="flex flex-wrap gap-8">
