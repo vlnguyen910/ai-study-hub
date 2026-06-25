@@ -7,12 +7,12 @@ describe('AdminSubjectsController', () => {
   let controller: AdminSubjectsController;
 
   const subjectsServiceMock = {
-    create: jest.fn().mockResolvedValue({ id: 's1' }),
-    update: jest.fn().mockResolvedValue({ id: 's1' }),
+    create: jest.fn().mockResolvedValue({ data: { id: 's1' } }),
+    update: jest.fn().mockResolvedValue({ data: { id: 's1' } }),
     delete: jest.fn().mockResolvedValue({ message: 'Subject deleted' }),
     findOne: jest
       .fn()
-      .mockResolvedValue({ id: 's1', name: 'Math', code: 'MTH101' }),
+      .mockResolvedValue({ data: { id: 's1', name: 'Math', code: 'MTH101' } }),
   };
 
   const auditLogServiceMock = {

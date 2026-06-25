@@ -54,7 +54,7 @@ export class AdminAccountsController {
   @Patch(':accountId/ban')
   async ban(
     @Param('accountId', new ParseMongoIdPipe()) accountId: string,
-    @Req() request: any,
+    @Req() request?: any,
   ) {
     const result = await this.accountsService.ban(accountId);
     try {
