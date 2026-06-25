@@ -612,6 +612,19 @@ export class DocumentsService {
       },
     });
 
+    if (document.status === DocumentStatus.PENDING && shouldQueueForReview) {
+      this.documentGateway.broadcastDocumentCreated({
+        id: document.id,
+        title: document.title,
+        status: document.status,
+        createdAt: document.createdAt,
+        author: {
+          name: document.author.name,
+          avatarUrl: document.author.avatarUrl ?? null,
+        },
+      });
+    }
+
     return {
       message: 'Document updated successfully',
       data: document,

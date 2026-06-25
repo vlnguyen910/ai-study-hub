@@ -8,7 +8,7 @@ import {
 import { Server, Socket } from 'socket.io';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
-import { UserRole } from '@prisma/client';
+import { UserRole, UserStatus } from '@prisma/client';
 
 @WebSocketGateway({
   cors: {
@@ -47,17 +47,17 @@ export class DocumentGateway
       }
 
       const jwtSecret = this.configService.get<string>('jwt.secret');
-      const payload = this.jwtService.verify<{ role: UserRole }>(token, {
+      const payload = this.jwtService.verify<{
+        role: UserRole;
+        status: UserStatus;
+      }>(token, {
         secret: jwtSecret,
       });
 
       if (
-        payload.role !== UserRole.MODERATOR &&
-        payload.role !== UserRole.ADMIN
+        payload.role !== UserRole.MODERATOR ||
+        payload.status !== UserStatus.ACTIVE
       ) {
-        this.logger.warn(
-          `Client ${client.id} with role ${payload.role} is not authorized`,
-        );
         client.disconnect();
         return;
       }
