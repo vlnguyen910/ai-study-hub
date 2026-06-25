@@ -2,12 +2,13 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 
-import { fetchDocuments } from "@/apis/document.api";
+import { fetchDocumentDetail, fetchDocuments } from "@/apis/document.api";
 import { Pagination } from "@/components/ui/Pagination";
 import { Table, type TableRow } from "@/components/ui/Table";
+import { usePendingDocumentsStore } from "@/stores/pendingDocuments/store";
 import type { LibraryDocument } from "@/types/document.type";
 import { formatDate } from "@/utils";
-import { usePendingDocumentsStore } from "@/stores/pendingDocuments/store";
+import { useDocumentSocketContext } from "../context/DocumentSocketContext";
 
 import {
   EmptyState,
@@ -40,7 +41,7 @@ export default function ModeratorDocumentsPage(): React.JSX.Element {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const setCount = usePendingDocumentsStore((state) => state.setCount);
+  const { setCount } = usePendingDocumentsStore();
 
   const loadDocuments = useCallback(async () => {
     setIsLoading(true);
@@ -53,7 +54,7 @@ export default function ModeratorDocumentsPage(): React.JSX.Element {
         status: "PENDING",
       });
       setDocuments(response.documents);
-      // Keep the global pending count in sync with the actual server count
+      // Sync global pending count with actual server count
       setCount(response.documents.length);
     } catch {
       setDocuments([]);
@@ -66,6 +67,45 @@ export default function ModeratorDocumentsPage(): React.JSX.Element {
   useEffect(() => {
     loadDocuments();
   }, [loadDocuments]);
+
+  // Real-time: when a new document is created, fetch its full details and prepend to the list.
+  // The badge count is already incremented by ModeratorShellInner via the same context.
+  useDocumentSocketContext(
+    useCallback(async ({ id }: { id: string }) => {
+      try {
+        const detail = await fetchDocumentDetail(id);
+
+        const newDoc: LibraryDocument = {
+          id: detail.id,
+          title: detail.title,
+          fileUrl: detail.fileUrl,
+          publicId: detail.publicId,
+          description: detail.description,
+          format: detail.format,
+          sizeInBytes: detail.sizeInBytes,
+          status: detail.status ?? "PENDING",
+          isPublic: detail.isPublic ?? true,
+          createdAt: detail.createdAt,
+          updatedAt: detail.createdAt,
+          rejectionReason: detail.rejectionReason,
+          author: {
+            id: detail.author.id,
+            name: detail.author.name,
+            avatarUrl: detail.author.avatarUrl,
+          },
+          subject: detail.subject,
+        };
+
+        setDocuments((prev) => {
+          // Guard against duplicate events
+          if (prev.some((d) => d.id === newDoc.id)) return prev;
+          return [newDoc, ...prev];
+        });
+      } catch {
+        // Silently fall back — moderator can use the refresh button
+      }
+    }, []),
+  );
 
   const filteredDocuments = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase();
