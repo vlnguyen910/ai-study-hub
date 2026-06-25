@@ -14,13 +14,12 @@ import AuthLayout from "@/components/layout/AuthLayout";
 import { GoogleAuthButton } from "@/components/auth/GoogleAuthButton";
 import { BackButton } from "@/components/ui/BackButton";
 import { Button } from "@/components/ui/Button";
-import { apiClient } from "@/lib/axios";
+import { signup } from "@/modules/auth-api";
 import {
   buildGoogleLoginUrl,
   markGoogleOauthPending,
 } from "@/modules/google-auth";
 import { ROUTE_PATHS } from "@/routes/router.const";
-import { API_ENDPOINTS } from "@/shared/constants";
 import { getOrCreateDeviceId } from "@/utils";
 
 const getSafeRedirect = (value: string | null): string | null => {
@@ -214,15 +213,13 @@ export default function RegisterPageClient(): ReactElement {
     setIsSubmitting(true);
 
     try {
-      const deviceId = getOrCreateDeviceId();
       const name = formData.name.trim();
       const email = formData.email.trim();
 
-      await apiClient.post(API_ENDPOINTS.AUTH.REGISTER, {
+      await signup({
         name,
         email,
         password: formData.password,
-        deviceId,
       });
 
       router.replace(loginHref);

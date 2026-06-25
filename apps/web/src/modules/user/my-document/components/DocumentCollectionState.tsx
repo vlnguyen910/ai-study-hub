@@ -1,3 +1,8 @@
+import Link from "next/link";
+
+import { buttonVariants } from "@/components/ui/Button";
+import { ROUTE_PATHS } from "@/routes/router.const";
+
 interface EmptyProps {
   readonly isSearching: boolean;
 }
@@ -10,11 +15,21 @@ export function DocumentCollectionEmpty({
       <span className="material-symbols-outlined mb-2 text-4xl text-on-surface-variant/40">
         {isSearching ? "search_off" : "folder_open"}
       </span>
-      <p className="text-sm text-on-surface-variant">
-        {isSearching
-          ? "Không tìm thấy kết quả phù hợp."
-          : "Bạn chưa có tài liệu nào."}
-      </p>
+      <div className="space-y-3">
+        <p className="text-sm text-on-surface-variant">
+          {isSearching
+            ? "Không tìm thấy kết quả phù hợp."
+            : "Trống trải quá, upload thêm tài liệu đi!"}
+        </p>
+        {!isSearching ? (
+          <Link
+            href={ROUTE_PATHS.PROTECTED_ROUTES.UPLOADS}
+            className={buttonVariants({ variant: "primary" })}
+          >
+            Tải lên tài liệu
+          </Link>
+        ) : null}
+      </div>
     </div>
   );
 }
