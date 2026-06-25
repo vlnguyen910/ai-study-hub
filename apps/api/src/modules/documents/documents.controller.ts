@@ -82,7 +82,7 @@ export class DocumentsController {
   async approve(
     @Param('id', new ParseMongoIdPipe()) id: string,
     @User() user: TokenPayload,
-    @Req() request: any,
+    @Req() request?: any,
   ) {
     const result = await this.documentsService.approve(id, user.sub);
     try {
@@ -118,7 +118,7 @@ export class DocumentsController {
     @Param('id', new ParseMongoIdPipe()) id: string,
     @Body() rejectDocumentDto: RejectDocumentDto,
     @User() user: TokenPayload,
-    @Req() request: any,
+    @Req() request?: any,
   ) {
     const result = await this.documentsService.reject(
       id,
@@ -169,7 +169,7 @@ export class DocumentsController {
     @Param('id', new ParseMongoIdPipe()) id: string,
     @Body() updateDocumentDto: UpdateDocumentDto,
     @User() user: TokenPayload,
-    @Req() request: any,
+    @Req() request?: any,
   ) {
     let existingDoc: any = null;
     try {
@@ -220,7 +220,7 @@ export class DocumentsController {
   async remove(
     @Param('id', new ParseMongoIdPipe()) id: string,
     @User() user: TokenPayload,
-    @Req() request: any,
+    @Req() request?: any,
   ) {
     const result = await this.documentsService.delete(id, user.sub);
     try {

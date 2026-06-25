@@ -31,7 +31,7 @@ export class AdminSubjectsController {
   @Post()
   async create(
     @Body() createSubjectDto: CreateSubjectDto,
-    @Req() request: any,
+    @Req() request?: any,
   ) {
     const result = await this.subjectsService.create(createSubjectDto);
     try {
@@ -48,7 +48,7 @@ export class AdminSubjectsController {
         actorRole,
         action: AuditAction.CREATE_SUBJECT,
         targetType: AuditTargetType.SUBJECT,
-        targetId: result.id,
+        targetId: result.data.id,
         metadata: {
           name: createSubjectDto.name,
           code: createSubjectDto.code,
@@ -68,7 +68,7 @@ export class AdminSubjectsController {
   async update(
     @Param('id', new ParseMongoIdPipe()) id: string,
     @Body() updateSubjectDto: UpdateSubjectDto,
-    @Req() request: any,
+    @Req() request?: any,
   ) {
     const oldSubject = await this.subjectsService.findOne(id);
     const result = await this.subjectsService.update(id, updateSubjectDto);
@@ -88,8 +88,8 @@ export class AdminSubjectsController {
         targetType: AuditTargetType.SUBJECT,
         targetId: id,
         metadata: {
-          old: oldSubject
-            ? { name: oldSubject.name, code: oldSubject.code }
+          old: oldSubject?.data
+            ? { name: oldSubject.data.name, code: oldSubject.data.code }
             : null,
           new: { name: updateSubjectDto.name, code: updateSubjectDto.code },
         },
@@ -106,7 +106,7 @@ export class AdminSubjectsController {
   @Delete(':id')
   async remove(
     @Param('id', new ParseMongoIdPipe()) id: string,
-    @Req() request: any,
+    @Req() request?: any,
   ) {
     const oldSubject = await this.subjectsService.findOne(id);
     const result = await this.subjectsService.delete(id);
@@ -125,8 +125,8 @@ export class AdminSubjectsController {
         action: AuditAction.DELETE_SUBJECT,
         targetType: AuditTargetType.SUBJECT,
         targetId: id,
-        metadata: oldSubject
-          ? { name: oldSubject.name, code: oldSubject.code }
+        metadata: oldSubject?.data
+          ? { name: oldSubject.data.name, code: oldSubject.data.code }
           : null,
         ipAddress: ipAddress ? String(ipAddress) : undefined,
       });
