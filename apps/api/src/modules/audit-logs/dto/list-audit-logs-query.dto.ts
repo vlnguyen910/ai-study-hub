@@ -7,7 +7,7 @@ import {
   IsDateString,
 } from 'class-validator';
 import { Type } from 'class-transformer';
-import { AuditAction } from '@prisma/client';
+import { AuditAction, AuditTargetType } from '@prisma/client';
 
 export class ListAuditLogsQueryDto {
   @IsOptional()
@@ -29,6 +29,18 @@ export class ListAuditLogsQueryDto {
   @IsOptional()
   @IsEnum(AuditAction)
   action?: AuditAction;
+
+  @IsOptional()
+  @IsEnum(AuditTargetType)
+  targetType?: AuditTargetType;
+
+  @IsOptional()
+  @IsDateString()
+  from?: string;
+
+  @IsOptional()
+  @IsDateString()
+  to?: string;
 
   @IsOptional()
   @IsDateString()

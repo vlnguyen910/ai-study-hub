@@ -6,7 +6,7 @@ import { AuthGuard } from '../../common/guards/auth.guard';
 import { OptionalJwtGuard } from '../../common/guards/optional-jwt.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import { VerifiedAccountGuard } from '../../common/guards/verified-account.guard';
-import { AuditLogInterceptor } from '../audit-logs/audit-log.interceptor';
+import { AuditLogInterceptor, AuditLogService } from '../audit-logs';
 
 jest.mock('uuid', () => ({
   v4: jest.fn(() => 'test-jti'),
@@ -26,6 +26,11 @@ describe('DocumentsController', () => {
     delete: jest.fn(),
   };
 
+  const auditLogServiceMock = {
+    log: jest.fn(),
+    create: jest.fn(),
+  };
+
   beforeEach(async () => {
     jest.clearAllMocks();
 
@@ -35,6 +40,10 @@ describe('DocumentsController', () => {
         {
           provide: DocumentsService,
           useValue: documentsServiceMock,
+        },
+        {
+          provide: AuditLogService,
+          useValue: auditLogServiceMock,
         },
       ],
     });

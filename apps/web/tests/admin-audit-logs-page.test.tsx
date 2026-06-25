@@ -21,7 +21,9 @@ const mockAuditLogs: AuditLog[] = [
       name: "Admin User",
       email: "admin@example.com",
     },
+    actorRole: "ADMIN",
     action: "BAN_USER",
+    targetType: "USER",
     targetId: "user-to-ban-123",
     ipAddress: "127.0.0.1",
     metadata: { reason: "Spamming" },
@@ -35,7 +37,9 @@ const mockAuditLogs: AuditLog[] = [
       name: "Mod User",
       email: "mod@example.com",
     },
+    actorRole: "MODERATOR",
     action: "APPROVE_DOCUMENT",
+    targetType: "DOCUMENT",
     targetId: "doc-123",
     ipAddress: "192.168.1.1",
     metadata: { docTitle: "Introduction to AI" },
@@ -140,6 +144,26 @@ describe("AdminAuditLogsPage", () => {
     });
   });
 
+  it("filters audit logs by target type select", async () => {
+    render(<AdminAuditLogsPage />);
+
+    await screen.findByText("Admin User");
+
+    const trigger = screen.getByRole("button", { name: "Loại đối tượng" });
+    fireEvent.click(trigger);
+
+    const option = screen.getByRole("option", { name: "Tài liệu" });
+    fireEvent.click(option);
+
+    await waitFor(() => {
+      expect(adminApiMock.fetchAuditLogs).toHaveBeenLastCalledWith(
+        expect.objectContaining({
+          targetType: "DOCUMENT",
+        }),
+      );
+    });
+  });
+
   it("filters audit logs by dates and resets them", async () => {
     render(<AdminAuditLogsPage />);
 
@@ -154,8 +178,8 @@ describe("AdminAuditLogsPage", () => {
     await waitFor(() => {
       expect(adminApiMock.fetchAuditLogs).toHaveBeenLastCalledWith(
         expect.objectContaining({
-          startDate: "2026-06-01",
-          endDate: "2026-06-30",
+          from: "2026-06-01",
+          to: "2026-06-30",
         }),
       );
     });

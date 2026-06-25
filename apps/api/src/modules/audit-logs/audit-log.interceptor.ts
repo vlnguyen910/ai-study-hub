@@ -9,7 +9,7 @@ import { Observable } from 'rxjs';
 import { tap } from 'rxjs/operators';
 import { AuditLogService } from './audit-log.service';
 import { AUDIT_ACTION_KEY } from './audit-log.decorator';
-import { AuditAction } from '@prisma/client';
+import { AuditAction, AuditTargetType } from '@prisma/client';
 
 @Injectable()
 export class AuditLogInterceptor implements NestInterceptor {
@@ -37,6 +37,8 @@ export class AuditLogInterceptor implements NestInterceptor {
             const actorId = request.user?.sub;
             if (!actorId) return;
 
+            const actorRole = request.user?.role;
+
             const ipAddress =
               request.ip ||
               request.headers['x-forwarded-for'] ||
@@ -53,6 +55,32 @@ export class AuditLogInterceptor implements NestInterceptor {
               request.params.documentId ||
               (data && data.data && data.data.id) ||
               (data && data.id);
+
+            // Determine targetType
+            let targetType = request.auditTargetType;
+            if (!targetType) {
+              if (
+                action === AuditAction.BAN_USER ||
+                action === AuditAction.UNBAN_USER
+              ) {
+                targetType = AuditTargetType.USER;
+              } else if (
+                action === AuditAction.APPROVE_DOCUMENT ||
+                action === AuditAction.REJECT_DOCUMENT ||
+                action === AuditAction.DELETE_DOCUMENT ||
+                action === AuditAction.UPDATE_DOCUMENT_VISIBILITY
+              ) {
+                targetType = AuditTargetType.DOCUMENT;
+              } else if (action === AuditAction.UPDATE_SYSTEM_SETTINGS) {
+                targetType = AuditTargetType.SYSTEM_SETTING;
+              } else if (
+                action === AuditAction.CREATE_SUBJECT ||
+                action === AuditAction.UPDATE_SUBJECT ||
+                action === AuditAction.DELETE_SUBJECT
+              ) {
+                targetType = AuditTargetType.SUBJECT;
+              }
+            }
 
             // Determine metadata
             // Can be explicitly set on the request by the controller, e.g. request.auditMetadata = ...
@@ -75,7 +103,9 @@ export class AuditLogInterceptor implements NestInterceptor {
 
             await this.auditLogService.create({
               actorId,
+              actorRole,
               action,
+              targetType,
               targetId: targetId ? String(targetId) : undefined,
               metadata,
               ipAddress: ipAddress ? String(ipAddress) : undefined,

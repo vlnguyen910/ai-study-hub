@@ -1,22 +1,37 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
-import { AuditAction, Prisma } from '@prisma/client';
+import { AuditAction, AuditTargetType, UserRole, Prisma } from '@prisma/client';
 
 @Injectable()
 export class AuditLogService {
   constructor(private readonly prisma: PrismaService) {}
 
   async create(params: {
-    actorId: string;
+    actorId?: string;
+    actorRole?: UserRole;
     action: AuditAction;
+    targetType?: AuditTargetType;
     targetId?: string;
     metadata?: any;
     ipAddress?: string;
   }) {
+    let finalActorRole = params.actorRole;
+    if (params.actorId && !finalActorRole) {
+      const user = await this.prisma.accounts.findUnique({
+        where: { id: params.actorId },
+        select: { role: true },
+      });
+      if (user) {
+        finalActorRole = user.role;
+      }
+    }
+
     return this.prisma.audit_logs.create({
       data: {
-        actorId: params.actorId,
+        actorId: params.actorId || null,
+        actorRole: finalActorRole || null,
         action: params.action,
+        targetType: params.targetType || null,
         targetId: params.targetId || null,
         metadata: params.metadata
           ? (params.metadata as Prisma.InputJsonValue)
@@ -26,11 +41,26 @@ export class AuditLogService {
     });
   }
 
+  async log(params: {
+    actorId?: string;
+    actorRole?: UserRole;
+    action: AuditAction;
+    targetType?: AuditTargetType;
+    targetId?: string;
+    metadata?: any;
+    ipAddress?: string;
+  }) {
+    return this.create(params);
+  }
+
   async findAll(query: {
     page?: number;
     limit?: number;
     actorId?: string;
     action?: AuditAction;
+    targetType?: AuditTargetType;
+    from?: string;
+    to?: string;
     startDate?: string;
     endDate?: string;
   }) {
@@ -48,13 +78,20 @@ export class AuditLogService {
       where.action = query.action;
     }
 
-    if (query.startDate || query.endDate) {
+    if (query.targetType) {
+      where.targetType = query.targetType;
+    }
+
+    const startVal = query.from || query.startDate;
+    const endVal = query.to || query.endDate;
+
+    if (startVal || endVal) {
       where.createdAt = {};
-      if (query.startDate) {
-        where.createdAt.gte = new Date(query.startDate);
+      if (startVal) {
+        where.createdAt.gte = new Date(startVal);
       }
-      if (query.endDate) {
-        where.createdAt.lte = new Date(query.endDate);
+      if (endVal) {
+        where.createdAt.lte = new Date(endVal);
       }
     }
 
