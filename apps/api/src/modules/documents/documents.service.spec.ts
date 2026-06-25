@@ -751,8 +751,14 @@ describe('DocumentsService', () => {
     };
     const updated = {
       id: '507f1f77bcf86cd799439011',
+      title: 'T',
       isPublic: true,
       status: DocumentStatus.PENDING,
+      createdAt: new Date(),
+      author: {
+        name: 'Test Author',
+        avatarUrl: null,
+      },
     };
     prismaMock.documents.findUnique.mockResolvedValueOnce(existing);
     prismaMock.documents.update.mockResolvedValue(updated);
@@ -771,6 +777,16 @@ describe('DocumentsService', () => {
         },
       }),
     );
+    expect(documentGatewayMock.broadcastDocumentCreated).toHaveBeenCalledWith({
+      id: updated.id,
+      title: updated.title,
+      status: updated.status,
+      createdAt: updated.createdAt,
+      author: {
+        name: updated.author.name,
+        avatarUrl: updated.author.avatarUrl,
+      },
+    });
   });
 
   it('update preserves status when isPublic does not change from private to public', async () => {
