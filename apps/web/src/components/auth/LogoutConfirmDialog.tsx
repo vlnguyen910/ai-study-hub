@@ -26,7 +26,7 @@ export function LogoutConfirmDialog({
         <div className="mb-5 flex items-start gap-3">
           <span
             aria-hidden="true"
-            className="material-symbols-outlined flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-error/10 text-error"
+            className="material-symbols-outlined flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-error/10 text-[24px] text-error"
           >
             logout
           </span>

@@ -32,6 +32,8 @@
 import { useEffect, useState, useCallback } from "react";
 import { Button } from "@/components/ui/Button";
 import { InputField } from "@/components/ui/InputField";
+import { SelectField } from "@/components/ui/SelectField";
+import type { SelectOption } from "@/components/ui/SelectField";
 import {
   fetchSubjects,
   createDocument,
@@ -83,6 +85,8 @@ interface Props {
   onSubmittingChange: (isSubmitting: boolean) => void;
   /** Called after the document is saved successfully. */
   onSuccess: () => void;
+  /** Callback for going back to the previous step. */
+  onBack?: () => void;
 }
 
 // ── Component ─────────────────────────────────────────────────────────────────
@@ -91,6 +95,7 @@ export function DocumentUploadForm({
   selectedFile,
   onSubmittingChange,
   onSuccess,
+  onBack,
 }: Props): React.JSX.Element {
   // Form values
   const [title, setTitle] = useState("");
@@ -103,6 +108,12 @@ export function DocumentUploadForm({
   // Subjects from API
   const [subjects, setSubjects] = useState<Subject[]>([]);
   const [subjectsLoading, setSubjectsLoading] = useState(true);
+
+  /** Memoised options list for SelectField */
+  const subjectOptions: SelectOption[] = subjects.map((s) => ({
+    value: s.id,
+    label: s.name,
+  }));
 
   useEffect(() => {
     fetchSubjects(100)
@@ -260,30 +271,19 @@ export function DocumentUploadForm({
 
       {/* Subject + School */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-        {/* Subject — populated from GET /api/v1/subjects */}
-        <label className="block">
-          <span className="mb-1 block text-xs font-medium text-on-surface-variant">
-            Môn học
-          </span>
-          <select
-            value={subjectId}
-            onChange={(e) => setSubjectId(e.target.value)}
-            disabled={subjectsLoading || isSubmitting}
-            className="
-              w-full rounded-xl border border-outline bg-surface
-              py-2 pl-3 pr-8 text-sm text-on-surface
-              focus:border-2 focus:border-primary focus:outline-none
-              disabled:cursor-not-allowed disabled:opacity-50
-            "
-          >
-            <option value="">Chọn môn học</option>
-            {subjects.map((s) => (
-              <option key={s.id} value={s.id}>
-                {s.name}
-              </option>
-            ))}
-          </select>
-        </label>
+        {/*
+         * Subject — populated from GET /api/v1/subjects.
+         * Uses the new SelectField (custom dropdown) for a polished look.
+         */}
+        <SelectField
+          label="Môn học"
+          placeholder="Chọn môn học"
+          options={subjectOptions}
+          value={subjectId}
+          onChange={setSubjectId}
+          disabled={isSubmitting}
+          loading={subjectsLoading}
+        />
 
         {/*
          * "Trường học" is not part of CreateDocumentDto — the backend
@@ -335,17 +335,29 @@ export function DocumentUploadForm({
           disabled={isSubmitting || isGeneratingAi}
           className="
             w-full resize-none rounded-xl border border-outline bg-surface
-            p-3 text-sm text-on-surface placeholder:text-on-surface-variant/60
-            focus:border-2 focus:border-primary focus:outline-none
+            px-3 py-2 text-sm text-on-surface
+            placeholder:text-on-surface-variant/50
+            transition-all duration-150
+            focus:border-2 focus:border-primary focus:px-[11px] focus:py-[7px] focus:outline-none
             disabled:cursor-not-allowed disabled:opacity-50
           "
         />
       </div>
 
       {/* Visibility toggle */}
-      <div className="flex items-center justify-between rounded-xl border border-outline bg-surface-variant/40 px-4 py-3">
+      <div
+        className={`flex items-center justify-between rounded-xl border px-4 py-3 transition-colors duration-200 ${
+          isPublic
+            ? "border-primary/30 bg-primary/5"
+            : "border-outline-variant/60 bg-surface-container-low/40"
+        }`}
+      >
         <div className="flex flex-col gap-0.5">
-          <span className="text-sm font-medium text-on-surface">
+          <span
+            className={`text-sm font-medium transition-colors duration-200 ${
+              isPublic ? "text-primary" : "text-on-surface"
+            }`}
+          >
             Công khai tài liệu
           </span>
           <span className="text-xs text-on-surface-variant">
@@ -380,14 +392,6 @@ export function DocumentUploadForm({
         </button>
       </div>
 
-      {/* No-file hint */}
-      {!selectedFile ? (
-        <p className="flex items-center gap-1 text-sm text-on-surface-variant">
-          <span className="material-symbols-outlined text-[16px]">info</span>
-          Chọn tệp bên trái trước, sau đó nhấn lưu.
-        </p>
-      ) : null}
-
       {/* Submit error */}
       {submitError ? (
         <div className="flex items-start gap-2 rounded-xl border border-error/40 bg-error-container/30 p-3 text-sm text-error">
@@ -398,11 +402,28 @@ export function DocumentUploadForm({
         </div>
       ) : null}
 
-      {/* Action button */}
-      <div className="flex flex-col-reverse gap-3 pt-1 sm:flex-row sm:justify-end">
+      {/* Action buttons */}
+      <div
+        className={`flex flex-col-reverse gap-3 pt-1 sm:flex-row sm:items-center ${
+          onBack ? "sm:justify-between" : "sm:justify-end"
+        }`}
+      >
+        {onBack && (
+          <Button
+            type="button"
+            variant="outline"
+            disabled={isSubmitting}
+            onClick={onBack}
+          >
+            <span className="material-symbols-outlined mr-1 text-[16px] align-text-bottom">
+              arrow_back
+            </span>
+            Quay lại
+          </Button>
+        )}
         <Button
           type="button"
-          variant={isPublic ? "primary" : "outline"}
+          variant="primary"
           className="w-full sm:w-auto"
           disabled={!canSubmit}
           onClick={handleSubmit}

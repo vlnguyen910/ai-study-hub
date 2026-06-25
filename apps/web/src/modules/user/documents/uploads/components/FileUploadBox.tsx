@@ -36,6 +36,8 @@ interface Props {
   onFileChange: (file: File | null) => void;
   /** Disables all interactions while the parent is submitting. */
   isSubmitting?: boolean;
+  /** Render compact layout. */
+  compact?: boolean;
 }
 
 // ── Component ─────────────────────────────────────────────────────────────────
@@ -45,6 +47,7 @@ export default function FileUploadBox({
   selectedFile,
   onFileChange,
   isSubmitting = false,
+  compact = false,
 }: Props): React.JSX.Element {
   const [isDragging, setIsDragging] = useState(false);
   const [validationError, setValidationError] = useState<string | null>(null);
@@ -163,37 +166,65 @@ export default function FileUploadBox({
 
       {/* Remove selected file */}
       {selectedFile ? (
-        <button
-          type="button"
-          onClick={removeFile}
-          disabled={isSubmitting}
-          className="
-            flex w-fit items-center justify-center gap-1 rounded-xl
-            border border-error/40 py-2 text-sm text-error
-            transition-colors hover:bg-error-container/30
-            disabled:cursor-not-allowed disabled:opacity-50 p-4 px-5 ml-auto
-          "
-        >
-          <span className="material-symbols-outlined text-[16px]">close</span>
-          Xóa file đã chọn
-        </button>
+        compact ? (
+          /* Compact: lightweight text link */
+          <button
+            type="button"
+            onClick={removeFile}
+            disabled={isSubmitting}
+            className="flex items-center gap-1 self-end text-xs text-error/70 transition-colors hover:text-error disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            <span className="material-symbols-outlined text-[13px]">close</span>
+            Xóa tệp
+          </button>
+        ) : (
+          /* Default: bordered button */
+          <button
+            type="button"
+            onClick={removeFile}
+            disabled={isSubmitting}
+            className="
+              flex w-fit items-center justify-center gap-1 rounded-xl
+              border border-error/40 py-2 text-sm text-error
+              transition-colors hover:bg-error-container/30
+              disabled:cursor-not-allowed disabled:opacity-50 p-4 px-5 ml-auto
+            "
+          >
+            <span className="material-symbols-outlined text-[16px]">close</span>
+            Xóa file đã chọn
+          </button>
+        )
       ) : null}
 
       {/* Academic integrity notice */}
-      <div className="flex gap-3 rounded-xl border border-primary/30 bg-primary/5 p-4">
-        <span className="material-symbols-outlined shrink-0 text-[20px] text-primary">
-          verified_user
-        </span>
-        <div className="text-sm">
-          <p className="font-semibold text-on-surface">
-            Quy tắc Liêm chính Học thuật
-          </p>
-          <p className="mt-1 text-on-surface-variant">
-            Bằng cách tải lên, bạn cam kết rằng tài liệu này không vi phạm bản
-            quyền và tuân thủ các quy định về liêm chính của nhà trường.
+      {compact ? (
+        /* Compact: minimal footnote, no background box */
+        <div className="flex gap-1.5 text-xs leading-relaxed text-on-surface-variant/60">
+          <span className="material-symbols-outlined mt-0.5 shrink-0 text-[13px] text-primary/40">
+            verified_user
+          </span>
+          <p>
+            Bằng cách tải lên, bạn cam kết tài liệu không vi phạm bản quyền và
+            tuân thủ quy định của nhà trường.
           </p>
         </div>
-      </div>
+      ) : (
+        /* Default: visible notice card */
+        <div className="flex gap-3 rounded-xl border border-primary/30 bg-primary/5 p-4">
+          <span className="material-symbols-outlined shrink-0 text-[20px] text-primary">
+            verified_user
+          </span>
+          <div className="text-sm">
+            <p className="font-semibold text-on-surface">
+              Quy tắc Liêm chính Học thuật
+            </p>
+            <p className="mt-1 text-on-surface-variant">
+              Bằng cách tải lên, bạn cam kết rằng tài liệu này không vi phạm bản
+              quyền và tuân thủ các quy định về liêm chính của nhà trường.
+            </p>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
