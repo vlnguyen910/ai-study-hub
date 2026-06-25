@@ -27,6 +27,10 @@ export class ListAuditLogsQueryDto {
   actorId?: string;
 
   @IsOptional()
+  @IsString()
+  actorName?: string;
+
+  @IsOptional()
   @IsEnum(AuditAction)
   action?: AuditAction;
 

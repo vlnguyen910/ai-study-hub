@@ -351,8 +351,6 @@ model audit_logs {
   action     AuditAction
   targetType AuditTargetType?
   targetId   String?
-  metadata   Json?
-  ipAddress  String?
   createdAt  DateTime         @default(now())
 
   @@index([actorId])

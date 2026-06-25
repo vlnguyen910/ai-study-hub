@@ -25,8 +25,6 @@ const mockAuditLogs: AuditLog[] = [
     action: "BAN_USER",
     targetType: "USER",
     targetId: "user-to-ban-123",
-    ipAddress: "127.0.0.1",
-    metadata: { reason: "Spamming" },
     createdAt: "2026-06-25T12:00:00.000Z",
   },
   {
@@ -41,8 +39,6 @@ const mockAuditLogs: AuditLog[] = [
     action: "APPROVE_DOCUMENT",
     targetType: "DOCUMENT",
     targetId: "doc-123",
-    ipAddress: "192.168.1.1",
-    metadata: { docTitle: "Introduction to AI" },
     createdAt: "2026-06-25T13:00:00.000Z",
   },
 ];
@@ -72,8 +68,6 @@ describe("AdminAuditLogsPage", () => {
     expect(screen.getByText("admin@example.com")).toBeInTheDocument();
     expect(screen.getByText("Mod User")).toBeInTheDocument();
     expect(screen.getByText("mod@example.com")).toBeInTheDocument();
-    expect(screen.getByText("127.0.0.1")).toBeInTheDocument();
-    expect(screen.getByText("192.168.1.1")).toBeInTheDocument();
   });
 
   it("shows error message if API fails", async () => {
@@ -96,7 +90,6 @@ describe("AdminAuditLogsPage", () => {
     expect(
       await screen.findByText("Chi tiết nhật ký hoạt động"),
     ).toBeInTheDocument();
-    expect(screen.getByText(/Spamming/)).toBeInTheDocument();
     expect(screen.getByText(/actor-1/)).toBeInTheDocument();
 
     const closeButtons = screen.getAllByRole("button", { name: "Đóng" });
@@ -107,18 +100,18 @@ describe("AdminAuditLogsPage", () => {
     ).not.toBeInTheDocument();
   });
 
-  it("filters audit logs by actor ID", async () => {
+  it("filters audit logs by actor name", async () => {
     render(<AdminAuditLogsPage />);
 
     await screen.findByText("Admin User");
 
-    const actorInput = screen.getByLabelText("ID người thực hiện (Actor ID)");
-    fireEvent.change(actorInput, { target: { value: "actor-1" } });
+    const actorInput = screen.getByLabelText("Người thực hiện");
+    fireEvent.change(actorInput, { target: { value: "Admin" } });
 
     await waitFor(() => {
       expect(adminApiMock.fetchAuditLogs).toHaveBeenLastCalledWith(
         expect.objectContaining({
-          actorId: "actor-1",
+          actorName: "Admin",
         }),
       );
     });

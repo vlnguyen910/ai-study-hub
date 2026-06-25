@@ -8,7 +8,12 @@ import {
   AdminToneIcon,
   MaterialIcon,
 } from "../components/AdminPrimitives";
-import { fetchAdminDashboardStats, type AdminDashboardStats } from "../api";
+import {
+  fetchAdminDashboardStats,
+  fetchAuditLogs,
+  type AdminDashboardStats,
+  type AuditLog,
+} from "../api";
 import type { AdminStat } from "../types";
 
 const formatCount = (value: number): string =>
@@ -64,16 +69,35 @@ const deferredSections = [
     icon: "dns",
     message: "Chưa có API telemetry để hiển thị uptime và độ trễ dịch vụ.",
   },
-  {
-    title: "Hoạt động gần đây",
-    icon: "history",
-    message: "Chưa có nguồn dữ liệu backend cho lịch sử thao tác admin.",
-  },
 ] as const;
+
+const actionLabelsMap: Record<string, string> = {
+  BAN_USER: "Ban người dùng",
+  UNBAN_USER: "Mở khóa người dùng",
+  APPROVE_DOCUMENT: "Duyệt tài liệu",
+  REJECT_DOCUMENT: "Từ chối tài liệu",
+  DELETE_DOCUMENT: "Xóa tài liệu",
+  UPDATE_SYSTEM_SETTINGS: "Cập nhật cài đặt hệ thống",
+  UPDATE_DOCUMENT_VISIBILITY: "Cập nhật hiển thị tài liệu",
+  CREATE_SUBJECT: "Tạo môn học",
+  UPDATE_SUBJECT: "Cập nhật môn học",
+  DELETE_SUBJECT: "Xóa môn học",
+};
+
+const formatDate = (value?: string): string => {
+  if (!value) return "—";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+  return new Intl.DateTimeFormat("vi-VN", {
+    dateStyle: "short",
+    timeStyle: "short",
+  }).format(date);
+};
 
 export default function AdminDashboardPage(): React.JSX.Element {
   const [dashboardStats, setDashboardStats] =
     useState<AdminDashboardStats | null>(null);
+  const [recentLogs, setRecentLogs] = useState<readonly AuditLog[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState("");
 
@@ -82,8 +106,12 @@ export default function AdminDashboardPage(): React.JSX.Element {
     setErrorMessage("");
 
     try {
-      const stats = await fetchAdminDashboardStats();
+      const [stats, logsResponse] = await Promise.all([
+        fetchAdminDashboardStats(),
+        fetchAuditLogs({ limit: 5 }),
+      ]);
       setDashboardStats(stats);
+      setRecentLogs(logsResponse.logs);
     } catch {
       setErrorMessage("Không thể tải số liệu dashboard.");
     } finally {
@@ -187,6 +215,54 @@ export default function AdminDashboardPage(): React.JSX.Element {
             </p>
           </AdminCard>
         ))}
+
+        <AdminCard className="p-6 lg:col-span-4">
+          <div className="mb-4 flex items-center justify-between gap-4">
+            <h2 className="text-xl font-semibold tracking-normal text-on-surface">
+              Hoạt động gần đây
+            </h2>
+            <MaterialIcon className="text-on-surface-variant" name="history" />
+          </div>
+          {isLoading ? (
+            <p className="font-label-sm text-label-sm text-on-surface-variant tracking-normal">
+              Đang tải hoạt động...
+            </p>
+          ) : recentLogs.length > 0 ? (
+            <div className="flex flex-col gap-3">
+              {recentLogs.map((log) => (
+                <div
+                  key={log.id}
+                  className="flex flex-col border-b border-outline-variant pb-2 last:border-0 last:pb-0"
+                >
+                  <div className="flex justify-between items-center gap-2">
+                    <span className="font-semibold text-xs text-on-surface truncate max-w-[120px]">
+                      {log.actor?.name || "Hệ thống"}
+                    </span>
+                    <span className="text-[10px] text-on-surface-variant shrink-0">
+                      {formatDate(log.createdAt)}
+                    </span>
+                  </div>
+                  <p className="text-xs text-on-surface-variant mt-1 truncate">
+                    {actionLabelsMap[log.action] || log.action}:{" "}
+                    <span className="font-semibold text-on-surface">
+                      {log.targetName || log.targetId || "—"}
+                    </span>
+                  </p>
+                </div>
+              ))}
+              <Link
+                href="/admin/audit-logs"
+                className="mt-2 text-center text-xs font-semibold text-primary hover:underline block"
+              >
+                Xem tất cả nhật ký
+              </Link>
+            </div>
+          ) : (
+            <p className="font-label-sm text-label-sm text-on-surface-variant tracking-normal">
+              Chưa có hoạt động nào gần đây.
+            </p>
+          )}
+        </AdminCard>
 
         <AdminCard className="p-6 lg:col-span-5">
           <div className="mb-6">

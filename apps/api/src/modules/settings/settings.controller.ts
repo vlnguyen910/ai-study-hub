@@ -59,28 +59,24 @@ export class AdminSettingsController {
     try {
       const actorId = request.user?.sub;
       const actorRole = request.user?.role;
-      const ipAddress =
-        request.ip ||
-        request.headers['x-forwarded-for'] ||
-        request.socket.remoteAddress;
 
       const groupOld = oldSettingsData[groupName] || {};
+      let changed = false;
       for (const key of Object.keys(dto)) {
         if (dto[key] !== undefined && dto[key] !== groupOld[key]) {
-          await this.auditLogService.log({
-            actorId,
-            actorRole,
-            action: AuditAction.UPDATE_SYSTEM_SETTINGS,
-            targetType: AuditTargetType.SYSTEM_SETTING,
-            targetId: 'GLOBAL',
-            metadata: {
-              setting: key,
-              oldValue: groupOld[key],
-              newValue: dto[key],
-            },
-            ipAddress: ipAddress ? String(ipAddress) : undefined,
-          });
+          changed = true;
+          break;
         }
+      }
+
+      if (changed) {
+        await this.auditLogService.log({
+          actorId,
+          actorRole,
+          action: AuditAction.UPDATE_SYSTEM_SETTINGS,
+          targetType: AuditTargetType.SYSTEM_SETTING,
+          targetId: 'GLOBAL',
+        });
       }
     } catch (err) {
       console.error('Failed to log settings change:', err);
@@ -120,28 +116,24 @@ export class AdminSettingsController {
     if (fileTypes) {
       // Log fileTypes change if modified
       const oldFileTypes = oldSettings.data.upload.fileTypes || [];
+      let fileTypesChanged = false;
       for (const ft of fileTypes) {
         const matchingOld = oldFileTypes.find(
           (o: any) => o.extension === ft.extension,
         );
         if (!matchingOld || matchingOld.enabled !== ft.enabled) {
-          await this.auditLogService.log({
-            actorId: request.user?.sub,
-            actorRole: request.user?.role,
-            action: AuditAction.UPDATE_SYSTEM_SETTINGS,
-            targetType: AuditTargetType.SYSTEM_SETTING,
-            targetId: 'GLOBAL',
-            metadata: {
-              setting: `FILE_TYPE_${ft.extension}`,
-              oldValue: matchingOld ? matchingOld.enabled : false,
-              newValue: ft.enabled,
-            },
-            ipAddress:
-              request.ip ||
-              request.headers['x-forwarded-for'] ||
-              request.socket.remoteAddress,
-          });
+          fileTypesChanged = true;
+          break;
         }
+      }
+      if (fileTypesChanged) {
+        await this.auditLogService.log({
+          actorId: request.user?.sub,
+          actorRole: request.user?.role,
+          action: AuditAction.UPDATE_SYSTEM_SETTINGS,
+          targetType: AuditTargetType.SYSTEM_SETTING,
+          targetId: 'GLOBAL',
+        });
       }
     }
     return result;

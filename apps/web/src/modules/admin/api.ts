@@ -200,8 +200,7 @@ export interface AuditLog {
   readonly action: AuditAction;
   readonly targetType?: AuditTargetType | null;
   readonly targetId?: string | null;
-  readonly metadata?: any;
-  readonly ipAddress?: string | null;
+  readonly targetName?: string | null;
   readonly createdAt: string;
 }
 
@@ -209,6 +208,7 @@ export interface FetchAuditLogsParams {
   readonly page?: number;
   readonly limit?: number;
   readonly actorId?: string;
+  readonly actorName?: string;
   readonly action?: AuditAction;
   readonly targetType?: AuditTargetType;
   readonly from?: string;
