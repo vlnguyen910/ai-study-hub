@@ -1,6 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { DocumentsService } from './documents.service';
 import { PrismaService } from '../../prisma/prisma.service';
+import { DocumentGateway } from './document.gateway';
 import { SubjectsService } from '../subjects';
 import { DocumentExtractorService } from '../document-processing/document-extractor.service';
 import { AIService } from '../ai/ai.service';
@@ -34,6 +35,7 @@ const createTokenPayload = (
 describe('DocumentsService', () => {
   let service: DocumentsService;
   let aiServiceMock: any;
+  let documentGatewayMock: any;
 
   const prismaMock: any = {
     documents: {
@@ -83,6 +85,9 @@ describe('DocumentsService', () => {
     const documentProcessingMock = {
       enqueueUploadProcessing: jest.fn().mockResolvedValue(undefined),
     };
+    documentGatewayMock = {
+      broadcastDocumentCreated: jest.fn(),
+    };
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -96,6 +101,7 @@ describe('DocumentsService', () => {
           provide: DocumentProcessingService,
           useValue: documentProcessingMock,
         },
+        { provide: DocumentGateway, useValue: documentGatewayMock },
       ],
     }).compile();
 
@@ -172,11 +178,26 @@ describe('DocumentsService', () => {
       title: 'T',
       authorId,
       status: 'PENDING',
+      createdAt: new Date(),
+      author: {
+        name: 'Test Author',
+        avatarUrl: null,
+      },
     };
     prismaMock.documents.create.mockResolvedValue(created);
 
     const res = await service.create(dto, authorId);
     expect(res.data).toEqual(created);
+    expect(documentGatewayMock.broadcastDocumentCreated).toHaveBeenCalledWith({
+      id: created.id,
+      title: created.title,
+      status: created.status,
+      createdAt: created.createdAt,
+      author: {
+        name: created.author.name,
+        avatarUrl: created.author.avatarUrl,
+      },
+    });
   });
 
   it('findAll accepts authorId and subjectId filters without bypassing visibility', async () => {
@@ -286,7 +307,8 @@ describe('DocumentsService', () => {
           OR: expect.arrayContaining([
             { status: DocumentStatus.ACTIVE, isPublic: true },
             {
-              status: DocumentStatus.PENDING,
+              status: DocumentStatus.ACTIVE,
+              isPublic: false,
               authorId: 'owner-1',
             },
           ]),
@@ -313,14 +335,6 @@ describe('DocumentsService', () => {
             {
               status: DocumentStatus.ACTIVE,
               isPublic: false,
-              authorId: 'owner-1',
-            },
-            {
-              status: DocumentStatus.PENDING,
-              authorId: 'owner-1',
-            },
-            {
-              status: DocumentStatus.REJECTED,
               authorId: 'owner-1',
             },
           ]),
@@ -567,31 +581,26 @@ describe('DocumentsService', () => {
     ).rejects.toThrow();
   });
 
-  it('findOne allows owner to view pending document', async () => {
-    const doc = {
-      id: '507f1f77bcf86cd799439011',
-      status: DocumentStatus.PENDING,
-    };
-    prismaMock.documents.findFirst.mockResolvedValue(doc);
+  it('findOne hides pending document from owner if they are not a moderator', async () => {
+    prismaMock.documents.findFirst.mockResolvedValue(null);
 
-    const res = await service.findOne(
-      '507f1f77bcf86cd799439011',
-      createTokenPayload(),
-    );
+    await expect(
+      service.findOne('507f1f77bcf86cd799439011', createTokenPayload()),
+    ).rejects.toThrow();
 
     expect(prismaMock.documents.findFirst).toHaveBeenCalledWith(
       expect.objectContaining({
         where: expect.objectContaining({
           OR: expect.arrayContaining([
             {
-              status: DocumentStatus.PENDING,
+              status: DocumentStatus.ACTIVE,
+              isPublic: false,
               authorId: 'owner-1',
             },
           ]),
         }),
       }),
     );
-    expect(res.data).toEqual(doc);
   });
 
   it('findOne allows moderator to view any pending document', async () => {
@@ -631,31 +640,26 @@ describe('DocumentsService', () => {
     ).rejects.toThrow();
   });
 
-  it('findOne allows owner to view rejected document', async () => {
-    const doc = {
-      id: '507f1f77bcf86cd799439011',
-      status: DocumentStatus.REJECTED,
-    };
-    prismaMock.documents.findFirst.mockResolvedValue(doc);
+  it('findOne hides rejected document from owner if they are not a moderator', async () => {
+    prismaMock.documents.findFirst.mockResolvedValue(null);
 
-    const res = await service.findOne(
-      '507f1f77bcf86cd799439011',
-      createTokenPayload(),
-    );
+    await expect(
+      service.findOne('507f1f77bcf86cd799439011', createTokenPayload()),
+    ).rejects.toThrow();
 
     expect(prismaMock.documents.findFirst).toHaveBeenCalledWith(
       expect.objectContaining({
         where: expect.objectContaining({
           OR: expect.arrayContaining([
             {
-              status: DocumentStatus.REJECTED,
+              status: DocumentStatus.ACTIVE,
+              isPublic: false,
               authorId: 'owner-1',
             },
           ]),
         }),
       }),
     );
-    expect(res.data).toEqual(doc);
   });
 
   it('findOne allows moderator to view rejected document', async () => {
