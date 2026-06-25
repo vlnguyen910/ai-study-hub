@@ -7,6 +7,7 @@ import { Pagination } from "@/components/ui/Pagination";
 import { Table, type TableRow } from "@/components/ui/Table";
 import type { LibraryDocument } from "@/types/document.type";
 import { formatDate } from "@/utils";
+import { usePendingDocumentsStore } from "@/stores/pendingDocuments/store";
 
 import {
   EmptyState,
@@ -39,6 +40,8 @@ export default function ModeratorDocumentsPage(): React.JSX.Element {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  const setCount = usePendingDocumentsStore((state) => state.setCount);
+
   const loadDocuments = useCallback(async () => {
     setIsLoading(true);
     setError(null);
@@ -50,13 +53,15 @@ export default function ModeratorDocumentsPage(): React.JSX.Element {
         status: "PENDING",
       });
       setDocuments(response.documents);
+      // Keep the global pending count in sync with the actual server count
+      setCount(response.documents.length);
     } catch {
       setDocuments([]);
       setError("Không thể tải danh sách tài liệu chờ duyệt.");
     } finally {
       setIsLoading(false);
     }
-  }, [currentPage]);
+  }, [currentPage, setCount]);
 
   useEffect(() => {
     loadDocuments();

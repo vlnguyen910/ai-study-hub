@@ -1,15 +1,17 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState, type ReactNode } from "react";
+import { useCallback, useState, type ReactNode } from "react";
 
 import { LogoutConfirmDialog } from "@/components/auth/LogoutConfirmDialog";
 import { SideNav } from "@/components/layout/SideNav";
 import { UserInfo } from "@/components/ui/UserInfo";
 import { MODERATOR_NAV_ITEMS } from "@/constants/nav.const";
+import { useDocumentSocket } from "@/hooks/useDocumentSocket";
 import { logoutCurrentSession } from "@/modules/auth-api";
 import { ROUTE_PATHS } from "@/routes/router.const";
 import { useAuthStore } from "@/stores/auth/store";
+import { usePendingDocumentsStore } from "@/stores/pendingDocuments/store";
 
 export function ModeratorShell({
   children,
@@ -20,6 +22,15 @@ export function ModeratorShell({
   const { logout } = useAuthStore();
   const [isLogoutConfirmOpen, setIsLogoutConfirmOpen] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
+
+  const { increment, pendingCount } = usePendingDocumentsStore();
+
+  // Listen for real-time document_created events and bump the counter
+  useDocumentSocket({
+    onDocumentCreated: useCallback(() => {
+      increment();
+    }, [increment]),
+  });
 
   const handleLogout = async () => {
     if (isLoggingOut) return;
@@ -35,11 +46,16 @@ export function ModeratorShell({
     }
   };
 
-  const navItems = MODERATOR_NAV_ITEMS.map((item) =>
-    item.href === "#"
-      ? { ...item, action: () => setIsLogoutConfirmOpen(true) }
-      : item,
-  );
+  const navItems = MODERATOR_NAV_ITEMS.map((item) => {
+    if (item.href === "#") {
+      return { ...item, action: () => setIsLogoutConfirmOpen(true) };
+    }
+    // Attach badge count to the "Duyệt tài liệu" nav item
+    if (item.href === ROUTE_PATHS.MODERATOR_ROUTES.DOCUMENTS) {
+      return { ...item, badge: pendingCount > 0 ? pendingCount : undefined };
+    }
+    return item;
+  });
 
   return (
     <div className="min-h-screen bg-background text-foreground">

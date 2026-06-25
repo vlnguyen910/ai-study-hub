@@ -54,7 +54,15 @@ export const SideNav: FC<SideNavProps> = ({
         >
           {item.icon}
         </span>
-        {item.label}
+        <span className="flex-1">{item.label}</span>
+        {item.badge !== undefined && item.badge > 0 ? (
+          <span
+            aria-label={`${item.badge} pending`}
+            className="ml-auto flex h-5 min-w-5 items-center justify-center rounded-full bg-primary px-1.5 text-[10px] font-bold text-on-primary"
+          >
+            {item.badge > 99 ? "99+" : item.badge}
+          </span>
+        ) : null}
       </>
     );
 
