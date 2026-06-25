@@ -9,6 +9,7 @@ import {
   Query,
   Version,
   UseGuards,
+  UseInterceptors,
 } from '@nestjs/common';
 import { DocumentsService } from './documents.service';
 import {
@@ -23,6 +24,8 @@ import { OptionalJwtGuard } from '../../common/guards/optional-jwt.guard';
 import { ParseMongoIdPipe } from '../../common/pipes/parse-mongoid.pipe';
 import { JwtAuthGuard } from '../../common/guards/jwt.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
+import { AuditLogInterceptor, AuditLogAction } from '../audit-logs';
+import { AuditAction } from '@prisma/client';
 import { VerifiedAccountGuard } from '../../common/guards/verified-account.guard';
 import { TokenPayload } from '../../common/interfaces/auth.interface';
 import { Roles, User } from '../../common/decorators';
@@ -72,6 +75,8 @@ export class DocumentsController {
   @Version('1')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('MODERATOR', 'ADMIN')
+  @UseInterceptors(AuditLogInterceptor)
+  @AuditLogAction(AuditAction.APPROVE_DOCUMENT)
   @Post(':id/approve')
   approve(
     @Param('id', new ParseMongoIdPipe()) id: string,
@@ -83,6 +88,8 @@ export class DocumentsController {
   @Version('1')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('MODERATOR', 'ADMIN')
+  @UseInterceptors(AuditLogInterceptor)
+  @AuditLogAction(AuditAction.REJECT_DOCUMENT)
   @Post(':id/reject')
   reject(
     @Param('id', new ParseMongoIdPipe()) id: string,
@@ -116,6 +123,8 @@ export class DocumentsController {
 
   @Version('1')
   @UseGuards(JwtAuthGuard)
+  @UseInterceptors(AuditLogInterceptor)
+  @AuditLogAction(AuditAction.DELETE_DOCUMENT)
   @Delete(':id')
   remove(
     @Param('id', new ParseMongoIdPipe()) id: string,

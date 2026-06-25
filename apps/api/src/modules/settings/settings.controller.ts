@@ -6,11 +6,13 @@ import {
   Patch,
   UseGuards,
   Version,
+  UseInterceptors,
 } from '@nestjs/common';
-import { UserRole } from '@prisma/client';
+import { UserRole, AuditAction } from '@prisma/client';
 import { Roles } from '../../common/decorators';
 import { JwtAuthGuard } from '../../common/guards/jwt.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
+import { AuditLogInterceptor, AuditLogAction } from '../audit-logs';
 import {
   UpdateAccountSettingsDto,
   UpdateAiSettingsDto,
@@ -35,6 +37,7 @@ export class PublicSettingsController {
 
 @Roles(UserRole.ADMIN)
 @UseGuards(JwtAuthGuard, RolesGuard)
+@UseInterceptors(AuditLogInterceptor)
 @Controller('admin/settings')
 export class AdminSettingsController {
   constructor(private readonly settingsService: SettingsService) {}
@@ -46,6 +49,7 @@ export class AdminSettingsController {
   }
 
   @Version('1')
+  @AuditLogAction(AuditAction.UPDATE_SYSTEM_SETTINGS)
   @Patch('general')
   @HttpCode(200)
   updateGeneral(@Body() dto: UpdateGeneralSettingsDto) {
@@ -53,6 +57,7 @@ export class AdminSettingsController {
   }
 
   @Version('1')
+  @AuditLogAction(AuditAction.UPDATE_SYSTEM_SETTINGS)
   @Patch('upload')
   @HttpCode(200)
   updateUpload(@Body() dto: UpdateUploadSettingsDto) {
@@ -60,6 +65,7 @@ export class AdminSettingsController {
   }
 
   @Version('1')
+  @AuditLogAction(AuditAction.UPDATE_SYSTEM_SETTINGS)
   @Patch('document-visibility')
   @HttpCode(200)
   updateDocumentVisibility(@Body() dto: UpdateDocumentVisibilitySettingsDto) {
@@ -67,6 +73,7 @@ export class AdminSettingsController {
   }
 
   @Version('1')
+  @AuditLogAction(AuditAction.UPDATE_SYSTEM_SETTINGS)
   @Patch('ai')
   @HttpCode(200)
   updateAi(@Body() dto: UpdateAiSettingsDto) {
@@ -74,6 +81,7 @@ export class AdminSettingsController {
   }
 
   @Version('1')
+  @AuditLogAction(AuditAction.UPDATE_SYSTEM_SETTINGS)
   @Patch('moderation')
   @HttpCode(200)
   updateModeration(@Body() dto: UpdateModerationSettingsDto) {
@@ -81,6 +89,7 @@ export class AdminSettingsController {
   }
 
   @Version('1')
+  @AuditLogAction(AuditAction.UPDATE_SYSTEM_SETTINGS)
   @Patch('account')
   @HttpCode(200)
   updateAccount(@Body() dto: UpdateAccountSettingsDto) {
@@ -88,6 +97,7 @@ export class AdminSettingsController {
   }
 
   @Version('1')
+  @AuditLogAction(AuditAction.UPDATE_SYSTEM_SETTINGS)
   @Patch('mobile')
   @HttpCode(200)
   updateMobile(@Body() dto: UpdateMobileSettingsDto) {

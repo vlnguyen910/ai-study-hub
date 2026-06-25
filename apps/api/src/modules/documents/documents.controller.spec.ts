@@ -6,6 +6,7 @@ import { AuthGuard } from '../../common/guards/auth.guard';
 import { OptionalJwtGuard } from '../../common/guards/optional-jwt.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import { VerifiedAccountGuard } from '../../common/guards/verified-account.guard';
+import { AuditLogInterceptor } from '../audit-logs/audit-log.interceptor';
 
 jest.mock('uuid', () => ({
   v4: jest.fn(() => 'test-jti'),
@@ -38,7 +39,7 @@ describe('DocumentsController', () => {
       ],
     });
 
-    // Override guards to avoid instantiating JwtService/Config in unit tests
+    // Override guards and interceptor to avoid instantiating JwtService/Config/AuditLogService in unit tests
     moduleBuilder
       .overrideGuard(AuthGuard)
       .useValue({ canActivate: () => true });
@@ -51,6 +52,9 @@ describe('DocumentsController', () => {
     moduleBuilder
       .overrideGuard(VerifiedAccountGuard)
       .useValue({ canActivate: () => true });
+    moduleBuilder
+      .overrideInterceptor(AuditLogInterceptor)
+      .useValue({ intercept: (context, next) => next.handle() });
 
     const module: TestingModule = await moduleBuilder.compile();
 

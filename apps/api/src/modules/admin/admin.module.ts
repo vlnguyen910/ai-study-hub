@@ -6,9 +6,10 @@ import { AdminAccountsController } from './admin-accounts.controller';
 import { AdminSubjectsController } from './admin-subjects.controller';
 import { AdminDashboardController } from './admin-dashboard.controller';
 import { AdminService } from './admin.service';
+import { AuditLogModule } from '../audit-logs';
 
 @Module({
-  imports: [AccountsModule, SubjectsModule, PrismaModule],
+  imports: [AccountsModule, SubjectsModule, PrismaModule, AuditLogModule],
   controllers: [
     AdminAccountsController,
     AdminSubjectsController,

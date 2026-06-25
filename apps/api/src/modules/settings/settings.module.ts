@@ -6,9 +6,10 @@ import {
 } from './settings.controller';
 import { SettingsRepository } from './settings.repository';
 import { SettingsService } from './settings.service';
+import { AuditLogModule } from '../audit-logs';
 
 @Module({
-  imports: [PrismaModule],
+  imports: [PrismaModule, AuditLogModule],
   controllers: [PublicSettingsController, AdminSettingsController],
   providers: [SettingsRepository, SettingsService],
   exports: [SettingsService],

@@ -166,3 +166,58 @@ export const updateAdminSubject = async (
 export const deleteAdminSubject = async (id: string): Promise<unknown> => {
   return apiClient.delete(API_ENDPOINTS.SUBJECTS.DETAIL(id));
 };
+
+export type AuditAction =
+  | "BAN_USER"
+  | "APPROVE_DOCUMENT"
+  | "REJECT_DOCUMENT"
+  | "DELETE_DOCUMENT"
+  | "UPDATE_SYSTEM_SETTINGS";
+
+export interface AuditLogActor {
+  readonly id: string;
+  readonly name: string;
+  readonly email: string;
+  readonly avatarUrl?: string | null;
+}
+
+export interface AuditLog {
+  readonly id: string;
+  readonly actorId: string;
+  readonly actor: AuditLogActor;
+  readonly action: AuditAction;
+  readonly targetId?: string | null;
+  readonly metadata?: any;
+  readonly ipAddress?: string | null;
+  readonly createdAt: string;
+}
+
+export interface FetchAuditLogsParams {
+  readonly page?: number;
+  readonly limit?: number;
+  readonly actorId?: string;
+  readonly action?: AuditAction;
+  readonly startDate?: string;
+  readonly endDate?: string;
+}
+
+export interface FetchAuditLogsResponse {
+  readonly logs: readonly AuditLog[];
+  readonly pagination: {
+    readonly page: number;
+    readonly limit: number;
+    readonly total: number;
+    readonly totalPages: number;
+  };
+}
+
+export const fetchAuditLogs = async (
+  params: FetchAuditLogsParams = {},
+): Promise<FetchAuditLogsResponse> => {
+  return apiClient.get<unknown, FetchAuditLogsResponse>(
+    API_ENDPOINTS.ADMIN.AUDIT_LOGS,
+    {
+      params,
+    },
+  );
+};

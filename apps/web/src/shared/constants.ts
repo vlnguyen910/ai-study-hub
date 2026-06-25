@@ -23,6 +23,7 @@ export const API_ENDPOINTS = {
   },
   ADMIN: {
     DASHBOARD: "/api/v1/admin/dashboard",
+    AUDIT_LOGS: "/api/v1/admin/audit-logs",
     SETTINGS: {
       BASE: "/api/v1/admin/settings",
       GENERAL: "/api/v1/admin/settings/general",

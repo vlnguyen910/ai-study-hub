@@ -95,6 +95,12 @@ export const ADMIN_NAV_ITEMS: SideNavItem[] = [
     href: ROUTE_PATHS.ADMIN_ROUTES.CONFIG,
     section: "main",
   },
+  {
+    label: "Nhật ký hoạt động",
+    icon: "history",
+    href: ROUTE_PATHS.ADMIN_ROUTES.AUDIT_LOGS,
+    section: "main",
+  },
 
   {
     label: "Cài đặt",

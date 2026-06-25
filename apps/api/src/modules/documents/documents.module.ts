@@ -11,6 +11,7 @@ import { DocumentProcessingModule } from '../document-processing/document-proces
 import { AIModule } from '../ai/ai.module';
 import { DocumentGateway } from './document.gateway';
 import { JwtModule } from '@nestjs/jwt';
+import { AuditLogModule } from '../audit-logs';
 
 @Module({
   imports: [
@@ -20,6 +21,7 @@ import { JwtModule } from '@nestjs/jwt';
     AIModule,
     SettingsModule,
     JwtModule,
+    AuditLogModule,
   ],
   controllers: [DocumentsController],
   providers: [

@@ -52,6 +52,7 @@ model accounts {
   collections       collections[]
   quizSessions      quiz_sessions[]
   chatSessions      chat_sessions[]
+  auditLogs         audit_logs[]
 }
 
 model auth_providers {
@@ -320,4 +321,23 @@ model upload_file_types {
   enabled   Boolean  @default(true)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+enum AuditAction {
+  BAN_USER
+  APPROVE_DOCUMENT
+  REJECT_DOCUMENT
+  DELETE_DOCUMENT
+  UPDATE_SYSTEM_SETTINGS
+}
+
+model audit_logs {
+  id        String      @id @default(auto()) @map("_id") @db.ObjectId
+  actorId   String      @db.ObjectId
+  actor     accounts    @relation(fields: [actorId], references: [id])
+  action    AuditAction
+  targetId  String?     // Can be target user ID or document ID, nullable
+  metadata  Json?
+  ipAddress String?
+  createdAt DateTime    @default(now())
 }

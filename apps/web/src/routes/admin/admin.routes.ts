@@ -14,6 +14,7 @@ export const ADMIN_ROUTES = [
   ROUTE_PATHS.ADMIN_ROUTES.CATEGORIES,
   ROUTE_PATHS.ADMIN_ROUTES.SUBJECTS,
   ROUTE_PATHS.ADMIN_ROUTES.SETTINGS,
+  ROUTE_PATHS.ADMIN_ROUTES.AUDIT_LOGS,
 ];
 
 export const adminRouterConfig = {
@@ -55,6 +56,13 @@ export const adminRouterConfig = {
   SETTINGS: {
     path: ROUTE_PATHS.ADMIN_ROUTES.SETTINGS,
     title: "Cài đặt",
+    public: false,
+    requiresAuth: true,
+    requiresRole: "admin" as const,
+  },
+  AUDIT_LOGS: {
+    path: ROUTE_PATHS.ADMIN_ROUTES.AUDIT_LOGS,
+    title: "Nhật ký hoạt động",
     public: false,
     requiresAuth: true,
     requiresRole: "admin" as const,

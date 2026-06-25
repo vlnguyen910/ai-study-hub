@@ -49,6 +49,7 @@ export const ROUTE_PATHS = {
     CATEGORIES: "/admin/categories",
     SUBJECTS: "/admin/subjects",
     SETTINGS: "/admin/settings",
+    AUDIT_LOGS: "/admin/audit-logs",
   },
 
   // ========== MODERATOR ROUTES (Temporary mock dashboard routes) ==========

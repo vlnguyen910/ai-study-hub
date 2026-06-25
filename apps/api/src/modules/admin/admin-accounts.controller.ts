@@ -8,8 +8,9 @@ import {
   Query,
   UseGuards,
   Version,
+  UseInterceptors,
 } from '@nestjs/common';
-import { UserRole } from '@prisma/client';
+import { UserRole, AuditAction } from '@prisma/client';
 import { Roles } from '../../common/decorators';
 import { JwtAuthGuard } from '../../common/guards/jwt.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
@@ -17,6 +18,7 @@ import { ParseMongoIdPipe } from '../../common/pipes/parse-mongoid.pipe';
 import { AccountsService } from '../accounts/accounts.service';
 import { CreateAccountDto } from '../accounts/dto/create-account.dto';
 import { ListAccountsQueryDto } from '../accounts/dto/list-accounts-query.dto';
+import { AuditLogInterceptor, AuditLogAction } from '../audit-logs';
 
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Controller('accounts')
@@ -46,6 +48,8 @@ export class AdminAccountsController {
 
   @Roles(UserRole.ADMIN)
   @Version('1')
+  @UseInterceptors(AuditLogInterceptor)
+  @AuditLogAction(AuditAction.BAN_USER)
   @Patch(':accountId/ban')
   ban(@Param('accountId', new ParseMongoIdPipe()) accountId: string) {
     return this.accountsService.ban(accountId);
