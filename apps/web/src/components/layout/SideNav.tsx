@@ -3,7 +3,7 @@
 import { SideNavItem } from "@/types/sideNav";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState, useEffect, type FC, type ReactNode } from "react";
+import { useState, type FC, type ReactNode } from "react";
 import { Logo } from "../ui/Logo";
 
 export interface SideNavProps {
@@ -41,7 +41,7 @@ export const SideNav: FC<SideNavProps> = ({
     const isActive =
       !item.action && isActiveRoute(pathname, item.href, item.exact);
 
-    const className = `flex w-full items-center gap-3 rounded-2xl px-4 py-3 text-sm font-medium transition-all ${
+    const className = `flex w-full appearance-none items-center justify-start gap-3 rounded-2xl px-4 py-3 text-left text-sm font-medium transition-all ${
       isActive
         ? "bg-primary/10 text-primary"
         : "text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface"
@@ -50,11 +50,14 @@ export const SideNav: FC<SideNavProps> = ({
     const content = (
       <>
         <span
-          className={`material-symbols-outlined text-lg ${isActive ? "text-primary" : ""}`}
+          aria-hidden="true"
+          className={`material-symbols-outlined inline-flex w-6 shrink-0 justify-center text-[22px] leading-none ${
+            isActive ? "text-primary" : ""
+          }`}
         >
           {item.icon}
         </span>
-        <span className="flex-1">{item.label}</span>
+        <span className="min-w-0 flex-1 truncate text-left">{item.label}</span>
         {item.badge !== undefined && item.badge > 0 ? (
           <span
             aria-label={`${item.badge} pending`}

@@ -23,13 +23,15 @@ export function LogoutConfirmDialog({
       role="dialog"
     >
       <div className="w-full max-w-sm rounded-2xl border border-outline-variant bg-surface p-6 shadow-xl">
-        <div className="mb-5 flex items-start gap-3">
-          <span
+        <div className="mb-5 flex items-start gap-4">
+          <div
             aria-hidden="true"
-            className="material-symbols-outlined flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-error/10 text-[24px] text-error"
+            className="grid h-12 w-12 shrink-0 place-items-center rounded-full bg-error/10 text-error"
           >
-            logout
-          </span>
+            <span className="material-symbols-outlined block text-[26px] leading-none">
+              logout
+            </span>
+          </div>
           <div className="min-w-0">
             <h2
               className="font-headline-sm text-headline-sm font-semibold text-on-surface"
