@@ -323,21 +323,40 @@ model upload_file_types {
   updatedAt DateTime @updatedAt
 }
 
+enum AuditTargetType {
+  USER
+  DOCUMENT
+  SYSTEM_SETTING
+  SUBJECT
+}
+
 enum AuditAction {
   BAN_USER
+  UNBAN_USER
   APPROVE_DOCUMENT
   REJECT_DOCUMENT
   DELETE_DOCUMENT
   UPDATE_SYSTEM_SETTINGS
+  UPDATE_DOCUMENT_VISIBILITY
+  CREATE_SUBJECT
+  UPDATE_SUBJECT
+  DELETE_SUBJECT
 }
 
 model audit_logs {
-  id        String      @id @default(auto()) @map("_id") @db.ObjectId
-  actorId   String      @db.ObjectId
-  actor     accounts    @relation(fields: [actorId], references: [id])
-  action    AuditAction
-  targetId  String?     // Can be target user ID or document ID, nullable
-  metadata  Json?
-  ipAddress String?
-  createdAt DateTime    @default(now())
+  id         String           @id @default(auto()) @map("_id") @db.ObjectId
+  actorId    String?          @db.ObjectId
+  actor      accounts?        @relation(fields: [actorId], references: [id])
+  actorRole  UserRole?
+  action     AuditAction
+  targetType AuditTargetType?
+  targetId   String?
+  metadata   Json?
+  ipAddress  String?
+  createdAt  DateTime         @default(now())
+
+  @@index([actorId])
+  @@index([action])
+  @@index([targetType])
+  @@index([createdAt])
 }

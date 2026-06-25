@@ -9,7 +9,7 @@ import {
   Query,
   Version,
   UseGuards,
-  UseInterceptors,
+  Req,
 } from '@nestjs/common';
 import { DocumentsService } from './documents.service';
 import {
@@ -24,8 +24,8 @@ import { OptionalJwtGuard } from '../../common/guards/optional-jwt.guard';
 import { ParseMongoIdPipe } from '../../common/pipes/parse-mongoid.pipe';
 import { JwtAuthGuard } from '../../common/guards/jwt.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
-import { AuditLogInterceptor, AuditLogAction } from '../audit-logs';
-import { AuditAction } from '@prisma/client';
+import { AuditLogService } from '../audit-logs';
+import { AuditAction, AuditTargetType } from '@prisma/client';
 import { VerifiedAccountGuard } from '../../common/guards/verified-account.guard';
 import { TokenPayload } from '../../common/interfaces/auth.interface';
 import { Roles, User } from '../../common/decorators';
@@ -33,7 +33,10 @@ import { UserRole } from '@prisma/client';
 
 @Controller('documents')
 export class DocumentsController {
-  constructor(private readonly documentsService: DocumentsService) {}
+  constructor(
+    private readonly documentsService: DocumentsService,
+    private readonly auditLogService: AuditLogService,
+  ) {}
 
   @Version('1')
   @UseGuards(JwtAuthGuard, VerifiedAccountGuard)
@@ -75,28 +78,77 @@ export class DocumentsController {
   @Version('1')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('MODERATOR', 'ADMIN')
-  @UseInterceptors(AuditLogInterceptor)
-  @AuditLogAction(AuditAction.APPROVE_DOCUMENT)
   @Post(':id/approve')
-  approve(
+  async approve(
     @Param('id', new ParseMongoIdPipe()) id: string,
     @User() user: TokenPayload,
+    @Req() request: any,
   ) {
-    return this.documentsService.approve(id, user.sub);
+    const result = await this.documentsService.approve(id, user.sub);
+    try {
+      const ipAddress = request
+        ? request.ip ||
+          request.headers?.['x-forwarded-for'] ||
+          request.socket?.remoteAddress
+        : undefined;
+
+      await this.auditLogService.log({
+        actorId: user.sub,
+        actorRole: user.role as any,
+        action: AuditAction.APPROVE_DOCUMENT,
+        targetType: AuditTargetType.DOCUMENT,
+        targetId: id,
+        metadata: {
+          previousStatus: 'PENDING_REVIEW',
+          newStatus: 'APPROVED',
+        },
+        ipAddress: ipAddress ? String(ipAddress) : undefined,
+      });
+    } catch (err) {
+      console.error('Failed to log APPROVE_DOCUMENT:', err);
+    }
+    return result;
   }
 
   @Version('1')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('MODERATOR', 'ADMIN')
-  @UseInterceptors(AuditLogInterceptor)
-  @AuditLogAction(AuditAction.REJECT_DOCUMENT)
   @Post(':id/reject')
-  reject(
+  async reject(
     @Param('id', new ParseMongoIdPipe()) id: string,
     @Body() rejectDocumentDto: RejectDocumentDto,
     @User() user: TokenPayload,
+    @Req() request: any,
   ) {
-    return this.documentsService.reject(id, rejectDocumentDto, user.sub);
+    const result = await this.documentsService.reject(
+      id,
+      rejectDocumentDto,
+      user.sub,
+    );
+    try {
+      const ipAddress = request
+        ? request.ip ||
+          request.headers?.['x-forwarded-for'] ||
+          request.socket?.remoteAddress
+        : undefined;
+
+      await this.auditLogService.log({
+        actorId: user.sub,
+        actorRole: user.role as any,
+        action: AuditAction.REJECT_DOCUMENT,
+        targetType: AuditTargetType.DOCUMENT,
+        targetId: id,
+        metadata: {
+          reason: rejectDocumentDto.rejectionReason,
+          previousStatus: 'PENDING_REVIEW',
+          newStatus: 'REJECTED',
+        },
+        ipAddress: ipAddress ? String(ipAddress) : undefined,
+      });
+    } catch (err) {
+      console.error('Failed to log REJECT_DOCUMENT:', err);
+    }
+    return result;
   }
 
   @Version('1')
@@ -113,24 +165,86 @@ export class DocumentsController {
   @Version('1')
   @UseGuards(JwtAuthGuard, VerifiedAccountGuard)
   @Patch(':id')
-  update(
+  async update(
     @Param('id', new ParseMongoIdPipe()) id: string,
     @Body() updateDocumentDto: UpdateDocumentDto,
     @User() user: TokenPayload,
+    @Req() request: any,
   ) {
-    return this.documentsService.update(id, updateDocumentDto, user.sub);
+    let existingDoc: any = null;
+    try {
+      existingDoc = await this.documentsService.findOne(id, user);
+    } catch (e) {
+      // Ignore if document not found / forbidden to check
+    }
+
+    const result = await this.documentsService.update(
+      id,
+      updateDocumentDto,
+      user.sub,
+    );
+    try {
+      if (
+        updateDocumentDto.isPublic !== undefined &&
+        existingDoc &&
+        updateDocumentDto.isPublic !== existingDoc.isPublic
+      ) {
+        const ipAddress = request
+          ? request.ip ||
+            request.headers?.['x-forwarded-for'] ||
+            request.socket?.remoteAddress
+          : undefined;
+
+        await this.auditLogService.log({
+          actorId: user.sub,
+          actorRole: user.role as any,
+          action: AuditAction.UPDATE_DOCUMENT_VISIBILITY,
+          targetType: AuditTargetType.DOCUMENT,
+          targetId: id,
+          metadata: {
+            previousVisibility: existingDoc.isPublic,
+            newVisibility: updateDocumentDto.isPublic,
+          },
+          ipAddress: ipAddress ? String(ipAddress) : undefined,
+        });
+      }
+    } catch (err) {
+      console.error('Failed to log UPDATE_DOCUMENT_VISIBILITY:', err);
+    }
+    return result;
   }
 
   @Version('1')
   @UseGuards(JwtAuthGuard)
-  @UseInterceptors(AuditLogInterceptor)
-  @AuditLogAction(AuditAction.DELETE_DOCUMENT)
   @Delete(':id')
-  remove(
+  async remove(
     @Param('id', new ParseMongoIdPipe()) id: string,
     @User() user: TokenPayload,
+    @Req() request: any,
   ) {
-    return this.documentsService.delete(id, user.sub);
+    const result = await this.documentsService.delete(id, user.sub);
+    try {
+      const ipAddress = request
+        ? request.ip ||
+          request.headers?.['x-forwarded-for'] ||
+          request.socket?.remoteAddress
+        : undefined;
+
+      await this.auditLogService.log({
+        actorId: user.sub,
+        actorRole: user.role as any,
+        action: AuditAction.DELETE_DOCUMENT,
+        targetType: AuditTargetType.DOCUMENT,
+        targetId: id,
+        metadata: {
+          message: 'Document deleted by owner',
+        },
+        ipAddress: ipAddress ? String(ipAddress) : undefined,
+      });
+    } catch (err) {
+      console.error('Failed to log DELETE_DOCUMENT:', err);
+    }
+    return result;
   }
 
   @Version('1')

@@ -8,7 +8,12 @@ import { Pagination } from "@/components/ui/Pagination";
 import { SelectField } from "@/components/ui/SelectField";
 import { Table, type TableRow } from "@/components/ui/Table";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { fetchAuditLogs, type AuditAction, type AuditLog } from "../api";
+import {
+  fetchAuditLogs,
+  type AuditAction,
+  type AuditTargetType,
+  type AuditLog,
+} from "../api";
 import {
   AdminCard,
   AdminIconAction,
@@ -18,7 +23,9 @@ import {
 const auditColumns = [
   { key: "createdAt", label: "Thời gian" },
   { key: "actor", label: "Người thực hiện" },
+  { key: "actorRole", label: "Vai trò" },
   { key: "action", label: "Hành động" },
+  { key: "targetType", label: "Loại đối tượng" },
   { key: "targetId", label: "Đối tượng (ID)" },
   { key: "ipAddress", label: "Địa chỉ IP" },
   { key: "actions", label: "Chi tiết", align: "center" as const },
@@ -27,22 +34,49 @@ const auditColumns = [
 const actionLabelsMap: Record<"all" | AuditAction, string> = {
   all: "Tất cả hành động",
   BAN_USER: "Ban người dùng",
+  UNBAN_USER: "Mở khóa người dùng",
   APPROVE_DOCUMENT: "Duyệt tài liệu",
   REJECT_DOCUMENT: "Từ chối tài liệu",
   DELETE_DOCUMENT: "Xóa tài liệu",
   UPDATE_SYSTEM_SETTINGS: "Cập nhật cài đặt hệ thống",
+  UPDATE_DOCUMENT_VISIBILITY: "Cập nhật hiển thị tài liệu",
+  CREATE_SUBJECT: "Tạo môn học",
+  UPDATE_SUBJECT: "Cập nhật môn học",
+  DELETE_SUBJECT: "Xóa môn học",
 };
 
 const actionValuesMap: Record<string, "all" | AuditAction> = {
   "Tất cả hành động": "all",
   "Ban người dùng": "BAN_USER",
+  "Mở khóa người dùng": "UNBAN_USER",
   "Duyệt tài liệu": "APPROVE_DOCUMENT",
   "Từ chối tài liệu": "REJECT_DOCUMENT",
   "Xóa tài liệu": "DELETE_DOCUMENT",
   "Cập nhật cài đặt hệ thống": "UPDATE_SYSTEM_SETTINGS",
+  "Cập nhật hiển thị tài liệu": "UPDATE_DOCUMENT_VISIBILITY",
+  "Tạo môn học": "CREATE_SUBJECT",
+  "Cập nhật môn học": "UPDATE_SUBJECT",
+  "Xóa môn học": "DELETE_SUBJECT",
+};
+
+const targetTypeLabelsMap: Record<"all" | AuditTargetType, string> = {
+  all: "Tất cả loại đối tượng",
+  USER: "Người dùng",
+  DOCUMENT: "Tài liệu",
+  SYSTEM_SETTING: "Cài đặt hệ thống",
+  SUBJECT: "Môn học",
+};
+
+const targetTypeValuesMap: Record<string, "all" | AuditTargetType> = {
+  "Tất cả loại đối tượng": "all",
+  "Người dùng": "USER",
+  "Tài liệu": "DOCUMENT",
+  "Cài đặt hệ thống": "SYSTEM_SETTING",
+  "Môn học": "SUBJECT",
 };
 
 const actionOptionsList = Object.values(actionLabelsMap);
+const targetTypeOptionsList = Object.values(targetTypeLabelsMap);
 
 const pageSize = 10;
 
@@ -73,6 +107,9 @@ export default function AdminAuditLogsPage(): React.JSX.Element {
   const [logs, setLogs] = useState<readonly AuditLog[]>([]);
   const [actorIdFilter, setActorIdFilter] = useState("");
   const [actionFilter, setActionFilter] = useState<"all" | AuditAction>("all");
+  const [targetTypeFilter, setTargetTypeFilter] = useState<
+    "all" | AuditTargetType
+  >("all");
   const [startDateFilter, setStartDateFilter] = useState("");
   const [endDateFilter, setEndDateFilter] = useState("");
 
@@ -94,6 +131,9 @@ export default function AdminAuditLogsPage(): React.JSX.Element {
         limit: pageSize,
         actorId: actorIdFilter.trim() || undefined,
         action: actionFilter === "all" ? undefined : actionFilter,
+        targetType: targetTypeFilter === "all" ? undefined : targetTypeFilter,
+        from: startDateFilter || undefined,
+        to: endDateFilter || undefined,
         startDate: startDateFilter || undefined,
         endDate: endDateFilter || undefined,
       });
@@ -112,6 +152,7 @@ export default function AdminAuditLogsPage(): React.JSX.Element {
     currentPage,
     actorIdFilter,
     actionFilter,
+    targetTypeFilter,
     startDateFilter,
     endDateFilter,
   ]);
@@ -123,6 +164,7 @@ export default function AdminAuditLogsPage(): React.JSX.Element {
   const handleResetFilters = () => {
     setActorIdFilter("");
     setActionFilter("all");
+    setTargetTypeFilter("all");
     setStartDateFilter("");
     setEndDateFilter("");
     setCurrentPage(1);
@@ -132,6 +174,8 @@ export default function AdminAuditLogsPage(): React.JSX.Element {
     switch (action) {
       case "BAN_USER":
         return <Badge tone="error">Ban người dùng</Badge>;
+      case "UNBAN_USER":
+        return <Badge tone="success">Mở khóa người dùng</Badge>;
       case "APPROVE_DOCUMENT":
         return <Badge tone="success">Duyệt tài liệu</Badge>;
       case "REJECT_DOCUMENT":
@@ -140,8 +184,52 @@ export default function AdminAuditLogsPage(): React.JSX.Element {
         return <Badge tone="error">Xóa tài liệu</Badge>;
       case "UPDATE_SYSTEM_SETTINGS":
         return <Badge tone="neutral">Cập nhật hệ thống</Badge>;
+      case "UPDATE_DOCUMENT_VISIBILITY":
+        return <Badge tone="neutral">Đổi hiển thị tài liệu</Badge>;
+      case "CREATE_SUBJECT":
+        return <Badge tone="success">Tạo môn học</Badge>;
+      case "UPDATE_SUBJECT":
+        return <Badge tone="neutral">Sửa môn học</Badge>;
+      case "DELETE_SUBJECT":
+        return <Badge tone="error">Xóa môn học</Badge>;
       default:
         return <Badge tone="neutral">{action}</Badge>;
+    }
+  };
+
+  const getTargetTypeBadge = (
+    targetType?: AuditTargetType | null,
+  ): React.JSX.Element => {
+    if (!targetType) {
+      return <Badge tone="neutral">—</Badge>;
+    }
+    switch (targetType) {
+      case "USER":
+        return <Badge tone="neutral">Người dùng</Badge>;
+      case "DOCUMENT":
+        return <Badge tone="neutral">Tài liệu</Badge>;
+      case "SYSTEM_SETTING":
+        return <Badge tone="neutral">Cài đặt</Badge>;
+      case "SUBJECT":
+        return <Badge tone="neutral">Môn học</Badge>;
+      default:
+        return <Badge tone="neutral">{targetType}</Badge>;
+    }
+  };
+
+  const getRoleBadge = (role?: string | null): React.JSX.Element => {
+    if (!role) {
+      return <Badge tone="neutral">—</Badge>;
+    }
+    switch (role) {
+      case "ADMIN":
+        return <Badge tone="neutral">Admin</Badge>;
+      case "MODERATOR":
+        return <Badge tone="neutral">Kiểm duyệt</Badge>;
+      case "USER":
+        return <Badge tone="neutral">User</Badge>;
+      default:
+        return <Badge tone="neutral">{role}</Badge>;
     }
   };
 
@@ -163,7 +251,9 @@ export default function AdminAuditLogsPage(): React.JSX.Element {
             {log.actor?.email || ""}
           </span>
         </div>,
+        <span key="actorRole">{getRoleBadge(log.actorRole)}</span>,
         <span key="action">{getActionBadge(log.action)}</span>,
+        <span key="targetType">{getTargetTypeBadge(log.targetType)}</span>,
         <span
           className="font-mono text-xs text-on-surface-variant break-all"
           key="targetId"
@@ -208,7 +298,7 @@ export default function AdminAuditLogsPage(): React.JSX.Element {
       ) : null}
 
       <Card className="mb-6 p-4">
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-[minmax(200px,1.2fr)_minmax(180px,1fr)_180px_180px_auto] lg:items-end">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-[minmax(180px,1.2fr)_180px_180px_180px_180px_auto] lg:items-end">
           <InputField
             label="ID người thực hiện (Actor ID)"
             onChange={(event) => {
@@ -226,6 +316,15 @@ export default function AdminAuditLogsPage(): React.JSX.Element {
             }}
             options={actionOptionsList}
             value={actionLabelsMap[actionFilter]}
+          />
+          <SelectField
+            label="Loại đối tượng"
+            onChange={(value) => {
+              setTargetTypeFilter(targetTypeValuesMap[value] ?? "all");
+              setCurrentPage(1);
+            }}
+            options={targetTypeOptionsList}
+            value={targetTypeLabelsMap[targetTypeFilter]}
           />
           <InputField
             label="Từ ngày"
@@ -347,6 +446,18 @@ function AuditLogDetailDialog({
             label="Đối tượng tác động (ID)"
             value={log.targetId || "Không có đối tượng"}
           />
+          <DetailItem
+            label="Loại đối tượng"
+            value={
+              log.targetType
+                ? targetTypeLabelsMap[log.targetType] || log.targetType
+                : "Không xác định"
+            }
+          />
+          <DetailItem
+            label="Vai trò actor"
+            value={log.actorRole || "Hệ thống / Không rõ"}
+          />
 
           <div className="md:col-span-2 rounded border border-outline-variant bg-surface-container-low p-4">
             <p className="font-label-sm text-label-sm text-on-surface-variant tracking-normal">
@@ -364,7 +475,7 @@ function AuditLogDetailDialog({
                   Email: {log.actor?.email || "—"}
                 </span>
                 <span className="text-[10px] text-on-surface-variant font-mono">
-                  ID: {log.actorId}
+                  ID: {log.actorId || "—"}
                 </span>
               </div>
             </div>

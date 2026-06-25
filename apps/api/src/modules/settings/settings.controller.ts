@@ -6,13 +6,13 @@ import {
   Patch,
   UseGuards,
   Version,
-  UseInterceptors,
+  Req,
 } from '@nestjs/common';
-import { UserRole, AuditAction } from '@prisma/client';
+import { UserRole, AuditAction, AuditTargetType } from '@prisma/client';
 import { Roles } from '../../common/decorators';
 import { JwtAuthGuard } from '../../common/guards/jwt.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
-import { AuditLogInterceptor, AuditLogAction } from '../audit-logs';
+import { AuditLogService } from '../audit-logs';
 import {
   UpdateAccountSettingsDto,
   UpdateAiSettingsDto,
@@ -37,10 +37,12 @@ export class PublicSettingsController {
 
 @Roles(UserRole.ADMIN)
 @UseGuards(JwtAuthGuard, RolesGuard)
-@UseInterceptors(AuditLogInterceptor)
 @Controller('admin/settings')
 export class AdminSettingsController {
-  constructor(private readonly settingsService: SettingsService) {}
+  constructor(
+    private readonly settingsService: SettingsService,
+    private readonly auditLogService: AuditLogService,
+  ) {}
 
   @Version('1')
   @Get()
@@ -48,59 +50,167 @@ export class AdminSettingsController {
     return this.settingsService.findAll();
   }
 
+  private async logSettingsChange(
+    request: any,
+    groupName: string,
+    dto: any,
+    oldSettingsData: any,
+  ) {
+    try {
+      const actorId = request.user?.sub;
+      const actorRole = request.user?.role;
+      const ipAddress =
+        request.ip ||
+        request.headers['x-forwarded-for'] ||
+        request.socket.remoteAddress;
+
+      const groupOld = oldSettingsData[groupName] || {};
+      for (const key of Object.keys(dto)) {
+        if (dto[key] !== undefined && dto[key] !== groupOld[key]) {
+          await this.auditLogService.log({
+            actorId,
+            actorRole,
+            action: AuditAction.UPDATE_SYSTEM_SETTINGS,
+            targetType: AuditTargetType.SYSTEM_SETTING,
+            targetId: 'GLOBAL',
+            metadata: {
+              setting: key,
+              oldValue: groupOld[key],
+              newValue: dto[key],
+            },
+            ipAddress: ipAddress ? String(ipAddress) : undefined,
+          });
+        }
+      }
+    } catch (err) {
+      console.error('Failed to log settings change:', err);
+    }
+  }
+
   @Version('1')
-  @AuditLogAction(AuditAction.UPDATE_SYSTEM_SETTINGS)
   @Patch('general')
   @HttpCode(200)
-  updateGeneral(@Body() dto: UpdateGeneralSettingsDto) {
-    return this.settingsService.updateGeneral(dto);
+  async updateGeneral(
+    @Body() dto: UpdateGeneralSettingsDto,
+    @Req() request: any,
+  ) {
+    const oldSettings = await this.settingsService.findAll();
+    const result = await this.settingsService.updateGeneral(dto);
+    await this.logSettingsChange(request, 'general', dto, oldSettings.data);
+    return result;
   }
 
   @Version('1')
-  @AuditLogAction(AuditAction.UPDATE_SYSTEM_SETTINGS)
   @Patch('upload')
   @HttpCode(200)
-  updateUpload(@Body() dto: UpdateUploadSettingsDto) {
-    return this.settingsService.updateUpload(dto);
+  async updateUpload(
+    @Body() dto: UpdateUploadSettingsDto,
+    @Req() request: any,
+  ) {
+    const oldSettings = await this.settingsService.findAll();
+    const result = await this.settingsService.updateUpload(dto);
+    // Standardize fileTypes for metadata diff tracking or ignore it, but log key fields
+    const { fileTypes, ...dtoFields } = dto;
+    await this.logSettingsChange(
+      request,
+      'upload',
+      dtoFields,
+      oldSettings.data,
+    );
+    if (fileTypes) {
+      // Log fileTypes change if modified
+      const oldFileTypes = oldSettings.data.upload.fileTypes || [];
+      for (const ft of fileTypes) {
+        const matchingOld = oldFileTypes.find(
+          (o: any) => o.extension === ft.extension,
+        );
+        if (!matchingOld || matchingOld.enabled !== ft.enabled) {
+          await this.auditLogService.log({
+            actorId: request.user?.sub,
+            actorRole: request.user?.role,
+            action: AuditAction.UPDATE_SYSTEM_SETTINGS,
+            targetType: AuditTargetType.SYSTEM_SETTING,
+            targetId: 'GLOBAL',
+            metadata: {
+              setting: `FILE_TYPE_${ft.extension}`,
+              oldValue: matchingOld ? matchingOld.enabled : false,
+              newValue: ft.enabled,
+            },
+            ipAddress:
+              request.ip ||
+              request.headers['x-forwarded-for'] ||
+              request.socket.remoteAddress,
+          });
+        }
+      }
+    }
+    return result;
   }
 
   @Version('1')
-  @AuditLogAction(AuditAction.UPDATE_SYSTEM_SETTINGS)
   @Patch('document-visibility')
   @HttpCode(200)
-  updateDocumentVisibility(@Body() dto: UpdateDocumentVisibilitySettingsDto) {
-    return this.settingsService.updateDocumentVisibility(dto);
+  async updateDocumentVisibility(
+    @Body() dto: UpdateDocumentVisibilitySettingsDto,
+    @Req() request: any,
+  ) {
+    const oldSettings = await this.settingsService.findAll();
+    const result = await this.settingsService.updateDocumentVisibility(dto);
+    await this.logSettingsChange(
+      request,
+      'documentVisibility',
+      dto,
+      oldSettings.data,
+    );
+    return result;
   }
 
   @Version('1')
-  @AuditLogAction(AuditAction.UPDATE_SYSTEM_SETTINGS)
   @Patch('ai')
   @HttpCode(200)
-  updateAi(@Body() dto: UpdateAiSettingsDto) {
-    return this.settingsService.updateAi(dto);
+  async updateAi(@Body() dto: UpdateAiSettingsDto, @Req() request: any) {
+    const oldSettings = await this.settingsService.findAll();
+    const result = await this.settingsService.updateAi(dto);
+    await this.logSettingsChange(request, 'ai', dto, oldSettings.data);
+    return result;
   }
 
   @Version('1')
-  @AuditLogAction(AuditAction.UPDATE_SYSTEM_SETTINGS)
   @Patch('moderation')
   @HttpCode(200)
-  updateModeration(@Body() dto: UpdateModerationSettingsDto) {
-    return this.settingsService.updateModeration(dto);
+  async updateModeration(
+    @Body() dto: UpdateModerationSettingsDto,
+    @Req() request: any,
+  ) {
+    const oldSettings = await this.settingsService.findAll();
+    const result = await this.settingsService.updateModeration(dto);
+    await this.logSettingsChange(request, 'moderation', dto, oldSettings.data);
+    return result;
   }
 
   @Version('1')
-  @AuditLogAction(AuditAction.UPDATE_SYSTEM_SETTINGS)
   @Patch('account')
   @HttpCode(200)
-  updateAccount(@Body() dto: UpdateAccountSettingsDto) {
-    return this.settingsService.updateAccount(dto);
+  async updateAccount(
+    @Body() dto: UpdateAccountSettingsDto,
+    @Req() request: any,
+  ) {
+    const oldSettings = await this.settingsService.findAll();
+    const result = await this.settingsService.updateAccount(dto);
+    await this.logSettingsChange(request, 'account', dto, oldSettings.data);
+    return result;
   }
 
   @Version('1')
-  @AuditLogAction(AuditAction.UPDATE_SYSTEM_SETTINGS)
   @Patch('mobile')
   @HttpCode(200)
-  updateMobile(@Body() dto: UpdateMobileSettingsDto) {
-    return this.settingsService.updateMobile(dto);
+  async updateMobile(
+    @Body() dto: UpdateMobileSettingsDto,
+    @Req() request: any,
+  ) {
+    const oldSettings = await this.settingsService.findAll();
+    const result = await this.settingsService.updateMobile(dto);
+    await this.logSettingsChange(request, 'mobile', dto, oldSettings.data);
+    return result;
   }
 }

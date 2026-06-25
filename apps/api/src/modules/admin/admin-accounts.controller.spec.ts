@@ -13,10 +13,15 @@ describe('AdminAccountsController', () => {
     ban: jest.fn().mockReturnValue({ message: 'Account banned successfully' }),
   };
 
+  const auditLogServiceMock = {
+    log: jest.fn(),
+  };
+
   beforeEach(() => {
     jest.clearAllMocks();
     controller = new AdminAccountsController(
       accountsServiceMock as unknown as AccountsService,
+      auditLogServiceMock as any,
     );
   });
 
@@ -29,10 +34,14 @@ describe('AdminAccountsController', () => {
 
   it('delegates list, detail and ban to AccountsService', async () => {
     const query = { createdFrom: '2026-06-01' };
+    const mockRequest = {
+      user: { sub: 'admin-1', role: 'ADMIN' },
+      ip: '127.0.0.1',
+    };
 
     await expect(controller.findAll(query)).resolves.toEqual([]);
     expect(controller.findOne('acc-1')).toBe('one');
-    expect(controller.ban('acc-1')).toEqual({
+    await expect(controller.ban('acc-1', mockRequest)).resolves.toEqual({
       message: 'Account banned successfully',
     });
 

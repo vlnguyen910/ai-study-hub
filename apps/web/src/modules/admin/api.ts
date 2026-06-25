@@ -169,10 +169,21 @@ export const deleteAdminSubject = async (id: string): Promise<unknown> => {
 
 export type AuditAction =
   | "BAN_USER"
+  | "UNBAN_USER"
   | "APPROVE_DOCUMENT"
   | "REJECT_DOCUMENT"
   | "DELETE_DOCUMENT"
-  | "UPDATE_SYSTEM_SETTINGS";
+  | "UPDATE_SYSTEM_SETTINGS"
+  | "UPDATE_DOCUMENT_VISIBILITY"
+  | "CREATE_SUBJECT"
+  | "UPDATE_SUBJECT"
+  | "DELETE_SUBJECT";
+
+export type AuditTargetType =
+  | "USER"
+  | "DOCUMENT"
+  | "SYSTEM_SETTING"
+  | "SUBJECT";
 
 export interface AuditLogActor {
   readonly id: string;
@@ -183,9 +194,11 @@ export interface AuditLogActor {
 
 export interface AuditLog {
   readonly id: string;
-  readonly actorId: string;
-  readonly actor: AuditLogActor;
+  readonly actorId?: string | null;
+  readonly actor?: AuditLogActor | null;
+  readonly actorRole?: AdminAccountRole | null;
   readonly action: AuditAction;
+  readonly targetType?: AuditTargetType | null;
   readonly targetId?: string | null;
   readonly metadata?: any;
   readonly ipAddress?: string | null;
@@ -197,6 +210,9 @@ export interface FetchAuditLogsParams {
   readonly limit?: number;
   readonly actorId?: string;
   readonly action?: AuditAction;
+  readonly targetType?: AuditTargetType;
+  readonly from?: string;
+  readonly to?: string;
   readonly startDate?: string;
   readonly endDate?: string;
 }
