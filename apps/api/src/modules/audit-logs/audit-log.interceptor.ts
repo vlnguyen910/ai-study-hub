@@ -39,11 +39,6 @@ export class AuditLogInterceptor implements NestInterceptor {
 
             const actorRole = request.user?.role;
 
-            const ipAddress =
-              request.ip ||
-              request.headers['x-forwarded-for'] ||
-              request.socket.remoteAddress;
-
             // Determine targetId
             // Can be explicitly set on the request by the controller, e.g. request.auditTargetId = ...
             // Or default to request params
@@ -82,33 +77,12 @@ export class AuditLogInterceptor implements NestInterceptor {
               }
             }
 
-            // Determine metadata
-            // Can be explicitly set on the request by the controller, e.g. request.auditMetadata = ...
-            let metadata = request.auditMetadata;
-            if (!metadata) {
-              if (
-                action === AuditAction.REJECT_DOCUMENT &&
-                request.body?.rejectionReason
-              ) {
-                metadata = { rejectionReason: request.body.rejectionReason };
-              } else if (action === AuditAction.UPDATE_SYSTEM_SETTINGS) {
-                metadata = { ...request.body };
-              } else if (
-                action === AuditAction.BAN_USER &&
-                request.body?.reason
-              ) {
-                metadata = { reason: request.body.reason };
-              }
-            }
-
             await this.auditLogService.create({
               actorId,
               actorRole,
               action,
               targetType,
               targetId: targetId ? String(targetId) : undefined,
-              metadata,
-              ipAddress: ipAddress ? String(ipAddress) : undefined,
             });
           } catch (err) {
             // Silently catch logging errors to not disrupt primary business flow

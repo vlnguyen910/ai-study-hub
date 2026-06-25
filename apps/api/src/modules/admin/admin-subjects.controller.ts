@@ -37,11 +37,6 @@ export class AdminSubjectsController {
     try {
       const actorId = request?.user?.sub;
       const actorRole = request?.user?.role;
-      const ipAddress = request
-        ? request.ip ||
-          request.headers?.['x-forwarded-for'] ||
-          request.socket?.remoteAddress
-        : undefined;
 
       await this.auditLogService.log({
         actorId,
@@ -49,12 +44,6 @@ export class AdminSubjectsController {
         action: AuditAction.CREATE_SUBJECT,
         targetType: AuditTargetType.SUBJECT,
         targetId: result.data.id,
-        metadata: {
-          name: createSubjectDto.name,
-          code: createSubjectDto.code,
-          schoolId: createSubjectDto.schoolId,
-        },
-        ipAddress: ipAddress ? String(ipAddress) : undefined,
       });
     } catch (err) {
       console.error('Failed to log CREATE_SUBJECT:', err);
@@ -70,16 +59,10 @@ export class AdminSubjectsController {
     @Body() updateSubjectDto: UpdateSubjectDto,
     @Req() request?: any,
   ) {
-    const oldSubject = await this.subjectsService.findOne(id);
     const result = await this.subjectsService.update(id, updateSubjectDto);
     try {
       const actorId = request?.user?.sub;
       const actorRole = request?.user?.role;
-      const ipAddress = request
-        ? request.ip ||
-          request.headers?.['x-forwarded-for'] ||
-          request.socket?.remoteAddress
-        : undefined;
 
       await this.auditLogService.log({
         actorId,
@@ -87,13 +70,6 @@ export class AdminSubjectsController {
         action: AuditAction.UPDATE_SUBJECT,
         targetType: AuditTargetType.SUBJECT,
         targetId: id,
-        metadata: {
-          old: oldSubject?.data
-            ? { name: oldSubject.data.name, code: oldSubject.data.code }
-            : null,
-          new: { name: updateSubjectDto.name, code: updateSubjectDto.code },
-        },
-        ipAddress: ipAddress ? String(ipAddress) : undefined,
       });
     } catch (err) {
       console.error('Failed to log UPDATE_SUBJECT:', err);
@@ -108,16 +84,10 @@ export class AdminSubjectsController {
     @Param('id', new ParseMongoIdPipe()) id: string,
     @Req() request?: any,
   ) {
-    const oldSubject = await this.subjectsService.findOne(id);
     const result = await this.subjectsService.delete(id);
     try {
       const actorId = request?.user?.sub;
       const actorRole = request?.user?.role;
-      const ipAddress = request
-        ? request.ip ||
-          request.headers?.['x-forwarded-for'] ||
-          request.socket?.remoteAddress
-        : undefined;
 
       await this.auditLogService.log({
         actorId,
@@ -125,10 +95,6 @@ export class AdminSubjectsController {
         action: AuditAction.DELETE_SUBJECT,
         targetType: AuditTargetType.SUBJECT,
         targetId: id,
-        metadata: oldSubject?.data
-          ? { name: oldSubject.data.name, code: oldSubject.data.code }
-          : null,
-        ipAddress: ipAddress ? String(ipAddress) : undefined,
       });
     } catch (err) {
       console.error('Failed to log DELETE_SUBJECT:', err);

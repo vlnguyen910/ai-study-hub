@@ -86,23 +86,12 @@ export class DocumentsController {
   ) {
     const result = await this.documentsService.approve(id, user.sub);
     try {
-      const ipAddress = request
-        ? request.ip ||
-          request.headers?.['x-forwarded-for'] ||
-          request.socket?.remoteAddress
-        : undefined;
-
       await this.auditLogService.log({
         actorId: user.sub,
         actorRole: user.role as any,
         action: AuditAction.APPROVE_DOCUMENT,
         targetType: AuditTargetType.DOCUMENT,
         targetId: id,
-        metadata: {
-          previousStatus: 'PENDING_REVIEW',
-          newStatus: 'APPROVED',
-        },
-        ipAddress: ipAddress ? String(ipAddress) : undefined,
       });
     } catch (err) {
       console.error('Failed to log APPROVE_DOCUMENT:', err);
@@ -126,24 +115,12 @@ export class DocumentsController {
       user.sub,
     );
     try {
-      const ipAddress = request
-        ? request.ip ||
-          request.headers?.['x-forwarded-for'] ||
-          request.socket?.remoteAddress
-        : undefined;
-
       await this.auditLogService.log({
         actorId: user.sub,
         actorRole: user.role as any,
         action: AuditAction.REJECT_DOCUMENT,
         targetType: AuditTargetType.DOCUMENT,
         targetId: id,
-        metadata: {
-          reason: rejectDocumentDto.rejectionReason,
-          previousStatus: 'PENDING_REVIEW',
-          newStatus: 'REJECTED',
-        },
-        ipAddress: ipAddress ? String(ipAddress) : undefined,
       });
     } catch (err) {
       console.error('Failed to log REJECT_DOCUMENT:', err);
@@ -189,23 +166,12 @@ export class DocumentsController {
         existingDoc &&
         updateDocumentDto.isPublic !== existingDoc.isPublic
       ) {
-        const ipAddress = request
-          ? request.ip ||
-            request.headers?.['x-forwarded-for'] ||
-            request.socket?.remoteAddress
-          : undefined;
-
         await this.auditLogService.log({
           actorId: user.sub,
           actorRole: user.role as any,
           action: AuditAction.UPDATE_DOCUMENT_VISIBILITY,
           targetType: AuditTargetType.DOCUMENT,
           targetId: id,
-          metadata: {
-            previousVisibility: existingDoc.isPublic,
-            newVisibility: updateDocumentDto.isPublic,
-          },
-          ipAddress: ipAddress ? String(ipAddress) : undefined,
         });
       }
     } catch (err) {
@@ -224,22 +190,12 @@ export class DocumentsController {
   ) {
     const result = await this.documentsService.delete(id, user.sub);
     try {
-      const ipAddress = request
-        ? request.ip ||
-          request.headers?.['x-forwarded-for'] ||
-          request.socket?.remoteAddress
-        : undefined;
-
       await this.auditLogService.log({
         actorId: user.sub,
         actorRole: user.role as any,
         action: AuditAction.DELETE_DOCUMENT,
         targetType: AuditTargetType.DOCUMENT,
         targetId: id,
-        metadata: {
-          message: 'Document deleted by owner',
-        },
-        ipAddress: ipAddress ? String(ipAddress) : undefined,
       });
     } catch (err) {
       console.error('Failed to log DELETE_DOCUMENT:', err);

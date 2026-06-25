@@ -26,8 +26,7 @@ const auditColumns = [
   { key: "actorRole", label: "Vai trò" },
   { key: "action", label: "Hành động" },
   { key: "targetType", label: "Loại đối tượng" },
-  { key: "targetId", label: "Đối tượng (ID)" },
-  { key: "ipAddress", label: "Địa chỉ IP" },
+  { key: "targetId", label: "Đối tượng" },
   { key: "actions", label: "Chi tiết", align: "center" as const },
 ] as const;
 
@@ -60,7 +59,7 @@ const actionValuesMap: Record<string, "all" | AuditAction> = {
 };
 
 const targetTypeLabelsMap: Record<"all" | AuditTargetType, string> = {
-  all: "Tất cả loại đối tượng",
+  all: "Tất cả",
   USER: "Người dùng",
   DOCUMENT: "Tài liệu",
   SYSTEM_SETTING: "Cài đặt hệ thống",
@@ -105,7 +104,7 @@ const getErrorMessage = (error: unknown, fallback: string): string => {
 
 export default function AdminAuditLogsPage(): React.JSX.Element {
   const [logs, setLogs] = useState<readonly AuditLog[]>([]);
-  const [actorIdFilter, setActorIdFilter] = useState("");
+  const [actorNameFilter, setActorNameFilter] = useState("");
   const [actionFilter, setActionFilter] = useState<"all" | AuditAction>("all");
   const [targetTypeFilter, setTargetTypeFilter] = useState<
     "all" | AuditTargetType
@@ -129,7 +128,7 @@ export default function AdminAuditLogsPage(): React.JSX.Element {
       const response = await fetchAuditLogs({
         page: currentPage,
         limit: pageSize,
-        actorId: actorIdFilter.trim() || undefined,
+        actorName: actorNameFilter.trim() || undefined,
         action: actionFilter === "all" ? undefined : actionFilter,
         targetType: targetTypeFilter === "all" ? undefined : targetTypeFilter,
         from: startDateFilter || undefined,
@@ -150,7 +149,7 @@ export default function AdminAuditLogsPage(): React.JSX.Element {
     }
   }, [
     currentPage,
-    actorIdFilter,
+    actorNameFilter,
     actionFilter,
     targetTypeFilter,
     startDateFilter,
@@ -162,7 +161,7 @@ export default function AdminAuditLogsPage(): React.JSX.Element {
   }, [loadLogs]);
 
   const handleResetFilters = () => {
-    setActorIdFilter("");
+    setActorNameFilter("");
     setActionFilter("all");
     setTargetTypeFilter("all");
     setStartDateFilter("");
@@ -254,18 +253,16 @@ export default function AdminAuditLogsPage(): React.JSX.Element {
         <span key="actorRole">{getRoleBadge(log.actorRole)}</span>,
         <span key="action">{getActionBadge(log.action)}</span>,
         <span key="targetType">{getTargetTypeBadge(log.targetType)}</span>,
-        <span
-          className="font-mono text-xs text-on-surface-variant break-all"
-          key="targetId"
-        >
-          {log.targetId || "—"}
-        </span>,
-        <span
-          className="font-body-md text-sm text-on-surface-variant"
-          key="ipAddress"
-        >
-          {log.ipAddress || "—"}
-        </span>,
+        <div className="flex flex-col" key="targetId">
+          <span className="font-semibold text-sm text-on-surface break-all">
+            {log.targetName || log.targetId || "—"}
+          </span>
+          {log.targetName && log.targetId && (
+            <span className="font-mono text-[10px] text-on-surface-variant break-all">
+              ID: {log.targetId}
+            </span>
+          )}
+        </div>,
         <div className="flex justify-center gap-1" key="actions">
           <AdminIconAction
             icon="visibility"
@@ -300,13 +297,13 @@ export default function AdminAuditLogsPage(): React.JSX.Element {
       <Card className="mb-6 p-4">
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-[minmax(180px,1.2fr)_180px_180px_180px_180px_auto] lg:items-end">
           <InputField
-            label="ID người thực hiện (Actor ID)"
+            label="Người thực hiện"
             onChange={(event) => {
-              setActorIdFilter(event.target.value);
+              setActorNameFilter(event.target.value);
               setCurrentPage(1);
             }}
-            placeholder="Nhập ID admin/mod..."
-            value={actorIdFilter}
+            placeholder="Nhập tên admin/mod..."
+            value={actorNameFilter}
           />
           <SelectField
             label="Hành động"
@@ -435,16 +432,16 @@ function AuditLogDetailDialog({
             value={formatDate(log.createdAt)}
           />
           <DetailItem
-            label="Địa chỉ IP"
-            value={log.ipAddress || "Không rõ IP"}
-          />
-          <DetailItem
             label="Hành động"
             value={actionLabelsMap[log.action] || log.action}
           />
           <DetailItem
-            label="Đối tượng tác động (ID)"
-            value={log.targetId || "Không có đối tượng"}
+            label="Đối tượng tác động"
+            value={
+              log.targetName
+                ? `${log.targetName} (${log.targetId || "—"})`
+                : log.targetId || "Không có đối tượng"
+            }
           />
           <DetailItem
             label="Loại đối tượng"
@@ -479,23 +476,6 @@ function AuditLogDetailDialog({
                 </span>
               </div>
             </div>
-          </div>
-        </div>
-
-        <div className="mb-6">
-          <p className="font-label-sm text-label-sm text-on-surface-variant tracking-normal mb-2">
-            Dữ liệu chi tiết (Metadata)
-          </p>
-          <div className="rounded border border-outline-variant bg-surface-container-lowest p-4 overflow-x-auto max-h-[250px] overflow-y-auto font-mono text-xs">
-            {log.metadata ? (
-              <pre className="text-on-surface">
-                {JSON.stringify(log.metadata, null, 2)}
-              </pre>
-            ) : (
-              <span className="text-on-surface-variant italic">
-                Không có metadata
-              </span>
-            )}
           </div>
         </div>
 

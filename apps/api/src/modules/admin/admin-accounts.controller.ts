@@ -60,11 +60,6 @@ export class AdminAccountsController {
     try {
       const actorId = request?.user?.sub;
       const actorRole = request?.user?.role;
-      const ipAddress = request
-        ? request.ip ||
-          request.headers?.['x-forwarded-for'] ||
-          request.socket?.remoteAddress
-        : undefined;
 
       await this.auditLogService.log({
         actorId,
@@ -72,11 +67,6 @@ export class AdminAccountsController {
         action: AuditAction.BAN_USER,
         targetType: AuditTargetType.USER,
         targetId: accountId,
-        metadata: {
-          previousStatus: 'ACTIVE',
-          newStatus: 'BANNED',
-        },
-        ipAddress: ipAddress ? String(ipAddress) : undefined,
       });
     } catch (err) {
       console.error('Failed to log BAN_USER action:', err);
