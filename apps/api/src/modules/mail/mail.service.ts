@@ -1,6 +1,7 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import type { ConfigType } from '@nestjs/config';
 import { Resend } from 'resend';
+import * as nodemailer from 'nodemailer';
 import { mailConfiguration } from '../../config';
 import { accounts } from '@prisma/client';
 import { NodeEnv } from '../../common/enums';
@@ -12,6 +13,7 @@ type PasswordResetEmailAccount = Pick<accounts, 'email' | 'name'>;
 export class MailService {
   private readonly logger = new Logger(MailService.name);
   private readonly resend: Resend | null;
+  private readonly transporter: nodemailer.Transporter | null = null;
 
   constructor(
     @Inject(mailConfiguration.KEY)
@@ -20,51 +22,91 @@ export class MailService {
     this.resend = this.mailConfig.apiKey
       ? new Resend(this.mailConfig.apiKey)
       : null;
+
+    if (!this.resend && this.mailConfig.smtpUser && this.mailConfig.smtpPass) {
+      this.transporter = nodemailer.createTransport({
+        host: this.mailConfig.smtpHost,
+        port: this.mailConfig.smtpPort,
+        secure: this.mailConfig.smtpPort === 465,
+        auth: {
+          user: this.mailConfig.smtpUser,
+          pass: this.mailConfig.smtpPass,
+        },
+      });
+    }
   }
 
   async sendVerificationCode(account: VerificationEmailAccount, token: string) {
     const verificationUrl = this.buildVerificationUrl(token);
 
-    if (!this.resend) {
+    if (!this.resend && !this.transporter) {
       this.logger.log(
         process.env.NODE_ENV === NodeEnv.Development
           ? `Email verification link for ${account.email}: ${verificationUrl}`
-          : 'Resend API key is not configured. Skipping sending verification email.',
+          : 'Neither Resend nor SMTP is configured. Skipping sending verification email.',
       );
       return;
     }
 
-    try {
-      const { error } = await this.resend.emails.send({
-        from: `"${this.mailConfig.fromName}" <${this.mailConfig.fromEmail}>`,
-        to: account.email,
-        subject: 'Verify your AI Study Hub email',
-        html: this.getVerificationHtml(account.name, verificationUrl),
-        text: [
-          `Hi ${account.name},`,
-          '',
-          `Click the link below to verify your email address and complete your registration:`,
-          verificationUrl,
-          '',
-          'If you did not create an account, please ignore this email.',
-          '',
-          'Best regards,',
-          'The AI Study Hub Team',
-        ].join('\n'),
-      });
+    if (this.resend) {
+      try {
+        const { error } = await this.resend.emails.send({
+          from: `"${this.mailConfig.fromName}" <${this.mailConfig.fromEmail}>`,
+          to: account.email,
+          subject: 'Verify your AI Study Hub email',
+          html: this.getVerificationHtml(account.name, verificationUrl),
+          text: [
+            `Hi ${account.name},`,
+            '',
+            `Click the link below to verify your email address and complete your registration:`,
+            verificationUrl,
+            '',
+            'If you did not create an account, please ignore this email.',
+            '',
+            'Best regards,',
+            'The AI Study Hub Team',
+          ].join('\n'),
+        });
 
-      if (error) {
+        if (error) {
+          this.logger.error(
+            `Failed to send verification email via Resend: ${error.message}`,
+          );
+          throw error;
+        }
+      } catch (err) {
         this.logger.error(
-          `Failed to send verification email: ${error.message}`,
+          `Error sending verification email via Resend to ${account.email}:`,
+          err,
         );
-        throw error;
+        throw err;
       }
-    } catch (err) {
-      this.logger.error(
-        `Error sending verification email to ${account.email}:`,
-        err,
-      );
-      throw err;
+    } else if (this.transporter) {
+      try {
+        await this.transporter.sendMail({
+          from: `"${this.mailConfig.fromName}" <${this.mailConfig.fromEmail}>`,
+          to: account.email,
+          subject: 'Verify your AI Study Hub email',
+          html: this.getVerificationHtml(account.name, verificationUrl),
+          text: [
+            `Hi ${account.name},`,
+            '',
+            `Click the link below to verify your email address and complete your registration:`,
+            verificationUrl,
+            '',
+            'If you did not create an account, please ignore this email.',
+            '',
+            'Best regards,',
+            'The AI Study Hub Team',
+          ].join('\n'),
+        });
+      } catch (err) {
+        this.logger.error(
+          `Error sending verification email via SMTP to ${account.email}:`,
+          err,
+        );
+        throw err;
+      }
     }
   }
 
@@ -76,48 +118,78 @@ export class MailService {
     const resetUrl = this.buildPasswordResetUrl(token);
     const ttlMinutes = Math.max(1, Math.ceil(ttlSeconds / 60));
 
-    if (!this.resend) {
+    if (!this.resend && !this.transporter) {
       this.logger.log(
         process.env.NODE_ENV === NodeEnv.Development
           ? `Password reset link for ${account.email}: ${resetUrl}`
-          : 'Resend API key is not configured. Skipping sending password reset email.',
+          : 'Neither Resend nor SMTP is configured. Skipping sending password reset email.',
       );
       return;
     }
 
-    try {
-      const { error } = await this.resend.emails.send({
-        from: `"${this.mailConfig.fromName}" <${this.mailConfig.fromEmail}>`,
-        to: account.email,
-        subject: 'Reset your AI Study Hub password',
-        html: this.getPasswordResetHtml(account.name, resetUrl, ttlMinutes),
-        text: [
-          `Hi ${account.name},`,
-          '',
-          'Click the link below to reset your AI Study Hub password:',
-          resetUrl,
-          '',
-          `This link expires in ${ttlMinutes} minutes and can only be used once.`,
-          '',
-          'If you did not request a password reset, please ignore this email.',
-          '',
-          'Best regards,',
-          'The AI Study Hub Team',
-        ].join('\n'),
-      });
+    if (this.resend) {
+      try {
+        const { error } = await this.resend.emails.send({
+          from: `"${this.mailConfig.fromName}" <${this.mailConfig.fromEmail}>`,
+          to: account.email,
+          subject: 'Reset your AI Study Hub password',
+          html: this.getPasswordResetHtml(account.name, resetUrl, ttlMinutes),
+          text: [
+            `Hi ${account.name},`,
+            '',
+            'Click the link below to reset your AI Study Hub password:',
+            resetUrl,
+            '',
+            `This link expires in ${ttlMinutes} minutes and can only be used once.`,
+            '',
+            'If you did not request a password reset, please ignore this email.',
+            '',
+            'Best regards,',
+            'The AI Study Hub Team',
+          ].join('\n'),
+        });
 
-      if (error) {
+        if (error) {
+          this.logger.error(
+            `Failed to send password reset email via Resend: ${error.message}`,
+          );
+          throw error;
+        }
+      } catch (err) {
         this.logger.error(
-          `Failed to send password reset email: ${error.message}`,
+          `Error sending password reset email via Resend to ${account.email}:`,
+          err,
         );
-        throw error;
+        throw err;
       }
-    } catch (err) {
-      this.logger.error(
-        `Error sending password reset email to ${account.email}:`,
-        err,
-      );
-      throw err;
+    } else if (this.transporter) {
+      try {
+        await this.transporter.sendMail({
+          from: `"${this.mailConfig.fromName}" <${this.mailConfig.fromEmail}>`,
+          to: account.email,
+          subject: 'Reset your AI Study Hub password',
+          html: this.getPasswordResetHtml(account.name, resetUrl, ttlMinutes),
+          text: [
+            `Hi ${account.name},`,
+            '',
+            'Click the link below to reset your AI Study Hub password:',
+            resetUrl,
+            '',
+            `This link expires in ${ttlMinutes} minutes and can only be used once.`,
+            '',
+            'If you did not request a password reset, please ignore this email.',
+            '',
+            'Best regards,',
+            'The AI Study Hub Team',
+          ].join('\n'),
+        });
+      } catch (err) {
+        this.logger.error(
+          `Error sending password reset email via SMTP to ${account.email}:`,
+          err,
+        );
+        throw err;
+      }
     }
   }
 
