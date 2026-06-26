@@ -18,7 +18,8 @@ export const buildGoogleLoginUrl = ({
   redirectPath,
   oauthState,
 }: BuildGoogleLoginUrlOptions): string => {
-  const baseUrl = `${apiBaseUrl}${API_ENDPOINTS.AUTH.GOOGLE}`;
+  const cleanApiBaseUrl = apiBaseUrl.replace(/\/$/, "");
+  const baseUrl = `${cleanApiBaseUrl}${API_ENDPOINTS.AUTH.GOOGLE}`;
   const params = new URLSearchParams({ deviceId });
 
   if (redirectPath) {

@@ -10,7 +10,9 @@ export const APP_CONFIG = {
 
   // API Configuration
   api: {
-    baseUrl: process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080",
+    baseUrl: (
+      process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080"
+    ).replace(/\/$/, ""),
     timeout: 15_000,
   },
 
