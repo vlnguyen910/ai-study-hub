@@ -27,6 +27,7 @@ import {
   resendVerificationEmail,
   resetPassword,
   signin,
+  signup,
   verifyEmail,
 } from "../src/modules/auth-api";
 
@@ -94,6 +95,24 @@ describe("web auth api helpers", () => {
       email: "student@example.com",
       password: "Password123!",
       deviceId: "device-1",
+    });
+  });
+
+  it("posts signup payload through the shared api client", async () => {
+    apiClientMock.post.mockResolvedValue({ data: null });
+
+    await expect(
+      signup({
+        name: "Nguyen Student",
+        email: "student@example.com",
+        password: "Password123!",
+      }),
+    ).resolves.toEqual({ data: null });
+
+    expect(apiClientMock.post).toHaveBeenCalledWith("/api/v1/auth/signup", {
+      name: "Nguyen Student",
+      email: "student@example.com",
+      password: "Password123!",
     });
   });
 
