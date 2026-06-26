@@ -269,7 +269,6 @@ describe("web auth routing", () => {
           name: "Nguyen Student",
           email: "student@example.com",
           password: "Password123!",
-          deviceId: expect.any(String),
         }),
       );
       expect(navigationMocks.router.replace).toHaveBeenCalledWith("/login");

@@ -64,7 +64,9 @@ export const signup = async (payload: {
   password: string;
 }) => {
   try {
-    return unwrap<null>(await client.post("/api/v1/auth/signup", payload));
+    return unwrap<null>(
+      await apiClient.post(API_ENDPOINTS.AUTH.REGISTER, payload),
+    );
   } catch (error) {
     throw new Error(getErrorMessage(error, "Registration failed"));
   }

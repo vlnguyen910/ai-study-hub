@@ -1,5 +1,5 @@
 import { Alert } from "react-native";
-import { render, waitFor } from "@testing-library/react-native";
+import { render, screen } from "@testing-library/react-native";
 import { AuthVerifyEmailScreen } from "@/features/auth/screens/AuthVerifyEmailScreen";
 import { verifyEmailService } from "@/features/auth/services/auth.service";
 import { getDeviceId } from "@/utils/device";
@@ -64,12 +64,11 @@ describe("AuthVerifyEmailScreen", () => {
 
     render(<AuthVerifyEmailScreen />);
 
-    await waitFor(() => {
-      expect(verifyEmailServiceMock).toHaveBeenCalledWith({
-        token: "verify-token",
-        deviceId: "device-1",
-        deviceType: "MOBILE",
-      });
+    expect(await screen.findByText(/Email.*xác thực/i)).toBeTruthy();
+    expect(verifyEmailServiceMock).toHaveBeenCalledWith({
+      token: "verify-token",
+      deviceId: "device-1",
+      deviceType: "MOBILE",
     });
     expect(saveTokensMock).toHaveBeenCalledWith(
       "active-access-token",

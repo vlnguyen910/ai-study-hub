@@ -1,4 +1,9 @@
-import { fireEvent, render, waitFor } from "@testing-library/react-native";
+import {
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from "@testing-library/react-native";
 import { AuthResetPasswordScreen } from "@/features/auth/screens/AuthResetPasswordScreen";
 import { resetPasswordService } from "@/features/auth/services/auth.service";
 
@@ -43,16 +48,14 @@ describe("AuthResetPasswordScreen", () => {
       data: null,
     });
 
-    const { getAllByText, getByPlaceholderText, getByText } = render(
-      <AuthResetPasswordScreen />,
-    );
+    const { getByPlaceholderText } = render(<AuthResetPasswordScreen />);
 
     fireEvent.changeText(getByPlaceholderText("Mật khẩu mới"), "Password123!");
     fireEvent.changeText(
       getByPlaceholderText("Xác nhận mật khẩu"),
       "Password123!",
     );
-    fireEvent.press(getAllByText("Đặt lại mật khẩu")[1]);
+    fireEvent.press(screen.getByRole("button", { name: "Đặt lại mật khẩu" }));
 
     await waitFor(() => {
       expect(resetPasswordServiceMock).toHaveBeenCalledWith({
@@ -61,8 +64,6 @@ describe("AuthResetPasswordScreen", () => {
       });
     });
 
-    expect(
-      await waitFor(() => getByText("Mật khẩu đã được đặt lại.")),
-    ).toBeTruthy();
+    expect(await screen.findByText("Mật khẩu đã được đặt lại.")).toBeTruthy();
   }, 15000);
 });
