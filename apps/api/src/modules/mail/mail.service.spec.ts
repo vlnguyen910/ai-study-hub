@@ -42,7 +42,7 @@ describe('MailService', () => {
       fromEmail: 'noreply@example.com',
       fromName: 'AI Study Hub',
       frontendUrl: 'http://localhost:3000',
-    });
+    } as any);
 
     await service.sendVerificationCode(
       {
@@ -76,7 +76,7 @@ describe('MailService', () => {
       fromEmail: 'noreply@example.com',
       fromName: 'AI Study Hub',
       frontendUrl: 'http://localhost:3000',
-    });
+    } as any);
 
     await service.sendVerificationCode(
       {
@@ -102,7 +102,7 @@ describe('MailService', () => {
       fromEmail: 'noreply@example.com',
       fromName: 'AI Study Hub',
       frontendUrl: 'http://localhost:3000',
-    });
+    } as any);
 
     await service.sendVerificationCode(
       {
@@ -127,7 +127,7 @@ describe('MailService', () => {
       fromEmail: 'noreply@example.com',
       fromName: 'AI Study Hub',
       frontendUrl: 'http://localhost:3000',
-    });
+    } as any);
 
     await service.sendPasswordResetLink(
       {
@@ -171,7 +171,7 @@ describe('MailService', () => {
       fromEmail: 'noreply@example.com',
       fromName: 'AI Study Hub',
       frontendUrl: 'http://localhost:3000',
-    });
+    } as any);
 
     await service.sendPasswordResetLink(
       {
@@ -198,7 +198,7 @@ describe('MailService', () => {
       fromEmail: 'noreply@example.com',
       fromName: 'AI Study Hub',
       frontendUrl: 'http://localhost:3000',
-    });
+    } as any);
 
     await service.sendPasswordResetLink(
       {
