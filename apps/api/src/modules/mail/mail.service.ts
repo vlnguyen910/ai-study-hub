@@ -2,6 +2,7 @@ import { Inject, Injectable, Logger } from '@nestjs/common';
 import type { ConfigType } from '@nestjs/config';
 import { Resend } from 'resend';
 import * as nodemailer from 'nodemailer';
+import * as dns from 'dns';
 import { mailConfiguration } from '../../config';
 import { accounts } from '@prisma/client';
 import { NodeEnv } from '../../common/enums';
@@ -32,7 +33,11 @@ export class MailService {
           user: this.mailConfig.smtpUser,
           pass: this.mailConfig.smtpPass,
         },
-      });
+        // Force IPv4 to prevent ENETUNREACH errors in environments lacking IPv6 support
+        lookup: (hostname, options, callback) => {
+          dns.lookup(hostname, { ...options, family: 4 }, callback);
+        },
+      } as any);
     }
   }
 
