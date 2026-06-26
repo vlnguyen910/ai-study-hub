@@ -1,0 +1,81 @@
+/**
+ * Admin Routes
+ * Routes for admin dashboard and management
+ * Requires admin role access
+ */
+
+import { ROUTE_PATHS } from "../router.const";
+
+export const ADMIN_ROUTES = [
+  ROUTE_PATHS.ADMIN,
+  ROUTE_PATHS.ADMIN_ROUTES.DASHBOARD,
+  ROUTE_PATHS.ADMIN_ROUTES.USERS,
+  ROUTE_PATHS.ADMIN_ROUTES.CONFIG,
+  ROUTE_PATHS.ADMIN_ROUTES.CATEGORIES,
+  ROUTE_PATHS.ADMIN_ROUTES.SUBJECTS,
+  ROUTE_PATHS.ADMIN_ROUTES.SETTINGS,
+  ROUTE_PATHS.ADMIN_ROUTES.AUDIT_LOGS,
+];
+
+export const adminRouterConfig = {
+  DASHBOARD: {
+    path: ROUTE_PATHS.ADMIN_ROUTES.DASHBOARD,
+    title: "Bảng điều khiển",
+    public: false,
+    requiresAuth: true,
+    requiresRole: "admin" as const,
+  },
+  USERS: {
+    path: ROUTE_PATHS.ADMIN_ROUTES.USERS,
+    title: "Quản lý người dùng",
+    public: false,
+    requiresAuth: true,
+    requiresRole: "admin" as const,
+  },
+  CATEGORIES: {
+    path: ROUTE_PATHS.ADMIN_ROUTES.CATEGORIES,
+    title: "Quản lý danh mục",
+    public: false,
+    requiresAuth: true,
+    requiresRole: "admin" as const,
+  },
+  SUBJECTS: {
+    path: ROUTE_PATHS.ADMIN_ROUTES.SUBJECTS,
+    title: "Quản lý môn học",
+    public: false,
+    requiresAuth: true,
+    requiresRole: "admin" as const,
+  },
+  CONFIG: {
+    path: ROUTE_PATHS.ADMIN_ROUTES.CONFIG,
+    title: "Cấu hình hệ thống",
+    public: false,
+    requiresAuth: true,
+    requiresRole: "admin" as const,
+  },
+  SETTINGS: {
+    path: ROUTE_PATHS.ADMIN_ROUTES.SETTINGS,
+    title: "Cài đặt",
+    public: false,
+    requiresAuth: true,
+    requiresRole: "admin" as const,
+  },
+  AUDIT_LOGS: {
+    path: ROUTE_PATHS.ADMIN_ROUTES.AUDIT_LOGS,
+    title: "Nhật ký hoạt động",
+    public: false,
+    requiresAuth: true,
+    requiresRole: "admin" as const,
+  },
+} as const;
+
+const matchesRouteSegment = (pathname: string, route: string): boolean => {
+  return pathname === route || pathname.startsWith(`${route}/`);
+};
+
+/**
+ * Check if a route is admin route
+ */
+export const isAdminRoute = (pathname: string): boolean => {
+  return ADMIN_ROUTES.some((route) => matchesRouteSegment(pathname, route));
+};

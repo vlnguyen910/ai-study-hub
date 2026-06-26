@@ -1,0 +1,16 @@
+export const ROUTES = {
+  HOME: "/home",
+  SEARCH: "/search",
+  LIBRARY: "/library",
+  LOGIN: "/login",
+  REGISTER: "/register",
+  FORGOT_PASSWORD: "/forgot-password",
+  RESET_PASSWORD: "/reset-password",
+  VERIFY_EMAIL: "/verify-email",
+  PROFILE: "/profile",
+  DOCUMENT_UPLOAD: "/documents/upload",
+  DOCUMENT_DETAIL: (id: string) => `/documents/${id}`,
+  DOCUMENT_EDIT: (id: string) => `/documents/${id}/edit`,
+  MODERATOR_DOCUMENTS: "/moderator/documents",
+  MODERATOR_DOCUMENT_DETAIL: (id: string) => `/moderator/documents/${id}`,
+} as const;

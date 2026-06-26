@@ -1,159 +1,148 @@
-# Turborepo starter
+# Hệ thống Quản lý Tài liệu Học tập AI (AI Study Hub)
 
-This Turborepo starter is maintained by the Turborepo core team.
+## Project Overview
 
-## Using this example
+AI Study Hub is a web platform that centralizes students' learning documents and enables fast retrieval and AI-assisted Q&A. It addresses scattered storage, poor organization, and the difficulty of quickly finding or asking about previous materials. The system targets both students and development teams building a real-world fullstack workflow.
 
-Run the following command:
+Core scope:
 
-```sh
-npx create-turbo@latest
-```
+- Authentication: sign up, sign in/out, password recovery, profile updates
+- Document management: upload, list, download, delete, edit metadata, view details
+- Search and filtering: search documents, filter by subject
+- Cloud storage: upload to cloud, upload status, file preview
+- AI chatbot: ask questions about documents, receive AI answers, view chat history
 
-## What's inside?
+## Tech Stack
 
-This Turborepo includes the following packages/apps:
+| Category             | Technology              | Purpose                                                         |
+| -------------------- | ----------------------- | --------------------------------------------------------------- |
+| Backend framework    | NestJS                  | API server, modular backend and business logic                  |
+| Frontend framework   | Next.js                 | Web app and documentation site (SSR/SSG)                        |
+| Language             | TypeScript              | Typesafe JavaScript development across stack                    |
+| Monorepo tooling     | Turborepo               | Manage builds, caching and task orchestration in the monorepo   |
+| Package manager      | pnpm                    | Fast, disk-efficient workspace installs                         |
+| Runtime              | Node.js >= 18           | JavaScript runtime for servers and tooling                      |
+| Database             | MongoDB                 | Document database used by the app (local via Docker Compose)    |
+| Containerization     | Docker & Docker Compose | Run local services and isolate environments                     |
+| Linting & formatting | ESLint, Prettier        | Enforce code quality and consistent formatting                  |
+| Testing              | Vitest & Jest           | Unit and integration testing for frontend, backend and packages |
 
-### Apps and Packages
-
-- `docs`: a [Next.js](https://nextjs.org/) app
-- `web`: another [Next.js](https://nextjs.org/) app
-- `@repo/ui`: a stub React component library shared by both `web` and `docs` applications
-- `@repo/eslint-config`: `eslint` configurations (includes `eslint-config-next` and `eslint-config-prettier`)
-- `@repo/typescript-config`: `tsconfig.json`s used throughout the monorepo
-
-Each package/app is 100% [TypeScript](https://www.typescriptlang.org/).
-
-### Utilities
-
-This Turborepo has some additional tools already setup for you:
-
-- [TypeScript](https://www.typescriptlang.org/) for static type checking
-- [ESLint](https://eslint.org/) for code linting
-- [Prettier](https://prettier.io) for code formatting
-
-### Build
-
-To build all apps and packages, run the following command:
-
-With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed (recommended):
+## Local Development
 
 ```sh
-cd my-turborepo
-turbo build
+# 1. Clone repository
+git clone <repository-url>
+cd ai-study-hub
+
+# 2. Install dependencies
+pnpm install
+
+# 3. Setup environment (required)
+# Copy the example env and edit values locally. Do NOT commit your .env.
+cp .env.example .env
+
+# 4. Setup MongoDB Replica Set and Prisma (one command!)
+# This initializes the 3-node replica set, syncs the schema, and seeds data
+pnpm db:setup
+
+# 5. Start the app
+pnpm dev
 ```
 
-Without global `turbo`, use your package manager:
+## Commands
 
-```sh
-cd my-turborepo
-npx turbo build
-pnpm dlx turbo build
-pnpm exec turbo build
+| Command            | Description                                                                                       |
+| ------------------ | ------------------------------------------------------------------------------------------------- |
+| `pnpm dev`         | Start development mode for the workspace (runs app servers and watchers defined by the monorepo). |
+| `pnpm test`        | Run unit and integration tests across the workspace.                                              |
+| `pnpm build`       | Build production artifacts for all apps (Next.js, NestJS, packages).                              |
+| `pnpm lint`        | Run ESLint across packages and apps to catch style and correctness issues.                        |
+| `pnpm check-types` | Run TypeScript type checks (`tsc --build` or equivalent) across the repo.                         |
+| `pnpm format`      | Format codebase with Prettier.                                                                    |
+| `pnpm db:setup`    | **One-command setup:** Start Docker, initialize MongoDB Replica Set, sync schema, seed data.      |
+| `pnpm db:init`     | Initialize MongoDB Replica Set (runs automatically in `db:setup`).                                |
+| `pnpm db:sync`     | Sync the Prisma schema to local MongoDB Replica Set and generate Prisma Client.                   |
+| `pnpm db:seed`     | Seed local MongoDB with deterministic development data.                                           |
+| `pnpm db:clean`    | Delete local API database records.                                                                |
+| `pnpm db:reseed`   | Clean the local database and seed it again.                                                       |
+
+Usage examples
+
+```bash
+# start local services and app in dev mode
+cp .env.example .env
+docker compose up -d
+test -f apps/api/.env || cp apps/api/.env.example apps/api/.env
+pnpm db:sync
+pnpm db:seed
+pnpm dev
+
+# run tests
+pnpm test
+
+# build for production
+pnpm build
 ```
 
-You can build a specific package by using a [filter](https://turborepo.dev/docs/crafting-your-repository/running-tasks#using-filters):
+## Project Structure
 
-With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed:
+The repository follows a monorepo layout with apps and shared packages.
 
-```sh
-turbo build --filter=docs
+```
+ai-study-hub/
+├─ apps/
+│  ├─ api/                # NestJS backend
+│  │  ├─ src/
+│  │  │  ├─ main.ts
+│  │  │  ├─ app.module.ts
+│  │  │  ├─ app.controller.ts
+│  │  │  └─ app.service.ts
+	│  │
+│  │  └─ (package.json, tsconfig, tests)
+│  ├─ web/                # Next.js frontend
+│  │  ├─ app/
+│  │  │  ├─ layout.tsx
+│  │  │  ├─ page.tsx
+│  │  │  └─ globals.css
+│  │  └─ (package.json, tsconfig)
+│  └─ docs/               # Documentation site / markdown
+├─ mobile/                # Expo React Native app (mobile)
+│  ├─ src/                # app source code (screens, components, hooks)
+│  ├─ assets/             # images, icons and other static assets
+│  ├─ package.json
+  │  └─ README.md
+├─ packages/              # Shared packages and config
+│  ├─ tokens/             # Shared design tokens and semantic aliases
+│  ├─ ui/                 # Shared React UI components
+│  │  ├─ src/
+│  │  │  ├─ button.tsx
+│  │  │  └─ card.tsx
+│  ├─ eslint-config/      # ESLint shareable configs
+│  └─ typescript-config/  # TSConfig presets for packages/apps
+├─ docker-compose.yaml    # Local services (MongoDB)
+├─ .env.example           # Example environment variables
+├─ package.json           # Workspace scripts and tooling
+├─ pnpm-workspace.yaml    # pnpm workspace configuration
+└─ turbo.json             # Turborepo configuration
 ```
 
-Without global `turbo`:
+Notes
 
-```sh
-npx turbo build --filter=docs
-pnpm exec turbo build --filter=docs
-pnpm exec turbo build --filter=docs
-```
+- Each `apps/*` folder is an independently runnable application. Use `pnpm dev` at workspace root to run the dev flow defined in this monorepo.
+- Put local secrets in `.env` (copy from `.env.example`) and do not commit `.env`.
 
-### Develop
+## API Docs
 
-To develop all apps and packages, run the following command:
+To be added.
 
-With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed (recommended):
+## Team Docs
 
-```sh
-cd my-turborepo
-turbo dev
-```
+- Contributing Guide: [apps/docs/CONTRIBUTING.md](apps/docs/CONTRIBUTING.md)
+- Naming Conventions: [apps/docs/NAMING_CONVENTIONS.md](apps/docs/NAMING_CONVENTIONS.md)
+- Shared Tokens: [apps/docs/SHARED_TOKENS.md](apps/docs/SHARED_TOKENS.md)
+- Testing: [apps/docs/TESTING.md](apps/docs/TESTING.md)
+- Web app README: [apps/web/README.md](apps/web/README.md)
 
-Without global `turbo`, use your package manager:
+## Team Members
 
-```sh
-cd my-turborepo
-npx turbo dev
-pnpm exec turbo dev
-pnpm exec turbo dev
-```
-
-You can develop a specific package by using a [filter](https://turborepo.dev/docs/crafting-your-repository/running-tasks#using-filters):
-
-With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed:
-
-```sh
-turbo dev --filter=web
-```
-
-Without global `turbo`:
-
-```sh
-npx turbo dev --filter=web
-pnpm exec turbo dev --filter=web
-pnpm exec turbo dev --filter=web
-```
-
-### Remote Caching
-
-> [!TIP]
-> Vercel Remote Cache is free for all plans. Get started today at [vercel.com](https://vercel.com/signup?utm_source=remote-cache-sdk&utm_campaign=free_remote_cache).
-
-Turborepo can use a technique known as [Remote Caching](https://turborepo.dev/docs/core-concepts/remote-caching) to share cache artifacts across machines, enabling you to share build caches with your team and CI/CD pipelines.
-
-By default, Turborepo will cache locally. To enable Remote Caching you will need an account with Vercel. If you don't have an account you can [create one](https://vercel.com/signup?utm_source=turborepo-examples), then enter the following commands:
-
-With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed (recommended):
-
-```sh
-cd my-turborepo
-turbo login
-```
-
-Without global `turbo`, use your package manager:
-
-```sh
-cd my-turborepo
-npx turbo login
-pnpm exec turbo login
-pnpm exec turbo login
-```
-
-This will authenticate the Turborepo CLI with your [Vercel account](https://vercel.com/docs/concepts/personal-accounts/overview).
-
-Next, you can link your Turborepo to your Remote Cache by running the following command from the root of your Turborepo:
-
-With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed:
-
-```sh
-turbo link
-```
-
-Without global `turbo`:
-
-```sh
-npx turbo link
-pnpm exec turbo link
-pnpm exec turbo link
-```
-
-## Useful Links
-
-Learn more about the power of Turborepo:
-
-- [Tasks](https://turborepo.dev/docs/crafting-your-repository/running-tasks)
-- [Caching](https://turborepo.dev/docs/crafting-your-repository/caching)
-- [Remote Caching](https://turborepo.dev/docs/core-concepts/remote-caching)
-- [Filtering](https://turborepo.dev/docs/crafting-your-repository/running-tasks#using-filters)
-- [Configuration Options](https://turborepo.dev/docs/reference/configuration)
-- [CLI Usage](https://turborepo.dev/docs/reference/command-line-reference)
+To be added.

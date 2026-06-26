@@ -1,0 +1,20 @@
+{
+  "extends": "expo/tsconfig.base",
+  "compilerOptions": {
+    "strict": true,
+    "paths": {
+      "@/*": ["./src/*"],
+      "@repo/tokens": ["../../packages/tokens/src/index.ts"],
+      "@repo/tokens/web": ["../../packages/tokens/src/web.ts"],
+      "@/assets/*": ["./assets/*"]
+    }
+  },
+  "include": [
+    "**/*.ts",
+    "**/*.tsx",
+    "src/**/*.d.ts",
+    ".expo/types/**/*.ts",
+    "expo-env.d.ts",
+    "nativewind-env.d.ts"
+  ]
+}

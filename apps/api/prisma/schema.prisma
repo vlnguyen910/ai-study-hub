@@ -1,0 +1,360 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  USER
+  ADMIN
+  MODERATOR
+}
+
+enum UserStatus {
+  ACTIVE
+  BANNED
+  UNVERIFIED
+  DELETED
+}
+
+enum DeviceType {
+  WEB
+  MOBILE
+}
+
+enum AuthProvider {
+  GOOGLE
+}
+
+model accounts {
+  id        String     @id @default(auto()) @map("_id") @db.ObjectId
+  email     String     @unique
+  name      String
+  password  String
+  avatarUrl String
+  role      UserRole
+  status    UserStatus @default(UNVERIFIED)
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+  deletedAt DateTime?
+
+  //Relationships
+  sessions          sessions[]
+  authProviders     auth_providers[]
+  documents         documents[]      @relation("authorId")
+  reviewedDocuments documents[]      @relation("reviewedById")
+  collections       collections[]
+  quizSessions      quiz_sessions[]
+  chatSessions      chat_sessions[]
+  auditLogs         audit_logs[]
+}
+
+model auth_providers {
+  id                String       @id @default(auto()) @map("_id") @db.ObjectId
+  provider          AuthProvider
+  providerAccountId String
+  accountId         String       @db.ObjectId
+  account           accounts     @relation(fields: [accountId], references: [id])
+  email             String
+  createdAt         DateTime     @default(now())
+  updatedAt         DateTime     @updatedAt
+
+  @@unique([provider, providerAccountId])
+  @@unique([provider, accountId])
+}
+
+model sessions {
+  id           String     @id @default(auto()) @map("_id") @db.ObjectId
+  userId       String     @db.ObjectId
+  user         accounts   @relation(fields: [userId], references: [id])
+  refreshToken String
+  deviceId     String
+  deviceType   DeviceType
+  isRevoked    Boolean    @default(false)
+  createdAt    DateTime   @default(now())
+  expiresAt    DateTime
+
+  @@unique([userId, deviceId])
+}
+
+model schools {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  name      String
+  code      String   @unique
+  createdAt DateTime @default(now())
+
+  //Relationships
+  subjects subjects[]
+}
+
+model subjects {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  name      String
+  code      String   @unique
+  schoolId  String   @db.ObjectId
+  createdAt DateTime @default(now())
+
+  //Relationships
+  documents documents[]
+  school    schools     @relation(fields: [schoolId], references: [id])
+}
+
+enum DocumentStatus {
+  PENDING
+  ACTIVE
+  REJECTED
+  DELETED
+}
+
+model documents {
+  id              String         @id @default(auto()) @map("_id") @db.ObjectId
+  title           String
+  description     String?
+  fileUrl         String
+  publicId        String
+  sizeInBytes     Int
+  format          String
+  resourceType    String
+  subjectId       String?        @db.ObjectId
+  status          DocumentStatus @default(PENDING)
+  authorId        String         @db.ObjectId
+  isPublic        Boolean        @default(false)
+  reviewedById    String?        @db.ObjectId
+  reviewedAt      DateTime?
+  rejectionReason String?
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+  deletedAt       DateTime?
+
+  // AI & Analytics Fields
+  aiSummary      String?
+  aiKeywords     String[]
+  duplicateScore Float?
+  isAiFlagged    Boolean? @default(false)
+  downloadCount  Int      @default(0)
+  viewCount      Int      @default(0)
+
+  //Relationships
+  subject         subjects?              @relation(fields: [subjectId], references: [id])
+  author          accounts               @relation("authorId", fields: [authorId], references: [id])
+  reviewer        accounts?              @relation("reviewedById", fields: [reviewedById], references: [id])
+  chunks          document_chunks[]
+  aiReview        ai_reviews?
+  collectionLinks collection_documents[]
+  quizSessions    quiz_sessions[]
+  chatSessions    chat_sessions[]
+}
+
+model collections {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  name        String
+  description String?
+  isPublic    Boolean  @default(false)
+  authorId    String   @db.ObjectId
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  //Relationships
+  author accounts               @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  items  collection_documents[]
+
+  @@index([authorId])
+  @@index([isPublic])
+}
+
+model collection_documents {
+  id           String   @id @default(auto()) @map("_id") @db.ObjectId
+  collectionId String   @db.ObjectId
+  documentId   String   @db.ObjectId
+  addedAt      DateTime @default(now())
+
+  //Relationships
+  collection collections @relation(fields: [collectionId], references: [id], onDelete: Cascade)
+  document   documents   @relation(fields: [documentId], references: [id], onDelete: Cascade)
+
+  @@unique([collectionId, documentId])
+  @@index([documentId])
+}
+
+model document_chunks {
+  id         String    @id @default(auto()) @map("_id") @db.ObjectId
+  documentId String    @db.ObjectId
+  document   documents @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  chunkIndex Int
+  chunkText  String
+  tokenCount Int
+  embedding  Float[]
+  pageStart  Int?
+  pageEnd    Int?
+  createdAt  DateTime  @default(now())
+
+  @@unique([documentId, chunkIndex])
+}
+
+model ai_reviews {
+  id                   String        @id @default(auto()) @map("_id") @db.ObjectId
+  documentId           String        @unique @db.ObjectId
+  document             documents     @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  summary              String?
+  warningFlags         WarningFlag[]
+  moderationSuggestion String?
+  moderationReason     String?
+  generatedDescription String?
+  createdAt            DateTime      @default(now())
+  updatedAt            DateTime      @updatedAt
+}
+
+enum WarningFlag {
+  SPAM
+  TOXIC
+  ACADEMIC_INTEGRITY_RISK
+}
+
+model quiz_sessions {
+  id            String    @id @default(auto()) @map("_id") @db.ObjectId
+  documentId    String    @db.ObjectId
+  document      documents @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  userId        String    @db.ObjectId
+  user          accounts  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  status        String
+  questionCount Int
+  quizPayload   Json
+  score         Int?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}
+
+model chat_sessions {
+  id            String          @id @default(auto()) @map("_id") @db.ObjectId
+  documentId    String          @db.ObjectId
+  document      documents       @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  userId        String          @db.ObjectId
+  user          accounts        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title         String
+  status        String
+  model         String
+  lastMessageAt DateTime        @default(now())
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+  messages      chat_messages[]
+}
+
+model chat_messages {
+  id         String        @id @default(auto()) @map("_id") @db.ObjectId
+  sessionId  String        @db.ObjectId
+  session    chat_sessions @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  role       String
+  content    String
+  citations  Json?
+  tokensUsed Int?
+  status     String?
+  createdAt  DateTime      @default(now())
+}
+
+/// Singleton collection containing the runtime configuration for AI Study Hub.
+/// `key` is fixed to `GLOBAL` by the repository, which makes upserts idempotent.
+model system_settings {
+  id  String @id @default(auto()) @map("_id") @db.ObjectId
+  key String @unique @default("GLOBAL")
+
+  // General system config
+  systemName        String  @default("AI Study Hub")
+  maintenanceMode   Boolean @default(false)
+  defaultSchoolCode String  @default("FPTU")
+  supportEmail      String  @default("support@aistudyhub.local")
+
+  // Upload config
+  maxFileSizeMb     Int     @default(100)
+  allowMobileUpload Boolean @default(true)
+
+  // Document visibility and review config
+  requireModerationForPublicDocuments Boolean @default(true)
+  allowPrivateDocuments               Boolean @default(true)
+  allowSharedLink                     Boolean @default(true)
+  privateToPublicRequiresReview       Boolean @default(true)
+  replaceFileRequiresReview           Boolean @default(true)
+
+  // AI config
+  enableAiFeatures           Boolean @default(true)
+  enableAiSummary            Boolean @default(true)
+  enableAiQuiz               Boolean @default(true)
+  enableAiSearch             Boolean @default(true)
+  enableAiChat               Boolean @default(true)
+  enableAiModeratorAssistant Boolean @default(true)
+  maxAiRequestsPerUserPerDay Int     @default(20)
+  maxQuizQuestions           Int     @default(20)
+  defaultQuizQuestions       Int     @default(10)
+
+  // Moderation config
+  autoFlagDuplicateDocuments               Boolean @default(true)
+  duplicateSimilarityThreshold             Int     @default(85)
+  requireRejectionReason                   Boolean @default(true)
+  allowModeratorToApproveAiFlaggedDocument Boolean @default(true)
+
+  // Account config
+  allowGmailRegistration                Boolean  @default(true)
+  requireEmailVerification              Boolean  @default(true)
+  allowUnverifiedLoginWithLimitedAccess Boolean  @default(true)
+  defaultRoleAfterSignup                UserRole @default(USER)
+
+  // Mobile config
+  enableMobileAppAccess  Boolean @default(true)
+  enableMobileUpload     Boolean @default(true)
+  enableMobileAiFeatures Boolean @default(true)
+
+  version   Int      @default(1)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+/// Admin-managed upload extensions. Disabled entries are kept so an admin can
+/// re-enable them without recreating the configuration.
+model upload_file_types {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  extension String   @unique
+  enabled   Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+enum AuditTargetType {
+  USER
+  DOCUMENT
+  SYSTEM_SETTING
+  SUBJECT
+}
+
+enum AuditAction {
+  BAN_USER
+  UNBAN_USER
+  APPROVE_DOCUMENT
+  REJECT_DOCUMENT
+  DELETE_DOCUMENT
+  UPDATE_SYSTEM_SETTINGS
+  UPDATE_DOCUMENT_VISIBILITY
+  CREATE_SUBJECT
+  UPDATE_SUBJECT
+  DELETE_SUBJECT
+}
+
+model audit_logs {
+  id         String           @id @default(auto()) @map("_id") @db.ObjectId
+  actorId    String?          @db.ObjectId
+  actor      accounts?        @relation(fields: [actorId], references: [id])
+  actorRole  UserRole?
+  action     AuditAction
+  targetType AuditTargetType?
+  targetId   String?
+  createdAt  DateTime         @default(now())
+
+  @@index([actorId])
+  @@index([action])
+  @@index([targetType])
+  @@index([createdAt])
+}
