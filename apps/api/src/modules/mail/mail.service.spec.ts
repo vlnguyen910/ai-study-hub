@@ -238,15 +238,18 @@ describe('MailService', () => {
       '123456',
     );
 
-    expect(nodemailer.createTransport).toHaveBeenCalledWith({
-      host: 'smtp.gmail.com',
-      port: 587,
-      secure: false,
-      auth: {
-        user: 'user@gmail.com',
-        pass: 'password123',
-      },
-    });
+    expect(nodemailer.createTransport).toHaveBeenCalledWith(
+      expect.objectContaining({
+        host: 'smtp.gmail.com',
+        port: 587,
+        secure: false,
+        auth: {
+          user: 'user@gmail.com',
+          pass: 'password123',
+        },
+        lookup: expect.any(Function),
+      }),
+    );
     expect(mockSendMail).toHaveBeenCalledWith(
       expect.objectContaining({
         from: '"AI Study Hub" <user@gmail.com>',
