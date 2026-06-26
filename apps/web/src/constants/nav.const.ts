@@ -21,6 +21,12 @@ export const USER_NAV_ITEMS: SideNavItem[] = [
     section: "main",
   },
   {
+    label: "Bộ sưu tập",
+    icon: "collections_bookmark",
+    href: ROUTE_PATHS.PROTECTED_ROUTES.COLLECTIONS,
+    section: "main",
+  },
+  {
     label: "Đóng góp",
     icon: "cloud_upload",
     href: ROUTE_PATHS.PROTECTED_ROUTES.UPLOADS,

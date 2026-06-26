@@ -1,7 +1,6 @@
 "use client";
 
-import Link from "next/link";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 
 import { fetchCollectionDetail } from "@/apis/collection.api";
@@ -14,10 +13,20 @@ import { formatDate } from "@/utils";
 
 export default function CollectionDetailPage(): React.JSX.Element {
   const params = useParams<{ id: string }>();
+  const router = useRouter();
   const collectionId = params.id;
   const [collection, setCollection] = useState<CollectionDetail | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  const handleBack = useCallback(() => {
+    if (typeof window !== "undefined" && window.history.length > 1) {
+      router.back();
+      return;
+    }
+
+    router.push("/collections");
+  }, [router]);
 
   const handleMembershipChange = useCallback(
     (change: QuickSaveMembershipChange) => {
@@ -98,12 +107,13 @@ export default function CollectionDetailPage(): React.JSX.Element {
           Không thể mở bộ sưu tập
         </h1>
         <p className="mt-2 text-sm text-on-surface-variant">{error}</p>
-        <Link
-          href="/profile"
+        <button
+          type="button"
           className="mt-5 inline-flex h-10 items-center justify-center rounded-xl bg-primary px-4 text-sm font-semibold text-on-primary transition hover:opacity-90"
+          onClick={handleBack}
         >
-          Quay lại hồ sơ
-        </Link>
+          Quay lại
+        </button>
       </Card>
     );
   }
@@ -133,15 +143,16 @@ export default function CollectionDetailPage(): React.JSX.Element {
               ) : null}
             </div>
 
-            <Link
-              href="/profile"
+            <button
+              type="button"
               className="inline-flex h-10 shrink-0 items-center justify-center gap-2 rounded-xl border border-outline-variant bg-surface px-4 text-sm font-semibold text-on-surface transition hover:border-primary hover:text-primary"
+              onClick={handleBack}
             >
               <span className="material-symbols-outlined text-[18px]">
                 arrow_back
               </span>
-              Hồ sơ
-            </Link>
+              Quay lại
+            </button>
           </div>
 
           <div className="mt-6 flex flex-wrap items-center gap-3 text-xs text-on-surface-variant">
