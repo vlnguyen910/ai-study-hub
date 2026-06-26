@@ -18,6 +18,13 @@ export const apiClient = axios.create({
   withCredentials: true,
 });
 
+if (typeof window !== "undefined") {
+  console.log(
+    `%c[API Config] Connecting to backend at: ${APP_CONFIG.api.baseUrl}`,
+    "color: #4f46e5; font-weight: bold; padding: 2px 4px; border-radius: 4px; background: #e0e7ff;",
+  );
+}
+
 const isAuthPage = (pathname: string): boolean =>
   pathname === "/login" ||
   pathname === "/register" ||
@@ -93,6 +100,12 @@ apiClient.interceptors.request.use((config) => {
 
 apiClient.interceptors.response.use(
   (response) => {
+    if (typeof window !== "undefined") {
+      console.log(
+        `%c[API Success] ${response.config.method?.toUpperCase()} ${response.config.url} - Status: ${response.status}`,
+        "color: #10b981; font-weight: bold;",
+      );
+    }
     return response.data?.data !== undefined
       ? response.data.data
       : response.data;
@@ -101,6 +114,23 @@ apiClient.interceptors.response.use(
     const originalRequest = error.config ?? {};
     const is401 = error.response?.status === 401;
     const isPublicAuthRequest = isPublicAuthEndpoint(originalRequest.url);
+
+    if (typeof window !== "undefined") {
+      const isAuthMe = originalRequest.url?.includes("/auth/me");
+      if (!isAuthMe) {
+        if (!is401 || originalRequest._retry) {
+          console.error(
+            `%c[API Error] ${originalRequest.method?.toUpperCase()} ${originalRequest.url} - Status: ${error.response?.status || "Network Error"} - Msg: ${error.response?.data?.message || error.message}`,
+            "color: #ef4444; font-weight: bold;",
+          );
+        } else {
+          console.warn(
+            `%c[API Warning] ${originalRequest.method?.toUpperCase()} ${originalRequest.url} - Status: 401 (Attempting token refresh)`,
+            "color: #f59e0b; font-weight: bold;",
+          );
+        }
+      }
+    }
 
     if (axios.isCancel(error)) return Promise.reject(error);
 

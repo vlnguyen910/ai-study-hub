@@ -1,6 +1,7 @@
 import { Logger } from '@nestjs/common';
 import type { accounts } from '@prisma/client';
 import { Resend } from 'resend';
+import * as nodemailer from 'nodemailer';
 import { MailService } from './mail.service';
 
 const mockSend = jest.fn();
@@ -10,6 +11,15 @@ jest.mock('resend', () => {
       emails: {
         send: mockSend,
       },
+    })),
+  };
+});
+
+const mockSendMail = jest.fn();
+jest.mock('nodemailer', () => {
+  return {
+    createTransport: jest.fn().mockImplementation(() => ({
+      sendMail: mockSendMail,
     })),
   };
 });
@@ -32,7 +42,7 @@ describe('MailService', () => {
       fromEmail: 'noreply@example.com',
       fromName: 'AI Study Hub',
       frontendUrl: 'http://localhost:3000',
-    });
+    } as any);
 
     await service.sendVerificationCode(
       {
@@ -66,7 +76,7 @@ describe('MailService', () => {
       fromEmail: 'noreply@example.com',
       fromName: 'AI Study Hub',
       frontendUrl: 'http://localhost:3000',
-    });
+    } as any);
 
     await service.sendVerificationCode(
       {
@@ -92,7 +102,7 @@ describe('MailService', () => {
       fromEmail: 'noreply@example.com',
       fromName: 'AI Study Hub',
       frontendUrl: 'http://localhost:3000',
-    });
+    } as any);
 
     await service.sendVerificationCode(
       {
@@ -104,7 +114,7 @@ describe('MailService', () => {
 
     expect(mockSend).not.toHaveBeenCalled();
     expect(logSpy).toHaveBeenCalledWith(
-      'Resend API key is not configured. Skipping sending verification email.',
+      'Neither Resend nor SMTP is configured. Skipping sending verification email.',
     );
 
     logSpy.mockRestore();
@@ -117,7 +127,7 @@ describe('MailService', () => {
       fromEmail: 'noreply@example.com',
       fromName: 'AI Study Hub',
       frontendUrl: 'http://localhost:3000',
-    });
+    } as any);
 
     await service.sendPasswordResetLink(
       {
@@ -161,7 +171,7 @@ describe('MailService', () => {
       fromEmail: 'noreply@example.com',
       fromName: 'AI Study Hub',
       frontendUrl: 'http://localhost:3000',
-    });
+    } as any);
 
     await service.sendPasswordResetLink(
       {
@@ -188,7 +198,7 @@ describe('MailService', () => {
       fromEmail: 'noreply@example.com',
       fromName: 'AI Study Hub',
       frontendUrl: 'http://localhost:3000',
-    });
+    } as any);
 
     await service.sendPasswordResetLink(
       {
@@ -201,9 +211,85 @@ describe('MailService', () => {
 
     expect(mockSend).not.toHaveBeenCalled();
     expect(logSpy).toHaveBeenCalledWith(
-      'Resend API key is not configured. Skipping sending password reset email.',
+      'Neither Resend nor SMTP is configured. Skipping sending password reset email.',
     );
 
     logSpy.mockRestore();
+  });
+
+  it('sends verification code through SMTP when SMTP credentials are provided and Resend API key is missing', async () => {
+    mockSendMail.mockResolvedValue({ messageId: 'smtp-1' });
+    const service = new MailService({
+      apiKey: '',
+      smtpHost: 'smtp.gmail.com',
+      smtpPort: 587,
+      smtpUser: 'user@gmail.com',
+      smtpPass: 'password123',
+      fromEmail: 'user@gmail.com',
+      fromName: 'AI Study Hub',
+      frontendUrl: 'http://localhost:3000',
+    } as any);
+
+    await service.sendVerificationCode(
+      {
+        email: 'new-user@example.com',
+        name: 'New User',
+      } as accounts,
+      '123456',
+    );
+
+    expect(nodemailer.createTransport).toHaveBeenCalledWith({
+      host: 'smtp.gmail.com',
+      port: 587,
+      secure: false,
+      auth: {
+        user: 'user@gmail.com',
+        pass: 'password123',
+      },
+    });
+    expect(mockSendMail).toHaveBeenCalledWith(
+      expect.objectContaining({
+        from: '"AI Study Hub" <user@gmail.com>',
+        to: 'new-user@example.com',
+        subject: 'Verify your AI Study Hub email',
+        html: expect.stringContaining(
+          'http://localhost:3000/verify-email/123456',
+        ),
+      }),
+    );
+  });
+
+  it('sends password reset link through SMTP when SMTP credentials are provided and Resend API key is missing', async () => {
+    mockSendMail.mockResolvedValue({ messageId: 'smtp-2' });
+    const service = new MailService({
+      apiKey: '',
+      smtpHost: 'smtp.gmail.com',
+      smtpPort: 587,
+      smtpUser: 'user@gmail.com',
+      smtpPass: 'password123',
+      fromEmail: 'user@gmail.com',
+      fromName: 'AI Study Hub',
+      frontendUrl: 'http://localhost:3000',
+    } as any);
+
+    await service.sendPasswordResetLink(
+      {
+        email: 'new-user@example.com',
+        name: 'New User',
+      } as accounts,
+      'reset-token',
+      600,
+    );
+
+    expect(mockSendMail).toHaveBeenCalledWith(
+      expect.objectContaining({
+        from: '"AI Study Hub" <user@gmail.com>',
+        to: 'new-user@example.com',
+        subject: 'Reset your AI Study Hub password',
+        html: expect.stringContaining(
+          'http://localhost:3000/reset-password/reset-token',
+        ),
+      }),
+    );
   });
 });

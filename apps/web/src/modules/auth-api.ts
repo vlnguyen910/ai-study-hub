@@ -20,6 +20,38 @@ const client = axios.create({
   withCredentials: true,
 });
 
+if (client.interceptors) {
+  client.interceptors.response.use(
+    (response) => {
+      if (typeof window !== "undefined") {
+        console.log(
+          `%c[API Success (Auth)] ${response.config.method?.toUpperCase()} ${response.config.url} - Status: ${response.status}`,
+          "color: #10b981; font-weight: bold;",
+        );
+      }
+      return response;
+    },
+    (error) => {
+      const originalRequest = error.config ?? {};
+      const is401 = error.response?.status === 401;
+      if (typeof window !== "undefined") {
+        if (is401) {
+          console.warn(
+            `%c[API Auth Status] User is unauthenticated (Status: 401 for ${originalRequest.url})`,
+            "color: #f59e0b; font-weight: bold;",
+          );
+        } else {
+          console.error(
+            `%c[API Error (Auth)] ${originalRequest.method?.toUpperCase()} ${originalRequest.url} - Status: ${error.response?.status || "Network Error"} - Msg: ${error.response?.data?.message || error.message}`,
+            "color: #ef4444; font-weight: bold;",
+          );
+        }
+      }
+      return Promise.reject(error);
+    },
+  );
+}
+
 const isApiEnvelope = <T>(value: unknown): value is ApiEnvelope<T> => {
   return (
     value !== null &&
