@@ -53,3 +53,38 @@ jobs:
 
       - name: Build
         run: pnpm build
+
+  docker-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Build Docker image
+        run: |
+          docker build -t ai-study-hub-api -f apps/api/Dockerfile .
+
+      - name: Test running container
+        run: |
+          docker run -d --name api-test \
+            -p 8080:8080 \
+            -e DATABASE_URL="mongodb://localhost:27017/dummy?directConnection=true" \
+            -e REDIS_URL="redis://localhost:6379" \
+            -e JWT_SECRET="test-secret-key-12345" \
+            -e FRONTEND_URL="http://localhost:3000" \
+            -e CORS_ORIGINS="http://localhost:3000" \
+            -e RESEND_API_KEY="" \
+            ai-study-hub-api
+
+          sleep 5
+
+          if [ "$(docker inspect -f '{{.State.Running}}' api-test)" = "true" ]; then
+            echo "Container is running successfully!"
+            docker logs api-test
+            docker stop api-test
+            docker rm api-test
+          else
+            echo "Container failed to start or crashed!"
+            docker logs api-test
+            exit 1
+          fi
