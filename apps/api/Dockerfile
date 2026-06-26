@@ -22,6 +22,10 @@ RUN pnpm --filter api --prod deploy /app/deployed
 RUN cp -r apps/api/dist /app/deployed/dist
 RUN cp -r apps/api/prisma /app/deployed/prisma
 
+# Run prisma generate in the deployed folder using the builder's prisma CLI to generate production client
+WORKDIR /app/deployed
+RUN /app/apps/api/node_modules/.bin/prisma generate --schema=prisma/schema.prisma
+
 # Stage 2: Runner stage (lightweight production image)
 FROM node:20-alpine AS runner
 WORKDIR /app
