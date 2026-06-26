@@ -44,10 +44,37 @@ async function bootstrap() {
   // - true (development: allow all origins)
   // - string[] (production: specific allowed origins)
   app.enableCors({
-    origin: corsOrigins,
+    origin: (origin, callback) => {
+      if (!origin || corsOrigins === true) {
+        callback(null, true);
+        return;
+      }
+
+      if (Array.isArray(corsOrigins)) {
+        const isAllowed = corsOrigins.some((allowedOrigin) => {
+          if (allowedOrigin === origin) return true;
+          if (allowedOrigin.includes('*')) {
+            const regexPattern =
+              '^' +
+              allowedOrigin.replace(/\./g, '\\.').replace(/\*/g, '.*') +
+              '$';
+            const regex = new RegExp(regexPattern);
+            return regex.test(origin);
+          }
+          return false;
+        });
+
+        if (isAllowed) {
+          callback(null, true);
+        } else {
+          callback(new Error('Not allowed by CORS'));
+        }
+      } else {
+        callback(null, false);
+      }
+    },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization'],
   });
 
   await app.listen(appPort ?? 8080);
