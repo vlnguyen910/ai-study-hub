@@ -58,6 +58,9 @@ const getRefreshToken = (request: RefreshTokenRequest) => {
   return typeof token === 'string' ? token : undefined;
 };
 
+import { Throttle } from '@nestjs/throttler';
+
+@Throttle({ default: { limit: 5, ttl: 60000 } })
 @Controller('auth')
 export class AuthController {
   constructor(
