@@ -8,7 +8,7 @@ import {
   TextInput,
   View,
 } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
+import { Icon } from "@/components/nativewindui/Icon";
 import { Button, Card, PageShell } from "@/components";
 import { forgotPasswordService } from "../services/auth.service";
 
@@ -64,9 +64,9 @@ export function AuthForgotPasswordScreen() {
         >
           {/* Reset Lock Illustration */}
           <View className="w-28 h-28 bg-[#eef3ff] rounded-3xl justify-center items-center self-center mb-8 relative border border-primary-fixed-dim/30">
-            <Ionicons name="sync-outline" size={56} color="#004ac6" />
+            <Icon name="lock" size={56} color="#004ac6" />
             <View className="absolute justify-center items-center">
-              <Ionicons name="lock-closed" size={22} color="#004ac6" />
+              <Icon name="key" size={22} color="#004ac6" />
             </View>
           </View>
 
@@ -90,8 +90,8 @@ export function AuthForgotPasswordScreen() {
                   Địa chỉ Email
                 </Text>
                 <View className="flex-row items-center border border-outline-variant bg-white px-3 py-2.5 rounded-xl">
-                  <Ionicons
-                    name="mail-outline"
+                  <Icon
+                    name="envelope"
                     size={20}
                     color="#737686"
                     style={{ marginRight: 8 }}
@@ -138,9 +138,7 @@ export function AuthForgotPasswordScreen() {
                 loading={isLoading}
                 disabled={isLoading}
                 onPress={handleSendCode}
-                rightIcon={
-                  <Ionicons name="paper-plane" size={16} color="#ffffff" />
-                }
+                rightIcon={<Icon name="paperplane" size={16} color="#ffffff" />}
               >
                 Gửi liên kết đặt lại
               </Button>
@@ -162,7 +160,7 @@ export function AuthForgotPasswordScreen() {
           {/* Graduation Cap Divider decoration */}
           <View className="flex-row items-center justify-center mt-12 gap-3">
             <View className="h-[1px] w-12 bg-outline-variant opacity-40" />
-            <Ionicons name="school-outline" size={18} color="#c3c6d7" />
+            <Icon name="book" size={18} color="#c3c6d7" />
             <View className="h-[1px] w-12 bg-outline-variant opacity-40" />
           </View>
         </ScrollView>

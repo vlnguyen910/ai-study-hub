@@ -1,4 +1,4 @@
-import { MaterialIcons } from "@expo/vector-icons";
+import { Icon } from "@/components/nativewindui/Icon";
 import { router, useLocalSearchParams } from "expo-router";
 import { useEffect, useMemo, useState } from "react";
 import {
@@ -152,7 +152,7 @@ export function DocumentDetailScreen() {
             className="-ml-2 rounded-full p-2"
             onPress={() => router.back()}
           >
-            <MaterialIcons name="arrow-back" size={22} color="#191b23" />
+            <Icon name="chevron.left" size={22} color="#191b23" />
           </Pressable>
           <View className="flex-row items-center gap-2">
             {document?.author.id === user?.id ? (
@@ -166,7 +166,7 @@ export function DocumentDetailScreen() {
                   }
                 }}
               >
-                <MaterialIcons name="edit" size={22} color="#191b23" />
+                <Icon name="pencil" size={22} color="#191b23" />
               </Pressable>
             ) : null}
           </View>
@@ -201,11 +201,7 @@ export function DocumentDetailScreen() {
               <View className="mt-4 rounded-2xl border border-outline-variant bg-surface-container-lowest p-4">
                 <View className="flex-row items-center gap-3">
                   <View className="rounded-xl bg-primary/10 p-3">
-                    <MaterialIcons
-                      name="description"
-                      size={28}
-                      color="#004ac6"
-                    />
+                    <Icon name="doc" size={28} color="#004ac6" />
                   </View>
                   <View className="min-w-0 flex-1">
                     <Text
@@ -226,8 +222,8 @@ export function DocumentDetailScreen() {
                     variant="outline"
                     onPress={() => void openOriginalFile()}
                     leftIcon={
-                      <MaterialIcons
-                        name="open-in-new"
+                      <Icon
+                        name="arrowshape.turn.up.right"
                         size={18}
                         color="#191b23"
                       />
@@ -251,11 +247,7 @@ export function DocumentDetailScreen() {
                       </Text>
                     </View>
                     <View className="flex-row items-center gap-1.5">
-                      <MaterialIcons
-                        name="calendar-today"
-                        size={18}
-                        color="#434655"
-                      />
+                      <Icon name="calendar" size={18} color="#434655" />
                       <Text className="text-sm text-on-surface-variant">
                         {formatDate(document.createdAt)}
                       </Text>

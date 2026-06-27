@@ -1,4 +1,4 @@
-import { MaterialIcons } from "@expo/vector-icons";
+import { Icon } from "@/components/nativewindui/Icon";
 import { Pressable, Text, TextInput, View } from "react-native";
 
 interface DocumentTextFieldProps {
@@ -33,8 +33,8 @@ export function DocumentTextField({
             disabled={isAiLoading}
             className="flex-row items-center gap-1 py-1 px-2.5 rounded-full bg-secondary/15 active:bg-secondary/25"
           >
-            <MaterialIcons
-              name={isAiLoading ? "sync" : "auto-awesome"}
+            <Icon
+              name={isAiLoading ? "restart" : "sparkle"}
               size={12}
               color="#004ac6"
             />

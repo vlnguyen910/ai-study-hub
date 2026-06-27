@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { MaterialIcons } from "@expo/vector-icons";
+import { Icon } from "@/components/nativewindui/Icon";
 import { router } from "expo-router";
 import { Alert, Pressable, ScrollView, Text, View } from "react-native";
 import { Button, Card, PageShell } from "@/components";
@@ -181,7 +181,7 @@ export function DocumentUploadScreen() {
               className="rounded-full p-2"
               onPress={() => {}}
             >
-              <MaterialIcons name="dark-mode" size={22} color="#434655" />
+              <Icon name="moon.stars" size={22} color="#434655" />
             </Pressable>
             <View className="h-8 w-8 overflow-hidden rounded-full border border-outline-variant bg-surface-container-highest" />
           </View>
@@ -329,8 +329,8 @@ export function DocumentUploadScreen() {
                           {item.author}
                         </Text>
                         <View className="flex-row items-center gap-1">
-                          <MaterialIcons
-                            name="download"
+                          <Icon
+                            name="square.and.arrow.down"
                             size={14}
                             color="#434655"
                           />

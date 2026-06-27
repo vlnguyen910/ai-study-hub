@@ -1,4 +1,4 @@
-import { MaterialIcons } from "@expo/vector-icons";
+import { Icon } from "@/components/nativewindui/Icon";
 import { Image, Pressable, Text, View } from "react-native";
 import { Button } from "@/components";
 import type { ReviewDocumentSummary } from "../types/document-review.types";
@@ -21,7 +21,7 @@ export function ReviewDocumentCard({
       <View className="flex-row items-start justify-between gap-3">
         <View className="flex-1 flex-row items-start gap-2">
           {hasPriority ? (
-            <MaterialIcons name="priority-high" size={20} color="#ba1a1a" />
+            <Icon name="exclamationmark" size={20} color="#ba1a1a" />
           ) : null}
           <View className="flex-1">
             <Text className="mb-1 text-base font-semibold leading-6 text-on-surface">

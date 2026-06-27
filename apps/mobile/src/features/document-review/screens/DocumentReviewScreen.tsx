@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { MaterialIcons } from "@expo/vector-icons";
+import { Icon } from "@/components/nativewindui/Icon";
 import { router } from "expo-router";
 import {
   Image,
@@ -109,18 +109,19 @@ export function DocumentReviewScreen() {
               className="rounded-full p-2"
               onPress={() => {}}
             >
-              <MaterialIcons name="filter-list" size={22} color="#434655" />
+              <Icon
+                materialIcon={{ name: "filter-list" }}
+                sfSymbol={{ name: "line.3.horizontal.decrease" as any }}
+                size={22}
+                color="#434655"
+              />
             </Pressable>
             <Pressable
               accessibilityRole="button"
               className="rounded-full p-2"
               onPress={() => {}}
             >
-              <MaterialIcons
-                name="notifications-none"
-                size={22}
-                color="#434655"
-              />
+              <Icon name="bell" size={22} color="#434655" />
             </Pressable>
             <Image
               accessibilityLabel="Moderator avatar"

@@ -7,7 +7,7 @@ import {
   TextInput,
   View,
 } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
+import { Icon } from "@/components/nativewindui/Icon";
 import { router, useLocalSearchParams } from "expo-router";
 import { ROUTES } from "@/constants/routes";
 import { Button, Card, PageShell } from "@/components";
@@ -84,7 +84,7 @@ export function AuthResetPasswordScreen() {
         >
           <Card className="shadow-sm p-6 bg-white border border-outline-variant rounded-2xl">
             <View className="items-center gap-2 mb-6">
-              <Ionicons name="key-outline" size={32} color="#004ac6" />
+              <Icon name="key" size={32} color="#004ac6" />
               <Text className="text-2xl font-extrabold text-on-background">
                 Đặt lại mật khẩu
               </Text>

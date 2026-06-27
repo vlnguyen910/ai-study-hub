@@ -1,4 +1,4 @@
-import { MaterialIcons } from "@expo/vector-icons";
+import { Icon } from "@/components/nativewindui/Icon";
 import { Pressable, View } from "react-native";
 import { Button } from "@/components";
 
@@ -23,7 +23,7 @@ export function DocumentBottomActionBar({
           onPress={onShare}
           className="h-12 w-12 items-center justify-center rounded-2xl border border-outline-variant bg-surface"
         >
-          <MaterialIcons name="share" size={20} color="#191b23" />
+          <Icon name="square.and.arrow.up" size={20} color="#191b23" />
         </Pressable>
         <View className="flex-1">
           <Button
@@ -31,7 +31,7 @@ export function DocumentBottomActionBar({
             onPress={onDownload}
             loading={isDownloading}
             leftIcon={
-              <MaterialIcons name="download" size={18} color="#ffffff" />
+              <Icon name="square.and.arrow.down" size={18} color="#ffffff" />
             }
           >
             {downloadLabel}
