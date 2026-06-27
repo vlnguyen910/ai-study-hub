@@ -27,7 +27,7 @@ export class AIService {
 
   /**
    * Generates text content based on a text prompt.
-   * Defaults to 'gemini-2.5-flash' for cost efficiency.
+   * Defaults to 'gemini-2.5-flash-lite' for cost efficiency.
    */
   async generateText(
     prompt: string,
@@ -161,7 +161,6 @@ Nhiệm vụ: Hãy viết một bản tóm tắt (summary) chi tiết, rõ ràng
 Yêu cầu:
 - Trình bày mạch lạc, khách quan, chuyên nghiệp, sử dụng ngôn ngữ dễ hiểu.
 - Không tự suy diễn hay thêm thông tin ngoài tài liệu.
-- Phản hồi bằng định dạng Markdown sạch (sử dụng gạch đầu dòng, in đậm cho các từ khóa quan trọng).
 - Chỉ trả về bản tóm tắt, không thêm lời chào, giải thích hay ký hiệu khác.`;
 
     return this.generateText(prompt);

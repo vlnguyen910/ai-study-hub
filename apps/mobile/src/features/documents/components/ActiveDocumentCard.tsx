@@ -1,4 +1,4 @@
-import { MaterialIcons } from "@expo/vector-icons";
+import { Icon } from "@/components/nativewindui/Icon";
 import { Link } from "expo-router";
 import { Pressable, Text, View } from "react-native";
 
@@ -20,7 +20,7 @@ export function ActiveDocumentCard({
       >
         <View className="flex-row items-start gap-3">
           <View className="rounded-xl bg-primary/10 p-3">
-            <MaterialIcons name="description" size={24} color="#004ac6" />
+            <Icon name="doc" size={24} color="#004ac6" />
           </View>
           <View className="min-w-0 flex-1 gap-1">
             <Text

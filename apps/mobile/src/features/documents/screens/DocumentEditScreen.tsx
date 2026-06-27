@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { MaterialIcons } from "@expo/vector-icons";
+import { Icon } from "@/components/nativewindui/Icon";
 import { router, useLocalSearchParams } from "expo-router";
 import {
   ActivityIndicator,
@@ -151,7 +151,7 @@ export function DocumentEditScreen() {
               className="rounded-full p-2"
               onPress={() => {}}
             >
-              <MaterialIcons name="dark-mode" size={22} color="#434655" />
+              <Icon name="moon.stars" size={22} color="#434655" />
             </Pressable>
             <View className="h-8 w-8 overflow-hidden rounded-full border border-outline-variant bg-surface-container-highest" />
           </View>

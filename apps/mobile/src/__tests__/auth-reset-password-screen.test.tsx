@@ -18,6 +18,8 @@ jest.mock("expo-router", () => ({
 
 jest.mock("@expo/vector-icons", () => ({
   Ionicons: () => null,
+  MaterialIcons: () => null,
+  MaterialCommunityIcons: () => null,
 }));
 
 jest.mock("@/features/auth/services/auth.service", () => ({

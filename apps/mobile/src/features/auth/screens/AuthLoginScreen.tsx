@@ -8,7 +8,7 @@ import {
   TextInput,
   View,
 } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
+import { Icon } from "@/components/nativewindui/Icon";
 import { router, useLocalSearchParams } from "expo-router";
 import { Controller } from "react-hook-form";
 import { Button, Card, PageShell } from "@/components";
@@ -70,7 +70,7 @@ export function AuthLoginScreen() {
           <Card className="shadow-sm p-6">
             {/* Header Logo & Title */}
             <View style={{ alignItems: "center", marginBottom: 28 }}>
-              <Ionicons name="school-outline" size={32} color="#004ac6" />
+              <Icon name="book" size={32} color="#004ac6" />
               <Text
                 style={{
                   fontSize: 28,
@@ -216,10 +216,8 @@ export function AuthLoginScreen() {
                             showPassword ? "Hide password" : "Show password"
                           }
                         >
-                          <Ionicons
-                            name={
-                              showPassword ? "eye-outline" : "eye-off-outline"
-                            }
+                          <Icon
+                            name={showPassword ? "eye" : "eye.slash"}
                             size={20}
                             color="#737686"
                           />
@@ -324,7 +322,12 @@ export function AuthLoginScreen() {
                 loading={isGoogleLoading}
                 disabled={!isGoogleReady}
                 leftIcon={
-                  <Ionicons name="logo-google" size={18} color="#EA4335" />
+                  <Icon
+                    name="questionmark"
+                    materialCommunityIcon={{ name: "google" }}
+                    size={18}
+                    color="#EA4335"
+                  />
                 }
                 onPress={handleGoogleSignIn}
               >
@@ -336,7 +339,12 @@ export function AuthLoginScreen() {
                 variant="outline"
                 fullWidth
                 leftIcon={
-                  <Ionicons name="logo-facebook" size={18} color="#1877F2" />
+                  <Icon
+                    name="questionmark"
+                    materialCommunityIcon={{ name: "facebook" }}
+                    size={18}
+                    color="#1877F2"
+                  />
                 }
                 onPress={() => {}}
               >
