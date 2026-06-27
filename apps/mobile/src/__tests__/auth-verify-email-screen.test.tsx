@@ -38,6 +38,8 @@ jest.mock("@/utils/storage", () => ({
 
 jest.mock("@expo/vector-icons", () => ({
   Ionicons: () => null,
+  MaterialIcons: () => null,
+  MaterialCommunityIcons: () => null,
 }));
 
 const verifyEmailServiceMock = jest.mocked(verifyEmailService);

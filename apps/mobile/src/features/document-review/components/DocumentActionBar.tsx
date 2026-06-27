@@ -1,4 +1,4 @@
-import { MaterialIcons } from "@expo/vector-icons";
+import { Icon } from "@/components/nativewindui/Icon";
 import { View } from "react-native";
 import { Button } from "@/components";
 
@@ -23,7 +23,7 @@ export function DocumentActionBar({
           <Button
             fullWidth
             leftIcon={
-              <MaterialIcons name="check-circle" size={18} color="#ffffff" />
+              <Icon name="checkmark.circle" size={18} color="#ffffff" />
             }
             onPress={onApprove}
           >

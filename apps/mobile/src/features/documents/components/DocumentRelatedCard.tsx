@@ -1,4 +1,4 @@
-import { MaterialIcons } from "@expo/vector-icons";
+import { Icon } from "@/components/nativewindui/Icon";
 import { Image, Pressable, Text, View } from "react-native";
 import type { RelatedDocumentItem } from "../types/document.types";
 
@@ -32,7 +32,7 @@ export function DocumentRelatedCard({
         <View className="mt-2 flex-row items-center justify-between gap-2">
           <Text className="text-xs text-on-surface-variant">{item.author}</Text>
           <View className="flex-row items-center gap-1">
-            <MaterialIcons name="download" size={14} color="#434655" />
+            <Icon name="square.and.arrow.down" size={14} color="#434655" />
             <Text className="text-xs text-on-surface-variant">
               {item.downloads}
             </Text>

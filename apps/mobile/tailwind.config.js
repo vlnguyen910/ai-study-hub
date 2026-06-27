@@ -1,6 +1,9 @@
 /** @type {import('tailwindcss').Config} */
+const { hairlineWidth, platformSelect } = require("nativewind/theme");
+
 module.exports = {
   // NOTE: Update this to include the paths to all files that contain Nativewind classes.
+  darkMode: "class", // Enable manual toggling of dark mode
   content: [
     "./src/app/**/*.{js,jsx,ts,tsx}",
     "./src/components/**/*.{js,jsx,ts,tsx}",
@@ -10,9 +13,44 @@ module.exports = {
   theme: {
     extend: {
       colors: {
+        // NativeWindUI Colors
+        border: withOpacity("border"),
+        input: withOpacity("input"),
+        ring: withOpacity("ring"),
+        background: withOpacity("background"),
+        foreground: withOpacity("foreground"),
+        primary: {
+          DEFAULT: withOpacity("primary"),
+          foreground: withOpacity("primary-foreground"),
+        },
+        secondary: {
+          DEFAULT: withOpacity("secondary"),
+          foreground: withOpacity("secondary-foreground"),
+        },
+        destructive: {
+          DEFAULT: withOpacity("destructive"),
+          foreground: withOpacity("destructive-foreground"),
+        },
+        muted: {
+          DEFAULT: withOpacity("muted"),
+          foreground: withOpacity("muted-foreground"),
+        },
+        accent: {
+          DEFAULT: withOpacity("accent"),
+          foreground: withOpacity("accent-foreground"),
+        },
+        popover: {
+          DEFAULT: withOpacity("popover"),
+          foreground: withOpacity("popover-foreground"),
+        },
+        card: {
+          DEFAULT: withOpacity("card"),
+          foreground: withOpacity("card-foreground"),
+        },
+
+        // Existing Material 3 Theme Colors (using CSS variables)
         surface: "var(--color-surface)",
         "surface-container-high": "var(--color-surface-container-high)",
-        primary: "var(--color-primary)",
         "surface-variant": "var(--color-surface-variant)",
         outline: "var(--color-outline)",
         "on-background": "var(--color-on-background)",
@@ -24,7 +62,6 @@ module.exports = {
         "on-primary-fixed": "var(--color-on-primary-fixed)",
         "surface-container-lowest": "var(--color-surface-container-lowest)",
         "on-tertiary": "var(--color-on-tertiary)",
-        background: "var(--color-background)",
         "primary-container": "var(--color-primary-container)",
         "outline-variant": "var(--color-outline-variant)",
         "on-primary-fixed-variant": "var(--color-on-primary-fixed-variant)",
@@ -42,7 +79,6 @@ module.exports = {
         "on-error": "var(--color-on-error)",
         "on-tertiary-fixed-variant": "var(--color-on-tertiary-fixed-variant)",
         "surface-container-low": "var(--color-surface-container-low)",
-        secondary: "var(--color-secondary)",
         "inverse-on-surface": "var(--color-inverse-on-surface)",
         "primary-fixed": "var(--color-primary-fixed)",
         "on-primary": "var(--color-on-primary)",
@@ -58,7 +94,25 @@ module.exports = {
         "tertiary-fixed-dim": "var(--color-tertiary-fixed-dim)",
         "surface-container": "var(--color-surface-container)",
       },
+      borderWidth: {
+        hairline: hairlineWidth(),
+      },
     },
   },
   plugins: [],
 };
+
+function withOpacity(variableName) {
+  return ({ opacityValue }) => {
+    if (opacityValue !== undefined) {
+      return platformSelect({
+        ios: `rgb(var(--${variableName}) / ${opacityValue})`,
+        android: `rgb(var(--android-${variableName}) / ${opacityValue})`,
+      });
+    }
+    return platformSelect({
+      ios: `rgb(var(--${variableName}))`,
+      android: `rgb(var(--android-${variableName}))`,
+    });
+  };
+}

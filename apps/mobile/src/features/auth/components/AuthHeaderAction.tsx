@@ -1,4 +1,4 @@
-import { Ionicons } from "@expo/vector-icons";
+import { Icon } from "@/components/nativewindui/Icon";
 import { router } from "expo-router";
 import { Alert, Pressable, Text, View } from "react-native";
 
@@ -29,7 +29,7 @@ export function AuthHeaderAction() {
         className="rounded-full p-2"
         onPress={() => router.push(ROUTES.PROFILE as never)}
       >
-        <Ionicons name="person-circle-outline" size={25} color="#004ac6" />
+        <Icon name="person.circle" size={25} color="#004ac6" />
       </Pressable>
       <Pressable
         accessibilityRole="button"
@@ -54,7 +54,11 @@ export function AuthHeaderAction() {
           );
         }}
       >
-        <Ionicons name="log-out-outline" size={23} color="#ba1a1a" />
+        <Icon
+          name="rectangle.portrait.and.arrow.right"
+          size={23}
+          color="#ba1a1a"
+        />
       </Pressable>
     </View>
   );

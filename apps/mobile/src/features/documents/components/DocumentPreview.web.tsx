@@ -1,4 +1,4 @@
-import { MaterialIcons } from "@expo/vector-icons";
+import { Icon } from "@/components/nativewindui/Icon";
 import { ActivityIndicator, Image, Text, View } from "react-native";
 
 import { useDocumentText } from "../hooks/useDocumentText";
@@ -15,7 +15,7 @@ interface DocumentPreviewProps {
 function PreviewMessage({ message }: { readonly message: string }) {
   return (
     <View className="h-72 items-center justify-center gap-3 bg-surface-container-low px-6">
-      <MaterialIcons name="preview" size={42} color="#737686" />
+      <Icon name="eye" size={42} color="#737686" />
       <Text className="text-center text-sm leading-6 text-on-surface-variant">
         {message}
       </Text>

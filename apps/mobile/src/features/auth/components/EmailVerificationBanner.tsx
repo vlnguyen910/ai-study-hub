@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Text, View } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
+import { Icon } from "@/components/nativewindui/Icon";
 import { Button } from "@/components";
 import { getAccessToken } from "@/utils/storage";
 import { resendVerificationEmailService } from "../services/auth.service";
@@ -62,7 +62,7 @@ export function EmailVerificationBanner() {
   return (
     <View className="gap-3 rounded-2xl border border-amber-200 bg-amber-50 p-4">
       <View className="flex-row items-start gap-3">
-        <Ionicons name="mail-unread-outline" size={22} color="#b45309" />
+        <Icon name="envelope" size={22} color="#b45309" />
         <View className="min-w-0 flex-1">
           <Text className="text-sm font-semibold text-amber-950">
             {UNVERIFIED_MESSAGE}

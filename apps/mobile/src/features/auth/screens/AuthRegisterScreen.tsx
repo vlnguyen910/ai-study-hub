@@ -8,7 +8,7 @@ import {
   TextInput,
   View,
 } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
+import { Icon } from "@/components/nativewindui/Icon";
 import { router } from "expo-router";
 import { ROUTES } from "@/constants/routes";
 import { Controller } from "react-hook-form";
@@ -45,7 +45,7 @@ export function AuthRegisterScreen() {
           {/* Logo Brand Header */}
           <View className="mb-6 items-center gap-2">
             <View className="flex-row items-center gap-2">
-              <Ionicons name="school-outline" size={32} color="#004ac6" />
+              <Icon name="book" size={32} color="#004ac6" />
               <Text className="text-3xl font-extrabold text-primary tracking-wide">
                 AcadeMiShare
               </Text>
@@ -77,8 +77,8 @@ export function AuthRegisterScreen() {
                       <View
                         className={`flex-row items-center border ${error ? "border-red-500" : "border-outline-variant"} bg-white px-3 py-2.5 rounded-xl`}
                       >
-                        <Ionicons
-                          name="person-outline"
+                        <Icon
+                          name="person"
                           size={20}
                           color="#737686"
                           style={{ marginRight: 8 }}
@@ -120,8 +120,8 @@ export function AuthRegisterScreen() {
                       <View
                         className={`flex-row items-center border ${error ? "border-red-500" : "border-outline-variant"} bg-white px-3 py-2.5 rounded-xl`}
                       >
-                        <Ionicons
-                          name="mail-outline"
+                        <Icon
+                          name="envelope"
                           size={20}
                           color="#737686"
                           style={{ marginRight: 8 }}
@@ -164,8 +164,8 @@ export function AuthRegisterScreen() {
                       <View
                         className={`flex-row items-center border ${error ? "border-red-500" : "border-outline-variant"} bg-white px-3 py-2.5 rounded-xl`}
                       >
-                        <Ionicons
-                          name="lock-closed-outline"
+                        <Icon
+                          name="lock"
                           size={20}
                           color="#737686"
                           style={{ marginRight: 8 }}
@@ -186,10 +186,8 @@ export function AuthRegisterScreen() {
                           className="ml-2 p-1"
                           accessibilityRole="button"
                         >
-                          <Ionicons
-                            name={
-                              showPassword ? "eye-outline" : "eye-off-outline"
-                            }
+                          <Icon
+                            name={showPassword ? "eye" : "eye.slash"}
                             size={20}
                             color="#737686"
                           />
@@ -221,8 +219,8 @@ export function AuthRegisterScreen() {
                       <View
                         className={`flex-row items-center border ${error ? "border-red-500" : "border-outline-variant"} bg-white px-3 py-2.5 rounded-xl`}
                       >
-                        <Ionicons
-                          name="lock-closed-outline"
+                        <Icon
+                          name="lock"
                           size={20}
                           color="#737686"
                           style={{ marginRight: 8 }}
@@ -245,12 +243,8 @@ export function AuthRegisterScreen() {
                           className="ml-2 p-1"
                           accessibilityRole="button"
                         >
-                          <Ionicons
-                            name={
-                              showConfirmPassword
-                                ? "eye-outline"
-                                : "eye-off-outline"
-                            }
+                          <Icon
+                            name={showConfirmPassword ? "eye" : "eye.slash"}
                             size={20}
                             color="#737686"
                           />
@@ -274,11 +268,7 @@ export function AuthRegisterScreen() {
                   loading={isLoading}
                   onPress={handleRegister}
                   rightIcon={
-                    <Ionicons
-                      name="arrow-forward-outline"
-                      size={18}
-                      color="#ffffff"
-                    />
+                    <Icon name="arrow.right" size={18} color="#ffffff" />
                   }
                 >
                   Register
@@ -299,7 +289,12 @@ export function AuthRegisterScreen() {
                 variant="outline"
                 fullWidth
                 leftIcon={
-                  <Ionicons name="logo-google" size={18} color="#EA4335" />
+                  <Icon
+                    name="questionmark"
+                    materialCommunityIcon={{ name: "google" }}
+                    size={18}
+                    color="#EA4335"
+                  />
                 }
                 onPress={() => {}}
               >

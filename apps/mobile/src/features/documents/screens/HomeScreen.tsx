@@ -1,4 +1,4 @@
-import { Ionicons } from "@expo/vector-icons";
+import { Icon } from "@/components/nativewindui/Icon";
 import { router } from "expo-router";
 import { RefreshControl, ScrollView, Text, View } from "react-native";
 
@@ -42,7 +42,7 @@ export function HomeScreen() {
                 variant="secondary"
                 onPress={() => router.push(ROUTES.LIBRARY as never)}
                 leftIcon={
-                  <Ionicons name="library-outline" size={18} color="#191b23" />
+                  <Icon name="books.vertical.fill" size={18} color="#191b23" />
                 }
               >
                 Browse library

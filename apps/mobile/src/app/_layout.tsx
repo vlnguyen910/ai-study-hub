@@ -2,8 +2,17 @@ import "../global.css";
 
 import { Stack } from "expo-router";
 import { ActivityIndicator, Text, View } from "react-native";
+import { StatusBar } from "expo-status-bar";
+import { ThemeProvider as NavThemeProvider } from "@react-navigation/native";
 
 import { SessionProvider, useSession } from "@/features/auth";
+import { useColorScheme } from "@/lib/useColorScheme";
+import { NAV_THEME } from "@/theme";
+
+export {
+  // Catch any errors thrown by the Layout component.
+  ErrorBoundary,
+} from "expo-router";
 
 function RootNavigator() {
   const { status } = useSession();
@@ -40,9 +49,17 @@ function RootNavigator() {
 }
 
 export default function RootLayout() {
+  const { colorScheme, isDarkColorScheme } = useColorScheme();
+
   return (
     <SessionProvider>
-      <RootNavigator />
+      <StatusBar
+        key={`root-status-bar-${isDarkColorScheme ? "light" : "dark"}`}
+        style={isDarkColorScheme ? "light" : "dark"}
+      />
+      <NavThemeProvider value={NAV_THEME[colorScheme]}>
+        <RootNavigator />
+      </NavThemeProvider>
     </SessionProvider>
   );
 }

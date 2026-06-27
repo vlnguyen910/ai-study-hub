@@ -11,6 +11,7 @@ import {
   UseGuards,
   Req,
 } from '@nestjs/common';
+import { Throttle } from '@nestjs/throttler';
 import { DocumentsService } from './documents.service';
 import {
   CreateDocumentDto,
@@ -49,6 +50,7 @@ export class DocumentsController {
   }
 
   @Version('1')
+  @Throttle({ default: { limit: 3, ttl: 60000 } })
   @UseGuards(JwtAuthGuard, VerifiedAccountGuard)
   @Post('generate-description-from-url')
   generateDescriptionFromUrl(
@@ -204,6 +206,7 @@ export class DocumentsController {
   }
 
   @Version('1')
+  @Throttle({ default: { limit: 3, ttl: 60000 } })
   @UseGuards(JwtAuthGuard, VerifiedAccountGuard)
   @Post(':id/generate-description')
   generateDescription(
@@ -214,6 +217,7 @@ export class DocumentsController {
   }
 
   @Version('1')
+  @Throttle({ default: { limit: 3, ttl: 60000 } })
   @UseGuards(JwtAuthGuard, VerifiedAccountGuard)
   @Post(':id/generate-summary')
   generateSummary(@Param('id', new ParseMongoIdPipe()) id: string) {
@@ -221,6 +225,7 @@ export class DocumentsController {
   }
 
   @Version('1')
+  @Throttle({ default: { limit: 3, ttl: 60000 } })
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.MODERATOR)
   @Post(':id/moderator-analysis')

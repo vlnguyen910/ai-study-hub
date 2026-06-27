@@ -1,4 +1,4 @@
-import { MaterialIcons } from "@expo/vector-icons";
+import { Icon } from "@/components/nativewindui/Icon";
 import { Pressable, Text, View } from "react-native";
 
 interface DocumentUploadFieldProps {
@@ -22,7 +22,7 @@ export function DocumentUploadField({
         className="rounded-2xl border-2 border-dashed border-secondary bg-surface-container-lowest p-6"
       >
         <View className="items-center gap-3 text-center">
-          <MaterialIcons name="cloud-upload" size={36} color="#004ac6" />
+          <Icon name="tray.and.arrow.up" size={36} color="#004ac6" />
           <Text className="text-base font-semibold text-on-surface">
             {fileName ? "Tệp đã chọn" : "Nhấn để chọn tệp"}
           </Text>
@@ -33,7 +33,7 @@ export function DocumentUploadField({
             <View className="mt-2 w-full rounded-2xl bg-surface-container-low px-4 py-3">
               <View className="flex-row items-center justify-between gap-3">
                 <View className="flex-row flex-1 items-center gap-2">
-                  <MaterialIcons name="description" size={18} color="#004ac6" />
+                  <Icon name="doc" size={18} color="#004ac6" />
                   <Text className="flex-1 text-sm font-semibold text-on-surface">
                     {fileName}
                   </Text>

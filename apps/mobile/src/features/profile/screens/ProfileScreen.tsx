@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { Ionicons } from "@expo/vector-icons";
+import { Icon } from "@/components/nativewindui/Icon";
 import { router } from "expo-router";
 import {
   Image,
@@ -30,13 +30,13 @@ const profileFields: {
   key: ProfileFieldKey;
   label: string;
   placeholder: string;
-  icon: keyof typeof Ionicons.glyphMap;
+  icon: string;
 }[] = [
   {
     key: "fullName",
     label: "Họ và tên",
     placeholder: "Nhập họ và tên",
-    icon: "person-outline",
+    icon: "person",
   },
 ];
 
@@ -247,7 +247,7 @@ export function ProfileScreen() {
               className="rounded-full bg-surface-container-low px-3 py-3"
               onPress={() => router.back()}
             >
-              <Ionicons name="chevron-back" size={20} color="#191b23" />
+              <Icon name="chevron.left" size={20} color="#191b23" />
             </Pressable>
             <Text className="flex-1 text-center text-lg font-semibold text-on-surface">
               Profile
@@ -284,13 +284,7 @@ export function ProfileScreen() {
                   <Button
                     disabled={isLoadingProfile || !profile.id}
                     onPress={startEditing}
-                    leftIcon={
-                      <Ionicons
-                        name="create-outline"
-                        size={18}
-                        color="#ffffff"
-                      />
-                    }
+                    leftIcon={<Icon name="pencil" size={18} color="#ffffff" />}
                   >
                     Chỉnh sửa
                   </Button>
@@ -303,11 +297,7 @@ export function ProfileScreen() {
                       loading={isSaving}
                       onPress={saveProfile}
                       leftIcon={
-                        <Ionicons
-                          name="save-outline"
-                          size={18}
-                          color="#ffffff"
-                        />
+                        <Icon name="checkmark" size={18} color="#ffffff" />
                       }
                     >
                       Lưu thay đổi
@@ -329,8 +319,8 @@ export function ProfileScreen() {
                     {field.label}
                   </Text>
                   <View className="flex-row items-center rounded-2xl border border-outline-variant bg-surface-container-lowest px-4 py-3">
-                    <Ionicons
-                      name={field.icon}
+                    <Icon
+                      name={field.icon as any}
                       size={18}
                       color={isEditing ? "#004ac6" : "#737686"}
                       style={{ marginRight: 10 }}
@@ -363,8 +353,8 @@ export function ProfileScreen() {
                   Avatar URL
                 </Text>
                 <View className="flex-row items-center rounded-2xl border border-outline-variant bg-surface-container-lowest px-4 py-3">
-                  <Ionicons
-                    name="image-outline"
+                  <Icon
+                    name="photo"
                     size={18}
                     color={isEditing ? "#004ac6" : "#737686"}
                     style={{ marginRight: 10 }}

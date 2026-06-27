@@ -1,4 +1,4 @@
-import { MaterialIcons } from "@expo/vector-icons";
+import { Icon } from "@/components/nativewindui/Icon";
 import { router } from "expo-router";
 import {
   Image,
@@ -53,7 +53,7 @@ export function DocumentDetailScreen() {
             className="-ml-2 rounded-full p-2"
             onPress={() => router.back()}
           >
-            <MaterialIcons name="arrow-back" size={22} color="#191b23" />
+            <Icon name="chevron.left" size={22} color="#191b23" />
           </Pressable>
           <Text className="ml-1 flex-1 text-xl font-bold tracking-tight text-on-surface">
             Kiểm duyệt tài liệu
@@ -63,7 +63,7 @@ export function DocumentDetailScreen() {
             className="rounded-full p-2"
             onPress={() => {}}
           >
-            <MaterialIcons name="flag" size={22} color="#191b23" />
+            <Icon name="flag" size={22} color="#191b23" />
           </Pressable>
         </View>
 
@@ -81,7 +81,7 @@ export function DocumentDetailScreen() {
                 resizeMode="cover"
               />
               <View className="absolute inset-0 items-center justify-center bg-white/70 px-6">
-                <MaterialIcons name="description" size={52} color="#004ac6" />
+                <Icon name="doc" size={52} color="#004ac6" />
                 <Text className="mt-4 text-sm font-semibold text-on-surface-variant">
                   Tài liệu {documentDetail.fileType} - {documentDetail.fileSize}
                 </Text>
@@ -90,7 +90,7 @@ export function DocumentDetailScreen() {
                   className="mt-4 flex-row items-center gap-2 rounded-full bg-primary px-6 py-3"
                   onPress={() => {}}
                 >
-                  <MaterialIcons name="zoom-in" size={18} color="#ffffff" />
+                  <Icon name="plus.magnifyingglass" size={18} color="#ffffff" />
                   <Text className="text-sm font-semibold text-on-primary">
                     Xem toàn bộ trang
                   </Text>
