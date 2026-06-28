@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -10,25 +10,22 @@ import { ROUTES } from "@/constants/routes";
 import { DocumentCategorySelector } from "../components/DocumentCategorySelector";
 import { DocumentTextField } from "../components/DocumentTextField";
 import { DocumentUploadField } from "../components/DocumentUploadField";
-import { createDocument } from "../services/documents.service";
+import {
+  createDocument,
+  fetchSubjects,
+  generateDescriptionFromUrl,
+} from "../services/documents.service";
 import * as DocumentPicker from "expo-document-picker";
-import { uploadToCloudinary } from "../../../services/cloudinary.service";
-import type {
-  DocumentCategoryOption,
-  DocumentCategoryValue,
-} from "../types/document.types";
-
-const categoryOptions: readonly DocumentCategoryOption[] = [
-  { label: "Khoa học máy tính", value: "cs" },
-  { label: "Toán học ứng dụng", value: "math" },
-  { label: "Vật lý đại cương", value: "phys" },
-  { label: "Kinh tế học", value: "eco" },
-];
+import {
+  uploadToCloudinary,
+  type CloudinaryUploadResponse,
+} from "../../../services/cloudinary.service";
+import type { DocumentCategoryOption, Subject } from "../types/document.types";
 
 const documentUploadSchema = z.object({
   fileName: z.string().trim().min(1, "Vui lòng chọn một tệp để tải lên"),
   title: z.string().trim().min(1, "Tiêu đề tài liệu không được để trống"),
-  category: z.enum(["cs", "math", "phys", "eco"]),
+  subjectId: z.string().trim().min(1, "Vui lòng chọn môn học"),
   description: z.string().trim().optional().default(""),
 });
 
@@ -60,6 +57,10 @@ export function DocumentUploadScreen() {
     name: string;
     size: number;
   } | null>(null);
+  const [uploadedFile, setUploadedFile] =
+    useState<CloudinaryUploadResponse | null>(null);
+  const [subjects, setSubjects] = useState<readonly Subject[]>([]);
+  const [isLoadingSubjects, setIsLoadingSubjects] = useState(true);
   const [isAiLoading, setIsAiLoading] = useState(false);
 
   const {
@@ -73,13 +74,70 @@ export function DocumentUploadScreen() {
     defaultValues: {
       fileName: "",
       title: "",
-      category: "cs",
+      subjectId: "",
       description: "",
     },
   });
 
   const fileName = watch("fileName");
-  const category = watch("category");
+  const subjectId = watch("subjectId");
+
+  const subjectOptions = useMemo<readonly DocumentCategoryOption[]>(
+    () =>
+      subjects.map((subject) => ({
+        label: subject.name,
+        value: subject.id,
+      })),
+    [subjects],
+  );
+
+  useEffect(() => {
+    let mounted = true;
+
+    fetchSubjects(100)
+      .then((response) => {
+        if (!mounted) return;
+        setSubjects(response.subjects);
+        const firstSubject = response.subjects[0];
+        if (firstSubject) {
+          setValue("subjectId", firstSubject.id, { shouldValidate: false });
+        }
+      })
+      .catch(() => {
+        if (mounted) {
+          setSubjects([]);
+        }
+      })
+      .finally(() => {
+        if (mounted) {
+          setIsLoadingSubjects(false);
+        }
+      });
+
+    return () => {
+      mounted = false;
+    };
+  }, [setValue]);
+
+  const ensureUploadedFile = useCallback(async () => {
+    if (!pickedFile) {
+      throw new Error("Vui lòng chọn một tệp hợp lệ để tải lên.");
+    }
+
+    if (uploadedFile) {
+      return uploadedFile;
+    }
+
+    const fileExtension =
+      pickedFile.name.split(".").pop()?.toLowerCase() || "pdf";
+    const cloudinaryRes = await uploadToCloudinary(
+      pickedFile.uri,
+      pickedFile.name,
+      fileExtension,
+    );
+    setUploadedFile(cloudinaryRes);
+    return cloudinaryRes;
+  }, [pickedFile, uploadedFile]);
 
   const handlePickDocument = async () => {
     try {
@@ -115,15 +173,42 @@ export function DocumentUploadScreen() {
         name: asset.name,
         size: asset.size || 0,
       });
+      setUploadedFile(null);
       setValue("fileName", asset.name, { shouldValidate: true });
-    } catch (error) {
+    } catch {
       Alert.alert("Lỗi", "Có lỗi xảy ra khi chọn tệp.");
     }
   };
 
   const handleClearFile = () => {
     setPickedFile(null);
+    setUploadedFile(null);
     setValue("fileName", "", { shouldValidate: true });
+  };
+
+  const handleGenerateDescription = async () => {
+    if (!pickedFile || isAiLoading) {
+      return;
+    }
+
+    setIsAiLoading(true);
+    try {
+      const cloudinaryRes = await ensureUploadedFile();
+      const description = await generateDescriptionFromUrl(
+        cloudinaryRes.secureUrl,
+        cloudinaryRes.format,
+      );
+      setValue("description", description, { shouldValidate: true });
+    } catch (error) {
+      Alert.alert(
+        "Không thể tạo mô tả",
+        error instanceof Error
+          ? error.message
+          : "AI chưa thể phân tích tài liệu này. Vui lòng thử lại.",
+      );
+    } finally {
+      setIsAiLoading(false);
+    }
   };
 
   const onSubmit = async (values: DocumentUploadFormOutput) => {
@@ -136,12 +221,8 @@ export function DocumentUploadScreen() {
       const fileExtension =
         pickedFile.name.split(".").pop()?.toLowerCase() || "pdf";
 
-      // Step 1: Upload to Cloudinary
-      const cloudinaryRes = await uploadToCloudinary(
-        pickedFile.uri,
-        pickedFile.name,
-        fileExtension,
-      );
+      // Step 1: Upload to Cloudinary if the AI action has not uploaded it yet
+      const cloudinaryRes = await ensureUploadedFile();
 
       // Step 2: Create document on backend
       const payload = {
@@ -152,6 +233,7 @@ export function DocumentUploadScreen() {
         sizeInBytes: cloudinaryRes.bytes || pickedFile.size || 0,
         format: cloudinaryRes.format || fileExtension,
         resourceType: cloudinaryRes.resourceType,
+        subjectId: values.subjectId,
         isPublic: true,
       };
 
@@ -160,7 +242,7 @@ export function DocumentUploadScreen() {
       if (document.id) {
         router.push(ROUTES.DOCUMENT_DETAIL(document.id) as never);
       }
-    } catch (error: any) {
+    } catch {
       Alert.alert(
         "Lỗi",
         "Tải lên thất bại. Vui lòng kiểm tra lại cấu hình mạng hoặc tài khoản Cloudinary.",
@@ -171,19 +253,30 @@ export function DocumentUploadScreen() {
   return (
     <PageShell contentClassName="p-0">
       <View className="flex-1 bg-background">
-        <View className="flex-row items-center justify-between border-b border-outline-variant bg-surface px-4 py-4">
-          <Text className="text-2xl font-bold tracking-tight text-primary">
-            AcademiShare
-          </Text>
-          <View className="flex-row items-center gap-4">
+        <View className="border-b border-outline-variant/70 bg-surface-container-lowest px-4 py-4">
+          <View className="flex-row items-center gap-3">
             <Pressable
               accessibilityRole="button"
-              className="rounded-full p-2"
-              onPress={() => {}}
+              className="rounded-full bg-surface-container-high p-3"
+              onPress={() => router.back()}
             >
-              <Icon name="moon.stars" size={22} color="#434655" />
+              <Icon name="chevron.left" size={20} color="#191b23" />
             </Pressable>
-            <View className="h-8 w-8 overflow-hidden rounded-full border border-outline-variant bg-surface-container-highest" />
+            <View className="min-w-0 flex-1">
+              <Text className="text-xs font-bold uppercase tracking-[0.16em] text-primary">
+                Upload
+              </Text>
+              <Text className="text-2xl font-bold tracking-tight text-on-surface">
+                Tải lên tài liệu
+              </Text>
+            </View>
+            <View className="rounded-3xl bg-primary/10 p-3">
+              <Icon
+                materialIcon={{ name: "upload-file" }}
+                size={24}
+                color="#004ac6"
+              />
+            </View>
           </View>
         </View>
 
@@ -197,16 +290,17 @@ export function DocumentUploadScreen() {
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >
-          <View className="gap-2">
-            <Text className="text-3xl font-bold tracking-tight text-on-surface">
-              Tải lên tài liệu
+          <View className="overflow-hidden rounded-[32px] bg-primary p-5 shadow-lg shadow-primary/20">
+            <View className="absolute -right-10 -top-10 h-32 w-32 rounded-full bg-white/10" />
+            <Text className="text-2xl font-bold tracking-tight text-on-primary">
+              Chia sẻ kiến thức với cộng đồng
             </Text>
-            <Text className="text-base leading-6 text-on-surface-variant">
-              Chia sẻ kiến thức với cộng đồng học thuật.
+            <Text className="mt-2 text-sm leading-6 text-on-primary/85">
+              Chọn tài liệu, gắn môn học và để AI hỗ trợ tạo mô tả ban đầu.
             </Text>
           </View>
 
-          <Card className="mt-6 rounded-2xl p-5">
+          <Card className="mt-6">
             <View className="gap-5">
               <Controller
                 control={control}
@@ -237,15 +331,14 @@ export function DocumentUploadScreen() {
 
               <Controller
                 control={control}
-                name="category"
+                name="subjectId"
                 render={({ field }) => (
                   <DocumentCategorySelector
                     value={field.value}
-                    options={categoryOptions}
-                    onChange={(value: DocumentCategoryValue) =>
-                      field.onChange(value)
-                    }
-                    errorMessage={errors.category?.message}
+                    options={subjectOptions}
+                    onChange={field.onChange}
+                    errorMessage={errors.subjectId?.message}
+                    isLoading={isLoadingSubjects}
                   />
                 )}
               />
@@ -263,17 +356,7 @@ export function DocumentUploadScreen() {
                     errorMessage={errors.description?.message}
                     onPressAi={
                       fileName
-                        ? () => {
-                            setIsAiLoading(true);
-                            setTimeout(() => {
-                              setValue(
-                                "description",
-                                "Tài liệu hướng dẫn chi tiết về cấu trúc dữ liệu và giải thuật, bao gồm danh sách liên kết, ngăn xếp, hàng đợi, cây và đồ thị kèm theo ví dụ minh họa chi tiết.",
-                                { shouldValidate: true },
-                              );
-                              setIsAiLoading(false);
-                            }, 1200);
-                          }
+                        ? () => void handleGenerateDescription()
                         : undefined
                     }
                     isAiLoading={isAiLoading}
@@ -295,6 +378,7 @@ export function DocumentUploadScreen() {
                   <Button
                     fullWidth
                     loading={isSubmitting}
+                    disabled={isAiLoading || isLoadingSubjects}
                     onPress={handleSubmit(onSubmit)}
                   >
                     Tải lên
@@ -305,9 +389,9 @@ export function DocumentUploadScreen() {
           </Card>
 
           <Card
-            className="mt-6 rounded-2xl p-5"
+            className="mt-6"
             title="Tài liệu liên quan"
-            subtitle="Chạm để mở màn chi tiết tài liệu mẫu."
+            subtitle="Một vài tài liệu mẫu để bạn tham khảo cách đặt tiêu đề."
           >
             <View className="gap-3">
               {relatedDocuments.map((item) => (
@@ -347,8 +431,10 @@ export function DocumentUploadScreen() {
           </Card>
 
           <Text className="mt-4 text-xs text-on-surface-variant">
-            Danh mục hiện tại: {category || "chưa chọn"}. Tệp đã chọn:{" "}
-            {fileName || "chưa chọn"}.
+            Môn học hiện tại:{" "}
+            {subjects.find((subject) => subject.id === subjectId)?.name ||
+              "chưa chọn"}
+            . Tệp đã chọn: {fileName || "chưa chọn"}.
           </Text>
         </ScrollView>
       </View>

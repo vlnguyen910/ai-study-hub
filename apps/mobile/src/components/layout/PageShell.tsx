@@ -14,7 +14,7 @@ export function PageShell({
   contentClassName = "",
 }: PageShellProps) {
   return (
-    <SafeAreaView className={`flex-1 bg-surface ${className}`}>
+    <SafeAreaView className={`flex-1 bg-background ${className}`}>
       <View className={`flex-1 px-4 py-5 ${contentClassName}`}>{children}</View>
     </SafeAreaView>
   );

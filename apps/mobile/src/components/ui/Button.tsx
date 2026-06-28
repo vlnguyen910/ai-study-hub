@@ -14,9 +14,9 @@ export interface ButtonProps {
 }
 
 const variantClasses: Record<NonNullable<ButtonProps["variant"]>, string> = {
-  primary: "bg-primary",
+  primary: "bg-primary shadow-sm shadow-primary/25",
   secondary: "bg-secondary-container",
-  outline: "border border-outline bg-transparent",
+  outline: "border border-outline-variant bg-surface-container-lowest",
   ghost: "bg-transparent",
 };
 
@@ -32,8 +32,8 @@ const textVariantClasses: Record<
 
 const sizeClasses: Record<NonNullable<ButtonProps["size"]>, string> = {
   sm: "px-3 py-2",
-  md: "px-4 py-3",
-  lg: "px-5 py-4",
+  md: "px-5 py-3.5",
+  lg: "px-6 py-4",
 };
 
 const labelClasses: Record<NonNullable<ButtonProps["size"]>, string> = {
@@ -60,8 +60,11 @@ export function Button({
       accessibilityRole="button"
       disabled={isDisabled}
       onPress={onPress}
-      className={`rounded-2xl ${variantClasses[variant]} ${sizeClasses[size]} ${fullWidth ? "w-full" : "self-start"} ${isDisabled ? "opacity-60" : "opacity-100"}`}
-      style={({ pressed }) => ({ opacity: pressed && !isDisabled ? 0.9 : 1 })}
+      className={`rounded-full ${variantClasses[variant]} ${sizeClasses[size]} ${fullWidth ? "w-full" : "self-start"} ${isDisabled ? "opacity-60" : "opacity-100"}`}
+      style={({ pressed }) => ({
+        opacity: pressed && !isDisabled ? 0.88 : 1,
+        transform: [{ scale: pressed && !isDisabled ? 0.98 : 1 }],
+      })}
     >
       <View className="flex-row items-center justify-center gap-2">
         {loading ? (

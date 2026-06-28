@@ -16,12 +16,13 @@ export function DocumentBottomActionBar({
   isDownloading = false,
 }: DocumentBottomActionBarProps) {
   return (
-    <View className="border-t border-outline-variant bg-surface px-4 py-4">
+    <View className="border-t border-outline-variant/70 bg-surface-container-lowest px-4 py-4 shadow-lg shadow-black/10">
       <View className="flex-row items-center gap-3">
         <Pressable
           accessibilityRole="button"
           onPress={onShare}
-          className="h-12 w-12 items-center justify-center rounded-2xl border border-outline-variant bg-surface"
+          className="h-12 w-12 items-center justify-center rounded-full border border-outline-variant bg-surface"
+          style={({ pressed }) => ({ opacity: pressed ? 0.82 : 1 })}
         >
           <Icon name="square.and.arrow.up" size={20} color="#191b23" />
         </Pressable>

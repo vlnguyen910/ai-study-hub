@@ -14,9 +14,9 @@ export default function TabsLayout() {
         tabBarHideOnKeyboard: true,
       }}
     >
-      <Tabs.Screen name="home" options={{ title: "Home" }} />
-      <Tabs.Screen name="search" options={{ title: "Search" }} />
-      <Tabs.Screen name="library" options={{ title: "Library" }} />
+      <Tabs.Screen name="home" options={{ title: "Trang chủ" }} />
+      <Tabs.Screen name="search" options={{ title: "Tìm kiếm" }} />
+      <Tabs.Screen name="library" options={{ title: "Thư viện" }} />
     </Tabs>
   );
 }

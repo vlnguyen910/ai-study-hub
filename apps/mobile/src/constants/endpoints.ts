@@ -14,6 +14,27 @@ export const API_ENDPOINTS = {
     BASE: "/api/v1/documents",
     MINE: "/api/v1/documents/me",
     DETAIL: (id: string) => `/api/v1/documents/${id}`,
+    APPROVE: (id: string) => `/api/v1/documents/${id}/approve`,
+    REJECT: (id: string) => `/api/v1/documents/${id}/reject`,
+    GENERATE_DESCRIPTION_FROM_URL:
+      "/api/v1/documents/generate-description-from-url",
+    GENERATE_SUMMARY: (id: string) =>
+      `/api/v1/documents/${id}/generate-summary`,
+    MODERATOR_ANALYSIS: (id: string) =>
+      `/api/v1/documents/${id}/moderator-analysis`,
+  },
+  COLLECTIONS: {
+    BASE: "/api/v1/collections",
+    DETAIL: (id: string) => `/api/v1/collections/${id}`,
+    DOCUMENTS: (id: string) => `/api/v1/collections/${id}/documents`,
+    DOCUMENT: (id: string, documentId: string) =>
+      `/api/v1/collections/${id}/documents/${documentId}`,
+    DOCUMENT_STATUS: (documentId: string) =>
+      `/api/v1/collections/documents/${documentId}/status`,
+  },
+  SUBJECTS: {
+    BASE: "/api/v1/subjects",
+    DETAIL: (id: string) => `/api/v1/subjects/${id}`,
   },
   ACCOUNTS: {
     ME: "/api/v1/accounts/me",

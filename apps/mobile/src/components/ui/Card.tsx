@@ -11,13 +11,15 @@ export interface CardProps {
 export function Card({ title, subtitle, children, className = "" }: CardProps) {
   return (
     <View
-      className={`rounded-2xl border border-outline-variant bg-surface-container-lowest p-4 ${className}`}
+      className={`rounded-3xl border border-outline-variant/80 bg-surface-container-lowest p-5 shadow-sm shadow-black/5 ${className}`}
     >
       {title ? (
-        <View className="mb-3 gap-1">
-          <Text className="text-lg font-semibold text-on-surface">{title}</Text>
+        <View className="mb-4 gap-1">
+          <Text className="text-lg font-bold text-on-surface">{title}</Text>
           {subtitle ? (
-            <Text className="text-sm text-on-surface-variant">{subtitle}</Text>
+            <Text className="text-sm leading-5 text-on-surface-variant">
+              {subtitle}
+            </Text>
           ) : null}
         </View>
       ) : null}

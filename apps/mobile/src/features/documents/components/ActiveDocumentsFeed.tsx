@@ -1,6 +1,7 @@
 import { ActivityIndicator, Text, View } from "react-native";
 
 import { Button, Card } from "@/components";
+import { Icon } from "@/components/nativewindui/Icon";
 import type { LibraryDocument } from "../types/document.types";
 import { ActiveDocumentCard } from "./ActiveDocumentCard";
 
@@ -22,10 +23,10 @@ export function ActiveDocumentsFeed({
   if (isLoading) {
     return (
       <Card>
-        <View className="items-center gap-3 py-8">
+        <View className="items-center gap-3 py-10">
           <ActivityIndicator />
-          <Text className="text-sm text-on-surface-variant">
-            Loading active documents...
+          <Text className="text-sm font-medium text-on-surface-variant">
+            Đang tải tài liệu...
           </Text>
         </View>
       </Card>
@@ -48,9 +49,14 @@ export function ActiveDocumentsFeed({
   if (documents.length === 0) {
     return (
       <Card>
-        <Text className="text-sm leading-6 text-on-surface-variant">
-          {emptyMessage}
-        </Text>
+        <View className="items-center gap-3 py-8">
+          <View className="rounded-full bg-surface-container-high p-4">
+            <Icon name="doc.text.magnifyingglass" size={28} color="#737686" />
+          </View>
+          <Text className="text-center text-sm leading-6 text-on-surface-variant">
+            {emptyMessage}
+          </Text>
+        </View>
       </Card>
     );
   }

@@ -1,17 +1,21 @@
-import { useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Icon } from "@/components/nativewindui/Icon";
 import { router } from "expo-router";
 import {
+  ActivityIndicator,
   Image,
   Pressable,
+  RefreshControl,
   ScrollView,
   Text,
   View,
   type StyleProp,
   type ViewStyle,
 } from "react-native";
-import { PageShell } from "@/components";
+import { Button, PageShell } from "@/components";
 import { ROUTES } from "@/constants/routes";
+import { fetchDocuments } from "@/features/documents/services/documents.service";
+import type { LibraryDocument } from "@/features/documents/types/document.types";
 import { DocumentFilterChip } from "../components/DocumentFilterChip";
 import { ReviewDocumentCard } from "../components/ReviewDocumentCard";
 import type {
@@ -19,53 +23,9 @@ import type {
   ReviewQueueFilter,
 } from "../types/document-review.types";
 
-const filters: ReviewQueueFilter[] = [
+const baseFilters: ReviewQueueFilter[] = [
   { label: "Pending Review", value: "pending" },
-  { label: "High Urgency", value: "urgent" },
-  { label: "Computer Science", value: "computer-science" },
-  { label: "Mathematics", value: "mathematics" },
-];
-
-const reviewDocuments: ReviewDocumentSummary[] = [
-  {
-    id: "doc-1",
-    title:
-      "Advanced Algorithms for Quantum Computing Applications in Cryptography",
-    author: "by Dr. Elena Rostova",
-    uploadedAt: "2h ago",
-    fileType: "PDF",
-    fileSize: "2.4MB",
-    description:
-      "This paper explores the theoretical limits of current post-quantum cryptographic methods against Shor's algorithm variants...",
-    category: "Computer Science",
-    categoryKey: "computer-science",
-  },
-  {
-    id: "doc-2",
-    title:
-      "Introduction to Machine Learning: Neural Networks and Deep Learning Fundamentals",
-    author: "by Prof. Alan Turing",
-    uploadedAt: "4h ago",
-    fileType: "DOCX",
-    fileSize: "1.1MB",
-    description:
-      "A comprehensive guide for beginners outlining the basic architecture of perceptrons and backpropagation algorithms...",
-    category: "Mathematics",
-    categoryKey: "mathematics",
-  },
-  {
-    id: "doc-3",
-    title: "Report on Academic Integrity Policy Violations Q3",
-    author: "by Admin",
-    uploadedAt: "5h ago",
-    fileType: "PDF",
-    fileSize: "500KB",
-    description:
-      "High-priority review item flagged by the moderation workflow for immediate inspection and action.",
-    category: "Computer Science",
-    categoryKey: "computer-science",
-    priority: "high",
-  },
+  { label: "High AI Risk", value: "urgent" },
 ];
 
 const scrollContentStyle: StyleProp<ViewStyle> = {
@@ -79,8 +39,96 @@ const filterRowStyle: StyleProp<ViewStyle> = {
   paddingBottom: 16,
 };
 
+const formatBytes = (bytes?: number): string => {
+  if (!bytes || !Number.isFinite(bytes) || bytes <= 0) return "—";
+  const units = ["B", "KB", "MB", "GB"];
+  let size = bytes;
+  let unitIndex = 0;
+
+  while (size >= 1024 && unitIndex < units.length - 1) {
+    size /= 1024;
+    unitIndex += 1;
+  }
+
+  return `${size.toFixed(unitIndex === 0 ? 0 : 1)}${units[unitIndex]}`;
+};
+
+const formatRelativeDate = (value: string): string => {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+  return date.toLocaleDateString("vi-VN");
+};
+
+const mapDocumentToReview = (
+  document: LibraryDocument,
+): ReviewDocumentSummary => ({
+  id: document.id,
+  title: document.title,
+  author: `by ${document.author.name}`,
+  uploadedAt: formatRelativeDate(document.createdAt),
+  fileType: document.format?.toUpperCase() ?? "FILE",
+  fileSize: formatBytes(document.sizeInBytes),
+  description: document.description ?? "Tài liệu chưa có mô tả.",
+  category: document.subject?.name ?? "Chưa phân loại",
+  categoryKey: document.subject?.id ?? "uncategorized",
+  priority:
+    typeof document.aiScore === "number" && document.aiScore >= 0.75
+      ? "high"
+      : "normal",
+});
+
 export function DocumentReviewScreen() {
-  const [selectedFilter, setSelectedFilter] = useState(filters[0].value);
+  const [documents, setDocuments] = useState<readonly LibraryDocument[]>([]);
+  const [selectedFilter, setSelectedFilter] = useState(baseFilters[0].value);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const loadDocuments = useCallback(async () => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const response = await fetchDocuments({
+        page: 1,
+        limit: 50,
+        status: "PENDING",
+      });
+      setDocuments(
+        response.documents.filter((document) => document.status === "PENDING"),
+      );
+    } catch {
+      setDocuments([]);
+      setError("Không thể tải hàng đợi kiểm duyệt.");
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    void loadDocuments();
+  }, [loadDocuments]);
+
+  const filters = useMemo<ReviewQueueFilter[]>(() => {
+    const subjectFilters = Array.from(
+      new Map(
+        documents
+          .filter((document) => document.subject)
+          .map((document) => [
+            document.subject?.id ?? "",
+            {
+              label: document.subject?.name ?? "Chưa phân loại",
+              value: document.subject?.id ?? "",
+            },
+          ]),
+      ).values(),
+    ).filter((filter) => filter.value);
+
+    return [...baseFilters, ...subjectFilters];
+  }, [documents]);
+
+  const reviewDocuments = useMemo(
+    () => documents.map(mapDocumentToReview),
+    [documents],
+  );
 
   const filteredDocuments = useMemo(() => {
     if (selectedFilter === "pending") {
@@ -94,7 +142,7 @@ export function DocumentReviewScreen() {
     return reviewDocuments.filter(
       (document) => document.categoryKey === selectedFilter,
     );
-  }, [selectedFilter]);
+  }, [reviewDocuments, selectedFilter]);
 
   return (
     <PageShell contentClassName="p-0">
@@ -107,26 +155,19 @@ export function DocumentReviewScreen() {
             <Pressable
               accessibilityRole="button"
               className="rounded-full p-2"
-              onPress={() => {}}
+              onPress={() => void loadDocuments()}
             >
               <Icon
-                materialIcon={{ name: "filter-list" }}
-                sfSymbol={{ name: "line.3.horizontal.decrease" as any }}
+                materialIcon={{ name: "refresh" }}
+                sfSymbol={{ name: "arrow.clockwise" as any }}
                 size={22}
                 color="#434655"
               />
             </Pressable>
-            <Pressable
-              accessibilityRole="button"
-              className="rounded-full p-2"
-              onPress={() => {}}
-            >
-              <Icon name="bell" size={22} color="#434655" />
-            </Pressable>
             <Image
               accessibilityLabel="Moderator avatar"
               source={{
-                uri: "https://lh3.googleusercontent.com/aida-public/AB6AXuAOdq3b_ELYMC3GxquZ7RauzvzJ1pHpMfQQrorUfffyd_17r085qf5-VDo_tbKXmF7wHmykjJTozbpZ1TVNWoFmCwhZDY1dnPGSwk2XO-8bo-kYFGg-_BZqDhSl37KgNuJRR8jaqk4y-7pWYY09g8q--SUumhwSPTxLbMb5m84GyF68wDcKUE1AsUixdGwr9QeL4zaC2sAvFTWbPk0oMt2v9Rd-qCdCDR0sJUgAjYmwtjT5NJnGazypV9ma9i_j8OnIIMkdTuQ34E0",
+                uri: "https://api.dicebear.com/7.x/initials/png?seed=MOD",
               }}
               className="h-8 w-8 rounded-full border border-outline-variant"
             />
@@ -137,6 +178,12 @@ export function DocumentReviewScreen() {
           className="flex-1"
           contentContainerStyle={scrollContentStyle}
           keyboardShouldPersistTaps="handled"
+          refreshControl={
+            <RefreshControl
+              refreshing={isLoading}
+              onRefresh={() => void loadDocuments()}
+            />
+          }
           showsVerticalScrollIndicator={false}
         >
           <ScrollView
@@ -155,20 +202,46 @@ export function DocumentReviewScreen() {
             ))}
           </ScrollView>
 
-          <View className="gap-4">
-            {filteredDocuments.map((document) => (
-              <ReviewDocumentCard
-                key={document.id}
-                document={document}
-                onReject={() => {}}
-                onSeeDetail={() =>
-                  router.push(
-                    ROUTES.MODERATOR_DOCUMENT_DETAIL(document.id) as never,
-                  )
-                }
-              />
-            ))}
-          </View>
+          {isLoading ? (
+            <View className="items-center gap-3 rounded-2xl border border-outline-variant bg-surface-container-lowest py-10">
+              <ActivityIndicator />
+              <Text className="text-sm text-on-surface-variant">
+                Đang tải tài liệu chờ duyệt...
+              </Text>
+            </View>
+          ) : error ? (
+            <View className="items-start gap-4 rounded-2xl border border-outline-variant bg-surface-container-lowest p-4">
+              <Text className="text-sm leading-6 text-error">{error}</Text>
+              <Button variant="outline" size="sm" onPress={loadDocuments}>
+                Thử lại
+              </Button>
+            </View>
+          ) : filteredDocuments.length === 0 ? (
+            <View className="rounded-2xl border border-outline-variant bg-surface-container-lowest p-4">
+              <Text className="text-sm leading-6 text-on-surface-variant">
+                Không có tài liệu nào trong bộ lọc này.
+              </Text>
+            </View>
+          ) : (
+            <View className="gap-4">
+              {filteredDocuments.map((document) => (
+                <ReviewDocumentCard
+                  key={document.id}
+                  document={document}
+                  onReject={() =>
+                    router.push(
+                      ROUTES.MODERATOR_DOCUMENT_DETAIL(document.id) as never,
+                    )
+                  }
+                  onSeeDetail={() =>
+                    router.push(
+                      ROUTES.MODERATOR_DOCUMENT_DETAIL(document.id) as never,
+                    )
+                  }
+                />
+              ))}
+            </View>
+          )}
         </ScrollView>
       </View>
     </PageShell>

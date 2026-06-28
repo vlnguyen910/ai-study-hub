@@ -17,27 +17,18 @@ import { ROUTES } from "@/constants/routes";
 import { DocumentCategorySelector } from "../components/DocumentCategorySelector";
 import { DocumentTextField } from "../components/DocumentTextField";
 import { DocumentUploadField } from "../components/DocumentUploadField";
-import type {
-  DocumentCategoryOption,
-  DocumentCategoryValue,
-} from "../types/document.types";
+import type { DocumentCategoryOption, Subject } from "../types/document.types";
 import {
   deleteDocument,
   fetchDocumentDetail,
+  fetchSubjects,
   updateDocument,
 } from "../services/documents.service";
-
-const categoryOptions: readonly DocumentCategoryOption[] = [
-  { label: "Khoa học máy tính", value: "cs" },
-  { label: "Toán học ứng dụng", value: "math" },
-  { label: "Vật lý đại cương", value: "phys" },
-  { label: "Kinh tế học", value: "eco" },
-];
 
 const documentEditSchema = z.object({
   fileName: z.string().trim().min(1, "Vui lòng chọn một tệp"),
   title: z.string().trim().min(1, "Tiêu đề không được để trống"),
-  category: z.enum(["cs", "math", "phys", "eco"]),
+  subjectId: z.string().trim().min(1, "Vui lòng chọn môn học"),
   description: z.string().trim().optional().default(""),
 });
 
@@ -55,22 +46,56 @@ export function DocumentEditScreen() {
     documentId ? null : "Thiếu mã tài liệu để chỉnh sửa.",
   );
   const [isDeleting, setIsDeleting] = useState(false);
+  const [subjects, setSubjects] = useState<readonly Subject[]>([]);
+  const [isLoadingSubjects, setIsLoadingSubjects] = useState(true);
 
   const {
     control,
     handleSubmit,
     formState: { errors, isSubmitting },
     setValue,
-    watch,
   } = useForm<DocumentEditInput, undefined, DocumentEditOutput>({
     resolver: zodResolver(documentEditSchema),
     defaultValues: {
       fileName: "",
       title: "",
-      category: "cs",
+      subjectId: "",
       description: "",
     },
   });
+
+  const subjectOptions = useMemo<readonly DocumentCategoryOption[]>(
+    () =>
+      subjects.map((subject) => ({
+        label: subject.name,
+        value: subject.id,
+      })),
+    [subjects],
+  );
+
+  useEffect(() => {
+    let mounted = true;
+
+    fetchSubjects(100)
+      .then((response) => {
+        if (!mounted) return;
+        setSubjects(response.subjects);
+      })
+      .catch(() => {
+        if (mounted) {
+          setSubjects([]);
+        }
+      })
+      .finally(() => {
+        if (mounted) {
+          setIsLoadingSubjects(false);
+        }
+      });
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
 
   useEffect(() => {
     if (!documentId) return;
@@ -86,7 +111,9 @@ export function DocumentEditScreen() {
           shouldValidate: false,
         });
         setValue("title", document.title, { shouldValidate: false });
-        setValue("category", "cs", { shouldValidate: false });
+        setValue("subjectId", document.subject?.id ?? "", {
+          shouldValidate: false,
+        });
         setValue("description", document.description ?? "", {
           shouldValidate: false,
         });
@@ -103,8 +130,6 @@ export function DocumentEditScreen() {
     };
   }, [documentId, setValue]);
 
-  const fileName = watch("fileName");
-
   const handleClearFile = () =>
     setValue("fileName", "", { shouldValidate: true });
 
@@ -114,6 +139,7 @@ export function DocumentEditScreen() {
     await updateDocument(documentId, {
       title: values.title,
       description: values.description?.trim() || undefined,
+      subjectId: values.subjectId,
     });
 
     router.push(ROUTES.DOCUMENT_DETAIL(documentId) as never);
@@ -141,19 +167,26 @@ export function DocumentEditScreen() {
   return (
     <PageShell contentClassName="p-0">
       <View className="flex-1 bg-background">
-        <View className="flex-row items-center justify-between border-b border-outline-variant bg-surface px-4 py-4">
-          <Text className="text-2xl font-bold tracking-tight text-primary">
-            Chỉnh sửa tài liệu
-          </Text>
-          <View className="flex-row items-center gap-4">
+        <View className="border-b border-outline-variant/70 bg-surface-container-lowest px-4 py-4">
+          <View className="flex-row items-center gap-3">
             <Pressable
               accessibilityRole="button"
-              className="rounded-full p-2"
-              onPress={() => {}}
+              className="rounded-full bg-surface-container-high p-3"
+              onPress={() => router.back()}
             >
-              <Icon name="moon.stars" size={22} color="#434655" />
+              <Icon name="chevron.left" size={20} color="#191b23" />
             </Pressable>
-            <View className="h-8 w-8 overflow-hidden rounded-full border border-outline-variant bg-surface-container-highest" />
+            <View className="min-w-0 flex-1">
+              <Text className="text-xs font-bold uppercase tracking-[0.16em] text-primary">
+                Editor
+              </Text>
+              <Text className="text-2xl font-bold tracking-tight text-on-surface">
+                Chỉnh sửa tài liệu
+              </Text>
+            </View>
+            <View className="rounded-3xl bg-primary/10 p-3">
+              <Icon name="pencil" size={24} color="#004ac6" />
+            </View>
           </View>
         </View>
 
@@ -181,16 +214,17 @@ export function DocumentEditScreen() {
             keyboardShouldPersistTaps="handled"
             showsVerticalScrollIndicator={false}
           >
-            <View className="gap-2">
-              <Text className="text-3xl font-bold tracking-tight text-on-surface">
-                Chỉnh sửa tài liệu
-              </Text>
-              <Text className="text-base leading-6 text-on-surface-variant">
+            <View className="overflow-hidden rounded-[32px] bg-primary p-5 shadow-lg shadow-primary/20">
+              <View className="absolute -right-10 -top-10 h-32 w-32 rounded-full bg-white/10" />
+              <Text className="text-2xl font-bold tracking-tight text-on-primary">
                 Cập nhật thông tin tài liệu
+              </Text>
+              <Text className="mt-2 text-sm leading-6 text-on-primary/85">
+                Sửa tiêu đề, mô tả và môn học để tài liệu dễ được tìm thấy hơn.
               </Text>
             </View>
 
-            <Card className="mt-6 rounded-2xl p-5">
+            <Card className="mt-6">
               <View className="gap-5">
                 <Controller
                   control={control}
@@ -221,15 +255,14 @@ export function DocumentEditScreen() {
 
                 <Controller
                   control={control}
-                  name="category"
+                  name="subjectId"
                   render={({ field }) => (
                     <DocumentCategorySelector
                       value={field.value}
-                      options={categoryOptions}
-                      onChange={(value: DocumentCategoryValue) =>
-                        field.onChange(value)
-                      }
-                      errorMessage={errors.category?.message}
+                      options={subjectOptions}
+                      onChange={field.onChange}
+                      errorMessage={errors.subjectId?.message}
+                      isLoading={isLoadingSubjects}
                     />
                   )}
                 />
@@ -262,6 +295,7 @@ export function DocumentEditScreen() {
                   <View className="flex-1">
                     <Button
                       fullWidth
+                      disabled={isLoadingSubjects}
                       loading={isSubmitting}
                       onPress={handleSubmit(onUpdate)}
                     >

@@ -2,6 +2,25 @@ import type { BottomTabBarProps } from "@react-navigation/bottom-tabs";
 import { Pressable, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
+import { Icon } from "@/components/nativewindui/Icon";
+
+const getTabIcon = (
+  routeName: string,
+): {
+  name: string;
+} => {
+  switch (routeName) {
+    case "home":
+      return { name: "home" };
+    case "search":
+      return { name: "search" };
+    case "library":
+      return { name: "local-library" };
+    default:
+      return { name: "dashboard" };
+  }
+};
+
 export function BottomTabBar({
   state,
   descriptors,
@@ -11,10 +30,10 @@ export function BottomTabBar({
 
   return (
     <View
-      className="border-t border-outline-variant bg-surface-container-lowest"
-      style={{ paddingBottom: Math.max(insets.bottom, 10) }}
+      className="border-t border-outline-variant/70 bg-surface-container-lowest/95 shadow-lg shadow-black/10"
+      style={{ paddingBottom: Math.max(insets.bottom, 12) }}
     >
-      <View className="flex-row px-3 pt-2">
+      <View className="flex-row px-3 pt-3">
         {state.routes.map((route, index) => {
           const descriptor = descriptors[route.key];
           const options = descriptor.options;
@@ -23,8 +42,7 @@ export function BottomTabBar({
             typeof options.tabBarLabel === "string"
               ? options.tabBarLabel
               : (options.title ?? route.name);
-          const iconName =
-            route.name === "home" ? "⌂" : route.name === "search" ? "⌕" : "▤";
+          const icon = getTabIcon(route.name);
 
           const onPress = () => {
             const event = navigation.emit({
@@ -51,18 +69,26 @@ export function BottomTabBar({
               testID={options.tabBarButtonTestID}
               onPress={onPress}
               onLongPress={onLongPress}
-              className="flex-1 items-center justify-center rounded-2xl px-2 py-2"
+              className="flex-1 items-center justify-center rounded-3xl px-1 py-1"
+              style={({ pressed }) => ({
+                opacity: pressed ? 0.82 : 1,
+                transform: [{ scale: pressed ? 0.98 : 1 }],
+              })}
             >
               <View
-                className={`items-center gap-1 rounded-2xl px-3 py-2 ${isFocused ? "bg-secondary-container" : "bg-transparent"}`}
+                className={`min-w-[72px] items-center gap-1 rounded-3xl px-3 py-2.5 ${
+                  isFocused ? "bg-primary-container" : "bg-transparent"
+                }`}
               >
+                <Icon
+                  materialIcon={{ name: icon.name as any }}
+                  size={22}
+                  color={isFocused ? "#004ac6" : "#737686"}
+                />
                 <Text
-                  className={`text-lg ${isFocused ? "text-primary" : "text-on-surface-variant"}`}
-                >
-                  {iconName}
-                </Text>
-                <Text
-                  className={`text-xs font-medium ${isFocused ? "text-on-surface" : "text-on-surface-variant"}`}
+                  className={`text-xs font-semibold ${
+                    isFocused ? "text-primary" : "text-on-surface-variant"
+                  }`}
                 >
                   {label}
                 </Text>
