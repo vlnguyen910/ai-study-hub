@@ -1,4 +1,4 @@
-export type DocumentCategoryValue = "cs" | "math" | "phys" | "eco";
+export type DocumentCategoryValue = string;
 
 export type DocumentStatus = "ACTIVE" | "PENDING" | "REJECTED" | "DELETED";
 
@@ -17,9 +17,18 @@ export interface DocumentSubject {
 export interface LibraryDocument {
   readonly id: string;
   readonly title: string;
+  readonly description?: string | null;
+  readonly fileUrl?: string;
   readonly publicId: string;
   readonly status: DocumentStatus;
   readonly isPublic: boolean;
+  readonly format?: string;
+  readonly sizeInBytes?: number;
+  readonly reviewedById?: string | null;
+  readonly reviewedAt?: string | null;
+  readonly rejectionReason?: string | null;
+  readonly rejectionDetail?: string | null;
+  readonly aiScore?: number;
   readonly createdAt: string;
   readonly updatedAt: string;
   readonly author: DocumentAuthor;
@@ -37,10 +46,16 @@ export interface DocumentDetail {
   readonly format: string;
   readonly sizeInBytes: number;
   readonly createdAt: string;
+  readonly updatedAt?: string;
   readonly author: DocumentAuthor & {
     readonly email: string;
   };
   readonly subject: DocumentSubject | null;
+  readonly aiSummary?: string | null;
+  readonly reviewedById?: string | null;
+  readonly reviewedAt?: string | null;
+  readonly rejectionReason?: string | null;
+  readonly rejectionDetail?: string | null;
 }
 
 export interface PaginationMeta {
@@ -61,6 +76,8 @@ export interface ListDocumentsQuery {
   readonly subjectId?: string;
   readonly authorId?: string;
   readonly status?: DocumentStatus;
+  readonly search?: string;
+  readonly isSemantic?: boolean;
 }
 
 export interface CreateDocumentPayload {
@@ -80,6 +97,21 @@ export interface UpdateDocumentPayload {
   readonly description?: string;
   readonly subjectId?: string;
   readonly isPublic?: boolean;
+}
+
+export interface RejectDocumentPayload {
+  readonly rejectionReason: string;
+}
+
+export interface Subject {
+  readonly id: string;
+  readonly name: string;
+  readonly code: string;
+}
+
+export interface SubjectsListResponse {
+  readonly subjects: readonly Subject[];
+  readonly pagination: PaginationMeta;
 }
 
 export interface DocumentCategoryOption {
@@ -113,6 +145,15 @@ export interface DocumentDetailInfo {
 export interface DocumentUploadFormValues {
   fileName: string;
   title: string;
-  category: DocumentCategoryValue;
+  subjectId: string;
   description: string;
+}
+
+export type WarningFlag = "SPAM" | "TOXIC" | "ACADEMIC_INTEGRITY_RISK";
+
+export interface ModeratorAnalysisData {
+  readonly summary: string;
+  readonly flags: readonly WarningFlag[];
+  readonly moderationSuggestion: "APPROVE" | "REJECT";
+  readonly moderationReason: string;
 }

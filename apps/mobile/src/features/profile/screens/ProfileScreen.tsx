@@ -12,6 +12,7 @@ import {
   View,
 } from "react-native";
 import { Button, Card, PageShell } from "@/components";
+import { ROUTES } from "@/constants/routes";
 import { fetchMyProfile, updateProfile } from "../services/profile.service";
 import type {
   AccountProfile,
@@ -244,18 +245,19 @@ export function ProfileScreen() {
           <View className="mb-5 flex-row items-center justify-between">
             <Pressable
               accessibilityRole="button"
-              className="rounded-full bg-surface-container-low px-3 py-3"
+              className="rounded-full bg-surface-container-high px-3 py-3"
               onPress={() => router.back()}
             >
               <Icon name="chevron.left" size={20} color="#191b23" />
             </Pressable>
-            <Text className="flex-1 text-center text-lg font-semibold text-on-surface">
-              Profile
+            <Text className="flex-1 text-center text-lg font-bold text-on-surface">
+              Hồ sơ cá nhân
             </Text>
             <View className="w-11" />
           </View>
 
-          <Card className="mb-4 shadow-sm">
+          <Card className="mb-4 overflow-hidden">
+            <View className="absolute left-0 right-0 top-0 h-24 bg-primary/10" />
             <View className="items-center gap-4 py-2">
               <ProfileAvatar
                 name={draft.fullName}
@@ -305,6 +307,31 @@ export function ProfileScreen() {
                   </>
                 )}
               </View>
+            </View>
+          </Card>
+
+          <Card
+            className="mb-4"
+            title="Không gian cá nhân"
+            subtitle="Quản lý tài liệu đã tải lên và các bộ sưu tập của bạn."
+          >
+            <View className="gap-3">
+              <Button
+                fullWidth
+                variant="outline"
+                onPress={() => router.push(ROUTES.MY_DOCUMENTS as never)}
+                leftIcon={<Icon name="doc" size={18} color="#191b23" />}
+              >
+                Tài liệu của tôi
+              </Button>
+              <Button
+                fullWidth
+                variant="outline"
+                onPress={() => router.push(ROUTES.COLLECTIONS as never)}
+                leftIcon={<Icon name="bookmark" size={18} color="#191b23" />}
+              >
+                Bộ sưu tập
+              </Button>
             </View>
           </Card>
 
