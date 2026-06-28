@@ -23,19 +23,19 @@ export function DocumentTextField({
   isAiLoading = false,
 }: DocumentTextFieldProps) {
   return (
-    <View className="gap-1.5">
-      <View className="flex-row justify-between items-center">
-        <Text className="text-sm font-semibold text-on-surface">{label}</Text>
+    <View className="gap-2">
+      <View className="flex-row items-center justify-between">
+        <Text className="text-sm font-bold text-on-surface">{label}</Text>
         {onPressAi && (
           <Pressable
             accessibilityRole="button"
             onPress={onPressAi}
             disabled={isAiLoading}
-            className="flex-row items-center gap-1 py-1 px-2.5 rounded-full bg-secondary/15 active:bg-secondary/25"
+            className="flex-row items-center gap-1 rounded-full bg-primary/10 px-3 py-1.5 active:bg-primary/15"
           >
             <Icon
               name={isAiLoading ? "restart" : "sparkle"}
-              size={12}
+              size={13}
               color="#004ac6"
             />
             <Text className="text-xs font-semibold text-primary">
@@ -45,7 +45,7 @@ export function DocumentTextField({
         )}
       </View>
       <TextInput
-        className={`rounded-2xl border border-outline-variant bg-surface-container-lowest px-4 text-base text-on-surface ${multiline ? "min-h-[112px] py-4" : "py-3.5"}`}
+        className={`rounded-3xl border border-outline-variant/80 bg-surface-container-lowest px-4 text-base text-on-surface shadow-sm shadow-black/5 ${multiline ? "min-h-[120px] py-4" : "py-3.5"}`}
         placeholder={placeholder}
         placeholderTextColor="#737686"
         value={value}
@@ -55,7 +55,7 @@ export function DocumentTextField({
         editable={!isAiLoading}
       />
       {errorMessage ? (
-        <Text className="text-sm text-error">{errorMessage}</Text>
+        <Text className="text-sm font-medium text-error">{errorMessage}</Text>
       ) : null}
     </View>
   );

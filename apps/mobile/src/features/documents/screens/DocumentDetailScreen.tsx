@@ -12,12 +12,17 @@ import {
   View,
 } from "react-native";
 
-import { Button, PageShell } from "@/components";
+import { Button, Card, PageShell } from "@/components";
 import { ROUTES } from "@/constants/routes";
 import { useSession } from "@/features/auth/context/SessionContext";
+import { SaveToCollectionModal } from "@/features/collections/components/SaveToCollectionModal";
 import { DocumentBottomActionBar } from "../components/DocumentBottomActionBar";
 import { DocumentPreview } from "../components/DocumentPreview";
-import { fetchDocumentDetail } from "../services/documents.service";
+import { DocumentSummaryCard } from "../components/DocumentSummaryCard";
+import {
+  fetchDocumentDetail,
+  generateDocumentSummary,
+} from "../services/documents.service";
 import type { DocumentDetail } from "../types/document.types";
 import {
   buildCloudinaryDownloadUrl,
@@ -51,7 +56,7 @@ const formatDate = (value: string): string => {
 };
 
 export function DocumentDetailScreen() {
-  const { user } = useSession();
+  const { isAuthenticated, user } = useSession();
   const params = useLocalSearchParams<{ id?: string }>();
   const documentId = useMemo(() => {
     const value = params.id;
@@ -64,6 +69,10 @@ export function DocumentDetailScreen() {
     documentId ? null : "Thiếu mã tài liệu để tải chi tiết.",
   );
   const [isDownloading, setIsDownloading] = useState(false);
+  const [summary, setSummary] = useState<string | null>(null);
+  const [isGeneratingSummary, setIsGeneratingSummary] = useState(false);
+  const [summaryError, setSummaryError] = useState<string | null>(null);
+  const [isCollectionModalOpen, setIsCollectionModalOpen] = useState(false);
 
   useEffect(() => {
     if (!documentId) return;
@@ -76,6 +85,8 @@ export function DocumentDetailScreen() {
       .then((response) => {
         if (!mounted) return;
         setDocument(response);
+        setSummary(response.aiSummary ?? null);
+        setSummaryError(null);
       })
       .catch(() => {
         if (!mounted) return;
@@ -143,32 +154,59 @@ export function DocumentDetailScreen() {
     });
   };
 
+  const handleGenerateSummary = async () => {
+    if (!documentId || isGeneratingSummary || !isAuthenticated) {
+      return;
+    }
+
+    setIsGeneratingSummary(true);
+    setSummaryError(null);
+    try {
+      const generatedSummary = await generateDocumentSummary(documentId);
+      setSummary(generatedSummary);
+      setDocument((current) =>
+        current ? { ...current, aiSummary: generatedSummary } : current,
+      );
+    } catch {
+      setSummaryError(
+        "Không thể tạo tóm tắt lúc này. Tài liệu có thể chưa được xử lý nội dung.",
+      );
+    } finally {
+      setIsGeneratingSummary(false);
+    }
+  };
+
   return (
     <PageShell contentClassName="p-0">
       <View className="flex-1 bg-background">
-        <View className="flex-row items-center justify-between border-b border-outline-variant bg-surface px-4 py-4">
+        <View className="flex-row items-center justify-between border-b border-outline-variant/70 bg-surface-container-lowest px-4 py-4">
           <Pressable
             accessibilityRole="button"
-            className="-ml-2 rounded-full p-2"
+            className="-ml-1 rounded-full bg-surface-container-high p-3"
             onPress={() => router.back()}
           >
-            <Icon name="chevron.left" size={22} color="#191b23" />
+            <Icon name="chevron.left" size={20} color="#191b23" />
           </Pressable>
+          <Text className="min-w-0 flex-1 px-3 text-center text-base font-bold text-on-surface">
+            Chi tiết tài liệu
+          </Text>
           <View className="flex-row items-center gap-2">
             {document?.author.id === user?.id ? (
               <Pressable
                 accessibilityRole="button"
                 accessibilityLabel="Edit document"
-                className="rounded-full p-2"
+                className="rounded-full bg-surface-container-high p-3"
                 onPress={() => {
                   if (document) {
                     router.push(ROUTES.DOCUMENT_EDIT(document.id) as never);
                   }
                 }}
               >
-                <Icon name="pencil" size={22} color="#191b23" />
+                <Icon name="pencil" size={20} color="#191b23" />
               </Pressable>
-            ) : null}
+            ) : (
+              <View className="h-11 w-11" />
+            )}
           </View>
         </View>
 
@@ -198,10 +236,10 @@ export function DocumentDetailScreen() {
             >
               <DocumentPreview document={document} />
 
-              <View className="mt-4 rounded-2xl border border-outline-variant bg-surface-container-lowest p-4">
+              <Card className="mt-4">
                 <View className="flex-row items-center gap-3">
-                  <View className="rounded-xl bg-primary/10 p-3">
-                    <Icon name="doc" size={28} color="#004ac6" />
+                  <View className="rounded-3xl bg-primary/10 p-3">
+                    <Icon name="doc.text" size={28} color="#004ac6" />
                   </View>
                   <View className="min-w-0 flex-1">
                     <Text
@@ -232,10 +270,27 @@ export function DocumentDetailScreen() {
                     Xem chi tiết tài liệu
                   </Button>
                 </View>
-              </View>
+                {isAuthenticated ? (
+                  <View className="mt-3">
+                    <Button
+                      fullWidth
+                      variant="outline"
+                      onPress={() => setIsCollectionModalOpen(true)}
+                      leftIcon={
+                        <Icon name="bookmark" size={18} color="#191b23" />
+                      }
+                    >
+                      Lưu vào bộ sưu tập
+                    </Button>
+                  </View>
+                ) : null}
+              </Card>
 
               <View className="mt-6 gap-6">
-                <View>
+                <Card>
+                  <Text className="text-xs font-bold uppercase tracking-[0.18em] text-primary">
+                    Document
+                  </Text>
                   <Text className="text-2xl font-bold leading-8 text-on-surface">
                     {document.title}
                   </Text>
@@ -253,12 +308,9 @@ export function DocumentDetailScreen() {
                       </Text>
                     </View>
                   </View>
-                </View>
+                </Card>
 
-                <View className="border-t border-outline-variant pt-6">
-                  <Text className="text-xl font-semibold text-on-surface">
-                    Mô tả tài liệu
-                  </Text>
+                <Card title="Mô tả tài liệu">
                   <Text className="mt-3 text-base leading-7 text-on-surface-variant">
                     {document.description || "Tài liệu chưa có mô tả."}
                   </Text>
@@ -272,7 +324,15 @@ export function DocumentDetailScreen() {
                       </Text>
                     </View>
                   ) : null}
-                </View>
+                </Card>
+
+                <DocumentSummaryCard
+                  summary={summary}
+                  canGenerate={isAuthenticated}
+                  isGenerating={isGeneratingSummary}
+                  error={summaryError}
+                  onGenerate={() => void handleGenerateSummary()}
+                />
               </View>
             </ScrollView>
 
@@ -284,6 +344,12 @@ export function DocumentDetailScreen() {
                 onShare={() => void shareFile()}
               />
             </View>
+
+            <SaveToCollectionModal
+              visible={isCollectionModalOpen}
+              documentId={document.id}
+              onClose={() => setIsCollectionModalOpen(false)}
+            />
           </>
         )}
       </View>

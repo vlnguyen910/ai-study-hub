@@ -7,6 +7,9 @@ import type {
   DocumentDetail,
   DocumentsListResponse,
   ListDocumentsQuery,
+  ModeratorAnalysisData,
+  RejectDocumentPayload,
+  SubjectsListResponse,
   UpdateDocumentPayload,
 } from "../types/document.types";
 
@@ -33,6 +36,8 @@ const buildDocumentQuery = (query: ListDocumentsQuery = {}) => ({
   ...(query.subjectId ? { subjectId: query.subjectId } : {}),
   ...(query.authorId ? { authorId: query.authorId } : {}),
   ...(query.status ? { status: query.status } : {}),
+  ...(query.search ? { search: query.search } : {}),
+  ...(query.isSemantic !== undefined ? { isSemantic: query.isSemantic } : {}),
 });
 
 export const fetchDocuments = async (
@@ -88,4 +93,71 @@ export const deleteDocument = async (
   client: DocumentsApiClient = apiClient,
 ): Promise<void> => {
   await client.delete(API_ENDPOINTS.DOCUMENTS.DETAIL(id));
+};
+
+export const fetchSubjects = async (
+  limit = 100,
+  client: DocumentsApiClient = apiClient,
+): Promise<SubjectsListResponse> => {
+  const response = await client.get(API_ENDPOINTS.SUBJECTS.BASE, {
+    params: { page: 1, limit },
+  });
+  return unwrap<SubjectsListResponse>(response);
+};
+
+export const generateDescriptionFromUrl = async (
+  fileUrl: string,
+  format: string,
+  client: DocumentsApiClient = apiClient,
+): Promise<string> => {
+  const response = await client.post(
+    API_ENDPOINTS.DOCUMENTS.GENERATE_DESCRIPTION_FROM_URL,
+    { fileUrl, format },
+    { timeout: 60_000 },
+  );
+  return unwrap<{ description: string }>(response).description;
+};
+
+export const generateDocumentSummary = async (
+  id: string,
+  client: DocumentsApiClient = apiClient,
+): Promise<string> => {
+  const response = await client.post(
+    API_ENDPOINTS.DOCUMENTS.GENERATE_SUMMARY(id),
+    {},
+    { timeout: 60_000 },
+  );
+  return unwrap<{ summary: string }>(response).summary;
+};
+
+export const approveDocument = async (
+  id: string,
+  client: DocumentsApiClient = apiClient,
+): Promise<DocumentDetail> => {
+  const response = await client.post(API_ENDPOINTS.DOCUMENTS.APPROVE(id));
+  return unwrap<DocumentDetail>(response);
+};
+
+export const rejectDocument = async (
+  id: string,
+  payload: RejectDocumentPayload,
+  client: DocumentsApiClient = apiClient,
+): Promise<DocumentDetail> => {
+  const response = await client.post(
+    API_ENDPOINTS.DOCUMENTS.REJECT(id),
+    payload,
+  );
+  return unwrap<DocumentDetail>(response);
+};
+
+export const runModeratorAnalysis = async (
+  id: string,
+  client: DocumentsApiClient = apiClient,
+): Promise<ModeratorAnalysisData> => {
+  const response = await client.post(
+    API_ENDPOINTS.DOCUMENTS.MODERATOR_ANALYSIS(id),
+    {},
+    { timeout: 60_000 },
+  );
+  return unwrap<ModeratorAnalysisData>(response);
 };
