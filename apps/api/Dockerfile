@@ -32,12 +32,6 @@ WORKDIR /app
 
 ENV NODE_ENV=production
 
-# Install LibreOffice and fonts for PDF preview conversion
-RUN apk add --no-cache \
-    libreoffice \
-    ttf-dejavu \
-    fontconfig
-
 # Copy the deployed self-contained folder
 COPY --from=builder /app/deployed ./
 
