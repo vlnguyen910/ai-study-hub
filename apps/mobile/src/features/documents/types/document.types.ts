@@ -58,6 +58,7 @@ export interface DocumentDetail {
   readonly reviewedAt?: string | null;
   readonly rejectionReason?: string | null;
   readonly rejectionDetail?: string | null;
+  readonly extractedText?: string | null;
 }
 
 export interface PaginationMeta {
