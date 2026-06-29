@@ -23,7 +23,6 @@ export default function ProtectedLayout() {
   return (
     <Stack screenOptions={{ headerShown: false }}>
       <Stack.Protected guard={isAuthenticated}>
-        <Stack.Screen name="profile" />
         <Stack.Screen name="collections/index" />
         <Stack.Screen name="collections/[id]" />
         <Stack.Screen name="documents/upload" />
