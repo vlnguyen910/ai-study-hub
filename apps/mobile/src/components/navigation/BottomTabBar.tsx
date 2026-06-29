@@ -14,8 +14,12 @@ const getTabIcon = (
       return { name: "home" };
     case "search":
       return { name: "search" };
+    case "upload":
+      return { name: "upload-file" };
     case "library":
       return { name: "local-library" };
+    case "profile":
+      return { name: "person" };
     default:
       return { name: "dashboard" };
   }
@@ -33,7 +37,7 @@ export function BottomTabBar({
       className="border-t border-outline-variant/70 bg-surface-container-lowest/95 shadow-lg shadow-black/10"
       style={{ paddingBottom: Math.max(insets.bottom, 12) }}
     >
-      <View className="flex-row px-3 pt-3">
+      <View className="flex-row px-2 pt-2">
         {state.routes.map((route, index) => {
           const descriptor = descriptors[route.key];
           const options = descriptor.options;
@@ -43,6 +47,7 @@ export function BottomTabBar({
               ? options.tabBarLabel
               : (options.title ?? route.name);
           const icon = getTabIcon(route.name);
+          const isUploadTab = route.name === "upload";
 
           const onPress = () => {
             const event = navigation.emit({
@@ -69,25 +74,47 @@ export function BottomTabBar({
               testID={options.tabBarButtonTestID}
               onPress={onPress}
               onLongPress={onLongPress}
-              className="flex-1 items-center justify-center rounded-3xl px-1 py-1"
+              className="flex-1 items-center justify-center rounded-3xl px-0.5 py-1"
               style={({ pressed }) => ({
                 opacity: pressed ? 0.82 : 1,
                 transform: [{ scale: pressed ? 0.98 : 1 }],
               })}
             >
               <View
-                className={`min-w-[72px] items-center gap-1 rounded-3xl px-3 py-2.5 ${
-                  isFocused ? "bg-primary-container" : "bg-transparent"
+                className={`min-w-[60px] items-center gap-1 rounded-3xl border px-1.5 py-1.5 ${
+                  isFocused && !isUploadTab
+                    ? "border-primary/30 bg-surface-container-lowest"
+                    : "border-transparent bg-transparent"
                 }`}
               >
-                <Icon
-                  materialIcon={{ name: icon.name as any }}
-                  size={22}
-                  color={isFocused ? "#004ac6" : "#737686"}
-                />
+                {isUploadTab ? (
+                  <View
+                    className={`h-12 w-12 items-center justify-center rounded-full shadow-sm ${
+                      isFocused ? "bg-primary" : "bg-primary-container"
+                    }`}
+                  >
+                    <Icon
+                      materialIcon={{ name: icon.name as any }}
+                      size={25}
+                      color={isFocused ? "#ffffff" : "#004ac6"}
+                    />
+                  </View>
+                ) : (
+                  <Icon
+                    materialIcon={{ name: icon.name as any }}
+                    size={22}
+                    color={isFocused ? "#004ac6" : "#737686"}
+                  />
+                )}
                 <Text
                   className={`text-xs font-semibold ${
-                    isFocused ? "text-primary" : "text-on-surface-variant"
+                    isUploadTab
+                      ? isFocused
+                        ? "text-primary"
+                        : "text-on-surface-variant"
+                      : isFocused
+                        ? "text-primary"
+                        : "text-on-surface-variant"
                   }`}
                 >
                   {label}

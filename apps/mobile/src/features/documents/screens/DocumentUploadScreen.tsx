@@ -22,6 +22,11 @@ import {
 } from "../../../services/cloudinary.service";
 import type { DocumentCategoryOption, Subject } from "../types/document.types";
 
+interface DocumentUploadScreenProps {
+  readonly cancelHref?: string;
+  readonly showBackButton?: boolean;
+}
+
 const documentUploadSchema = z.object({
   fileName: z.string().trim().min(1, "Vui lòng chọn một tệp để tải lên"),
   title: z.string().trim().min(1, "Tiêu đề tài liệu không được để trống"),
@@ -52,7 +57,10 @@ const relatedDocuments = [
   },
 ] as const;
 
-export function DocumentUploadScreen() {
+export function DocumentUploadScreen({
+  cancelHref,
+  showBackButton = true,
+}: DocumentUploadScreenProps = {}) {
   const [pickedFile, setPickedFile] = useState<{
     uri: string;
     name: string;
@@ -188,6 +196,15 @@ export function DocumentUploadScreen() {
     setValue("fileName", "", { shouldValidate: true });
   };
 
+  const handleCancel = () => {
+    if (cancelHref) {
+      router.push(cancelHref as never);
+      return;
+    }
+
+    router.back();
+  };
+
   const handleGenerateDescription = async () => {
     if (!pickedFile || isAiLoading) {
       return;
@@ -257,13 +274,15 @@ export function DocumentUploadScreen() {
       <View className="flex-1 bg-background">
         <View className="border-b border-outline-variant/70 bg-surface-container-lowest px-4 py-4">
           <View className="flex-row items-center gap-3">
-            <Pressable
-              accessibilityRole="button"
-              className="rounded-full bg-surface-container-high p-3"
-              onPress={() => router.back()}
-            >
-              <Icon name="chevron.left" size={20} color="#191b23" />
-            </Pressable>
+            {showBackButton ? (
+              <Pressable
+                accessibilityRole="button"
+                className="rounded-full bg-surface-container-high p-3"
+                onPress={() => router.back()}
+              >
+                <Icon name="chevron.left" size={20} color="#191b23" />
+              </Pressable>
+            ) : null}
             <View className="min-w-0 flex-1">
               <Text className="text-xs font-bold uppercase tracking-[0.16em] text-primary">
                 Upload
@@ -391,11 +410,7 @@ export function DocumentUploadScreen() {
               />
               <View className="flex-row gap-4 pt-1">
                 <View className="flex-1">
-                  <Button
-                    variant="outline"
-                    fullWidth
-                    onPress={() => router.back()}
-                  >
+                  <Button variant="outline" fullWidth onPress={handleCancel}>
                     Hủy
                   </Button>
                 </View>

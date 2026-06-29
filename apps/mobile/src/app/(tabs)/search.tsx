@@ -68,10 +68,10 @@ export default function SearchRoute() {
   };
 
   return (
-    <PageShell>
+    <PageShell contentClassName="pb-0">
       <ScrollView
-        className="flex-1"
-        contentContainerStyle={{ paddingBottom: 24 }}
+        className="flex-1 bg-background"
+        contentContainerStyle={{ flexGrow: 1, paddingBottom: 8 }}
         keyboardShouldPersistTaps="handled"
         refreshControl={
           <RefreshControl
