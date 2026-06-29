@@ -117,6 +117,7 @@ model documents {
   title           String
   description     String?
   fileUrl         String
+  pdfPreviewUrl   String?
   publicId        String
   sizeInBytes     Int
   format          String

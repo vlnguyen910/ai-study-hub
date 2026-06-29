@@ -11,7 +11,10 @@ import {
 } from "../utils/document-preview";
 
 interface DocumentPreviewProps {
-  readonly document: Pick<DocumentDetail, "fileUrl" | "format" | "title">;
+  readonly document: Pick<
+    DocumentDetail,
+    "fileUrl" | "pdfPreviewUrl" | "format" | "title"
+  >;
 }
 
 function PreviewMessage({ message }: { readonly message: string }) {
@@ -74,10 +77,13 @@ export function DocumentPreview({ document }: DocumentPreviewProps) {
         );
       }
 
+      const urlToLoad = document.pdfPreviewUrl || document.fileUrl;
+      const typeToLoad = document.pdfPreviewUrl ? "pdf" : previewType;
+
       return (
         <WebView
           source={{
-            uri: buildEmbeddedPreviewUrl(document.fileUrl, previewType),
+            uri: buildEmbeddedPreviewUrl(urlToLoad, typeToLoad),
           }}
           className="h-[500px] bg-white"
           nestedScrollEnabled

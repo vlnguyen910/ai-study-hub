@@ -37,6 +37,45 @@ services:
     volumes:
       - redis_data:/data
 
+  api:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    container_name: api_study_hub
+    ports:
+      - "8080:8080"
+    env_file:
+      - apps/api/.env
+    environment:
+      - NODE_ENV=production
+      - DATABASE_URL=mongodb://mongo:27017/ai-study-hub?replicaSet=rs0
+      - REDIS_URL=redis://redis:6379
+      - ENABLE_WORKERS=false
+    depends_on:
+      mongo:
+        condition: service_healthy
+      redis:
+        condition: service_started
+
+  worker:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    container_name: worker_study_hub
+    command: ["node", "dist/worker.js"]
+    env_file:
+      - apps/api/.env
+    environment:
+      - NODE_ENV=production
+      - DATABASE_URL=mongodb://mongo:27017/ai-study-hub?replicaSet=rs0
+      - REDIS_URL=redis://redis:6379
+      - ENABLE_WORKERS=true
+    depends_on:
+      mongo:
+        condition: service_healthy
+      redis:
+        condition: service_started
+
 volumes:
   mongo_data:
   redis_data:

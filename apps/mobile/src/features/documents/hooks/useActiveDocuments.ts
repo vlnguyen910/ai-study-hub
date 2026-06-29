@@ -13,15 +13,23 @@ export function useActiveDocuments(limit = 20) {
     setError(null);
 
     try {
+      console.log("[useActiveDocuments] Fetching active documents...");
       const response = await fetchDocuments({
         page: 1,
         limit,
         status: "ACTIVE",
       });
+      console.log(
+        `[useActiveDocuments] Successfully fetched ${response.documents.length} active documents.`,
+      );
       setDocuments(
         response.documents.filter((document) => document.status === "ACTIVE"),
       );
-    } catch {
+    } catch (err) {
+      console.error(
+        "[useActiveDocuments] Failed to fetch active documents:",
+        err,
+      );
       setDocuments([]);
       setError("Unable to load active documents. Pull to try again.");
     } finally {
