@@ -21,7 +21,7 @@ interface SessionContextValue {
   readonly status: SessionStatus;
   readonly isAuthenticated: boolean;
   readonly user: AccountProfile | null;
-  readonly refreshSession: () => Promise<boolean>;
+  readonly refreshSession: () => Promise<AccountProfile | null>;
   readonly signOut: () => Promise<void>;
 }
 
@@ -35,47 +35,47 @@ export function SessionProvider({
   const [status, setStatus] = useState<SessionStatus>("loading");
   const [user, setUser] = useState<AccountProfile | null>(null);
 
-  const refreshSession = useCallback(async (): Promise<boolean> => {
-    const [accessToken, refreshToken] = await Promise.all([
-      getAccessToken(),
-      getRefreshToken(),
-    ]);
-
-    if (!accessToken && !refreshToken) {
-      setUser(null);
-      setStatus("unauthenticated");
-      return false;
-    }
-
-    try {
-      const profile = await fetchMyProfile();
-      setUser(profile);
-      setStatus("authenticated");
-      return true;
-    } catch (error) {
-      const isRejectedCredential =
-        isAxiosError(error) &&
-        (error.response?.status === 401 || error.response?.status === 403);
-      const [remainingAccessToken, remainingRefreshToken] = await Promise.all([
+  const refreshSession =
+    useCallback(async (): Promise<AccountProfile | null> => {
+      const [accessToken, refreshToken] = await Promise.all([
         getAccessToken(),
         getRefreshToken(),
       ]);
 
-      if (
-        isRejectedCredential ||
-        (!remainingAccessToken && !remainingRefreshToken)
-      ) {
-        await removeTokens();
+      if (!accessToken && !refreshToken) {
         setUser(null);
         setStatus("unauthenticated");
-        return false;
+        return null;
       }
 
-      // Preserve an existing local session during a temporary network outage.
-      setStatus("authenticated");
-      return true;
-    }
-  }, []);
+      try {
+        const profile = await fetchMyProfile();
+        setUser(profile);
+        setStatus("authenticated");
+        return profile;
+      } catch (error) {
+        const isRejectedCredential =
+          isAxiosError(error) &&
+          (error.response?.status === 401 || error.response?.status === 403);
+        const [remainingAccessToken, remainingRefreshToken] = await Promise.all(
+          [getAccessToken(), getRefreshToken()],
+        );
+
+        if (
+          isRejectedCredential ||
+          (!remainingAccessToken && !remainingRefreshToken)
+        ) {
+          await removeTokens();
+          setUser(null);
+          setStatus("unauthenticated");
+          return null;
+        }
+
+        // Preserve an existing local session during a temporary network outage.
+        setStatus("authenticated");
+        return null;
+      }
+    }, []);
 
   const signOut = useCallback(async (): Promise<void> => {
     try {
