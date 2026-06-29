@@ -13,6 +13,7 @@ import {
 } from "react-native";
 import { Button, Card, PageShell } from "@/components";
 import { ROUTES } from "@/constants/routes";
+import { useColorScheme } from "@/lib/useColorScheme";
 import { fetchMyProfile, updateProfile } from "../services/profile.service";
 import type {
   AccountProfile,
@@ -40,6 +41,23 @@ const profileFields: {
     icon: "person",
   },
 ];
+
+const themeOptions = [
+  {
+    value: "light",
+    label: "Sáng",
+    description: "Giao diện nền sáng, phù hợp ban ngày.",
+    icon: "light-mode",
+  },
+  {
+    value: "dark",
+    label: "Tối",
+    description: "Giảm độ chói khi đọc ban đêm.",
+    icon: "dark-mode",
+  },
+] as const;
+
+type ThemeOptionValue = (typeof themeOptions)[number]["value"];
 
 function getInitials(name: string): string {
   const initials = name
@@ -118,7 +136,65 @@ function MetricChip({
   );
 }
 
-export function ProfileScreen() {
+function ThemeOptionCard({
+  description,
+  icon,
+  isSelected,
+  label,
+  onPress,
+}: {
+  readonly description: string;
+  readonly icon: string;
+  readonly isSelected: boolean;
+  readonly label: string;
+  readonly onPress: () => void;
+}) {
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityState={isSelected ? { selected: true } : {}}
+      className={`flex-1 rounded-3xl border p-4 ${
+        isSelected
+          ? "border-primary bg-primary-container/40"
+          : "border-outline-variant bg-surface-container-lowest"
+      }`}
+      onPress={onPress}
+    >
+      <View className="flex-row items-center gap-3">
+        <View
+          className={`rounded-2xl p-2 ${
+            isSelected ? "bg-primary" : "bg-surface-container-high"
+          }`}
+        >
+          <Icon
+            materialIcon={{ name: icon as any }}
+            size={20}
+            color={isSelected ? "#ffffff" : "#434655"}
+          />
+        </View>
+        <View className="min-w-0 flex-1">
+          <Text
+            className={`text-sm font-bold ${
+              isSelected ? "text-primary" : "text-on-surface"
+            }`}
+          >
+            {label}
+          </Text>
+          <Text className="mt-1 text-xs leading-5 text-on-surface-variant">
+            {description}
+          </Text>
+        </View>
+      </View>
+    </Pressable>
+  );
+}
+
+export function ProfileScreen({
+  showBackButton = true,
+}: {
+  readonly showBackButton?: boolean;
+} = {}) {
+  const { colorScheme, setColorScheme } = useColorScheme();
   const [profile, setProfile] = useState<ProfileState>(INITIAL_PROFILE);
   const [draft, setDraft] = useState<ProfileState>(INITIAL_PROFILE);
   const [isEditing, setIsEditing] = useState(false);
@@ -230,6 +306,10 @@ export function ProfileScreen() {
     }
   };
 
+  const changeTheme = (nextTheme: ThemeOptionValue) => {
+    setColorScheme(nextTheme);
+  };
+
   return (
     <PageShell contentClassName="p-0">
       <KeyboardAvoidingView
@@ -243,13 +323,17 @@ export function ProfileScreen() {
           showsVerticalScrollIndicator={false}
         >
           <View className="mb-5 flex-row items-center justify-between">
-            <Pressable
-              accessibilityRole="button"
-              className="rounded-full bg-surface-container-high px-3 py-3"
-              onPress={() => router.back()}
-            >
-              <Icon name="chevron.left" size={20} color="#191b23" />
-            </Pressable>
+            {showBackButton ? (
+              <Pressable
+                accessibilityRole="button"
+                className="rounded-full bg-surface-container-high px-3 py-3"
+                onPress={() => router.back()}
+              >
+                <Icon name="chevron.left" size={20} color="#191b23" />
+              </Pressable>
+            ) : (
+              <View className="w-11" />
+            )}
             <Text className="flex-1 text-center text-lg font-bold text-on-surface">
               Hồ sơ cá nhân
             </Text>
@@ -307,6 +391,25 @@ export function ProfileScreen() {
                   </>
                 )}
               </View>
+            </View>
+          </Card>
+
+          <Card
+            className="mb-4"
+            title="Giao diện"
+            subtitle="Chọn theme cho ứng dụng trên thiết bị này."
+          >
+            <View className="flex-row gap-3">
+              {themeOptions.map((option) => (
+                <ThemeOptionCard
+                  key={option.value}
+                  description={option.description}
+                  icon={option.icon}
+                  isSelected={colorScheme === option.value}
+                  label={option.label}
+                  onPress={() => changeTheme(option.value)}
+                />
+              ))}
             </View>
           </Card>
 

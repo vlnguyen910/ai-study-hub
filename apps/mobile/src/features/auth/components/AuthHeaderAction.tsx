@@ -5,7 +5,11 @@ import { Alert, Pressable, Text, View } from "react-native";
 import { ROUTES } from "@/constants/routes";
 import { useSession } from "../context/SessionContext";
 
-export function AuthHeaderAction() {
+export function AuthHeaderAction({
+  showProfile = true,
+}: {
+  readonly showProfile?: boolean;
+}) {
   const { isAuthenticated, signOut, user } = useSession();
 
   if (!isAuthenticated) {
@@ -23,14 +27,16 @@ export function AuthHeaderAction() {
 
   return (
     <View className="mr-3 flex-row items-center gap-1">
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel="Open profile"
-        className="rounded-full p-2"
-        onPress={() => router.push(ROUTES.PROFILE as never)}
-      >
-        <Icon name="person.circle" size={25} color="#004ac6" />
-      </Pressable>
+      {showProfile ? (
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Open profile"
+          className="rounded-full p-2"
+          onPress={() => router.push(ROUTES.PROFILE as never)}
+        >
+          <Icon name="person.circle" size={25} color="#004ac6" />
+        </Pressable>
+      ) : null}
       <Pressable
         accessibilityRole="button"
         accessibilityLabel="Logout"

@@ -10,7 +10,7 @@ export const ROUTES = {
   PROFILE: "/profile",
   COLLECTIONS: "/collections",
   COLLECTION_DETAIL: (id: string) => `/collections/${id}`,
-  DOCUMENT_UPLOAD: "/documents/upload",
+  DOCUMENT_UPLOAD: "/upload",
   MY_DOCUMENTS: "/documents/my-documents",
   DOCUMENT_DETAIL: (id: string) => `/documents/${id}`,
   DOCUMENT_EDIT: (id: string) => `/documents/${id}/edit`,
