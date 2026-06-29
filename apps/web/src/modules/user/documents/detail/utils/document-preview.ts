@@ -63,6 +63,10 @@ export function buildPreviewSkeleton(
 export async function loadDocumentPreview(
   document: DocumentDetail,
 ): Promise<DocumentPreviewData> {
+  if (document.pdfPreviewUrl) {
+    return { type: "pdf", fileUrl: document.pdfPreviewUrl };
+  }
+
   const normalizedFormat = normalizeFormat(document.format);
 
   if (normalizedFormat === "pdf") {

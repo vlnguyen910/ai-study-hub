@@ -24,6 +24,7 @@ export interface LibraryDocument {
   title: string;
   /** Direct URL of the uploaded file, used as the card cover when renderable. */
   fileUrl: string;
+  pdfPreviewUrl?: string | null;
   /** Cloudinary public ID — usable for thumbnail generation */
   publicId: string;
   description?: string | null;
@@ -117,6 +118,7 @@ export interface DocumentDetail {
   description: string | null;
   /** Direct Cloudinary URL — used for download and PDF preview */
   fileUrl: string;
+  pdfPreviewUrl?: string | null;
   publicId: string;
   /** File extension as stored by Cloudinary, e.g. "pdf", "docx" */
   format: string;

@@ -19,6 +19,7 @@ export interface LibraryDocument {
   readonly title: string;
   readonly description?: string | null;
   readonly fileUrl?: string;
+  readonly pdfPreviewUrl?: string | null;
   readonly publicId: string;
   readonly status: DocumentStatus;
   readonly isPublic: boolean;
@@ -40,6 +41,7 @@ export interface DocumentDetail {
   readonly title: string;
   readonly description: string | null;
   readonly fileUrl: string;
+  readonly pdfPreviewUrl?: string | null;
   readonly publicId: string;
   readonly status: DocumentStatus;
   readonly isPublic: boolean;
