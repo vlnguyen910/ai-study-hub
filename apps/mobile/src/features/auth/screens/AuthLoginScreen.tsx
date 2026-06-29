@@ -16,6 +16,7 @@ import { ROUTES } from "@/constants/routes";
 import { useSession } from "../context/SessionContext";
 import { useSignIn } from "../hooks/useSignIn";
 import { useGoogleSignIn } from "../hooks/useGoogleSignIn";
+import { getPostLoginRoute } from "../utils/role-routing";
 
 export function AuthLoginScreen() {
   const params = useLocalSearchParams<{ redirect?: string }>();
@@ -26,16 +27,13 @@ export function AuthLoginScreen() {
     useGoogleSignIn();
 
   const finishSignIn = async () => {
-    const isAuthenticated = await refreshSession();
-    if (!isAuthenticated) return;
+    const profile = await refreshSession();
+    if (!profile) return;
 
     const redirectValue = Array.isArray(params.redirect)
       ? params.redirect[0]
       : params.redirect;
-    const destination =
-      redirectValue?.startsWith("/") && !redirectValue.startsWith("//")
-        ? redirectValue
-        : ROUTES.HOME;
+    const destination = getPostLoginRoute(profile.role, redirectValue);
     router.replace(destination as never);
   };
 
