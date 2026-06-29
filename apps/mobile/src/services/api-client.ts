@@ -8,9 +8,7 @@ import {
 } from "../utils/storage";
 
 export const getApiBaseUrl = (): string => {
-  return (
-    process.env.EXPO_PUBLIC_API_URL ?? process.env.DEFAULT_API_BASE_URL ?? ""
-  );
+  return process.env.EXPO_PUBLIC_API_URL ?? "";
 };
 
 export const apiClient: AxiosInstance = axios.create({
@@ -30,16 +28,28 @@ export const installAuthInterceptors = (client: AxiosInstance): void => {
         config.headers.Authorization = `Bearer ${token}`;
       }
 
+      console.log(
+        `[API Client] Connecting to: ${config.method?.toUpperCase()} ${config.baseURL || ""}${config.url}`,
+      );
       return config;
     },
     (error) => {
+      console.error(`[API Client] Request Error:`, error);
       return Promise.reject(error);
     },
   );
 
   client.interceptors.response.use(
-    (response) => response,
+    (response) => {
+      console.log(
+        `[API Client] Connection Success: ${response.config.method?.toUpperCase()} ${response.config.baseURL || ""}${response.config.url} - Status: ${response.status}`,
+      );
+      return response;
+    },
     async (error) => {
+      console.error(
+        `[API Client] Connection Failure: ${error.config?.method?.toUpperCase()} ${error.config?.baseURL || ""}${error.config?.url} - Error: ${error.message}`,
+      );
       if (!axios.isAxiosError(error)) {
         return Promise.reject(error);
       }

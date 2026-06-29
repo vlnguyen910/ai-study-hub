@@ -16,6 +16,16 @@ import {
   type DocumentJobData,
 } from './document-processing.types';
 
+import { exec } from 'child_process';
+import { promisify } from 'util';
+import * as fs from 'fs/promises';
+import * as path from 'path';
+import * as os from 'os';
+import { createHash } from 'crypto';
+import { v4 as uuidv4 } from 'uuid';
+
+const execPromise = promisify(exec);
+
 @Injectable()
 export class DocumentProcessingProcessor
   implements OnModuleInit, OnModuleDestroy
@@ -114,6 +124,24 @@ export class DocumentProcessingProcessor
     if (document.deletedAt) {
       this.logger.error('Document is deleted');
       return;
+    }
+
+    // Convert Word/Office document to PDF for preview
+    try {
+      const pdfPreviewUrl = await this.convertOfficeToPdfAndUpload(document);
+      if (pdfPreviewUrl) {
+        await this.prismaService.documents.update({
+          where: { id: documentId },
+          data: { pdfPreviewUrl },
+        });
+        this.logger.log(
+          `Successfully generated and saved PDF preview URL: ${pdfPreviewUrl}`,
+        );
+      }
+    } catch (previewErr) {
+      this.logger.error(
+        `Failed to handle PDF preview generation: ${(previewErr as Error).message}`,
+      );
     }
 
     this.logger.log('Extracting text from document');
@@ -219,5 +247,176 @@ export class DocumentProcessingProcessor
   private async processGenerateSummary(documentId: string) {
     this.logger.log('[SIMULATED] Generating summary with Gemini for document');
     await new Promise((resolve) => setTimeout(resolve, 500));
+  }
+
+  private async checkLibreOfficeAvailable(): Promise<
+    'local' | 'docker' | null
+  > {
+    try {
+      const { stdout } = await execPromise(
+        'which soffice || which libreoffice',
+      );
+      if (stdout.trim()) return 'local';
+    } catch {}
+
+    try {
+      const { stdout } = await execPromise('docker --version');
+      if (stdout.trim()) return 'docker';
+    } catch {}
+
+    return null;
+  }
+
+  private async uploadToCloudinary(
+    fileBuffer: Buffer,
+    title: string,
+  ): Promise<string> {
+    const cloudName = process.env.CLOUDINARY_CLOUD_NAME;
+    const apiKey = process.env.CLOUDINARY_API_KEY;
+    const apiSecret = process.env.CLOUDINARY_API_SECRET;
+
+    if (!cloudName || !apiKey || !apiSecret) {
+      throw new Error('Cloudinary credentials are not configured');
+    }
+
+    const timestamp = Math.floor(Date.now() / 1000).toString();
+    const folder = 'document-previews';
+
+    // Sort parameters alphabetically to sign
+    const signatureParams = `folder=${folder}&timestamp=${timestamp}${apiSecret}`;
+    const signature = createHash('sha1').update(signatureParams).digest('hex');
+
+    const formData = new FormData();
+    const base64File = `data:application/pdf;base64,${fileBuffer.toString('base64')}`;
+    formData.append('file', base64File);
+    formData.append('folder', folder);
+    formData.append('timestamp', timestamp);
+    formData.append('api_key', apiKey);
+    formData.append('signature', signature);
+
+    const url = `https://api.cloudinary.com/v1_1/${cloudName}/raw/upload`;
+    const response = await fetch(url, {
+      method: 'POST',
+      body: formData,
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(
+        `Cloudinary upload failed (HTTP ${response.status}): ${errorText}`,
+      );
+    }
+
+    const data = (await response.json()) as { secure_url: string };
+    return data.secure_url;
+  }
+
+  private async convertOfficeToPdfAndUpload(document: {
+    id: string;
+    fileUrl: string;
+    format: string;
+    title: string;
+  }): Promise<string | null> {
+    const normalizedFormat = document.format.toLowerCase().trim();
+    if (normalizedFormat !== 'docx' && normalizedFormat !== 'doc') {
+      return null;
+    }
+
+    this.logger.log(
+      `Document format is ${document.format}, checking LibreOffice availability...`,
+    );
+    const mode = await this.checkLibreOfficeAvailable();
+    if (!mode) {
+      this.logger.warn(
+        'Neither local LibreOffice nor Docker CLI is available. Skipping PDF preview generation.',
+      );
+      return null;
+    }
+
+    this.logger.log(`LibreOffice mode selected: ${mode}`);
+
+    let tempDir = '';
+    let inputFilePath = '';
+
+    try {
+      this.logger.log(
+        `Downloading original file from Cloudinary for conversion: ${document.fileUrl}`,
+      );
+      const response = await fetch(document.fileUrl);
+      if (!response.ok) {
+        throw new Error(
+          `Failed to download original document (HTTP ${response.status})`,
+        );
+      }
+      const buffer = Buffer.from(await response.arrayBuffer());
+
+      const uuidValue = uuidv4();
+      tempDir = path.join(os.tmpdir(), `libreoffice-conv-${uuidValue}`);
+      await fs.mkdir(tempDir, { recursive: true });
+
+      const ext = normalizedFormat === 'docx' ? '.docx' : '.doc';
+      inputFilePath = path.join(tempDir, `input${ext}`);
+      await fs.writeFile(inputFilePath, buffer);
+
+      this.logger.log(`Executing LibreOffice conversion command (${mode})...`);
+
+      let command = '';
+      if (mode === 'local') {
+        command = `soffice --headless --convert-to pdf --outdir "${tempDir}" "${inputFilePath}"`;
+      } else {
+        // Run LibreOffice via linstep/libreoffice Docker image
+        // Pass host UID and GID to avoid root file ownership permissions issue on Linux
+        const uid = process.getuid ? process.getuid() : 1000;
+        const gid = process.getgid ? process.getgid() : 1000;
+        command = `docker run --rm -u ${uid}:${gid} -v "${tempDir}":/data linstep/libreoffice --headless --convert-to pdf --outdir /data /data/input${ext}`;
+      }
+
+      const { stdout, stderr } = await execPromise(command, { timeout: 45000 });
+      this.logger.log(`LibreOffice stdout: ${stdout}`);
+      if (stderr) {
+        this.logger.warn(`LibreOffice stderr: ${stderr}`);
+      }
+
+      // Check expected file or search directory
+      const pdfPath = path.join(tempDir, `input.pdf`);
+      try {
+        await fs.access(pdfPath);
+      } catch {
+        const files = await fs.readdir(tempDir);
+        const generatedPdf = files.find((f) =>
+          f.toLowerCase().endsWith('.pdf'),
+        );
+        if (!generatedPdf) {
+          throw new Error(
+            'LibreOffice conversion completed but no PDF output file was found.',
+          );
+        }
+      }
+
+      const pdfBuffer = await fs.readFile(pdfPath);
+      this.logger.log(
+        `Office-to-PDF conversion successful. PDF size: ${pdfBuffer.length} bytes.`,
+      );
+
+      const pdfUrl = await this.uploadToCloudinary(pdfBuffer, document.title);
+      return pdfUrl;
+    } catch (err) {
+      this.logger.error(
+        `Office-to-PDF conversion failed for document ${document.id}: ${(err as Error).message}`,
+        (err as Error).stack,
+      );
+      return null;
+    } finally {
+      if (tempDir) {
+        try {
+          await fs.rm(tempDir, { recursive: true, force: true });
+          this.logger.log(`Cleaned up temp directory: ${tempDir}`);
+        } catch (cleanupErr) {
+          this.logger.warn(
+            `Failed to clean up temp directory ${tempDir}: ${(cleanupErr as Error).message}`,
+          );
+        }
+      }
+    }
   }
 }

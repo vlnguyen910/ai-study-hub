@@ -78,6 +78,7 @@ export interface DocumentDetail {
   readonly title: string;
   readonly description?: string | null;
   readonly fileUrl?: string | null;
+  readonly pdfPreviewUrl?: string | null;
   readonly publicId?: string | null;
   readonly format?: string | null;
   readonly sizeInBytes?: number | null;

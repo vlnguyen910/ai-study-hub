@@ -4,7 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Icon } from "@/components/nativewindui/Icon";
 import { router } from "expo-router";
-import { Alert, Pressable, ScrollView, Text, View } from "react-native";
+import { Alert, Pressable, ScrollView, Switch, Text, View } from "react-native";
 import { Button, Card, PageShell } from "@/components";
 import { ROUTES } from "@/constants/routes";
 import { DocumentCategorySelector } from "../components/DocumentCategorySelector";
@@ -27,6 +27,7 @@ const documentUploadSchema = z.object({
   title: z.string().trim().min(1, "Tiêu đề tài liệu không được để trống"),
   subjectId: z.string().trim().min(1, "Vui lòng chọn môn học"),
   description: z.string().trim().optional().default(""),
+  isPublic: z.boolean().default(true),
 });
 
 type DocumentUploadFormInput = z.input<typeof documentUploadSchema>;
@@ -76,6 +77,7 @@ export function DocumentUploadScreen() {
       title: "",
       subjectId: "",
       description: "",
+      isPublic: true,
     },
   });
 
@@ -234,7 +236,7 @@ export function DocumentUploadScreen() {
         format: cloudinaryRes.format || fileExtension,
         resourceType: cloudinaryRes.resourceType,
         subjectId: values.subjectId,
-        isPublic: true,
+        isPublic: values.isPublic,
       };
 
       const document = await createDocument(payload);
@@ -363,7 +365,30 @@ export function DocumentUploadScreen() {
                   />
                 )}
               />
-
+              <Controller
+                control={control}
+                name="isPublic"
+                render={({ field }) => (
+                  <View className="flex-row items-center justify-between py-2 border-t border-b border-outline-variant/30">
+                    <View className="flex-1 pr-4">
+                      <Text className="text-sm font-semibold text-on-surface">
+                        Chia sẻ với cộng đồng (Công khai)
+                      </Text>
+                      <Text className="text-xs text-on-surface-variant mt-1 leading-5">
+                        Tài liệu công khai cần được duyệt trước khi xuất hiện
+                        trên bảng tin. Tài liệu riêng tư sẽ hoạt động ngay lập
+                        tức.
+                      </Text>
+                    </View>
+                    <Switch
+                      value={field.value}
+                      onValueChange={field.onChange}
+                      trackColor={{ false: "#d1d5db", true: "#004ac6" }}
+                      thumbColor={field.value ? "#ffffff" : "#f3f4f6"}
+                    />
+                  </View>
+                )}
+              />
               <View className="flex-row gap-4 pt-1">
                 <View className="flex-1">
                   <Button
