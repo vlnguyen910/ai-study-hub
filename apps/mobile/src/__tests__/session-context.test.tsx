@@ -1,4 +1,4 @@
-import { renderHook, waitFor } from "@testing-library/react-native";
+import { act, renderHook, waitFor } from "@testing-library/react-native";
 import type { ReactNode } from "react";
 
 import {
@@ -65,6 +65,31 @@ describe("SessionProvider", () => {
       expect(result.current.status).toBe("authenticated");
     });
     expect(result.current.user?.id).toBe("user-1");
+  });
+
+  it("returns the refreshed profile to callers", async () => {
+    getAccessTokenMock.mockResolvedValue("access-token");
+    getRefreshTokenMock.mockResolvedValue("refresh-token");
+    const profile = {
+      id: "moderator-1",
+      email: "moderator@example.com",
+      name: "Moderator",
+      avatarUrl: null,
+      role: "MODERATOR",
+    };
+    fetchMyProfileMock.mockResolvedValue(profile);
+
+    const { result } = renderHook(() => useSession(), { wrapper });
+
+    await waitFor(() => {
+      expect(result.current.status).toBe("authenticated");
+    });
+    let refreshedProfile: unknown;
+    await act(async () => {
+      refreshedProfile = await result.current.refreshSession();
+    });
+
+    expect(refreshedProfile).toBe(profile);
   });
 
   it("clears credentials rejected by the API", async () => {
