@@ -185,6 +185,9 @@ export function AuthRegisterScreen() {
                           onPress={() => setShowPassword(!showPassword)}
                           className="ml-2 p-1"
                           accessibilityRole="button"
+                          accessibilityLabel={
+                            showPassword ? "Hide password" : "Show password"
+                          }
                         >
                           <Icon
                             name={showPassword ? "eye" : "eye.slash"}
@@ -242,6 +245,11 @@ export function AuthRegisterScreen() {
                           }
                           className="ml-2 p-1"
                           accessibilityRole="button"
+                          accessibilityLabel={
+                            showConfirmPassword
+                              ? "Hide password"
+                              : "Show password"
+                          }
                         >
                           <Icon
                             name={showConfirmPassword ? "eye" : "eye.slash"}

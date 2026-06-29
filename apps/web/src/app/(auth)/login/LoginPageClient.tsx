@@ -7,6 +7,7 @@ import {
   useState,
   type ChangeEvent,
   type FormEvent,
+  type ReactNode,
   type ReactElement,
 } from "react";
 
@@ -51,11 +52,13 @@ const getSafeRedirect = (value: string | null, role: UserRole): string => {
 interface FloatingInputProps extends React.InputHTMLAttributes<HTMLInputElement> {
   readonly label: string;
   readonly errorText?: string;
+  readonly rightIcon?: ReactNode;
 }
 
 function FloatingInput({
   label,
   errorText,
+  rightIcon,
   required,
   className = "",
   ...props
@@ -64,7 +67,7 @@ function FloatingInput({
     <label className="group block">
       <div className="relative pt-4">
         <input
-          className={`peer h-12 w-full border-0 border-b border-border/70 bg-transparent px-0 pb-2 pt-4 font-body-md text-body-md text-foreground outline-none transition-colors placeholder:text-muted-foreground/70 focus:border-primary ${className}`}
+          className={`peer h-12 w-full border-0 border-b border-border/70 bg-transparent pb-2 pt-4 font-body-md text-body-md text-foreground outline-none transition-colors placeholder:text-muted-foreground/70 focus:border-primary ${rightIcon ? "pr-10" : "px-0"} ${className}`}
           placeholder=" "
           required={required}
           aria-invalid={Boolean(errorText)}
@@ -79,6 +82,11 @@ function FloatingInput({
           ) : null}
         </span>
         <span className="pointer-events-none absolute bottom-0 left-0 h-px w-0 bg-gradient-to-r from-[#003ea8] to-[#3b82f6] transition-all duration-300 peer-focus:w-full" />
+        {rightIcon ? (
+          <span className="absolute right-0 top-1/2 -translate-y-1/2">
+            {rightIcon}
+          </span>
+        ) : null}
       </div>
       {errorText ? (
         <span className="mt-2 block font-label-sm text-label-sm leading-5 text-error">
@@ -93,6 +101,7 @@ export default function LoginPageClient(): ReactElement {
   const router = useRouter();
   const searchParams = useSearchParams();
   const setAuth = useAuthStore((state) => state.setAuth);
+  const [showPassword, setShowPassword] = useState(false);
   const [formData, setFormData] = useState({
     email: "",
     password: "",
@@ -287,10 +296,22 @@ export default function LoginPageClient(): ReactElement {
             label="Password"
             value={formData.password}
             onChange={handleChange}
-            type="password"
+            type={showPassword ? "text" : "password"}
             required
             errorText={errors.password}
             autoComplete="current-password"
+            rightIcon={
+              <button
+                type="button"
+                onClick={() => setShowPassword((value) => !value)}
+                className="p-2 text-on-surface-variant transition-colors hover:text-foreground"
+                aria-label={showPassword ? "Ẩn mật khẩu" : "Hiện mật khẩu"}
+              >
+                <span className="material-symbols-outlined text-[18px]">
+                  {showPassword ? "visibility_off" : "visibility"}
+                </span>
+              </button>
+            }
           />
 
           <div className="flex flex-wrap items-center justify-between gap-3">
