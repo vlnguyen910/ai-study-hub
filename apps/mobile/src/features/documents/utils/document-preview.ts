@@ -19,10 +19,13 @@ export function getDocumentPreviewType(format: string): DocumentPreviewType {
   const normalizedFormat = format.trim().toLowerCase().replace(/^\.+/, "");
 
   if (normalizedFormat === "pdf") return "pdf";
-  if (normalizedFormat === "doc" || normalizedFormat === "docx") {
-    return "office";
+  if (
+    normalizedFormat === "doc" ||
+    normalizedFormat === "docx" ||
+    normalizedFormat === "txt"
+  ) {
+    return "text";
   }
-  if (normalizedFormat === "txt") return "text";
   if (IMAGE_FORMATS.has(normalizedFormat)) return "image";
   return "unsupported";
 }
@@ -36,4 +39,12 @@ export function buildEmbeddedPreviewUrl(
   }
 
   return `https://docs.google.com/gview?embedded=1&url=${encodeURIComponent(fileUrl)}`;
+}
+
+export function shouldFetchRawTextPreview(
+  format: string,
+  extractedText?: string | null,
+): boolean {
+  const normalizedFormat = format.trim().toLowerCase().replace(/^\.+/, "");
+  return normalizedFormat === "txt" && !extractedText?.trim();
 }

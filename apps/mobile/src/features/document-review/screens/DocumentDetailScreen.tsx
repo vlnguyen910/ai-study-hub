@@ -26,6 +26,12 @@ import type {
   ModeratorAnalysisData,
 } from "@/features/documents/types/document.types";
 import { DocumentStatCard } from "../components/DocumentStatCard";
+import {
+  OTHER_REJECTION_REASON,
+  REJECTION_REASON_OPTIONS,
+  resolveRejectionReason,
+  type RejectionReasonOption,
+} from "../utils/rejection-reasons";
 
 const scrollContentStyle: StyleProp<ViewStyle> = {
   paddingHorizontal: 16,
@@ -62,7 +68,10 @@ export function DocumentDetailScreen() {
 
   const [document, setDocument] = useState<DocumentDetail | null>(null);
   const [analysis, setAnalysis] = useState<ModeratorAnalysisData | null>(null);
-  const [rejectReason, setRejectReason] = useState("");
+  const [selectedRejectReason, setSelectedRejectReason] = useState<
+    RejectionReasonOption | ""
+  >("");
+  const [customRejectReason, setCustomRejectReason] = useState("");
   const [isLoading, setIsLoading] = useState(Boolean(documentId));
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [isApproving, setIsApproving] = useState(false);
@@ -139,9 +148,12 @@ export function DocumentDetailScreen() {
   const handleReject = async () => {
     if (!documentId || isApproving || isRejecting) return;
 
-    const normalizedReason = rejectReason.trim();
+    const normalizedReason = resolveRejectionReason(
+      selectedRejectReason,
+      customRejectReason,
+    );
     if (!normalizedReason) {
-      Alert.alert("Thiếu lý do", "Vui lòng nhập lý do từ chối tài liệu.");
+      Alert.alert("Thiếu lý do", "Vui lòng chọn hoặc nhập lý do từ chối.");
       return;
     }
 
@@ -286,17 +298,68 @@ export function DocumentDetailScreen() {
 
                 <Card
                   title="Từ chối tài liệu"
-                  subtitle="Nhập lý do rõ ràng nếu cần từ chối."
+                  subtitle="Chọn một lý do có sẵn hoặc nhập lý do tự do nếu phù hợp hơn."
                 >
-                  <TextInput
-                    className="min-h-[96px] rounded-2xl border border-outline-variant bg-surface px-4 py-3 text-base text-on-surface"
-                    placeholder="Ví dụ: Nội dung không phù hợp hoặc thiếu thông tin học thuật."
-                    placeholderTextColor="#737686"
-                    value={rejectReason}
-                    multiline
-                    textAlignVertical="top"
-                    onChangeText={setRejectReason}
-                  />
+                  <View className="gap-3">
+                    <Text className="text-sm font-semibold text-on-surface">
+                      Lý do từ chối
+                    </Text>
+                    <View className="gap-2">
+                      {REJECTION_REASON_OPTIONS.map((reason) => {
+                        const isSelected = selectedRejectReason === reason;
+
+                        return (
+                          <Pressable
+                            key={reason}
+                            accessibilityRole="button"
+                            accessibilityState={{ selected: isSelected }}
+                            className={`rounded-2xl border px-4 py-3 ${
+                              isSelected
+                                ? "border-error bg-error/10"
+                                : "border-outline-variant bg-surface"
+                            }`}
+                            disabled={isRejecting}
+                            onPress={() => {
+                              setSelectedRejectReason(reason);
+                              if (reason !== OTHER_REJECTION_REASON) {
+                                setCustomRejectReason("");
+                              }
+                            }}
+                          >
+                            <View className="flex-row items-center gap-3">
+                              <View
+                                className={`h-4 w-4 rounded-full border ${
+                                  isSelected
+                                    ? "border-error bg-error"
+                                    : "border-outline"
+                                }`}
+                              />
+                              <Text
+                                className={`flex-1 text-sm font-semibold ${
+                                  isSelected ? "text-error" : "text-on-surface"
+                                }`}
+                              >
+                                {reason}
+                              </Text>
+                            </View>
+                          </Pressable>
+                        );
+                      })}
+                    </View>
+
+                    {selectedRejectReason === OTHER_REJECTION_REASON ? (
+                      <TextInput
+                        className="min-h-[96px] rounded-2xl border border-outline-variant bg-surface px-4 py-3 text-base text-on-surface"
+                        editable={!isRejecting}
+                        placeholder="Mô tả cụ thể lý do từ chối, gợi ý nội dung cần sửa hoặc bổ sung."
+                        placeholderTextColor="#737686"
+                        value={customRejectReason}
+                        multiline
+                        textAlignVertical="top"
+                        onChangeText={setCustomRejectReason}
+                      />
+                    ) : null}
+                  </View>
                 </Card>
               </View>
             </ScrollView>

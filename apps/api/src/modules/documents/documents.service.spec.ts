@@ -569,6 +569,35 @@ describe('DocumentsService', () => {
     expect(res.data).toEqual(doc);
   });
 
+  it('findOne includes extracted text preview for text-like documents', async () => {
+    const doc = {
+      id: '507f1f77bcf86cd799439011',
+      title: 'Lecture notes',
+      format: 'docx',
+    };
+    prismaMock.documents.findFirst.mockResolvedValue(doc);
+    prismaMock.document_chunks.findMany.mockResolvedValue([
+      { chunkIndex: 0, chunkText: 'First extracted chunk.' },
+      { chunkIndex: 1, chunkText: 'Second extracted chunk.' },
+    ]);
+
+    const res = await service.findOne(
+      '507f1f77bcf86cd799439011',
+      createTokenPayload(),
+    );
+
+    expect(prismaMock.document_chunks.findMany).toHaveBeenCalledWith({
+      where: { documentId: '507f1f77bcf86cd799439011' },
+      orderBy: { chunkIndex: 'asc' },
+      take: 60,
+      select: { chunkText: true },
+    });
+    expect(res.data).toEqual({
+      ...doc,
+      extractedText: 'First extracted chunk.\nSecond extracted chunk.',
+    });
+  });
+
   it('findOne hides active private document from unrelated logged-in user', async () => {
     prismaMock.documents.findFirst.mockResolvedValue(null);
 

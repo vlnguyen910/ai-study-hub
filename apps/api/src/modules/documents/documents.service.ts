@@ -26,6 +26,7 @@ import { DocumentGateway } from './document.gateway';
 @Injectable()
 export class DocumentsService {
   private readonly logger = new Logger(DocumentsService.name);
+  private readonly extractedTextPreviewLimit = 50_000;
 
   constructor(
     private readonly prismaService: PrismaService,
@@ -120,6 +121,33 @@ export class DocumentsService {
     }
 
     return existingDocument;
+  }
+
+  private isExtractedTextPreviewFormat(format?: string | null) {
+    const normalizedFormat = format?.trim().toLowerCase().replace(/^\.+/, '');
+    return (
+      normalizedFormat === 'txt' ||
+      normalizedFormat === 'doc' ||
+      normalizedFormat === 'docx'
+    );
+  }
+
+  private async getExtractedTextPreview(documentId: string) {
+    const chunks = await this.prismaService.document_chunks.findMany({
+      where: { documentId },
+      orderBy: { chunkIndex: 'asc' },
+      take: 60,
+      select: { chunkText: true },
+    });
+
+    const extractedText = chunks
+      .map((chunk) => chunk.chunkText)
+      .join('\n')
+      .trim();
+
+    return extractedText
+      ? extractedText.slice(0, this.extractedTextPreviewLimit)
+      : null;
   }
 
   private async destroyCloudinaryAsset(document: {
@@ -538,6 +566,16 @@ export class DocumentsService {
 
     if (!document) {
       throw new NotFoundException(`Document with ID ${id} not found`);
+    }
+
+    if (this.isExtractedTextPreviewFormat(document.format)) {
+      return {
+        message: 'Document fetched successfully',
+        data: {
+          ...document,
+          extractedText: await this.getExtractedTextPreview(document.id),
+        },
+      };
     }
 
     return {

@@ -8,12 +8,13 @@ import type { DocumentDetail } from "../types/document.types";
 import {
   buildEmbeddedPreviewUrl,
   getDocumentPreviewType,
+  shouldFetchRawTextPreview,
 } from "../utils/document-preview";
 
 interface DocumentPreviewProps {
   readonly document: Pick<
     DocumentDetail,
-    "fileUrl" | "pdfPreviewUrl" | "format" | "title"
+    "fileUrl" | "pdfPreviewUrl" | "format" | "title" | "extractedText"
   >;
 }
 
@@ -31,7 +32,12 @@ function PreviewMessage({ message }: { readonly message: string }) {
 export function DocumentPreview({ document }: DocumentPreviewProps) {
   const previewType = getDocumentPreviewType(document.format);
   const [webPreviewError, setWebPreviewError] = useState(false);
-  const textPreview = useDocumentText(document.fileUrl, previewType === "text");
+  const extractedText = document.extractedText?.trim() ?? "";
+  const shouldLoadRawText = shouldFetchRawTextPreview(
+    document.format,
+    extractedText,
+  );
+  const textPreview = useDocumentText(document.fileUrl, shouldLoadRawText);
 
   const renderPreview = () => {
     if (previewType === "image") {
@@ -46,6 +52,16 @@ export function DocumentPreview({ document }: DocumentPreviewProps) {
     }
 
     if (previewType === "text") {
+      if (extractedText) {
+        return (
+          <View className="max-h-[480px] bg-white p-4">
+            <Text selectable className="font-mono text-sm leading-6 text-black">
+              {extractedText}
+            </Text>
+          </View>
+        );
+      }
+
       if (textPreview.isLoading) {
         return (
           <View className="h-72 items-center justify-center gap-3">
@@ -64,7 +80,8 @@ export function DocumentPreview({ document }: DocumentPreviewProps) {
       return (
         <View className="max-h-[480px] bg-white p-4">
           <Text selectable className="font-mono text-sm leading-6 text-black">
-            {textPreview.text || "Tệp văn bản không có nội dung."}
+            {textPreview.text ||
+              "Chưa có nội dung văn bản đã trích xuất cho tài liệu này."}
           </Text>
         </View>
       );
@@ -82,10 +99,11 @@ export function DocumentPreview({ document }: DocumentPreviewProps) {
 
       return (
         <WebView
+          testID="document-preview-webview"
           source={{
             uri: buildEmbeddedPreviewUrl(urlToLoad, typeToLoad),
           }}
-          className="h-[500px] bg-white"
+          style={{ height: 500, backgroundColor: "#ffffff" }}
           nestedScrollEnabled
           originWhitelist={["https://*", "http://*"]}
           renderLoading={() => (
