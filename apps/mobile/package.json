@@ -11,7 +11,7 @@
     "web": "expo start --web",
     "lint": "expo lint",
     "check-types": "tsc --noEmit",
-    "test": "jest",
+    "test": "jest --runInBand",
     "test:watch": "jest --watch"
   },
   "dependencies": {
