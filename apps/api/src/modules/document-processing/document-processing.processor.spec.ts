@@ -23,6 +23,7 @@ describe('DocumentProcessingProcessor', () => {
       $transaction: jest.fn((promises) => Promise.all(promises)),
       documents: {
         findUnique: jest.fn(),
+        update: jest.fn(),
       },
       document_chunks: {
         deleteMany: jest.fn(),
@@ -117,6 +118,7 @@ describe('DocumentProcessingProcessor', () => {
         'https://cloudinary.com/doc.pdf',
         'pdf',
       );
+      expect(prismaMock.documents.update).not.toHaveBeenCalled();
       expect(prismaMock.document_chunks.deleteMany).toHaveBeenCalledWith({
         where: { documentId: 'doc-1' },
       });
