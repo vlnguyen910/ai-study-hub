@@ -3,7 +3,6 @@ import { Icon } from "@/components/nativewindui/Icon";
 import { router } from "expo-router";
 import {
   ActivityIndicator,
-  Image,
   Pressable,
   RefreshControl,
   ScrollView,
@@ -14,29 +13,16 @@ import {
 } from "react-native";
 import { Button, PageShell } from "@/components";
 import { ROUTES } from "@/constants/routes";
+import { AuthHeaderAction } from "@/features/auth/components/AuthHeaderAction";
 import { fetchDocuments } from "@/features/documents/services/documents.service";
 import type { LibraryDocument } from "@/features/documents/types/document.types";
-import { DocumentFilterChip } from "../components/DocumentFilterChip";
 import { ReviewDocumentCard } from "../components/ReviewDocumentCard";
-import type {
-  ReviewDocumentSummary,
-  ReviewQueueFilter,
-} from "../types/document-review.types";
-
-const baseFilters: ReviewQueueFilter[] = [
-  { label: "Pending Review", value: "pending" },
-  { label: "High AI Risk", value: "urgent" },
-];
+import type { ReviewDocumentSummary } from "../types/document-review.types";
 
 const scrollContentStyle: StyleProp<ViewStyle> = {
   paddingHorizontal: 16,
   paddingTop: 16,
   paddingBottom: 32,
-};
-
-const filterRowStyle: StyleProp<ViewStyle> = {
-  gap: 8,
-  paddingBottom: 16,
 };
 
 const formatBytes = (bytes?: number): string => {
@@ -79,7 +65,6 @@ const mapDocumentToReview = (
 
 export function DocumentReviewScreen() {
   const [documents, setDocuments] = useState<readonly LibraryDocument[]>([]);
-  const [selectedFilter, setSelectedFilter] = useState(baseFilters[0].value);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -107,42 +92,10 @@ export function DocumentReviewScreen() {
     void loadDocuments();
   }, [loadDocuments]);
 
-  const filters = useMemo<ReviewQueueFilter[]>(() => {
-    const subjectFilters = Array.from(
-      new Map(
-        documents
-          .filter((document) => document.subject)
-          .map((document) => [
-            document.subject?.id ?? "",
-            {
-              label: document.subject?.name ?? "Chưa phân loại",
-              value: document.subject?.id ?? "",
-            },
-          ]),
-      ).values(),
-    ).filter((filter) => filter.value);
-
-    return [...baseFilters, ...subjectFilters];
-  }, [documents]);
-
   const reviewDocuments = useMemo(
     () => documents.map(mapDocumentToReview),
     [documents],
   );
-
-  const filteredDocuments = useMemo(() => {
-    if (selectedFilter === "pending") {
-      return reviewDocuments;
-    }
-
-    if (selectedFilter === "urgent") {
-      return reviewDocuments.filter((document) => document.priority === "high");
-    }
-
-    return reviewDocuments.filter(
-      (document) => document.categoryKey === selectedFilter,
-    );
-  }, [reviewDocuments, selectedFilter]);
 
   return (
     <PageShell contentClassName="p-0">
@@ -151,7 +104,7 @@ export function DocumentReviewScreen() {
           <Text className="text-2xl font-bold tracking-tight text-primary">
             AcademiShare
           </Text>
-          <View className="flex-row items-center gap-4">
+          <View className="flex-row items-center gap-2">
             <Pressable
               accessibilityRole="button"
               className="rounded-full p-2"
@@ -164,13 +117,7 @@ export function DocumentReviewScreen() {
                 color="#434655"
               />
             </Pressable>
-            <Image
-              accessibilityLabel="Moderator avatar"
-              source={{
-                uri: "https://api.dicebear.com/7.x/initials/png?seed=MOD",
-              }}
-              className="h-8 w-8 rounded-full border border-outline-variant"
-            />
+            <AuthHeaderAction />
           </View>
         </View>
 
@@ -186,22 +133,6 @@ export function DocumentReviewScreen() {
           }
           showsVerticalScrollIndicator={false}
         >
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={filterRowStyle}
-          >
-            {filters.map((filter) => (
-              <View key={filter.value} className="mr-2">
-                <DocumentFilterChip
-                  label={filter.label}
-                  active={selectedFilter === filter.value}
-                  onPress={() => setSelectedFilter(filter.value)}
-                />
-              </View>
-            ))}
-          </ScrollView>
-
           {isLoading ? (
             <View className="items-center gap-3 rounded-2xl border border-outline-variant bg-surface-container-lowest py-10">
               <ActivityIndicator />
@@ -216,23 +147,18 @@ export function DocumentReviewScreen() {
                 Thử lại
               </Button>
             </View>
-          ) : filteredDocuments.length === 0 ? (
+          ) : reviewDocuments.length === 0 ? (
             <View className="rounded-2xl border border-outline-variant bg-surface-container-lowest p-4">
               <Text className="text-sm leading-6 text-on-surface-variant">
-                Không có tài liệu nào trong bộ lọc này.
+                Không có tài liệu nào đang chờ duyệt.
               </Text>
             </View>
           ) : (
             <View className="gap-4">
-              {filteredDocuments.map((document) => (
+              {reviewDocuments.map((document) => (
                 <ReviewDocumentCard
                   key={document.id}
                   document={document}
-                  onReject={() =>
-                    router.push(
-                      ROUTES.MODERATOR_DOCUMENT_DETAIL(document.id) as never,
-                    )
-                  }
                   onSeeDetail={() =>
                     router.push(
                       ROUTES.MODERATOR_DOCUMENT_DETAIL(document.id) as never,

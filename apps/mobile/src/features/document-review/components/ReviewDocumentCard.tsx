@@ -5,13 +5,11 @@ import type { ReviewDocumentSummary } from "../types/document-review.types";
 
 interface ReviewDocumentCardProps {
   readonly document: ReviewDocumentSummary;
-  readonly onReject: () => void;
   readonly onSeeDetail: () => void;
 }
 
 export function ReviewDocumentCard({
   document,
-  onReject,
   onSeeDetail,
 }: ReviewDocumentCardProps) {
   const hasPriority = document.priority === "high";
@@ -59,17 +57,10 @@ export function ReviewDocumentCard({
           </Text>
         </View>
 
-        <View className="mt-4 flex-row gap-2">
-          <View className="flex-1">
-            <Button variant="outline" fullWidth onPress={onReject}>
-              Reject
-            </Button>
-          </View>
-          <View className="flex-1">
-            <Button fullWidth onPress={onSeeDetail}>
-              See Detail
-            </Button>
-          </View>
+        <View className="mt-4">
+          <Button fullWidth onPress={onSeeDetail}>
+            See Detail
+          </Button>
         </View>
       </View>
     </View>

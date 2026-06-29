@@ -1,8 +1,3 @@
-export interface ReviewQueueFilter {
-  label: string;
-  value: string;
-}
-
 export interface ReviewDocumentSummary {
   id: string;
   title: string;
