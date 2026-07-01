@@ -49,7 +49,7 @@ export function BackButton({
   return (
     <button
       type="button"
-      className={`inline-flex items-center gap-2 rounded-full border border-outline-variant bg-surface-container-lowest px-4 py-2 text-sm font-semibold text-on-surface-variant transition-colors hover:bg-surface-container-low hover:text-on-surface ${className}`}
+      className={`inline-flex items-center gap-2 rounded-full border border-border bg-background px-4 py-2 text-sm font-semibold text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground ${className}`}
       onClick={handleClick}
       {...(props as any)}
     >

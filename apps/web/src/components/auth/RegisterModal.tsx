@@ -6,7 +6,6 @@ import { useRouter } from "next/navigation";
 import { apiClient } from "@/lib/axios";
 import { ROUTE_PATHS } from "@/routes/router.const";
 import { API_ENDPOINTS } from "@/shared/constants";
-import { getOrCreateDeviceId } from "@/utils";
 
 interface RegisterModalProps {
   isOpen: boolean;
@@ -81,8 +80,8 @@ export default function RegisterModal({
     if (!formData.password) {
       newErrors.password = "Password is required";
       isValid = false;
-    } else if (formData.password.length < 6) {
-      newErrors.password = "Password must be at least 6 characters";
+    } else if (formData.password.length < 8) {
+      newErrors.password = "Password must be at least 8 characters";
       isValid = false;
     }
     if (formData.password !== formData.confirmPassword) {
@@ -100,7 +99,6 @@ export default function RegisterModal({
 
     setIsLoading(true);
     try {
-      const deviceId = getOrCreateDeviceId();
       const name = formData.name.trim();
       const email = formData.email.trim();
 
@@ -108,7 +106,6 @@ export default function RegisterModal({
         name,
         email,
         password: formData.password,
-        deviceId,
       });
 
       resetForm();
