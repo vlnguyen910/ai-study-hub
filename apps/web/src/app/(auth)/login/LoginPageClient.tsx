@@ -7,14 +7,24 @@ import {
   useState,
   type ChangeEvent,
   type FormEvent,
-  type ReactNode,
   type ReactElement,
 } from "react";
+import { Eye, EyeOff, Lock, Mail } from "lucide-react";
 
 import AuthLayout from "@/components/layout/AuthLayout";
 import { GoogleAuthButton } from "@/components/auth/GoogleAuthButton";
 import { BackButton } from "@/components/ui/BackButton";
 import { Button } from "@/components/ui/Button";
+import { Checkbox } from "@/components/ui/Checkbox";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/Card";
+import { Input } from "@/components/ui/Input";
+import { Separator } from "@/components/ui/Separator";
 import { buildUserFromAccessToken, extractAccessToken } from "@/lib/auth";
 import { apiClient } from "@/lib/axios";
 import {
@@ -49,51 +59,55 @@ const getSafeRedirect = (value: string | null, role: UserRole): string => {
   return value;
 };
 
-interface FloatingInputProps extends React.InputHTMLAttributes<HTMLInputElement> {
-  readonly label: string;
-  readonly errorText?: string;
-  readonly rightIcon?: ReactNode;
-}
-
-function FloatingInput({
+function AuthField({
+  id,
   label,
   errorText,
-  rightIcon,
-  required,
-  className = "",
+  type,
+  leftElement,
+  rightElement,
   ...props
-}: FloatingInputProps): ReactElement {
+}: {
+  readonly id: string;
+  readonly label: string;
+  readonly errorText?: string;
+  readonly type?: React.InputHTMLAttributes<HTMLInputElement>["type"];
+  readonly leftElement?: ReactElement;
+  readonly rightElement?: ReactElement;
+} & React.InputHTMLAttributes<HTMLInputElement>) {
   return (
-    <label className="group block">
-      <div className="relative pt-4">
-        <input
-          className={`peer h-12 w-full border-0 border-b border-border/70 bg-transparent pb-2 pt-4 font-body-md text-body-md text-foreground outline-none transition-colors placeholder:text-muted-foreground/70 focus:border-primary ${rightIcon ? "pr-10" : "px-0"} ${className}`}
-          placeholder=" "
-          required={required}
+    <div className="space-y-2">
+      <label htmlFor={id} className="block text-sm font-medium text-foreground">
+        {label}
+        {props.required ? (
+          <span className="ml-0.5 text-destructive">*</span>
+        ) : null}
+      </label>
+      <div className="relative">
+        <Input
+          id={id}
+          type={type}
           aria-invalid={Boolean(errorText)}
+          className={[leftElement ? "pl-10" : "", rightElement ? "pr-12" : ""]
+            .filter(Boolean)
+            .join(" ")}
           {...props}
         />
-        <span className="pointer-events-none absolute left-0 top-7 font-label-md text-label-md text-on-surface-variant transition-all duration-200 peer-focus:top-0 peer-focus:text-label-sm peer-focus:text-primary peer-[:not(:placeholder-shown)]:top-0 peer-[:not(:placeholder-shown)]:text-label-sm">
-          {label}
-          {required ? (
-            <span aria-hidden="true" className="ml-0.5 text-error">
-              *
-            </span>
-          ) : null}
-        </span>
-        <span className="pointer-events-none absolute bottom-0 left-0 h-px w-0 bg-gradient-to-r from-[#003ea8] to-[#3b82f6] transition-all duration-300 peer-focus:w-full" />
-        {rightIcon ? (
-          <span className="absolute right-0 top-1/2 -translate-y-1/2">
-            {rightIcon}
-          </span>
+        {leftElement ? (
+          <div className="absolute inset-y-0 left-0 flex items-center pl-3">
+            {leftElement}
+          </div>
+        ) : null}
+        {rightElement ? (
+          <div className="absolute inset-y-0 right-0 flex items-center pr-1">
+            {rightElement}
+          </div>
         ) : null}
       </div>
       {errorText ? (
-        <span className="mt-2 block font-label-sm text-label-sm leading-5 text-error">
-          {errorText}
-        </span>
+        <p className="text-sm text-destructive">{errorText}</p>
       ) : null}
-    </label>
+    </div>
   );
 }
 
@@ -136,8 +150,8 @@ export default function LoginPageClient(): ReactElement {
     }
   };
 
-  const handleRememberChange = (event: ChangeEvent<HTMLInputElement>) => {
-    setFormData((prev) => ({ ...prev, rememberMe: event.target.checked }));
+  const handleRememberChange = (checked: boolean) => {
+    setFormData((prev) => ({ ...prev, rememberMe: checked }));
   };
 
   const validate = () => {
@@ -258,119 +272,121 @@ export default function LoginPageClient(): ReactElement {
         </Link>
       </div>
 
-      <section className="rounded-3xl border border-border/70 bg-card/90 p-6 shadow-xl shadow-black/5 backdrop-blur sm:p-7">
-        <div className="mb-7">
-          <p className="font-label-sm text-label-sm uppercase tracking-[0.18em] text-on-surface-variant">
+      <Card className="border-border/70 bg-card/95 shadow-2xl shadow-black/5 backdrop-blur">
+        <CardHeader className="space-y-3 p-6 pb-0">
+          <p className="text-sm font-medium uppercase tracking-[0.18em] text-muted-foreground">
             Đăng nhập
           </p>
-          <h1 className="mt-2 font-headline-lg text-headline-lg font-bold tracking-wide text-primary">
-            Chào mừng trở lại
-          </h1>
-          <p className="mt-2 font-body-md text-body-md leading-6 text-on-surface-variant">
+          <CardTitle>Chào mừng trở lại</CardTitle>
+          <CardDescription>
             Đăng nhập để tiếp tục sử dụng không gian học tập của bạn.
-          </p>
-        </div>
+          </CardDescription>
+        </CardHeader>
 
-        <form className="space-y-6" onSubmit={handleSubmit} noValidate>
+        <CardContent className="space-y-6 p-6">
           {errors.general ? (
-            <p className="rounded-2xl border border-error/30 bg-error-container px-4 py-3 font-label-sm text-label-sm leading-5 text-error">
+            <div className="rounded-2xl border border-destructive/20 bg-destructive/10 px-4 py-3 text-sm text-destructive">
               {errors.general}
-            </p>
+            </div>
           ) : null}
 
-          <FloatingInput
-            aria-label="Email"
-            id="email"
-            label="Email"
-            value={formData.email}
-            onChange={handleChange}
-            type="email"
-            required
-            errorText={errors.email}
-            autoComplete="email"
-          />
+          <form className="space-y-5" onSubmit={handleSubmit} noValidate>
+            <AuthField
+              aria-label="Email"
+              id="email"
+              label="Email"
+              value={formData.email}
+              onChange={handleChange}
+              type="email"
+              required
+              errorText={errors.email}
+              autoComplete="email"
+              leftElement={<Mail className="size-4 text-muted-foreground" />}
+            />
 
-          <FloatingInput
-            aria-label="Mật khẩu"
-            id="password"
-            label="Password"
-            value={formData.password}
-            onChange={handleChange}
-            type={showPassword ? "text" : "password"}
-            required
-            errorText={errors.password}
-            autoComplete="current-password"
-            rightIcon={
-              <button
-                type="button"
-                onClick={() => setShowPassword((value) => !value)}
-                className="p-2 text-on-surface-variant transition-colors hover:text-foreground"
-                aria-label={showPassword ? "Ẩn mật khẩu" : "Hiện mật khẩu"}
+            <AuthField
+              aria-label="Mật khẩu"
+              id="password"
+              label="Password"
+              value={formData.password}
+              onChange={handleChange}
+              type={showPassword ? "text" : "password"}
+              required
+              errorText={errors.password}
+              autoComplete="current-password"
+              leftElement={<Lock className="size-4 text-muted-foreground" />}
+              rightElement={
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon-sm"
+                  className="h-9 w-9 rounded-full"
+                  onClick={() => setShowPassword((value) => !value)}
+                  aria-label={showPassword ? "Ẩn mật khẩu" : "Hiện mật khẩu"}
+                >
+                  {showPassword ? (
+                    <EyeOff className="size-4" />
+                  ) : (
+                    <Eye className="size-4" />
+                  )}
+                </Button>
+              }
+            />
+
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <label className="flex items-center gap-3 text-sm text-foreground">
+                <Checkbox
+                  checked={formData.rememberMe}
+                  onCheckedChange={handleRememberChange}
+                  id="rememberMe"
+                />
+                <span>Ghi nhớ đăng nhập</span>
+              </label>
+              <Link
+                href={ROUTE_PATHS.AUTH_ROUTES.FORGOT_PASSWORD}
+                className="text-sm font-medium text-primary hover:underline"
               >
-                <span className="material-symbols-outlined text-[18px]">
-                  {showPassword ? "visibility_off" : "visibility"}
-                </span>
-              </button>
-            }
-          />
+                Quên mật khẩu?
+              </Link>
+            </div>
 
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <label className="flex items-center gap-3 font-body-md text-body-md text-foreground">
-              <input
-                id="rememberMe"
-                type="checkbox"
-                checked={formData.rememberMe}
-                onChange={handleRememberChange}
-                className="h-4 w-4 rounded border-border bg-background text-primary accent-primary focus:ring-primary"
-              />
-              <span>Ghi nhớ đăng nhập</span>
-            </label>
-            <Link
-              href={ROUTE_PATHS.AUTH_ROUTES.FORGOT_PASSWORD}
-              className="font-label-md text-label-md font-medium text-primary hover:underline"
+            <Button
+              type="submit"
+              variant="default"
+              className="h-12 w-full rounded-2xl"
+              disabled={isSubmitting}
             >
-              Quên mật khẩu?
-            </Link>
+              {isSubmitting ? "Đang đăng nhập..." : "Đăng nhập"}
+            </Button>
+          </form>
+
+          <div className="flex items-center gap-3">
+            <Separator className="flex-1" />
+            <span className="text-sm text-muted-foreground">hoặc</span>
+            <Separator className="flex-1" />
           </div>
 
-          <Button
-            type="submit"
-            variant="primary"
-            className="h-12 w-full rounded-2xl bg-gradient-to-r from-primary via-primary to-primary/80 font-label-lg text-primary-foreground shadow-xl shadow-primary/20 transition-all hover:-translate-y-0.5 hover:shadow-2xl hover:shadow-primary/25 disabled:translate-y-0"
-            disabled={isSubmitting}
-          >
-            {isSubmitting ? "Đang đăng nhập..." : "Đăng nhập"}
-          </Button>
-        </form>
+          <GoogleAuthButton
+            label={
+              isGoogleSubmitting
+                ? "Đang chuyển tới Google..."
+                : "Đăng nhập với Google"
+            }
+            onClick={handleGoogleSignin}
+            disabled={isSubmitting || isGoogleSubmitting}
+          />
 
-        <div className="my-5 flex items-center gap-3">
-          <div className="h-px flex-1 bg-outline-variant" />
-          <span className="font-label-sm text-label-sm text-on-surface-variant">
-            hoặc
-          </span>
-          <div className="h-px flex-1 bg-outline-variant" />
-        </div>
-
-        <GoogleAuthButton
-          label={
-            isGoogleSubmitting
-              ? "Đang chuyển tới Google..."
-              : "Đăng nhập với Google"
-          }
-          onClick={handleGoogleSignin}
-          disabled={isSubmitting || isGoogleSubmitting}
-        />
-
-        <p className="mt-5 font-label-sm text-label-sm text-on-surface-variant md:hidden">
-          Chưa có tài khoản?{" "}
-          <Link
-            href={ROUTE_PATHS.AUTH_ROUTES.REGISTER}
-            className="font-medium text-primary hover:underline"
-          >
-            Đăng ký
-          </Link>
-        </p>
-      </section>
+          <p className="text-sm text-muted-foreground md:hidden">
+            Chưa có tài khoản?{" "}
+            <Link
+              href={ROUTE_PATHS.AUTH_ROUTES.REGISTER}
+              className="font-medium text-primary hover:underline"
+            >
+              Đăng ký
+            </Link>
+          </p>
+        </CardContent>
+      </Card>
     </AuthLayout>
   );
 }
