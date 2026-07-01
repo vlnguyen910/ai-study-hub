@@ -1,18 +1,19 @@
 "use client";
 
 import type { FC } from "react";
+import { RotateCcw } from "lucide-react";
+
 import { Button } from "@/components/ui/Button";
-import { InputField } from "@/components/ui/InputField";
 import { useLibraryStore } from "../store/useLibraryStore";
 
 /**
- * FilterBar — sticky left sidebar.
+ * FilterBar — horizontal subject filter row beneath the search bar.
  * Provides:
- *  - Free-text search  (client-side, no re-fetch)
- *  - Subject filter    (server-side, triggers re-fetch via store)
+ *  - Subject chips
+ *  - One-tap reset chip at the end
  */
 export const FilterBar: FC = () => {
-  const { filters, subjects, isLoadingSubjects, setSearch, setSubjectId } =
+  const { filters, subjects, isLoadingSubjects, setSubjectId, setSearch } =
     useLibraryStore();
 
   const handleReset = () => {
@@ -21,86 +22,63 @@ export const FilterBar: FC = () => {
   };
 
   return (
-    <aside
-      className="
-        w-64 xl:w-72 shrink-0 h-full overflow-y-auto
-        rounded-2xl
-        border border-outline-variant/60
-        bg-surface/80 backdrop-blur-md
-        p-5 shadow-sm shadow-black/5
-      "
-    >
-      <h2 className="mb-4 text-sm font-semibold uppercase tracking-widest text-on-surface-variant">
-        Bộ lọc
-      </h2>
+    <section className="space-y-3">
+      <p className="text-sm font-semibold uppercase tracking-widest text-muted-foreground">
+        Môn học
+      </p>
 
-      {/* ── Subject filter ── */}
-      <div className="mb-5">
-        <p className="mb-2 text-xs font-semibold uppercase tracking-widest text-on-surface-variant">
-          Môn học
-        </p>
+      <div className="flex w-full items-center gap-2 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        <Button
+          type="button"
+          variant={filters.subjectId === "" ? "default" : "outline"}
+          size="sm"
+          onClick={() => setSubjectId("")}
+          className="h-9 shrink-0 rounded-full px-4"
+          aria-pressed={filters.subjectId === ""}
+        >
+          Tất cả
+        </Button>
 
-        {isLoadingSubjects ? (
-          <div className="space-y-2">
-            {Array.from({ length: 4 }).map((_, i) => (
+        {isLoadingSubjects
+          ? Array.from({ length: 5 }).map((_, index) => (
               <div
-                key={i}
-                className="h-4 w-full animate-pulse rounded bg-surface-variant"
+                key={index}
+                className="h-9 w-28 shrink-0 animate-pulse rounded-full border border-border bg-muted"
               />
-            ))}
-          </div>
-        ) : (
-          <div className="space-y-1">
-            {/* "All" option */}
-            <label className="flex cursor-pointer items-center gap-2 rounded-xl px-2 py-1.5 transition-colors hover:bg-surface-container-low">
-              <input
-                type="radio"
-                name="subject"
-                value=""
-                checked={filters.subjectId === ""}
-                onChange={() => setSubjectId("")}
-                className="accent-primary"
-              />
-              <span className="text-sm text-on-surface">Tất cả</span>
-            </label>
-
-            {subjects.map((subject) => (
-              <label
+            ))
+          : subjects.map((subject) => (
+              <Button
                 key={subject.id}
-                className="flex cursor-pointer items-center gap-2 rounded-xl px-2 py-1.5 transition-colors hover:bg-surface-container-low"
+                type="button"
+                variant={
+                  filters.subjectId === subject.id ? "default" : "outline"
+                }
+                size="sm"
+                onClick={() => setSubjectId(subject.id)}
+                className="h-9 shrink-0 rounded-full px-4"
+                aria-pressed={filters.subjectId === subject.id}
               >
-                <input
-                  type="radio"
-                  name="subject"
-                  value={subject.id}
-                  checked={filters.subjectId === subject.id}
-                  onChange={() => setSubjectId(subject.id)}
-                  className="accent-primary"
-                />
-                <span className="line-clamp-1 text-sm text-on-surface">
-                  {subject.name}
-                </span>
-              </label>
+                <span className="max-w-[12rem] truncate">{subject.name}</span>
+              </Button>
             ))}
 
-            {subjects.length === 0 && !isLoadingSubjects ? (
-              <p className="text-xs text-on-surface-variant">
-                Chưa có môn học nào.
-              </p>
-            ) : null}
-          </div>
-        )}
-      </div>
+        {!isLoadingSubjects && subjects.length === 0 ? (
+          <p className="shrink-0 text-sm text-muted-foreground">
+            Chưa có môn học nào.
+          </p>
+        ) : null}
 
-      {/* ── Reset ── */}
-      <Button
-        variant="outline"
-        className="w-full"
-        type="button"
-        onClick={handleReset}
-      >
-        Làm mới bộ lọc
-      </Button>
-    </aside>
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          onClick={handleReset}
+          className="h-9 shrink-0 rounded-full px-3 text-xs"
+        >
+          <RotateCcw className="mr-2 size-3.5" />
+          Làm mới bộ lọc
+        </Button>
+      </div>
+    </section>
   );
 };

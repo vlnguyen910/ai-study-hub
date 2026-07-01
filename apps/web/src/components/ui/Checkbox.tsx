@@ -1,23 +1,33 @@
 "use client";
 
-import type { FC } from "react";
+import type { InputHTMLAttributes } from "react";
 
-export interface CheckboxProps {
-  readonly label: string;
+import { cn } from "@/lib/utils";
+
+export interface CheckboxProps extends Omit<
+  InputHTMLAttributes<HTMLInputElement>,
+  "type" | "checked" | "onChange"
+> {
   readonly checked: boolean;
-  readonly onChange: (checked: boolean) => void;
+  readonly onCheckedChange: (checked: boolean) => void;
 }
 
-export const Checkbox: FC<CheckboxProps> = ({ label, checked, onChange }) => {
+export function Checkbox({
+  checked,
+  onCheckedChange,
+  className = "",
+  ...props
+}: CheckboxProps) {
   return (
-    <label className="flex items-center gap-2 cursor-pointer">
-      <input
-        type="checkbox"
-        className="w-4 h-4 text-primary border-outline rounded-md focus:ring-primary"
-        checked={checked}
-        onChange={(event) => onChange(event.target.checked)}
-      />
-      <span className="font-body-md text-body-md text-on-surface">{label}</span>
-    </label>
+    <input
+      type="checkbox"
+      checked={checked}
+      onChange={(event) => onCheckedChange(event.target.checked)}
+      className={cn(
+        "h-4 w-4 shrink-0 rounded border border-input bg-background text-primary shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/25 disabled:cursor-not-allowed disabled:opacity-50",
+        className,
+      )}
+      {...props}
+    />
   );
-};
+}

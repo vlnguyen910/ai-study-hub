@@ -81,7 +81,7 @@ export default function AuthLayout({
       `}</style>
 
       <div className="relative min-h-screen overflow-hidden">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_15%,color-mix(in_oklch,var(--primary)_22%,transparent),transparent_28%),radial-gradient(circle_at_76%_72%,color-mix(in_oklch,var(--secondary)_20%,transparent),transparent_32%),linear-gradient(135deg,var(--background)_0%,color-mix(in_oklch,var(--background)_92%,var(--primary)_8%)_52%,color-mix(in_oklch,var(--background)_86%,var(--primary)_14%)_100%)]" />
+        <div className="absolute inset-0 bg-gradient-to-br from-[var(--auth-panel-from)] to-[var(--auth-panel-to)]" />
         <div className="absolute inset-0 opacity-[0.16] [background-image:linear-gradient(color-mix(in_oklch,var(--foreground)_10%,transparent)_1px,transparent_1px),linear-gradient(90deg,color-mix(in_oklch,var(--foreground)_10%,transparent)_1px,transparent_1px)] [background-size:44px_44px]" />
         <div className="absolute bottom-[-18%] left-[4%] h-[58%] w-[92%] origin-bottom rounded-[50%] border border-border/20 bg-[linear-gradient(color-mix(in_oklch,var(--foreground)_10%,transparent)_1px,transparent_1px),linear-gradient(90deg,color-mix(in_oklch,var(--foreground)_10%,transparent)_1px,transparent_1px)] bg-[length:48px_48px] blur-[0.2px] [animation:auth-grid-breathe_12s_ease-in-out_infinite]" />
         <div className="absolute left-[18%] top-[18%] h-1 w-1 rounded-full bg-primary/70 shadow-[72px_28px_0_color-mix(in_oklch,var(--primary)_38%,transparent),164px_92px_0_color-mix(in_oklch,var(--secondary)_30%,transparent),238px_20px_0_color-mix(in_oklch,var(--foreground)_26%,transparent),320px_160px_0_color-mix(in_oklch,var(--primary)_30%,transparent),420px_64px_0_color-mix(in_oklch,var(--foreground)_20%,transparent)] [animation:auth-data-drift_18s_linear_infinite]" />
@@ -98,7 +98,7 @@ export default function AuthLayout({
 
         <section
           aria-hidden={panelOnRight}
-          className={`absolute inset-y-0 right-0 hidden w-1/2 items-center justify-center px-10 py-12 text-white transition-all duration-[600ms] md:flex ${
+          className={`absolute inset-y-0 right-0 hidden w-1/2 items-center justify-center px-10 py-12 text-foreground transition-all duration-[600ms] md:flex ${
             panelOnRight
               ? "pointer-events-none -translate-x-8 opacity-0"
               : "translate-x-0 opacity-100"
@@ -117,7 +117,7 @@ export default function AuthLayout({
 
         <section
           aria-hidden={!panelOnRight}
-          className={`absolute inset-y-0 left-0 hidden w-1/2 items-center justify-center px-10 py-12 text-white transition-all duration-[600ms] md:flex ${
+          className={`absolute inset-y-0 left-0 hidden w-1/2 items-center justify-center px-10 py-12 text-foreground transition-all duration-[600ms] md:flex ${
             panelOnRight
               ? "translate-x-0 opacity-100"
               : "pointer-events-none translate-x-8 opacity-0"
@@ -178,18 +178,18 @@ function GlassPanel({
   return (
     <div className="w-full max-w-xl">
       <div className="mb-16 inline-flex items-center gap-3">
-        <div className="grid h-11 w-11 place-items-center rounded-2xl bg-white/15 text-white shadow-lg shadow-black/20 ring-1 ring-white/20 backdrop-blur-xl">
+        <div className="grid h-11 w-11 place-items-center rounded-2xl bg-background/70 text-foreground shadow-lg shadow-black/10 ring-1 ring-border/70 backdrop-blur-xl">
           <span className="text-lg font-black leading-none">A</span>
         </div>
         <div className="min-w-0">
-          <p className="truncate text-sm font-semibold tracking-wide">
+          <p className="truncate text-sm font-semibold tracking-wide text-foreground">
             AcademiShare
           </p>
-          <p className="truncate text-xs text-white/75">AI Study Hub</p>
+          <p className="truncate text-xs text-muted-foreground">AI Study Hub</p>
         </div>
       </div>
 
-      <div className="rounded-3xl border border-border/40 bg-card/80 p-8 shadow-2xl shadow-black/10 backdrop-blur-xl ring-1 ring-border/40">
+      <div className="rounded-3xl border border-border bg-background/80 p-8 shadow-2xl shadow-black/10 backdrop-blur-xl ring-1 ring-border/70">
         <h1 className="font-display text-display font-bold leading-tight tracking-wide text-card-foreground">
           {title}
         </h1>
@@ -206,7 +206,7 @@ function GlassPanel({
           <Link
             href={switchHref}
             onClick={onSwitch}
-            className="inline-flex h-12 items-center justify-center rounded-xl border border-border bg-background px-5 font-label-md text-label-md font-semibold text-primary shadow-lg shadow-black/10 transition-colors hover:bg-muted"
+            className="inline-flex h-12 items-center justify-center rounded-xl border border-input bg-background px-5 font-label-md text-label-md font-semibold text-primary shadow-lg shadow-black/10 transition-colors hover:bg-accent hover:text-accent-foreground"
           >
             {switchCta}
           </Link>
