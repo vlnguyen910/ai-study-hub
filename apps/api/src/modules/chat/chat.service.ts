@@ -14,6 +14,7 @@ import { CHAT_MESSAGE_ROLE, ChatRepository } from './chat.repository';
 const CHAT_MODEL = 'gemini-2.5-flash-lite';
 const TOP_K_CHUNKS = 6;
 const MAX_CONTEXT_CHARS = 12_000;
+const MAX_RETRIEVAL_CHUNKS = 200;
 
 type RetrievedChunk = Awaited<
   ReturnType<ChatRepository['findEmbeddedChunks']>
@@ -106,13 +107,16 @@ export class ChatService {
     ]);
 
     this.ensureAiChatEnabled(settings);
-    await this.ensureDailyQuota(user.sub, settings.maxAiRequestsPerUserPerDay);
     await this.findReadableDocumentOrThrow(session.documentId, user);
 
     const [recentMessages, chunks] = await Promise.all([
       this.chatRepository.findRecentMessages(sessionId),
-      this.chatRepository.findEmbeddedChunks(session.documentId),
+      this.chatRepository.findEmbeddedChunks(
+        session.documentId,
+        MAX_RETRIEVAL_CHUNKS,
+      ),
     ]);
+    const isFirstExchange = recentMessages.length === 0;
 
     if (chunks.length === 0) {
       const totalChunks = await this.chatRepository.countDocumentChunks(
@@ -127,6 +131,8 @@ export class ChatService {
         'Document text chunks have not been processed yet. Please wait for upload processing to complete.',
       );
     }
+
+    await this.ensureDailyQuota(user.sub, settings.maxAiRequestsPerUserPerDay);
 
     const queryEmbedding = await this.aiService.getEmbedding(content);
     const selectedChunks = this.retrieveTopChunks(queryEmbedding, chunks);
@@ -146,14 +152,12 @@ export class ChatService {
     const answer = await this.aiService.generateText(prompt, CHAT_MODEL);
     const citations = this.toCitations(selectedChunks);
 
-    const shouldUseQuestionAsTitle =
-      session.title === this.createDefaultSessionTitle(session.document.title);
     const exchange = await this.chatRepository.createExchangeAndTouchSession({
       sessionId,
       userContent: content,
       assistantContent: answer.trim(),
       citations: citations as Prisma.InputJsonValue,
-      title: shouldUseQuestionAsTitle
+      title: isFirstExchange
         ? this.createTitleFromQuestion(content)
         : undefined,
     });
@@ -222,19 +226,21 @@ export class ChatService {
       return;
     }
 
-    const startOfToday = new Date();
-    startOfToday.setHours(0, 0, 0, 0);
-
-    const usedToday = await this.chatRepository.countUserMessagesSince(
+    const quotaGranted = await this.chatRepository.incrementDailyAiRequest(
       userId,
-      startOfToday,
+      this.getDailyQuotaDate(),
+      maxRequests,
     );
 
-    if (usedToday >= maxRequests) {
+    if (!quotaGranted) {
       throw new ForbiddenException(
         'Daily AI request quota exceeded. Please try again tomorrow.',
       );
     }
+  }
+
+  private getDailyQuotaDate(date = new Date()) {
+    return date.toISOString().slice(0, 10);
   }
 
   private retrieveTopChunks(
