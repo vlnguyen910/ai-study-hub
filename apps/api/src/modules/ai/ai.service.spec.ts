@@ -122,6 +122,18 @@ describe('AIService', () => {
   });
 
   describe('getEmbedding', () => {
+    it('throws ServiceUnavailableException before provider call when API key is missing', async () => {
+      const serviceWithoutKey = new AIService({ apiKey: '' } as any);
+      (serviceWithoutKey as any).genAI = {
+        getGenerativeModel: mockGetGenerativeModel,
+      };
+
+      await expect(serviceWithoutKey.getEmbedding('hello')).rejects.toThrow(
+        ServiceUnavailableException,
+      );
+      expect(mockEmbedContent).not.toHaveBeenCalled();
+    });
+
     it('returns embedding values on success', async () => {
       mockEmbedContent.mockResolvedValue({
         embedding: {
