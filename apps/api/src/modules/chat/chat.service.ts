@@ -146,7 +146,6 @@ export class ChatService {
         MAX_RETRIEVAL_CHUNKS,
       );
     }
-
     if (chunks.length === 0) {
       const totalChunks = await this.chatRepository.countDocumentChunks(
         session.documentId,
