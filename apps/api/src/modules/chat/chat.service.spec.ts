@@ -46,7 +46,7 @@ describe('ChatService', () => {
           authorId: 'author-1',
         },
       }),
-      countUserMessagesSince: jest.fn().mockResolvedValue(0),
+      incrementDailyAiRequest: jest.fn().mockResolvedValue(true),
       findRecentMessages: jest.fn().mockResolvedValue([]),
       findEmbeddedChunks: jest.fn().mockResolvedValue([
         {
@@ -97,6 +97,7 @@ describe('ChatService', () => {
     );
 
     expect(aiService.getEmbedding).toHaveBeenCalledWith('What is ML?');
+    expect(repository.findEmbeddedChunks).toHaveBeenCalledWith('doc-1', 200);
     expect(aiService.generateText).toHaveBeenCalledWith(
       expect.stringContaining('Machine learning is a subfield of AI.'),
       'gemini-2.5-flash-lite',
@@ -106,6 +107,7 @@ describe('ChatService', () => {
         sessionId: 'session-1',
         userContent: 'What is ML?',
         assistantContent: 'Machine learning is a subfield of AI.',
+        title: 'What is ML?',
       }),
     );
     expect(result.message).toBe('AI Coach answered successfully');
@@ -133,5 +135,43 @@ describe('ChatService', () => {
     await expect(
       service.sendMessage('session-1', { content: 'Hello' }, user),
     ).rejects.toBeInstanceOf(BadRequestException);
+    expect(aiService.getEmbedding).not.toHaveBeenCalled();
+  });
+
+  it('blocks chat when the daily AI quota is exceeded atomically', async () => {
+    (repository.incrementDailyAiRequest as jest.Mock).mockResolvedValue(false);
+
+    await expect(
+      service.sendMessage('session-1', { content: 'Hello' }, user),
+    ).rejects.toBeInstanceOf(ForbiddenException);
+    expect(repository.incrementDailyAiRequest).toHaveBeenCalledWith(
+      user.sub,
+      expect.stringMatching(/^\d{4}-\d{2}-\d{2}$/),
+      20,
+    );
+    expect(aiService.getEmbedding).not.toHaveBeenCalled();
+  });
+
+  it('rejects when retrieved chunk embeddings are incompatible with the query embedding', async () => {
+    (aiService.getEmbedding as jest.Mock).mockResolvedValue([1, 0, 0]);
+
+    await expect(
+      service.sendMessage('session-1', { content: 'Hello' }, user),
+    ).rejects.toBeInstanceOf(BadRequestException);
+    expect(aiService.generateText).not.toHaveBeenCalled();
+  });
+
+  it('does not retitle an existing session after the first exchange', async () => {
+    (repository.findRecentMessages as jest.Mock).mockResolvedValue([
+      { role: 'user', content: 'Earlier question' },
+    ]);
+
+    await service.sendMessage('session-1', { content: 'Follow up' }, user);
+
+    expect(repository.createExchangeAndTouchSession).toHaveBeenCalledWith(
+      expect.objectContaining({
+        title: undefined,
+      }),
+    );
   });
 });

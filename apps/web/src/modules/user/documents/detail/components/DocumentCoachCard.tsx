@@ -125,8 +125,13 @@ export function DocumentCoachCard({
     const normalizedContent = content.trim();
     if (!normalizedContent || isSending || !isAuthenticated) return;
 
-    setContent("");
-    await sendMessage(normalizedContent);
+    try {
+      await sendMessage(normalizedContent);
+      setContent("");
+    } catch {
+      // Keep the draft in the textarea; useDocumentCoach already exposes the
+      // user-facing error state.
+    }
   };
 
   return (

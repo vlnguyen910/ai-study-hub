@@ -159,6 +159,7 @@ export function useDocumentCoach(
           );
         }
         setError(getErrorMessage(err, sendErrorMessages));
+        throw err;
       } finally {
         setIsSending(false);
       }

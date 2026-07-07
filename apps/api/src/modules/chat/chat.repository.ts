@@ -12,6 +12,8 @@ export const CHAT_MESSAGE_ROLE = {
   assistant: 'assistant',
 } as const;
 
+const DAILY_AI_USAGE_COLLECTION = 'ai_usage_counters';
+
 @Injectable()
 export class ChatRepository {
   constructor(private readonly prismaService: PrismaService) {}
@@ -219,7 +221,7 @@ export class ChatRepository {
     });
   }
 
-  findEmbeddedChunks(documentId: string) {
+  findEmbeddedChunks(documentId: string, take = 200) {
     return this.prismaService.document_chunks.findMany({
       where: {
         documentId,
@@ -230,6 +232,7 @@ export class ChatRepository {
       orderBy: {
         chunkIndex: 'asc',
       },
+      take,
       select: {
         id: true,
         chunkIndex: true,
@@ -242,17 +245,67 @@ export class ChatRepository {
     });
   }
 
-  countUserMessagesSince(userId: string, since: Date) {
-    return this.prismaService.chat_messages.count({
-      where: {
-        role: CHAT_MESSAGE_ROLE.user,
-        createdAt: {
-          gte: since,
+  async incrementDailyAiRequest(
+    userId: string,
+    requestDate: string,
+    maxRequests: number,
+  ): Promise<boolean> {
+    if (maxRequests <= 0) {
+      return true;
+    }
+
+    const counterId = `${userId}:${requestDate}`;
+    const now = new Date().toISOString();
+
+    try {
+      await this.prismaService.$runCommandRaw({
+        findAndModify: DAILY_AI_USAGE_COLLECTION,
+        query: {
+          _id: counterId,
+          requestCount: {
+            $lt: maxRequests,
+          },
         },
-        session: {
-          userId,
+        update: {
+          $setOnInsert: {
+            _id: counterId,
+            userId,
+            requestDate,
+            createdAt: now,
+          },
+          $set: {
+            updatedAt: now,
+          },
+          $inc: {
+            requestCount: 1,
+          },
         },
-      },
-    });
+        upsert: true,
+        new: true,
+      });
+
+      return true;
+    } catch (error) {
+      if (this.isDuplicateKeyError(error)) {
+        return false;
+      }
+      throw error;
+    }
+  }
+
+  private isDuplicateKeyError(error: unknown) {
+    const candidate = error as {
+      code?: number | string;
+      message?: string;
+      meta?: { code?: number | string; message?: string };
+    };
+    return (
+      candidate.code === 11000 ||
+      candidate.code === '11000' ||
+      candidate.meta?.code === 11000 ||
+      candidate.meta?.code === '11000' ||
+      candidate.message?.includes('11000') ||
+      candidate.meta?.message?.includes('11000')
+    );
   }
 }
