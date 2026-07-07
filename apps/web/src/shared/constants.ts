@@ -48,6 +48,13 @@ export const API_ENDPOINTS = {
     DOCUMENT: (id: string, documentId: string) =>
       `/api/v1/collections/${id}/documents/${documentId}`,
   },
+  CHAT: {
+    DOCUMENT_SESSIONS: (documentId: string) =>
+      `/api/v1/documents/${documentId}/chat/sessions`,
+    SESSION_MESSAGES: (sessionId: string) =>
+      `/api/v1/chat/sessions/${sessionId}/messages`,
+    SESSION: (sessionId: string) => `/api/v1/chat/sessions/${sessionId}`,
+  },
   SUBJECTS: {
     BASE: "/api/v1/subjects",
     DETAIL: (id: string) => `/api/v1/subjects/${id}`,

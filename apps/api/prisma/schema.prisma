@@ -244,6 +244,9 @@ model chat_sessions {
   createdAt     DateTime        @default(now())
   updatedAt     DateTime        @updatedAt
   messages      chat_messages[]
+
+  @@index([userId, documentId])
+  @@index([lastMessageAt])
 }
 
 model chat_messages {
@@ -256,6 +259,8 @@ model chat_messages {
   tokensUsed Int?
   status     String?
   createdAt  DateTime      @default(now())
+
+  @@index([sessionId, createdAt])
 }
 
 /// Singleton collection containing the runtime configuration for AI Study Hub.

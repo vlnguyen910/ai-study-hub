@@ -1,7 +1,8 @@
 import Link from "next/link";
 
-import { Button } from "@/components/ui/Button";
+import { buttonVariants } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
+import { cn } from "@/lib/utils";
 import type { DocumentSubject, LibraryDocument } from "@/types/document.type";
 
 import { RelatedDocumentCard } from "./RelatedDocumentCard";
@@ -37,14 +38,12 @@ export function RelatedDocumentsSection({
         </p>
       )}
 
-      <Button
-        variant="ghost"
-        className="w-full"
-        type="button"
-        render={<Link href={viewMoreHref} />}
+      <Link
+        href={viewMoreHref}
+        className={cn(buttonVariants({ variant: "ghost" }), "w-full")}
       >
         Xem thêm tài liệu tương tự
-      </Button>
+      </Link>
     </Card>
   );
 }

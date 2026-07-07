@@ -7,11 +7,14 @@ describe('AIService', () => {
   let service: AIService;
   let mockGetGenerativeModel: jest.Mock;
   let mockGenerateContent: jest.Mock;
+  let mockEmbedContent: jest.Mock;
 
   beforeEach(async () => {
     mockGenerateContent = jest.fn();
+    mockEmbedContent = jest.fn();
     mockGetGenerativeModel = jest.fn().mockReturnValue({
       generateContent: mockGenerateContent,
+      embedContent: mockEmbedContent,
     });
 
     const module: TestingModule = await Test.createTestingModule({
@@ -38,6 +41,14 @@ describe('AIService', () => {
 
   it('should be defined', () => {
     expect(service).toBeDefined();
+  });
+
+  it('throws ServiceUnavailableException before provider call when API key is missing', async () => {
+    const serviceWithoutKey = new AIService({ apiKey: '' } as any);
+
+    await expect(serviceWithoutKey.generateText('hello')).rejects.toThrow(
+      ServiceUnavailableException,
+    );
   });
 
   describe('generateText', () => {
@@ -107,6 +118,29 @@ describe('AIService', () => {
         ServiceUnavailableException,
       );
       expect(mockGenerateContent).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  describe('getEmbedding', () => {
+    it('returns embedding values on success', async () => {
+      mockEmbedContent.mockResolvedValue({
+        embedding: {
+          values: [0.1, 0.2, 0.3],
+        },
+      });
+
+      const result = await service.getEmbedding('hello');
+
+      expect(result).toEqual([0.1, 0.2, 0.3]);
+      expect(mockEmbedContent).toHaveBeenCalledWith('hello');
+    });
+
+    it('wraps embedding provider errors as ServiceUnavailableException', async () => {
+      mockEmbedContent.mockRejectedValue(new Error('Invalid API key'));
+
+      await expect(service.getEmbedding('hello')).rejects.toThrow(
+        ServiceUnavailableException,
+      );
     });
   });
 });
