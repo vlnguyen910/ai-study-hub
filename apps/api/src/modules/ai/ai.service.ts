@@ -25,6 +25,14 @@ export class AIService {
     this.genAI = new GoogleGenerativeAI(apiKey);
   }
 
+  private ensureConfigured(): void {
+    if (!this.aiConfig.apiKey) {
+      throw new ServiceUnavailableException(
+        'Dịch vụ AI chưa được cấu hình. Vui lòng thêm GEMINI_API_KEY cho API server.',
+      );
+    }
+  }
+
   /**
    * Generates text content based on a text prompt.
    * Defaults to 'gemini-2.5-flash-lite' for cost efficiency.
@@ -33,6 +41,8 @@ export class AIService {
     prompt: string,
     modelName = 'gemini-2.5-flash-lite',
   ): Promise<string> {
+    this.ensureConfigured();
+
     let lastError: any;
     const maxAttempts = 3;
     let delay = 1000;
@@ -108,6 +118,8 @@ export class AIService {
     text: string,
     modelName = 'gemini-embedding-2',
   ): Promise<number[]> {
+    this.ensureConfigured();
+
     try {
       this.logger.log(
         `Calling Gemini API (model: ${modelName}) to generate embeddings...`,
@@ -120,7 +132,9 @@ export class AIService {
         `Error generating embedding from Gemini API: ${(error as Error).message}`,
         (error as Error).stack,
       );
-      throw error;
+      throw new ServiceUnavailableException(
+        'Dịch vụ AI embedding hiện không khả dụng. Vui lòng kiểm tra GEMINI_API_KEY, model embedding hoặc thử lại sau.',
+      );
     }
   }
 

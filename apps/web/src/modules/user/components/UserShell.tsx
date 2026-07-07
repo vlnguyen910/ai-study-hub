@@ -12,6 +12,7 @@ import {
   logoutCurrentSession,
   resendVerificationEmail,
 } from "@/modules/auth-api";
+import { DocumentCoachBubble } from "@/modules/user/documents/detail/components/DocumentCoachBubble";
 import { ROUTE_PATHS } from "@/routes/router.const";
 import { useAuthStore } from "@/stores/auth/store";
 
@@ -169,6 +170,7 @@ export const UserShell: FC<UserShellProps> = ({
         }}
         onConfirm={() => void handleLogout()}
       />
+      <DocumentCoachBubble />
     </div>
   );
 };
