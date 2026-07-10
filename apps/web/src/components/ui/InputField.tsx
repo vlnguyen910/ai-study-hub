@@ -3,7 +3,7 @@
 import type { ReactNode } from "react";
 
 export interface InputFieldProps extends Readonly<
-  React.InputHTMLAttributes<HTMLInputElement>
+  Omit<React.InputHTMLAttributes<HTMLInputElement>, "style">
 > {
   readonly label?: string;
   readonly helperText?: string;

@@ -5,7 +5,7 @@ import type { MouseEvent, ReactNode, ButtonHTMLAttributes } from "react";
 
 export interface BackButtonProps extends Omit<
   ButtonHTMLAttributes<HTMLButtonElement>,
-  "onClick" | "className"
+  "onClick" | "className" | "style"
 > {
   readonly label?: string;
   readonly fallbackHref?: string;

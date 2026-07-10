@@ -1,16 +1,20 @@
 "use client";
 
-import type { ReactNode } from "react";
+import type { ReactElement, ReactNode } from "react";
 
 import { cn } from "@/lib/utils";
 
+export interface CardProps {
+  readonly className?: string;
+  readonly title?: ReactNode;
+  readonly children: ReactNode;
+}
+
 export function Card({
   className = "",
+  title,
   children,
-}: {
-  readonly className?: string;
-  readonly children: ReactNode;
-}) {
+}: CardProps): ReactElement {
   return (
     <div
       className={cn(
@@ -18,6 +22,13 @@ export function Card({
         className,
       )}
     >
+      {title ? (
+        <div className="border-b border-border/70 px-6 py-4">
+          <h2 className="text-2xl font-bold tracking-tight text-foreground">
+            {title}
+          </h2>
+        </div>
+      ) : null}
       {children}
     </div>
   );
@@ -29,7 +40,7 @@ export function CardHeader({
 }: {
   readonly className?: string;
   readonly children: ReactNode;
-}) {
+}): ReactElement {
   return (
     <div className={cn("flex flex-col space-y-1.5 p-6", className)}>
       {children}
@@ -43,7 +54,7 @@ export function CardTitle({
 }: {
   readonly className?: string;
   readonly children: ReactNode;
-}) {
+}): ReactElement {
   return (
     <h2
       className={cn(
@@ -62,7 +73,7 @@ export function CardDescription({
 }: {
   readonly className?: string;
   readonly children: ReactNode;
-}) {
+}): ReactElement {
   return (
     <p className={cn("text-sm text-muted-foreground", className)}>{children}</p>
   );
@@ -74,6 +85,6 @@ export function CardContent({
 }: {
   readonly className?: string;
   readonly children: ReactNode;
-}) {
+}): ReactElement {
   return <div className={cn("p-6 pt-0", className)}>{children}</div>;
 }
