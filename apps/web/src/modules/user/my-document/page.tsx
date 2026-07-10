@@ -21,6 +21,7 @@ import type {
   Subject,
   UpdateDocumentPayload,
 } from "@/types/document.type";
+import { getErrorMessage } from "@/utils/error";
 
 import { DocumentCollection } from "./components/DocumentCollection";
 import { DocumentEditModal } from "./components/DocumentEditModal";
@@ -132,8 +133,13 @@ export default function MyDocumentPage(): React.JSX.Element {
       await updateDocument(editingDocument.id, payload);
       setEditingDocument(null);
       await load(currentPage);
-    } catch {
-      setEditError("Cập nhật tài liệu thất bại. Vui lòng thử lại.");
+    } catch (error) {
+      setEditError(
+        getErrorMessage(error, {
+          401: "Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.",
+          403: "Bạn không có quyền cập nhật tài liệu này.",
+        }),
+      );
     } finally {
       setSavingId(null);
     }

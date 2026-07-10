@@ -78,4 +78,6 @@ services:
 
 volumes:
   mongo_data:
+    external: true
+    name: ai-study-hub_mongodb_data
   redis_data:
