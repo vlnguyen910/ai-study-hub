@@ -25,6 +25,9 @@ const getTabIcon = (
   }
 };
 
+const ACTIVE_TAB_FG = "#ffffff";
+const INACTIVE_TAB_FG = "#737686";
+
 export function BottomTabBar({
   state,
   descriptors,
@@ -96,14 +99,14 @@ export function BottomTabBar({
                     <Icon
                       materialIcon={{ name: icon.name as any }}
                       size={25}
-                      color={isFocused ? "#ffffff" : "#004ac6"}
+                      color={isFocused ? ACTIVE_TAB_FG : "#004ac6"}
                     />
                   </View>
                 ) : (
                   <Icon
                     materialIcon={{ name: icon.name as any }}
                     size={22}
-                    color={isFocused ? "#004ac6" : "#737686"}
+                    color={isFocused ? "#004ac6" : INACTIVE_TAB_FG}
                   />
                 )}
                 <Text

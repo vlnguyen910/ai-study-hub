@@ -3,11 +3,12 @@
 import Link from "next/link";
 import { useEffect, useRef, type FC } from "react";
 
-import type { UserRole } from "@/shared/types";
-import { useAuthStore } from "@/stores/auth/store";
-import { ROUTE_PATHS } from "@/routes";
-import { isDefaultAvatar } from "@/shared/constants";
 import { getCurrentUser } from "@/modules/auth-api";
+import { ROUTE_PATHS } from "@/routes";
+import { normalizeUtf8Mojibake } from "@/lib/text";
+import type { UserRole } from "@/shared/types";
+import { isDefaultAvatar } from "@/shared/constants";
+import { useAuthStore } from "@/stores/auth/store";
 import { Avatar } from "./Avatar";
 
 const getProfileHref = (role?: UserRole): string => {
@@ -58,12 +59,16 @@ export const UserInfo: FC = () => {
     };
   }, [isAuthenticated, setUser, user]);
 
+  const displayName =
+    normalizeUtf8Mojibake(user?.name) ?? "Ng\u01B0\u1EDDi d\u00F9ng";
+
   const initials = (() => {
-    if (!user?.name) return "?";
-    const parts = user.name.trim().split(/\s+/);
+    const parts = displayName.trim().split(/\s+/);
+    if (parts.length === 0) return "?";
+
     const first = parts[0]?.[0] ?? "";
     const last = parts.length > 1 ? (parts[parts.length - 1]?.[0] ?? "") : "";
-    return (first + last).toUpperCase();
+    return (first + last).toUpperCase() || "?";
   })();
 
   return (
@@ -81,7 +86,7 @@ export const UserInfo: FC = () => {
 
       <div className="min-w-0 flex-1">
         <p className="truncate font-label-md text-label-md font-semibold text-on-surface">
-          {user?.name ?? "Người dùng"}
+          {displayName}
         </p>
         <p className="truncate font-label-sm text-label-sm text-on-surface-variant">
           {user?.email ?? user?.role ?? ""}

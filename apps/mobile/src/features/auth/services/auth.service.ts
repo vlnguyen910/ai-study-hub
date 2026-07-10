@@ -36,13 +36,15 @@ export const signInService = async (
     return response.data;
   } catch (error) {
     if (axios.isAxiosError(error)) {
-      console.error(
-        "❌ [signInService] Lỗi từ API:",
-        error.response?.data || error.message,
-      );
+      console.error("[signInService] API error", {
+        endpoint: API_ENDPOINTS.AUTH.MOBILE_SIGN_IN,
+        status: error.response?.status ?? null,
+        response: error.response?.data ?? null,
+        message: error.message,
+      });
       throw new AuthServiceError(
         error.response?.data?.message ||
-          "Đăng nhập thất bại. Vui lòng kiểm tra lại email và mật khẩu.",
+          "Dang nhap that bai. Vui long kiem tra lai email va mat khau.",
         error.response?.status,
       );
     }
