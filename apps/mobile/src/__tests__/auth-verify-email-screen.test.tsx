@@ -1,11 +1,13 @@
 import { Alert } from "react-native";
-import { render, screen } from "@testing-library/react-native";
+import { render, waitFor } from "@testing-library/react-native";
 import { AuthVerifyEmailScreen } from "@/features/auth/screens/AuthVerifyEmailScreen";
+import { useSession } from "@/features/auth/context/SessionContext";
 import { verifyEmailService } from "@/features/auth/services/auth.service";
 import { getDeviceId } from "@/utils/device";
 import { saveTokens } from "@/utils/storage";
 
 const mockRouterReplace = jest.fn();
+const mockRefreshSession = jest.fn();
 
 jest.mock("expo-router", () => ({
   router: {
@@ -28,6 +30,10 @@ jest.mock("@/features/auth/services/auth.service", () => ({
   verifyEmailService: jest.fn(),
 }));
 
+jest.mock("@/features/auth/context/SessionContext", () => ({
+  useSession: jest.fn(),
+}));
+
 jest.mock("@/utils/device", () => ({
   getDeviceId: jest.fn(),
 }));
@@ -43,6 +49,7 @@ jest.mock("@expo/vector-icons", () => ({
 }));
 
 const verifyEmailServiceMock = jest.mocked(verifyEmailService);
+const useSessionMock = jest.mocked(useSession);
 const getDeviceIdMock = jest.mocked(getDeviceId);
 const saveTokensMock = jest.mocked(saveTokens);
 
@@ -50,6 +57,23 @@ describe("AuthVerifyEmailScreen", () => {
   beforeEach(() => {
     jest.clearAllMocks();
     jest.spyOn(Alert, "alert").mockImplementation(() => undefined);
+    useSessionMock.mockReturnValue({
+      status: "authenticated",
+      isAuthenticated: true,
+      user: null,
+      refreshSession: mockRefreshSession,
+      signOut: jest.fn(),
+    });
+    mockRefreshSession.mockResolvedValue({
+      id: "user-1",
+      name: "Verified User",
+      email: "verified@example.com",
+      avatarUrl: null,
+      role: "student",
+      status: "ACTIVE",
+      createdAt: "2026-01-01T00:00:00.000Z",
+      updatedAt: "2026-01-01T00:00:00.000Z",
+    });
   });
 
   it("verifies email with current device id and persists returned tokens", async () => {
@@ -66,15 +90,19 @@ describe("AuthVerifyEmailScreen", () => {
 
     render(<AuthVerifyEmailScreen />);
 
-    expect(await screen.findByText(/Email.*xác thực/i)).toBeTruthy();
-    expect(verifyEmailServiceMock).toHaveBeenCalledWith({
-      token: "verify-token",
-      deviceId: "device-1",
-      deviceType: "MOBILE",
+    await waitFor(() => {
+      expect(verifyEmailServiceMock).toHaveBeenCalledWith({
+        token: "verify-token",
+        deviceId: "device-1",
+        deviceType: "MOBILE",
+      });
     });
-    expect(saveTokensMock).toHaveBeenCalledWith(
-      "active-access-token",
-      "active-refresh-token",
-    );
+    await waitFor(() => {
+      expect(saveTokensMock).toHaveBeenCalledWith(
+        "active-access-token",
+        "active-refresh-token",
+      );
+      expect(mockRefreshSession).toHaveBeenCalled();
+    });
   }, 15000);
 });
