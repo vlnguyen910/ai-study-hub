@@ -3,7 +3,7 @@
 import { InputField } from "./InputField";
 
 export interface SearchInputProps extends Readonly<
-  React.InputHTMLAttributes<HTMLInputElement>
+  Omit<React.InputHTMLAttributes<HTMLInputElement>, "style">
 > {
   readonly label?: string;
   readonly onClear?: () => void;

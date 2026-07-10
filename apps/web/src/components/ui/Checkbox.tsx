@@ -6,7 +6,7 @@ import { cn } from "@/lib/utils";
 
 export interface CheckboxProps extends Omit<
   InputHTMLAttributes<HTMLInputElement>,
-  "type" | "checked" | "onChange"
+  "type" | "checked" | "onChange" | "style"
 > {
   readonly checked: boolean;
   readonly onCheckedChange: (checked: boolean) => void;
@@ -17,7 +17,7 @@ export function Checkbox({
   onCheckedChange,
   className = "",
   ...props
-}: CheckboxProps) {
+}: CheckboxProps): React.JSX.Element {
   return (
     <input
       type="checkbox"
