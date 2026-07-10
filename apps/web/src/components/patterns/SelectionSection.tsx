@@ -29,11 +29,13 @@ export const SelectionSection: FC<SelectionSectionProps> = ({ title }) => {
         />
       </div>
       <div className="flex flex-wrap gap-8">
-        <Checkbox
-          label={styleGuideLabels.selection.rememberLabel}
-          checked={controls.remember}
-          onChange={controls.setRemember}
-        />
+        <label className="flex items-center gap-3 text-sm text-foreground">
+          <Checkbox
+            checked={controls.remember}
+            onCheckedChange={controls.setRemember}
+          />
+          <span>{styleGuideLabels.selection.rememberLabel}</span>
+        </label>
         <RadioGroup
           name="gender"
           value={controls.gender}

@@ -46,6 +46,34 @@ const isPublicAuthEndpoint = (url?: string): boolean =>
     url && PUBLIC_AUTH_ENDPOINTS.some((endpoint) => url.includes(endpoint)),
   );
 
+const DEFAULT_ERROR_MESSAGE = "An unexpected error occurred. Please try again.";
+
+const extractErrorMessage = (error: unknown): string => {
+  if (!axios.isAxiosError(error)) {
+    return error instanceof Error ? error.message : DEFAULT_ERROR_MESSAGE;
+  }
+
+  const payload = error.response?.data as { message?: unknown } | undefined;
+  const rawMessage = payload?.message;
+
+  if (typeof rawMessage === "string" && rawMessage.trim().length > 0) {
+    return rawMessage;
+  }
+
+  if (Array.isArray(rawMessage)) {
+    const messages = rawMessage.filter(
+      (item): item is string =>
+        typeof item === "string" && item.trim().length > 0,
+    );
+
+    if (messages.length > 0) {
+      return messages.join(", ");
+    }
+  }
+
+  return error.message || DEFAULT_ERROR_MESSAGE;
+};
+
 export const getLoginRedirectHref = (pathname: string, search = ""): string => {
   if (!pathname || pathname === "/" || isAuthPage(pathname)) {
     return "/login";
@@ -120,7 +148,7 @@ apiClient.interceptors.response.use(
       if (!isAuthMe) {
         if (!is401 || originalRequest._retry) {
           console.error(
-            `%c[API Error] ${originalRequest.method?.toUpperCase()} ${originalRequest.url} - Status: ${error.response?.status || "Network Error"} - Msg: ${error.response?.data?.message || error.message}`,
+            `%c[API Error] ${originalRequest.method?.toUpperCase()} ${originalRequest.url} - Status: ${error.response?.status || "Network Error"} - Msg: ${extractErrorMessage(error)}`,
             "color: #ef4444; font-weight: bold;",
           );
         } else {
@@ -162,10 +190,7 @@ apiClient.interceptors.response.use(
 
     if (originalRequest.skipToast) return Promise.reject(error);
 
-    const message =
-      error.response?.data?.message ||
-      error.message ||
-      "An unexpected error occurred. Please try again.";
+    const message = extractErrorMessage(error);
 
     toast.error(message);
 
