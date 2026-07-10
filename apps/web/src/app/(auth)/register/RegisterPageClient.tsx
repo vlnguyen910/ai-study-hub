@@ -75,7 +75,7 @@ function AuthField({
   readonly type?: React.InputHTMLAttributes<HTMLInputElement>["type"];
   readonly leftElement?: ReactElement;
   readonly rightElement?: ReactElement;
-} & React.InputHTMLAttributes<HTMLInputElement>) {
+} & Omit<React.InputHTMLAttributes<HTMLInputElement>, "style">) {
   return (
     <div className="space-y-2">
       <label htmlFor={id} className="block text-sm font-medium text-foreground">
