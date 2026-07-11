@@ -135,8 +135,8 @@ export function DocumentCoachCard({
   };
 
   return (
-    <Card className="overflow-hidden border-primary/20 bg-primary/5">
-      <div className="border-b border-primary/10 p-5">
+    <Card className="flex max-h-[calc(100dvh-7rem)] flex-col overflow-hidden border-primary/20 bg-surface-container-lowest">
+      <div className="shrink-0 border-b border-primary/10 bg-primary/5 p-5">
         <div className="flex items-start justify-between gap-3">
           <div className="flex items-start gap-3">
             <div className="flex size-10 shrink-0 items-center justify-center rounded-2xl bg-primary text-on-primary shadow-sm">
@@ -207,7 +207,7 @@ export function DocumentCoachCard({
         </div>
       ) : (
         <>
-          <div className="max-h-[430px] min-h-[240px] space-y-3 overflow-y-auto px-5 py-4">
+          <div className="min-h-[240px] flex-1 space-y-3 overflow-y-auto bg-surface-container-lowest px-5 py-4">
             {isLoading ? (
               <div className="space-y-3">
                 <div className="h-16 animate-pulse rounded-2xl bg-surface-variant" />
@@ -237,7 +237,7 @@ export function DocumentCoachCard({
           </div>
 
           {error ? (
-            <div className="mx-5 mb-3 rounded-xl border border-warning/30 bg-warning/10 px-3 py-2 text-xs leading-5 text-on-surface-variant">
+            <div className="mx-5 mb-3 shrink-0 rounded-xl border border-warning/30 bg-warning/10 px-3 py-2 text-xs leading-5 text-on-surface-variant">
               <div className="flex items-start gap-2">
                 <span className="material-symbols-outlined mt-0.5 text-[16px] text-warning">
                   info
@@ -257,7 +257,7 @@ export function DocumentCoachCard({
           ) : null}
 
           <form
-            className="border-t border-primary/10 bg-surface-container-lowest p-4"
+            className="shrink-0 border-t border-primary/10 bg-surface-container-lowest p-4"
             onSubmit={(event) => void handleSubmit(event)}
           >
             <label className="sr-only" htmlFor="document-coach-input">

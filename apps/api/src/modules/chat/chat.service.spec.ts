@@ -3,6 +3,7 @@ import { UserRole, UserStatus } from '@prisma/client';
 import { JwtTokenType } from '../../common/enums/jwt.enum';
 import type { TokenPayload } from '../../common/interfaces/auth.interface';
 import { AIService } from '../ai/ai.service';
+import { DocumentProcessingService } from '../document-processing/document-processing.service';
 import { ChatRepository } from './chat.repository';
 import { ChatService } from './chat.service';
 
@@ -18,6 +19,9 @@ describe('ChatService', () => {
   let service: ChatService;
   let repository: jest.Mocked<Partial<ChatRepository>>;
   let aiService: jest.Mocked<Partial<AIService>>;
+  let documentProcessingService: jest.Mocked<
+    Partial<DocumentProcessingService>
+  >;
 
   beforeEach(() => {
     repository = {
@@ -83,9 +87,14 @@ describe('ChatService', () => {
         .mockResolvedValue('Machine learning is a subfield of AI.'),
     };
 
+    documentProcessingService = {
+      ensureDocumentReadyForChat: jest.fn().mockResolvedValue(undefined),
+    };
+
     service = new ChatService(
       repository as ChatRepository,
       aiService as AIService,
+      documentProcessingService as DocumentProcessingService,
     );
   });
 
@@ -135,7 +144,33 @@ describe('ChatService', () => {
     await expect(
       service.sendMessage('session-1', { content: 'Hello' }, user),
     ).rejects.toBeInstanceOf(BadRequestException);
+    expect(
+      documentProcessingService.ensureDocumentReadyForChat,
+    ).toHaveBeenCalledWith('doc-1');
     expect(aiService.getEmbedding).not.toHaveBeenCalled();
+  });
+
+  it('prepares missing document chunks on demand before answering', async () => {
+    const embeddedChunk = {
+      id: 'chunk-1',
+      chunkIndex: 0,
+      chunkText: 'Machine learning is a subfield of AI.',
+      tokenCount: 10,
+      embedding: [1, 0],
+      pageStart: 1,
+      pageEnd: 1,
+    };
+    (repository.findEmbeddedChunks as jest.Mock)
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([embeddedChunk]);
+
+    await service.sendMessage('session-1', { content: 'What is ML?' }, user);
+
+    expect(
+      documentProcessingService.ensureDocumentReadyForChat,
+    ).toHaveBeenCalledWith('doc-1');
+    expect(repository.findEmbeddedChunks).toHaveBeenCalledTimes(2);
+    expect(aiService.generateText).toHaveBeenCalled();
   });
 
   it('blocks chat when the daily AI quota is exceeded atomically', async () => {
