@@ -24,6 +24,11 @@ const nextConfig = {
       },
       {
         protocol: "https",
+        hostname: "cdn.jsdelivr.net",
+        pathname: "/gh/faker-js/assets-person-portrait/**",
+      },
+      {
+        protocol: "https",
         hostname: "res.cloudinary.com",
         pathname: `/${cloudName}/**`,
       },
