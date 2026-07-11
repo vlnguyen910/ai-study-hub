@@ -222,6 +222,54 @@ describe("AdminConfigPage", () => {
     });
   });
 
+  it("deduplicates legacy file types before rendering and saving", async () => {
+    settingsApiMock.fetchAdminSettings.mockResolvedValueOnce({
+      ...settings,
+      upload: {
+        ...settings.upload,
+        fileTypes: [
+          { extension: ".doc", enabled: false },
+          { extension: "DOC", enabled: true },
+          { extension: "PDF", enabled: true },
+        ],
+      },
+    });
+
+    render(<AdminConfigPage />);
+    const region = await screen.findByRole("region", {
+      name: "Tải lên tài liệu",
+    });
+
+    expect(within(region).getAllByText(".doc")).toHaveLength(1);
+    fireEvent.click(
+      within(region).getByRole("switch", { name: "Cho phép DOC" }),
+    );
+    fireEvent.click(
+      within(region).getByRole("button", { name: "Lưu thay đổi" }),
+    );
+
+    await waitFor(() => {
+      expect(settingsApiMock.updateAdminSettings).toHaveBeenCalledWith(
+        "upload",
+        expect.objectContaining({
+          fileTypes: [
+            { extension: "DOC", enabled: false },
+            { extension: "PDF", enabled: true },
+          ],
+        }),
+      );
+    });
+  });
+
+  it("does not render the duplicate similarity threshold control", async () => {
+    render(<AdminConfigPage />);
+    await screen.findByDisplayValue("AI Study Hub");
+
+    expect(
+      screen.queryByLabelText("Ngưỡng tài liệu trùng lặp (%)"),
+    ).not.toBeInTheDocument();
+  });
+
   it("blocks an invalid AI quiz limit before sending the request", async () => {
     render(<AdminConfigPage />);
     await screen.findByDisplayValue("AI Study Hub");

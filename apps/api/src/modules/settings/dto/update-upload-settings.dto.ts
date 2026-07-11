@@ -2,7 +2,6 @@ import { Transform, Type } from 'class-transformer';
 import {
   ArrayMaxSize,
   ArrayMinSize,
-  ArrayUnique,
   IsArray,
   IsBoolean,
   IsInt,
@@ -40,7 +39,6 @@ export class UpdateUploadSettingsDto {
   @IsArray()
   @ArrayMinSize(1)
   @ArrayMaxSize(50)
-  @ArrayUnique((item: UploadFileTypeSettingDto) => item.extension)
   @ValidateNested({ each: true })
   @Type(() => UploadFileTypeSettingDto)
   fileTypes?: UploadFileTypeSettingDto[];

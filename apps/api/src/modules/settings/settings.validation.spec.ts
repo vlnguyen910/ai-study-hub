@@ -30,6 +30,21 @@ describe('Settings request validation', () => {
     ]);
   });
 
+  it('accepts equivalent upload extensions for service-level deduplication', async () => {
+    const upload = plainToInstance(UpdateUploadSettingsDto, {
+      fileTypes: [
+        { extension: '.doc', enabled: false },
+        { extension: ' DOC ', enabled: true },
+      ],
+    });
+
+    await expect(validate(upload)).resolves.toHaveLength(0);
+    expect(upload.fileTypes).toEqual([
+      { extension: 'DOC', enabled: false },
+      { extension: 'DOC', enabled: true },
+    ]);
+  });
+
   it.each([
     [UpdateModerationSettingsDto, { duplicateSimilarityThreshold: 101 }],
     [UpdateUploadSettingsDto, { maxFileSizeMb: 0 }],

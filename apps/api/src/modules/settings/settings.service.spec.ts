@@ -114,6 +114,25 @@ describe('SettingsService', () => {
     expect((result.data as Record<string, unknown>).id).toBeUndefined();
   });
 
+  it('normalizes and deduplicates legacy upload extensions in responses', async () => {
+    repository.findUploadFileTypes.mockResolvedValue([
+      fileTypes[0],
+      {
+        ...fileTypes[0],
+        id: '507f1f77bcf86cd799439099',
+        extension: '.docx',
+        enabled: false,
+      },
+    ]);
+
+    const result = await service.findAll();
+
+    expect(result.data.upload.fileTypes).toEqual([
+      { extension: 'DOCX', enabled: true },
+    ]);
+    expect(result.data.upload.allowedFileTypes).toEqual(['DOCX']);
+  });
+
   it('accepts only enabled file types within the configured size limit', async () => {
     await expect(
       service.validateDocumentUpload('pdf', 10 * 1024 * 1024),
@@ -188,9 +207,11 @@ describe('SettingsService', () => {
 
     const result = await service.updateUpload({ fileTypes: configuredTypes });
 
-    expect(repository.upsertUploadFileTypes).toHaveBeenCalledWith(
-      configuredTypes,
-    );
+    expect(repository.upsertUploadFileTypes).toHaveBeenCalledWith([
+      { extension: 'PDF', enabled: true },
+      { extension: 'TXT', enabled: false },
+      { extension: 'XLSX', enabled: true },
+    ]);
     expect(result.data.upload.allowedFileTypes).toEqual(['PDF', 'XLSX']);
   });
 
@@ -214,6 +235,19 @@ describe('SettingsService', () => {
 
     expect(repository.upsertUploadFileTypes).toHaveBeenCalledWith([
       { extension: 'PDF', enabled: false },
+    ]);
+  });
+
+  it('deduplicates equivalent file types before persistence', async () => {
+    await service.updateUpload({
+      fileTypes: [
+        { extension: '.doc', enabled: false },
+        { extension: 'DOC', enabled: true },
+      ],
+    });
+
+    expect(repository.upsertUploadFileTypes).toHaveBeenCalledWith([
+      { extension: 'DOC', enabled: true },
     ]);
   });
 

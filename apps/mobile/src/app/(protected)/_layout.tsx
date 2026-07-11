@@ -27,6 +27,7 @@ export default function ProtectedLayout() {
         <Stack.Screen name="collections/index" />
         <Stack.Screen name="collections/[id]" />
         <Stack.Screen name="documents/upload" />
+        <Stack.Screen name="documents/upload/success" />
         <Stack.Screen name="documents/my-documents" />
         <Stack.Screen name="documents/[id]/edit" />
         <Stack.Screen name="moderator" />

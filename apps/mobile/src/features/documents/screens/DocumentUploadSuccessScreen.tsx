@@ -24,13 +24,13 @@ export function DocumentUploadSuccessScreen() {
           <View className="mt-6 gap-3">
             <Button
               fullWidth
-              onPress={() => router.push(ROUTES.MY_DOCUMENTS as never)}
+              onPress={() => router.replace(ROUTES.MY_DOCUMENTS as never)}
             >
               Xem tài liệu của tôi
             </Button>
             <Pressable
               accessibilityRole="button"
-              onPress={() => router.push(ROUTES.DOCUMENT_UPLOAD as never)}
+              onPress={() => router.replace(ROUTES.DOCUMENT_UPLOAD as never)}
               className="items-center rounded-full px-4 py-3"
             >
               <Text className="text-sm font-semibold text-primary">

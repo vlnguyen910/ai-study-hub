@@ -44,7 +44,7 @@ export class SettingsService {
       this.settingsRepository.findOrCreate(),
       this.settingsRepository.findUploadFileTypes(),
     ]);
-    const configuredType = fileTypes.find(
+    const configuredType = this.normalizeFileTypes(fileTypes).find(
       (fileType) => fileType.extension === normalizedExtension,
     );
 
@@ -83,13 +83,13 @@ export class SettingsService {
       const currentFileTypes =
         await this.settingsRepository.findUploadFileTypes();
       const effectiveFileTypes = new Map(
-        currentFileTypes.map((fileType) => [
+        this.normalizeFileTypes(currentFileTypes).map((fileType) => [
           fileType.extension,
           fileType.enabled,
         ]),
       );
 
-      fileTypes.forEach((fileType) => {
+      this.normalizeFileTypes(fileTypes).forEach((fileType) => {
         effectiveFileTypes.set(fileType.extension, fileType.enabled);
       });
 
@@ -105,7 +105,9 @@ export class SettingsService {
         ? await this.settingsRepository.update(settingsDto)
         : await this.settingsRepository.findOrCreate();
     const persistedFileTypes = fileTypes
-      ? await this.settingsRepository.upsertUploadFileTypes(fileTypes)
+      ? await this.settingsRepository.upsertUploadFileTypes(
+          this.normalizeFileTypes(fileTypes),
+        )
       : await this.settingsRepository.findUploadFileTypes();
 
     return this.successResponse('upload', settings, persistedFileTypes);
@@ -210,10 +212,7 @@ export class SettingsService {
     settings: system_settings,
     fileTypes: upload_file_types[],
   ) {
-    const normalizedFileTypes = fileTypes.map((fileType) => ({
-      extension: fileType.extension,
-      enabled: fileType.enabled,
-    }));
+    const normalizedFileTypes = this.normalizeFileTypes(fileTypes);
 
     return {
       general: {
@@ -271,5 +270,36 @@ export class SettingsService {
       version: settings.version,
       updatedAt: settings.updatedAt,
     };
+  }
+
+  private normalizeFileTypes(
+    fileTypes: ReadonlyArray<{ extension: string; enabled: boolean }>,
+  ): Array<{ extension: string; enabled: boolean }> {
+    const uniqueFileTypes = new Map<
+      string,
+      { extension: string; enabled: boolean; canonical: boolean }
+    >();
+
+    fileTypes.forEach((fileType) => {
+      const extension = fileType.extension
+        .trim()
+        .replace(/^\.+/, '')
+        .toUpperCase();
+      if (!extension) return;
+
+      const existing = uniqueFileTypes.get(extension);
+      const canonical = fileType.extension.trim() === extension;
+      if (!existing || canonical || !existing.canonical) {
+        uniqueFileTypes.set(extension, {
+          extension,
+          enabled: fileType.enabled,
+          canonical,
+        });
+      }
+    });
+
+    return [...uniqueFileTypes.values()]
+      .map(({ extension, enabled }) => ({ extension, enabled }))
+      .sort((left, right) => left.extension.localeCompare(right.extension));
   }
 }

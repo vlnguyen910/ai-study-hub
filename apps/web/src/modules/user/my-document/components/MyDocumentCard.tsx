@@ -156,6 +156,25 @@ export function MyDocumentCard({
         </div>
       </Link>
 
+      {document.status === "REJECTED" ? (
+        <div className="mx-4 mt-2">
+          <button
+            type="button"
+            aria-label="Xem lý do từ chối"
+            className="flex w-full items-center justify-center gap-2 rounded-xl border border-error/20 bg-error/5 px-3 py-2 text-xs font-semibold text-error transition-colors hover:bg-error/10"
+            onClick={onViewReason}
+          >
+            <span
+              aria-hidden="true"
+              className="material-symbols-outlined text-[16px]"
+            >
+              visibility
+            </span>
+            Xem lý do từ chối
+          </button>
+        </div>
+      ) : null}
+
       <div className="relative mx-4 mt-auto flex min-h-9 items-center justify-between gap-3 border-t border-outline-variant/40 py-1">
         <div className="flex flex-wrap items-center gap-1.5 text-[11px] text-on-surface-variant">
           <span>{formatDate(document.createdAt)}</span>
