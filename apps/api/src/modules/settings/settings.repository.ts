@@ -104,8 +104,24 @@ export class SettingsRepository {
   async upsertUploadFileTypes(
     fileTypes: ReadonlyArray<{ extension: string; enabled: boolean }>,
   ): Promise<upload_file_types[]> {
+    const normalizedFileTypes = new Map<
+      string,
+      { extension: string; enabled: boolean }
+    >();
+    fileTypes.forEach((fileType) => {
+      const extension = fileType.extension
+        .trim()
+        .replace(/^\.+/, '')
+        .toUpperCase();
+      if (!extension) return;
+      normalizedFileTypes.set(extension, {
+        extension,
+        enabled: fileType.enabled,
+      });
+    });
+
     await Promise.all(
-      fileTypes.map((fileType) =>
+      [...normalizedFileTypes.values()].map((fileType) =>
         this.prisma.upload_file_types.upsert({
           where: { extension: fileType.extension },
           update: { enabled: fileType.enabled },

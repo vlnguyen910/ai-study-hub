@@ -26,20 +26,58 @@ const groupSuccessMessages: Record<AdminSettingsGroup, string> = {
   mobile: "Đã lưu cấu hình ứng dụng di động.",
 };
 
-const cloneSettings = (settings: AdminSettings): AdminSettings => ({
-  ...settings,
-  general: { ...settings.general },
-  upload: {
-    ...settings.upload,
-    allowedFileTypes: [...settings.upload.allowedFileTypes],
-    fileTypes: settings.upload.fileTypes.map((fileType) => ({ ...fileType })),
-  },
-  documentVisibility: { ...settings.documentVisibility },
-  ai: { ...settings.ai },
-  moderation: { ...settings.moderation },
-  account: { ...settings.account },
-  mobile: { ...settings.mobile },
-});
+const normalizeFileExtension = (extension: string): string =>
+  extension.trim().replace(/^\.+/, "").toUpperCase();
+
+const normalizeFileTypes = (
+  fileTypes: AdminSettings["upload"]["fileTypes"],
+): AdminSettings["upload"]["fileTypes"] => {
+  const uniqueFileTypes = new Map<
+    string,
+    AdminSettings["upload"]["fileTypes"][number] & { canonical: boolean }
+  >();
+
+  fileTypes.forEach((fileType) => {
+    const extension = normalizeFileExtension(fileType.extension);
+    if (!extension) return;
+
+    const existing = uniqueFileTypes.get(extension);
+    const canonical = fileType.extension.trim() === extension;
+    if (!existing || canonical || !existing.canonical) {
+      uniqueFileTypes.set(extension, {
+        extension,
+        enabled: fileType.enabled,
+        canonical,
+      });
+    }
+  });
+
+  return [...uniqueFileTypes.values()].map(({ extension, enabled }) => ({
+    extension,
+    enabled,
+  }));
+};
+
+const cloneSettings = (settings: AdminSettings): AdminSettings => {
+  const fileTypes = normalizeFileTypes(settings.upload.fileTypes);
+
+  return {
+    ...settings,
+    general: { ...settings.general },
+    upload: {
+      ...settings.upload,
+      allowedFileTypes: fileTypes
+        .filter((fileType) => fileType.enabled)
+        .map((fileType) => fileType.extension),
+      fileTypes,
+    },
+    documentVisibility: { ...settings.documentVisibility },
+    ai: { ...settings.ai },
+    moderation: { ...settings.moderation },
+    account: { ...settings.account },
+    mobile: { ...settings.mobile },
+  };
+};
 
 const getErrorMessage = (error: unknown, fallback: string): string =>
   error instanceof Error && error.message ? error.message : fallback;
@@ -169,15 +207,6 @@ export default function AdminConfigPage(): React.JSX.Element {
           return "Số câu hỏi mặc định phải từ 1 đến giới hạn câu hỏi tối đa.";
         }
         return "";
-      case "moderation":
-        if (
-          !Number.isInteger(draft.moderation.duplicateSimilarityThreshold) ||
-          draft.moderation.duplicateSimilarityThreshold < 0 ||
-          draft.moderation.duplicateSimilarityThreshold > 100
-        ) {
-          return "Ngưỡng tương đồng phải là số nguyên từ 0 đến 100%.";
-        }
-        return "";
       default:
         return "";
     }
@@ -203,7 +232,7 @@ export default function AdminConfigPage(): React.JSX.Element {
         group === "upload"
           ? {
               maxFileSizeMb: draft.upload.maxFileSizeMb,
-              fileTypes: draft.upload.fileTypes,
+              fileTypes: normalizeFileTypes(draft.upload.fileTypes),
               allowMobileUpload: draft.upload.allowMobileUpload,
             }
           : draft[group];
@@ -251,7 +280,7 @@ export default function AdminConfigPage(): React.JSX.Element {
   const handleAddFileType = () => {
     if (!draft) return;
 
-    const extension = newFileExtension.trim().replace(/^\.+/, "").toUpperCase();
+    const extension = normalizeFileExtension(newFileExtension);
 
     if (!/^[A-Z0-9]{1,10}$/.test(extension)) {
       setGroupErrors((current) => ({
@@ -264,7 +293,7 @@ export default function AdminConfigPage(): React.JSX.Element {
 
     if (
       draft.upload.fileTypes.some(
-        (fileType) => fileType.extension === extension,
+        (fileType) => normalizeFileExtension(fileType.extension) === extension,
       )
     ) {
       setGroupErrors((current) => ({
@@ -608,20 +637,6 @@ export default function AdminConfigPage(): React.JSX.Element {
           title="Điều phối kiểm duyệt"
         >
           <div className="space-y-4">
-            <InputField
-              helperText="Phần trăm tương đồng từ 0 đến 100."
-              label="Ngưỡng tài liệu trùng lặp (%)"
-              max={100}
-              min={0}
-              onChange={(event) =>
-                updateGroup("moderation", (current) => ({
-                  ...current,
-                  duplicateSimilarityThreshold: Number(event.target.value),
-                }))
-              }
-              type="number"
-              value={draft.moderation.duplicateSimilarityThreshold}
-            />
             <SettingToggle
               checked={draft.moderation.autoFlagDuplicateDocuments}
               description="Tự động đánh dấu tài liệu vượt ngưỡng tương đồng."

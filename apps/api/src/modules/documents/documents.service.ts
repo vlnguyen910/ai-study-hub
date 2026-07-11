@@ -74,7 +74,10 @@ export class DocumentsService {
     },
   } satisfies Prisma.documentsSelect;
 
-  private buildVisibleDocumentFilters(user?: TokenPayload) {
+  private buildVisibleDocumentFilters(
+    user?: TokenPayload,
+    includeOwnedReviewStates = false,
+  ) {
     const visibilityFilters: Prisma.documentsWhereInput[] = [
       {
         status: DocumentStatus.ACTIVE,
@@ -86,13 +89,26 @@ export class DocumentsService {
       return visibilityFilters;
     }
 
-    visibilityFilters.push({
-      status: DocumentStatus.ACTIVE,
-      isPublic: false,
-      authorId: user.sub,
-    });
+    visibilityFilters.push(
+      includeOwnedReviewStates
+        ? {
+            authorId: user.sub,
+            status: {
+              in: [
+                DocumentStatus.ACTIVE,
+                DocumentStatus.PENDING,
+                DocumentStatus.REJECTED,
+              ],
+            },
+          }
+        : {
+            status: DocumentStatus.ACTIVE,
+            isPublic: false,
+            authorId: user.sub,
+          },
+    );
 
-    if (user.role === UserRole.MODERATOR) {
+    if (user.role === UserRole.MODERATOR || user.role === UserRole.ADMIN) {
       visibilityFilters.push(
         { status: DocumentStatus.PENDING },
         { status: DocumentStatus.REJECTED },
@@ -528,7 +544,7 @@ export class DocumentsService {
         status: {
           not: DocumentStatus.DELETED,
         },
-        OR: this.buildVisibleDocumentFilters(user),
+        OR: this.buildVisibleDocumentFilters(user, true),
       },
       select: {
         id: true,

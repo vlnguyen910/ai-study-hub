@@ -259,7 +259,6 @@ export function DocumentUploadScreen({
       const document = await createDocument(payload);
 
       if (document.id) {
-        Alert.alert("Thành công", "Tải lên tài liệu thành công.");
         router.replace(ROUTES.DOCUMENT_UPLOAD_SUCCESS as never);
       }
     } catch {
