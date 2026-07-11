@@ -7,6 +7,7 @@ import {
   HttpException,
 } from '@nestjs/common';
 import { createHash } from 'node:crypto';
+import { extname } from 'node:path';
 import { DocumentStatus, Prisma, UserRole } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import {
@@ -89,6 +90,11 @@ export class DocumentsService {
     visibilityFilters.push({
       status: DocumentStatus.ACTIVE,
       isPublic: false,
+      authorId: user.sub,
+    });
+
+    visibilityFilters.push({
+      status: DocumentStatus.PENDING,
       authorId: user.sub,
     });
 
@@ -256,6 +262,80 @@ export class DocumentsService {
     this.logger.warn(
       'Cloudinary destroy exhausted all candidates. The DB record will still be deleted.',
     );
+  }
+
+  async uploadFile(file?: any) {
+    if (!file?.buffer?.length) {
+      throw new BadRequestException('A file upload is required.');
+    }
+
+    if (
+      !this.cloudinaryCloudName ||
+      !this.cloudinaryApiKey ||
+      !this.cloudinaryApiSecret
+    ) {
+      throw new BadRequestException(
+        'Cloudinary server credentials are not configured.',
+      );
+    }
+
+    const originalName = file.originalname || 'document-upload';
+    const extension = extname(originalName).replace(/^\./, '');
+    const safeName =
+      originalName
+        .replace(/\.[^.]+$/, '')
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/(^-|-$)/g, '') || 'document';
+    const publicId = `${safeName}-${Date.now()}`;
+    const timestamp = Math.floor(Date.now() / 1000).toString();
+    const signature = createHash('sha1')
+      .update(
+        `public_id=${publicId}&timestamp=${timestamp}${this.cloudinaryApiSecret}`,
+      )
+      .digest('hex');
+
+    const formData = new FormData();
+    formData.append(
+      'file',
+      new Blob([file.buffer], {
+        type: file.mimetype || 'application/octet-stream',
+      }),
+      originalName,
+    );
+    formData.append('public_id', publicId);
+    formData.append('timestamp', timestamp);
+    formData.append('api_key', this.cloudinaryApiKey);
+    formData.append('signature', signature);
+    formData.append('resource_type', 'raw');
+
+    const response = await fetch(
+      `https://api.cloudinary.com/v1_1/${this.cloudinaryCloudName}/raw/upload`,
+      {
+        method: 'POST',
+        body: formData,
+      },
+    );
+
+    const result = await response.json().catch(() => null);
+
+    if (!response.ok || !result?.secure_url) {
+      throw new HttpException(
+        result?.error?.message || 'Cloudinary upload failed.',
+        response.status || 500,
+      );
+    }
+
+    return {
+      message: 'File uploaded successfully',
+      data: {
+        secureUrl: result.secure_url as string,
+        publicId: result.public_id as string,
+        bytes: Number(result.bytes || file.size || 0),
+        format: (result.format || extension || 'bin') as string,
+        resourceType: (result.resource_type || 'raw') as string,
+      },
+    };
   }
 
   async create(createDocumentDto: CreateDocumentDto, authorId: string) {

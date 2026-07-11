@@ -1,4 +1,5 @@
 import axios, { type AxiosInstance } from "axios";
+import { Platform } from "react-native";
 import { API_ENDPOINTS } from "../constants/endpoints";
 import {
   getAccessToken,
@@ -8,14 +9,24 @@ import {
 } from "../utils/storage";
 
 export const getApiBaseUrl = (): string => {
-  return process.env.EXPO_PUBLIC_API_URL ?? "";
+  const configuredUrl = process.env.EXPO_PUBLIC_API_URL?.trim();
+
+  if (Platform.OS === "android") {
+    if (configuredUrl && configuredUrl.includes("192.168.")) {
+      return "http://10.0.2.2:8080";
+    }
+
+    return configuredUrl || "http://10.0.2.2:8080";
+  }
+
+  return configuredUrl || "http://localhost:8080";
 };
 
 export const apiClient: AxiosInstance = axios.create({
   baseURL: getApiBaseUrl(),
   withCredentials: true,
   headers: {
-    "Content-Type": "application/json",
+    "Content-Type": "application/json; charset=utf-8",
     Accept: "application/json",
   },
 });

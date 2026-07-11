@@ -29,6 +29,10 @@ export class ChatRepository {
         isPublic: false,
         authorId: user.sub,
       },
+      {
+        status: DocumentStatus.PENDING,
+        authorId: user.sub,
+      },
     ];
 
     if (user.role === 'MODERATOR') {

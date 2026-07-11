@@ -610,26 +610,32 @@ describe('DocumentsService', () => {
     ).rejects.toThrow();
   });
 
-  it('findOne hides pending document from owner if they are not a moderator', async () => {
-    prismaMock.documents.findFirst.mockResolvedValue(null);
+  it('findOne allows owner to view their pending document before moderation', async () => {
+    const doc = {
+      id: '507f1f77bcf86cd799439011',
+      status: DocumentStatus.PENDING,
+      authorId: 'owner-1',
+    };
+    prismaMock.documents.findFirst.mockResolvedValue(doc);
 
-    await expect(
-      service.findOne('507f1f77bcf86cd799439011', createTokenPayload()),
-    ).rejects.toThrow();
+    const res = await service.findOne(
+      '507f1f77bcf86cd799439011',
+      createTokenPayload(),
+    );
 
     expect(prismaMock.documents.findFirst).toHaveBeenCalledWith(
       expect.objectContaining({
         where: expect.objectContaining({
           OR: expect.arrayContaining([
             {
-              status: DocumentStatus.ACTIVE,
-              isPublic: false,
+              status: DocumentStatus.PENDING,
               authorId: 'owner-1',
             },
           ]),
         }),
       }),
     );
+    expect(res.data).toEqual(doc);
   });
 
   it('findOne allows moderator to view any pending document', async () => {

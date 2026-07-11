@@ -13,6 +13,7 @@ export const API_ENDPOINTS = {
   DOCUMENTS: {
     BASE: "/api/v1/documents",
     MINE: "/api/v1/documents/me",
+    UPLOAD: "/api/v1/documents/upload",
     DETAIL: (id: string) => `/api/v1/documents/${id}`,
     APPROVE: (id: string) => `/api/v1/documents/${id}/approve`,
     REJECT: (id: string) => `/api/v1/documents/${id}/reject`,
@@ -22,6 +23,12 @@ export const API_ENDPOINTS = {
       `/api/v1/documents/${id}/generate-summary`,
     MODERATOR_ANALYSIS: (id: string) =>
       `/api/v1/documents/${id}/moderator-analysis`,
+  },
+  CHAT: {
+    DOCUMENT_SESSIONS: (documentId: string) =>
+      `/api/v1/documents/${documentId}/chat/sessions`,
+    SESSION_MESSAGES: (sessionId: string) =>
+      `/api/v1/chat/sessions/${sessionId}/messages`,
   },
   COLLECTIONS: {
     BASE: "/api/v1/collections",

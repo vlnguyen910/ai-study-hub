@@ -10,7 +10,10 @@ import {
   Version,
   UseGuards,
   Req,
+  UploadedFile,
+  UseInterceptors,
 } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
 import { Throttle } from '@nestjs/throttler';
 import { DocumentsService } from './documents.service';
 import {
@@ -38,6 +41,14 @@ export class DocumentsController {
     private readonly documentsService: DocumentsService,
     private readonly auditLogService: AuditLogService,
   ) {}
+
+  @Version('1')
+  @UseGuards(JwtAuthGuard, VerifiedAccountGuard)
+  @UseInterceptors(FileInterceptor('file'))
+  @Post('upload')
+  upload(@UploadedFile() file: any) {
+    return this.documentsService.uploadFile(file);
+  }
 
   @Version('1')
   @UseGuards(JwtAuthGuard, VerifiedAccountGuard)
