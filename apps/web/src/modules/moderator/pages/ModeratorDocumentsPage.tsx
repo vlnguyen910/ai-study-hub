@@ -6,7 +6,7 @@ import { fetchDocumentDetail, fetchDocuments } from "@/apis/document.api";
 import { Pagination } from "@/components/ui/Pagination";
 import { Table, type TableRow } from "@/components/ui/Table";
 import { usePendingDocumentsStore } from "@/stores/pendingDocuments/store";
-import type { LibraryDocument } from "@/types/document.type";
+import type { LibraryDocument, PaginationMeta } from "@/types/document.type";
 import { formatDate } from "@/utils";
 import { useDocumentSocketContext } from "../context/DocumentSocketContext";
 
@@ -36,6 +36,7 @@ function formatDocumentType(publicId: string): string {
 
 export default function ModeratorDocumentsPage(): React.JSX.Element {
   const [documents, setDocuments] = useState<LibraryDocument[]>([]);
+  const [pagination, setPagination] = useState<PaginationMeta | null>(null);
   const [query, setQuery] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [isLoading, setIsLoading] = useState(true);
@@ -54,10 +55,12 @@ export default function ModeratorDocumentsPage(): React.JSX.Element {
         status: "PENDING",
       });
       setDocuments(response.documents);
+      setPagination(response.pagination);
       // Sync global pending count with actual server count
-      setCount(response.documents.length);
+      setCount(response.pagination.total);
     } catch {
       setDocuments([]);
+      setPagination(null);
       setError("Không thể tải danh sách tài liệu chờ duyệt.");
     } finally {
       setIsLoading(false);
@@ -122,14 +125,19 @@ export default function ModeratorDocumentsPage(): React.JSX.Element {
     );
   }, [documents, query]);
 
-  const totalPages = Math.max(
-    1,
-    Math.ceil(filteredDocuments.length / pageSize),
-  );
-  const visibleDocuments = filteredDocuments.slice(
-    (currentPage - 1) * pageSize,
-    currentPage * pageSize,
-  );
+  const isSearching = query.trim().length > 0;
+  const totalPages = isSearching
+    ? Math.max(1, Math.ceil(filteredDocuments.length / pageSize))
+    : Math.max(1, pagination?.totalPages ?? 1);
+  const visibleDocuments = isSearching
+    ? filteredDocuments.slice(
+        (currentPage - 1) * pageSize,
+        currentPage * pageSize,
+      )
+    : documents;
+  const totalDocumentCount = isSearching
+    ? filteredDocuments.length
+    : (pagination?.total ?? documents.length);
 
   const documentRows: TableRow[] = visibleDocuments.map((document) => {
     return {
@@ -197,7 +205,7 @@ export default function ModeratorDocumentsPage(): React.JSX.Element {
               Chờ Duyệt
             </p>
             <p className="font-headline-md text-headline-md text-primary">
-              {documents.length}
+              {pagination?.total ?? documents.length}
             </p>
           </div>
         </div>
@@ -251,8 +259,7 @@ export default function ModeratorDocumentsPage(): React.JSX.Element {
         )}
         <div className="flex flex-col gap-3 border-t border-outline-variant bg-surface-container-lowest px-6 py-4 sm:flex-row sm:items-center sm:justify-between">
           <p className="font-label-sm text-label-sm text-on-surface-variant">
-            Hiển thị {visibleDocuments.length} của {filteredDocuments.length}{" "}
-            tài liệu
+            Hiển thị {visibleDocuments.length} của {totalDocumentCount} tài liệu
           </p>
           <Pagination
             currentPage={currentPage}
