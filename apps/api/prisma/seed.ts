@@ -10,7 +10,7 @@ const SEED_ACCOUNT_COUNT = Number.parseInt(
 );
 const SEED_EMAIL_DOMAIN = 'seed.ai-study-hub.local';
 const SEED_PASSWORD = 'Password123!';
-const SEED_PASSWORD_SALT_ROUNDS = 10;
+const DEMO_PASSWORD = '12345678';
 type UserRole = 'USER' | 'ADMIN' | 'MODERATOR';
 type UserStatus = 'ACTIVE' | 'UNVERIFIED' | 'BANNED' | 'DELETED';
 
@@ -26,6 +26,17 @@ type SeedAccount = {
 function buildSeedAccounts(): SeedAccount[] {
   faker.seed(20260522);
 
+  const demoUsers: SeedAccount[] = ['A', 'B', 'C', 'D', 'E'].map(
+    (suffix, index) => ({
+      email: index === 0 ? 'user@gmail.com' : `user${index}@gmail.com`,
+      name: `Lê Văn ${suffix}`,
+      password: DEMO_PASSWORD,
+      avatarUrl: faker.image.avatar(),
+      role: 'USER',
+      status: 'ACTIVE',
+    }),
+  );
+
   const accounts: SeedAccount[] = [
     {
       email: `admin@${SEED_EMAIL_DOMAIN}`,
@@ -35,6 +46,23 @@ function buildSeedAccounts(): SeedAccount[] {
       role: 'ADMIN',
       status: 'ACTIVE',
     },
+    {
+      email: 'admin@gmail.com',
+      name: 'Demo Admin',
+      password: DEMO_PASSWORD,
+      avatarUrl: faker.image.avatar(),
+      role: 'ADMIN',
+      status: 'ACTIVE',
+    },
+    {
+      email: 'moderator@gmail.com',
+      name: 'Demo Moderator',
+      password: DEMO_PASSWORD,
+      avatarUrl: faker.image.avatar(),
+      role: 'MODERATOR',
+      status: 'ACTIVE',
+    },
+    ...demoUsers,
   ];
 
   for (let index = 1; index <= SEED_ACCOUNT_COUNT; index += 1) {
@@ -186,6 +214,10 @@ async function main() {
   console.log(`Ensured ${uploadFileTypes.length} upload file type configs.`);
   console.log(`Admin account: admin@${SEED_EMAIL_DOMAIN}`);
   console.log(`Seed password: ${SEED_PASSWORD}`);
+  console.log('Demo accounts:');
+  console.log(`- admin@gmail.com / ${DEMO_PASSWORD}`);
+  console.log(`- moderator@gmail.com / ${DEMO_PASSWORD}`);
+  console.log(`- user@gmail.com -> user4@gmail.com / ${DEMO_PASSWORD}`);
 }
 
 main()

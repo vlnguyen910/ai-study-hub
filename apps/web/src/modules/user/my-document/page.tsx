@@ -28,7 +28,7 @@ import { DocumentEditModal } from "./components/DocumentEditModal";
 import { DeleteDocumentModal } from "./components/DeleteDocumentModal";
 import { DocumentStatsBar } from "./components/DocumentStatsBar";
 
-const ITEMS_PER_PAGE = 4;
+const ITEMS_PER_PAGE = 6;
 
 interface DocumentStats {
   readonly total: number;
