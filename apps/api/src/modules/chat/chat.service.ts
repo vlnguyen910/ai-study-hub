@@ -1,15 +1,18 @@
 import {
   BadRequestException,
   ForbiddenException,
+  HttpException,
   Injectable,
   Logger,
   NotFoundException,
+  ServiceUnavailableException,
 } from '@nestjs/common';
 import type { Prisma } from '@prisma/client';
 import { AIService } from '../ai/ai.service';
 import type { TokenPayload } from '../../common/interfaces/auth.interface';
 import { CreateChatSessionDto, SendChatMessageDto } from './dto';
 import { CHAT_MESSAGE_ROLE, ChatRepository } from './chat.repository';
+import { DocumentProcessingService } from '../document-processing/document-processing.service';
 
 const CHAT_MODEL = 'gemini-2.5-flash-lite';
 const TOP_K_CHUNKS = 6;
@@ -29,6 +32,7 @@ export class ChatService {
   constructor(
     private readonly chatRepository: ChatRepository,
     private readonly aiService: AIService,
+    private readonly documentProcessingService: DocumentProcessingService,
   ) {}
 
   async createDocumentSession(
@@ -109,7 +113,7 @@ export class ChatService {
     this.ensureAiChatEnabled(settings);
     await this.findReadableDocumentOrThrow(session.documentId, user);
 
-    const [recentMessages, chunks] = await Promise.all([
+    const [recentMessages, initialChunks] = await Promise.all([
       this.chatRepository.findRecentMessages(sessionId),
       this.chatRepository.findEmbeddedChunks(
         session.documentId,
@@ -117,6 +121,31 @@ export class ChatService {
       ),
     ]);
     const isFirstExchange = recentMessages.length === 0;
+    let chunks = initialChunks;
+
+    if (chunks.length === 0) {
+      try {
+        await this.documentProcessingService.ensureDocumentReadyForChat(
+          session.documentId,
+        );
+      } catch (error) {
+        this.logger.error(
+          `Failed to prepare document ${session.documentId} for AI Coach: ${(error as Error).message}`,
+          error instanceof Error ? error.stack : undefined,
+        );
+
+        if (error instanceof HttpException) throw error;
+
+        throw new ServiceUnavailableException(
+          'Unable to process this document for AI Coach right now. Please try again later.',
+        );
+      }
+
+      chunks = await this.chatRepository.findEmbeddedChunks(
+        session.documentId,
+        MAX_RETRIEVAL_CHUNKS,
+      );
+    }
 
     if (chunks.length === 0) {
       const totalChunks = await this.chatRepository.countDocumentChunks(

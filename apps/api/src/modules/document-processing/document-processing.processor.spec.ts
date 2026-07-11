@@ -52,6 +52,7 @@ describe('DocumentProcessingProcessor', () => {
 
     aiServiceMock = {
       getEmbedding: jest.fn(),
+      getEmbeddings: jest.fn(),
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -166,9 +167,10 @@ describe('DocumentProcessingProcessor', () => {
       ];
       prismaMock.document_chunks.findMany.mockResolvedValue(mockChunks);
 
-      aiServiceMock.getEmbedding
-        .mockResolvedValueOnce([0.1, 0.2, 0.3])
-        .mockResolvedValueOnce([0.4, 0.5, 0.6]);
+      aiServiceMock.getEmbeddings.mockResolvedValue([
+        [0.1, 0.2, 0.3],
+        [0.4, 0.5, 0.6],
+      ]);
 
       await processor.process({
         id: '1',
@@ -184,8 +186,10 @@ describe('DocumentProcessingProcessor', () => {
         orderBy: { chunkIndex: 'asc' },
       });
 
-      expect(aiServiceMock.getEmbedding).toHaveBeenNthCalledWith(1, 'text 1');
-      expect(aiServiceMock.getEmbedding).toHaveBeenNthCalledWith(2, 'text 2');
+      expect(aiServiceMock.getEmbeddings).toHaveBeenCalledWith([
+        'text 1',
+        'text 2',
+      ]);
 
       expect(prismaMock.document_chunks.update).toHaveBeenNthCalledWith(1, {
         where: { id: 'chunk-1' },
@@ -195,6 +199,41 @@ describe('DocumentProcessingProcessor', () => {
         where: { id: 'chunk-2' },
         data: { embedding: [0.4, 0.5, 0.6] },
       });
+    });
+  });
+
+  describe('prepareDocumentForChat', () => {
+    it('creates missing chunks and embeddings without relying on the queue', async () => {
+      prismaMock.document_chunks.findMany
+        .mockResolvedValueOnce([])
+        .mockResolvedValueOnce([
+          {
+            id: 'chunk-1',
+            chunkIndex: 0,
+            chunkText: 'document text',
+            embedding: [],
+          },
+        ]);
+      prismaMock.documents.findUnique.mockResolvedValue({
+        id: 'doc-1',
+        fileUrl: 'https://cloudinary.com/doc.pdf',
+        format: 'pdf',
+        deletedAt: null,
+      });
+      documentExtractorMock.extractText.mockResolvedValue('document text');
+      aiServiceMock.getEmbeddings.mockResolvedValue([[0.1, 0.2]]);
+
+      await processor.prepareDocumentForChat('doc-1');
+
+      expect(prismaMock.document_chunks.createMany).toHaveBeenCalled();
+      expect(aiServiceMock.getEmbeddings).toHaveBeenCalledWith([
+        'document text',
+      ]);
+      expect(prismaMock.document_chunks.update).toHaveBeenCalledWith({
+        where: { id: 'chunk-1' },
+        data: { embedding: [0.1, 0.2] },
+      });
+      expect(mockQueue.add).not.toHaveBeenCalled();
     });
   });
 });

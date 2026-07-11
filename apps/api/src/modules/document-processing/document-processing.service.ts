@@ -2,12 +2,31 @@ import { Injectable, Logger } from '@nestjs/common';
 import { QueueService } from '../../common/queue/queue.service';
 import { QUEUE_NAMES } from '../../common/queue/queue.constants';
 import { DOCUMENT_JOB_NAMES } from './document-processing.types';
+import { DocumentProcessingProcessor } from './document-processing.processor';
 
 @Injectable()
 export class DocumentProcessingService {
   private readonly logger = new Logger(DocumentProcessingService.name);
+  private readonly chatPreparationTasks = new Map<string, Promise<void>>();
 
-  constructor(private readonly queueService: QueueService) {}
+  constructor(
+    private readonly queueService: QueueService,
+    private readonly documentProcessingProcessor: DocumentProcessingProcessor,
+  ) {}
+
+  async ensureDocumentReadyForChat(documentId: string): Promise<void> {
+    const existingTask = this.chatPreparationTasks.get(documentId);
+    if (existingTask) return existingTask;
+
+    const preparationTask = this.documentProcessingProcessor
+      .prepareDocumentForChat(documentId)
+      .finally(() => {
+        this.chatPreparationTasks.delete(documentId);
+      });
+
+    this.chatPreparationTasks.set(documentId, preparationTask);
+    return preparationTask;
+  }
 
   async enqueueUploadProcessing(documentId: string) {
     await this.queueService.getQueue(QUEUE_NAMES.document).add(
