@@ -3,7 +3,7 @@
 import type { ReactNode } from "react";
 
 export interface IconButtonProps extends Readonly<
-  React.ButtonHTMLAttributes<HTMLButtonElement>
+  Omit<React.ButtonHTMLAttributes<HTMLButtonElement>, "style">
 > {
   readonly icon: ReactNode;
   readonly ariaLabel: string;

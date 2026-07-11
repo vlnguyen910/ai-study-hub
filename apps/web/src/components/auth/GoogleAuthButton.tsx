@@ -1,5 +1,7 @@
 import type { ReactElement } from "react";
 
+import { Button } from "@/components/ui/Button";
+
 interface GoogleAuthButtonProps {
   readonly label: string;
   readonly disabled?: boolean;
@@ -40,14 +42,15 @@ export function GoogleAuthButton({
   onClick,
 }: GoogleAuthButtonProps): ReactElement {
   return (
-    <button
+    <Button
       type="button"
+      variant="outline"
       onClick={onClick}
       disabled={disabled}
-      className="inline-flex h-12 w-full items-center justify-center gap-3 rounded-2xl border border-[#dadce0] bg-white px-4 text-sm font-semibold text-[#3c4043] shadow-sm transition-colors hover:bg-[#f8fafd] focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-primary/25 disabled:cursor-not-allowed disabled:opacity-60"
+      className="h-12 w-full justify-center gap-3 rounded-2xl"
     >
       <GoogleLogo />
       <span>{label}</span>
-    </button>
+    </Button>
   );
 }

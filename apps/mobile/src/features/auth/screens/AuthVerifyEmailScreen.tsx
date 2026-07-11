@@ -19,9 +19,11 @@ import {
 } from "../services/auth.service";
 import { getDeviceId } from "@/utils/device";
 import { saveTokens } from "@/utils/storage";
+import { useSession } from "../context/SessionContext";
 
 export function AuthVerifyEmailScreen() {
   const params = useLocalSearchParams<{ token?: string }>();
+  const { refreshSession } = useSession();
   const token = Array.isArray(params.token) ? params.token[0] : params.token;
   const [isVerifying, setIsVerifying] = useState(false);
   const [isResending, setIsResending] = useState(false);
@@ -42,6 +44,21 @@ export function AuthVerifyEmailScreen() {
     return response;
   }, []);
 
+  const finishVerification = useCallback(
+    async (currentToken: string) => {
+      await verifyCurrentToken(currentToken);
+
+      const isAuthenticated = await refreshSession();
+      if (!isAuthenticated) {
+        router.replace(ROUTES.LOGIN as never);
+        return;
+      }
+
+      router.replace(ROUTES.HOME as never);
+    },
+    [refreshSession, verifyCurrentToken],
+  );
+
   useEffect(() => {
     if (!token) return;
 
@@ -49,14 +66,9 @@ export function AuthVerifyEmailScreen() {
       setIsVerifying(true);
 
       try {
-        await verifyCurrentToken(token);
+        await finishVerification(token);
         setVerificationMessage("Email đã được xác thực.");
-        Alert.alert("Thành công", "Email đã được xác thực.", [
-          {
-            text: "Đăng nhập",
-            onPress: () => router.replace(ROUTES.LOGIN as never),
-          },
-        ]);
+        Alert.alert("Thành công", "Email đã được xác thực.");
       } catch (error) {
         const message =
           error instanceof AuthServiceError
@@ -70,7 +82,7 @@ export function AuthVerifyEmailScreen() {
     };
 
     void verifyToken();
-  }, [token, verifyCurrentToken]);
+  }, [token, finishVerification]);
 
   const handleOpenLogin = () => {
     router.replace(ROUTES.LOGIN as never);
@@ -88,13 +100,8 @@ export function AuthVerifyEmailScreen() {
     setIsVerifying(true);
 
     try {
-      await verifyCurrentToken(token);
-      Alert.alert("Thành công", "Email đã được xác thực.", [
-        {
-          text: "Đăng nhập",
-          onPress: handleOpenLogin,
-        },
-      ]);
+      await finishVerification(token);
+      Alert.alert("Thành công", "Email đã được xác thực.");
     } catch (error) {
       const message =
         error instanceof AuthServiceError
