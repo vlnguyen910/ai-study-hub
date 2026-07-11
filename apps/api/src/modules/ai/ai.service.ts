@@ -11,6 +11,7 @@ import { aiConfiguration } from '../../config/ai.config';
 
 @Injectable()
 export class AIService {
+  private static readonly EMBEDDING_BATCH_SIZE = 50;
   private readonly logger = new Logger(AIService.name);
   private readonly genAI: GoogleGenerativeAI;
 
@@ -136,6 +137,94 @@ export class AIService {
         'Dịch vụ AI embedding hiện không khả dụng. Vui lòng kiểm tra GEMINI_API_KEY, model embedding hoặc thử lại sau.',
       );
     }
+  }
+
+  async getEmbeddings(
+    texts: string[],
+    modelName = 'gemini-embedding-2',
+  ): Promise<number[][]> {
+    this.ensureConfigured();
+    if (texts.length === 0) return [];
+
+    try {
+      this.logger.log(
+        `Calling Gemini API (model: ${modelName}) to generate ${texts.length} embeddings in batches...`,
+      );
+      const model = this.genAI.getGenerativeModel({ model: modelName });
+      const embeddings: number[][] = [];
+
+      for (
+        let offset = 0;
+        offset < texts.length;
+        offset += AIService.EMBEDDING_BATCH_SIZE
+      ) {
+        const batch = texts.slice(
+          offset,
+          offset + AIService.EMBEDDING_BATCH_SIZE,
+        );
+        const request = {
+          requests: batch.map((text) => ({
+            content: {
+              role: 'user' as const,
+              parts: [{ text }],
+            },
+          })),
+        };
+        let result: Awaited<
+          ReturnType<typeof model.batchEmbedContents>
+        > | null = null;
+
+        for (let attempt = 1; attempt <= 3; attempt++) {
+          try {
+            result = await model.batchEmbedContents(request);
+            break;
+          } catch (error) {
+            if (attempt === 3 || !this.isRetryableError(error)) throw error;
+
+            const retryDelayMs = this.getEmbeddingRetryDelayMs(error, attempt);
+            this.logger.warn(
+              `Embedding batch rate-limited. Retrying in ${retryDelayMs}ms (${attempt}/3)...`,
+            );
+            await new Promise((resolve) => setTimeout(resolve, retryDelayMs));
+          }
+        }
+
+        if (!result) {
+          throw new Error('Gemini did not return a batch embedding response');
+        }
+
+        embeddings.push(
+          ...result.embeddings.map((embedding) => embedding.values),
+        );
+      }
+
+      if (embeddings.length !== texts.length) {
+        throw new Error(
+          `Gemini returned ${embeddings.length} embeddings for ${texts.length} inputs`,
+        );
+      }
+
+      return embeddings;
+    } catch (error) {
+      this.logger.error(
+        `Error generating batch embeddings from Gemini API: ${(error as Error).message}`,
+        (error as Error).stack,
+      );
+      throw new ServiceUnavailableException(
+        'Dịch vụ AI embedding hiện không khả dụng. Vui lòng kiểm tra GEMINI_API_KEY, model embedding hoặc thử lại sau.',
+      );
+    }
+  }
+
+  private getEmbeddingRetryDelayMs(error: unknown, attempt: number): number {
+    const message = String((error as { message?: unknown })?.message ?? error);
+    const retryMatch = message.match(/retry in (\d+(?:\.\d+)?)s/i);
+
+    if (retryMatch?.[1]) {
+      return Math.ceil(Number(retryMatch[1]) * 1000) + 1000;
+    }
+
+    return 10_000 * attempt;
   }
 
   /**

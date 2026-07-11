@@ -161,9 +161,6 @@ export default function ModeratorDashboardPage(): React.JSX.Element {
             <p className="mt-4 font-display text-display text-on-surface">
               {isLoading ? "..." : formatCount(pendingTotal)}
             </p>
-            <p className="font-label-sm text-label-sm text-on-surface-variant">
-              Lấy từ API tài liệu với trạng thái PENDING.
-            </p>
           </div>
         </ModeratorCard>
 

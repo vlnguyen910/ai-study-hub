@@ -16,6 +16,8 @@ import {
   type DocumentJobData,
 } from './document-processing.types';
 
+const EMBEDDING_PERSIST_BATCH_SIZE = 50;
+
 @Injectable()
 export class DocumentProcessingProcessor
   implements OnModuleInit, OnModuleDestroy
@@ -67,7 +69,7 @@ export class DocumentProcessingProcessor
 
     switch (job.data.type) {
       case DOCUMENT_JOB_NAMES.processUpload:
-        await this.processUpload(job.data.documentId);
+        await this.processUpload(job.data.documentId, true);
         break;
       case DOCUMENT_JOB_NAMES.generateEmbeddings:
         await this.processGenerateEmbeddings(job.data.documentId);
@@ -99,7 +101,27 @@ export class DocumentProcessingProcessor
     );
   }
 
-  private async processUpload(documentId: string) {
+  async prepareDocumentForChat(documentId: string) {
+    const existingChunks = await this.prismaService.document_chunks.findMany({
+      where: { documentId },
+      select: {
+        id: true,
+      },
+      take: 1,
+    });
+
+    if (existingChunks.length === 0) {
+      const wasChunked = await this.processUpload(documentId, false);
+      if (!wasChunked) return;
+    }
+
+    await this.processGenerateEmbeddings(documentId);
+  }
+
+  private async processUpload(
+    documentId: string,
+    enqueueEmbeddings: boolean,
+  ): Promise<boolean> {
     this.logger.log('Starting processUpload for document');
 
     const document = await this.prismaService.documents.findUnique({
@@ -108,12 +130,12 @@ export class DocumentProcessingProcessor
 
     if (!document) {
       this.logger.error('Document not found in processor DB');
-      return;
+      return false;
     }
 
     if (document.deletedAt) {
       this.logger.error('Document is deleted');
-      return;
+      return false;
     }
 
     this.logger.log('Extracting text from document');
@@ -124,7 +146,7 @@ export class DocumentProcessingProcessor
 
     if (!rawText || rawText.trim().length === 0) {
       this.logger.warn('No readable text extracted for document');
-      return;
+      return false;
     }
 
     // Chunking strategy: sliding character window of 1000 characters, 200 characters overlap
@@ -160,18 +182,21 @@ export class DocumentProcessingProcessor
 
     this.logger.log('Successfully saved chunks to database for document');
 
-    // Trigger embeddings generation downstream (Option B)
-    await this.queueService.getQueue(QUEUE_NAMES.document).add(
-      DOCUMENT_JOB_NAMES.generateEmbeddings,
-      {
-        type: DOCUMENT_JOB_NAMES.generateEmbeddings,
-        documentId,
-      },
-      {
-        jobId: `${DOCUMENT_JOB_NAMES.generateEmbeddings}-${documentId}`,
-      },
-    );
-    this.logger.log('Enqueued generate-embeddings job for document');
+    if (enqueueEmbeddings) {
+      await this.queueService.getQueue(QUEUE_NAMES.document).add(
+        DOCUMENT_JOB_NAMES.generateEmbeddings,
+        {
+          type: DOCUMENT_JOB_NAMES.generateEmbeddings,
+          documentId,
+        },
+        {
+          jobId: `${DOCUMENT_JOB_NAMES.generateEmbeddings}-${documentId}`,
+        },
+      );
+      this.logger.log('Enqueued generate-embeddings job for document');
+    }
+
+    return true;
   }
 
   private async processGenerateEmbeddings(documentId: string) {
@@ -187,23 +212,46 @@ export class DocumentProcessingProcessor
       return;
     }
 
-    this.logger.log(
-      `Generating embeddings for ${chunks.length} chunks sequentially...`,
+    const chunksWithoutEmbeddings = chunks.filter(
+      (chunk) =>
+        !Array.isArray(chunk.embedding) || chunk.embedding.length === 0,
     );
 
-    for (const chunk of chunks) {
-      try {
-        const embedding = await this.aiService.getEmbedding(chunk.chunkText);
-        await this.prismaService.document_chunks.update({
-          where: { id: chunk.id },
-          data: { embedding },
-        });
-      } catch (error) {
-        this.logger.error(
-          `Failed to generate/save embedding for chunk ${chunk.chunkIndex}: ${(error as Error).message}`,
+    if (chunksWithoutEmbeddings.length === 0) {
+      this.logger.log('Document chunks already have embeddings');
+      return;
+    }
+
+    this.logger.log(
+      `Generating embeddings for ${chunksWithoutEmbeddings.length} chunks in batches...`,
+    );
+
+    try {
+      for (
+        let offset = 0;
+        offset < chunksWithoutEmbeddings.length;
+        offset += EMBEDDING_PERSIST_BATCH_SIZE
+      ) {
+        const chunkBatch = chunksWithoutEmbeddings.slice(
+          offset,
+          offset + EMBEDDING_PERSIST_BATCH_SIZE,
         );
-        throw error; // Let BullMQ retry
+        const embeddings = await this.aiService.getEmbeddings(
+          chunkBatch.map((chunk) => chunk.chunkText),
+        );
+
+        for (const [index, chunk] of chunkBatch.entries()) {
+          await this.prismaService.document_chunks.update({
+            where: { id: chunk.id },
+            data: { embedding: embeddings[index] },
+          });
+        }
       }
+    } catch (error) {
+      this.logger.error(
+        `Failed to generate/save document embeddings: ${(error as Error).message}`,
+      );
+      throw error; // Let BullMQ retry
     }
 
     this.logger.log('Successfully completed generateEmbeddings for document');

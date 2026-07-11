@@ -8,13 +8,16 @@ describe('AIService', () => {
   let mockGetGenerativeModel: jest.Mock;
   let mockGenerateContent: jest.Mock;
   let mockEmbedContent: jest.Mock;
+  let mockBatchEmbedContents: jest.Mock;
 
   beforeEach(async () => {
     mockGenerateContent = jest.fn();
     mockEmbedContent = jest.fn();
+    mockBatchEmbedContents = jest.fn();
     mockGetGenerativeModel = jest.fn().mockReturnValue({
       generateContent: mockGenerateContent,
       embedContent: mockEmbedContent,
+      batchEmbedContents: mockBatchEmbedContents,
     });
 
     const module: TestingModule = await Test.createTestingModule({
@@ -153,6 +156,55 @@ describe('AIService', () => {
       await expect(service.getEmbedding('hello')).rejects.toThrow(
         ServiceUnavailableException,
       );
+    });
+  });
+
+  describe('getEmbeddings', () => {
+    it('returns embeddings in the same order as the input texts', async () => {
+      mockBatchEmbedContents.mockResolvedValue({
+        embeddings: [{ values: [0.1, 0.2] }, { values: [0.3, 0.4] }],
+      });
+
+      const result = await service.getEmbeddings(['first', 'second']);
+
+      expect(result).toEqual([
+        [0.1, 0.2],
+        [0.3, 0.4],
+      ]);
+      expect(mockBatchEmbedContents).toHaveBeenCalledWith({
+        requests: [
+          {
+            content: { role: 'user', parts: [{ text: 'first' }] },
+          },
+          {
+            content: { role: 'user', parts: [{ text: 'second' }] },
+          },
+        ],
+      });
+    });
+
+    it('returns an empty array without calling Gemini for empty input', async () => {
+      await expect(service.getEmbeddings([])).resolves.toEqual([]);
+      expect(mockBatchEmbedContents).not.toHaveBeenCalled();
+    });
+
+    it('retries a rate-limited embedding batch', async () => {
+      const rateLimitError = new Error('429 Please retry in 12.5s.');
+      (rateLimitError as any).status = 429;
+      mockBatchEmbedContents
+        .mockRejectedValueOnce(rateLimitError)
+        .mockResolvedValueOnce({
+          embeddings: [{ values: [0.1, 0.2] }],
+        });
+      jest.spyOn(global, 'setTimeout').mockImplementation((callback: any) => {
+        callback();
+        return {} as any;
+      });
+
+      await expect(service.getEmbeddings(['retry me'])).resolves.toEqual([
+        [0.1, 0.2],
+      ]);
+      expect(mockBatchEmbedContents).toHaveBeenCalledTimes(2);
     });
   });
 });
