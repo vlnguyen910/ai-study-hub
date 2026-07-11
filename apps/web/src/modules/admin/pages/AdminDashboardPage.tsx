@@ -263,37 +263,6 @@ export default function AdminDashboardPage(): React.JSX.Element {
             </p>
           )}
         </AdminCard>
-
-        <AdminCard className="p-6 lg:col-span-5">
-          <div className="mb-6">
-            <h2 className="text-xl font-semibold tracking-normal text-on-surface">
-              Tác vụ nhanh
-            </h2>
-            <p className="font-label-sm text-label-sm text-on-surface-variant tracking-normal">
-              Lối tắt cho các thao tác quản trị thường dùng.
-            </p>
-          </div>
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            <Link
-              className="flex min-h-28 flex-col justify-between rounded border border-outline-variant bg-surface p-4 transition-colors hover:border-primary hover:bg-primary/10 hover:text-primary"
-              href="/admin/users"
-            >
-              <MaterialIcon className="text-primary" name="person_add" />
-              <span className="font-label-md text-label-md tracking-normal">
-                Thêm người dùng
-              </span>
-            </Link>
-            <Link
-              className="flex min-h-28 flex-col justify-between rounded border border-outline-variant bg-surface p-4 transition-colors hover:border-primary hover:bg-primary/10 hover:text-primary"
-              href="/admin/settings"
-            >
-              <MaterialIcon className="text-primary" name="security" />
-              <span className="font-label-md text-label-md tracking-normal">
-                Cấu hình bảo mật
-              </span>
-            </Link>
-          </div>
-        </AdminCard>
       </div>
     </>
   );

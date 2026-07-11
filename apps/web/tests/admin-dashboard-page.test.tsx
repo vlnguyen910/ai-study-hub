@@ -36,6 +36,7 @@ describe("AdminDashboardPage", () => {
     expect(screen.getByText("5")).toBeInTheDocument();
     expect(screen.getByText("2")).toBeInTheDocument();
     expect(screen.queryByText("12,840")).not.toBeInTheDocument();
+    expect(screen.queryByText("Tác vụ nhanh")).not.toBeInTheDocument();
 
     expect(adminApiMock.fetchAdminDashboardStats).toHaveBeenCalledWith();
     expect(adminApiMock.fetchAuditLogs).toHaveBeenCalledWith({ limit: 5 });

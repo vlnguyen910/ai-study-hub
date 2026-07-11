@@ -558,9 +558,14 @@ describe('DocumentsService', () => {
         where: expect.objectContaining({
           OR: expect.arrayContaining([
             {
-              status: DocumentStatus.ACTIVE,
-              isPublic: false,
               authorId: 'owner-1',
+              status: {
+                in: [
+                  DocumentStatus.ACTIVE,
+                  DocumentStatus.PENDING,
+                  DocumentStatus.REJECTED,
+                ],
+              },
             },
           ]),
         }),
@@ -610,26 +615,38 @@ describe('DocumentsService', () => {
     ).rejects.toThrow();
   });
 
-  it('findOne hides pending document from owner if they are not a moderator', async () => {
-    prismaMock.documents.findFirst.mockResolvedValue(null);
+  it('findOne allows owner to view their pending document', async () => {
+    const doc = {
+      id: '507f1f77bcf86cd799439011',
+      status: DocumentStatus.PENDING,
+      authorId: 'owner-1',
+    };
+    prismaMock.documents.findFirst.mockResolvedValue(doc);
 
-    await expect(
-      service.findOne('507f1f77bcf86cd799439011', createTokenPayload()),
-    ).rejects.toThrow();
+    const result = await service.findOne(
+      '507f1f77bcf86cd799439011',
+      createTokenPayload(),
+    );
 
     expect(prismaMock.documents.findFirst).toHaveBeenCalledWith(
       expect.objectContaining({
         where: expect.objectContaining({
           OR: expect.arrayContaining([
             {
-              status: DocumentStatus.ACTIVE,
-              isPublic: false,
               authorId: 'owner-1',
+              status: {
+                in: [
+                  DocumentStatus.ACTIVE,
+                  DocumentStatus.PENDING,
+                  DocumentStatus.REJECTED,
+                ],
+              },
             },
           ]),
         }),
       }),
     );
+    expect(result.data).toEqual(doc);
   });
 
   it('findOne allows moderator to view any pending document', async () => {
@@ -669,26 +686,38 @@ describe('DocumentsService', () => {
     ).rejects.toThrow();
   });
 
-  it('findOne hides rejected document from owner if they are not a moderator', async () => {
-    prismaMock.documents.findFirst.mockResolvedValue(null);
+  it('findOne allows owner to view their rejected document', async () => {
+    const doc = {
+      id: '507f1f77bcf86cd799439011',
+      status: DocumentStatus.REJECTED,
+      authorId: 'owner-1',
+    };
+    prismaMock.documents.findFirst.mockResolvedValue(doc);
 
-    await expect(
-      service.findOne('507f1f77bcf86cd799439011', createTokenPayload()),
-    ).rejects.toThrow();
+    const result = await service.findOne(
+      '507f1f77bcf86cd799439011',
+      createTokenPayload(),
+    );
 
     expect(prismaMock.documents.findFirst).toHaveBeenCalledWith(
       expect.objectContaining({
         where: expect.objectContaining({
           OR: expect.arrayContaining([
             {
-              status: DocumentStatus.ACTIVE,
-              isPublic: false,
               authorId: 'owner-1',
+              status: {
+                in: [
+                  DocumentStatus.ACTIVE,
+                  DocumentStatus.PENDING,
+                  DocumentStatus.REJECTED,
+                ],
+              },
             },
           ]),
         }),
       }),
     );
+    expect(result.data).toEqual(doc);
   });
 
   it('findOne allows moderator to view rejected document', async () => {
@@ -710,6 +739,31 @@ describe('DocumentsService', () => {
       expect.objectContaining({
         where: expect.objectContaining({
           OR: expect.arrayContaining([{ status: DocumentStatus.REJECTED }]),
+        }),
+      }),
+    );
+    expect(res.data).toEqual(doc);
+  });
+
+  it('findOne allows admin to view any pending document', async () => {
+    const doc = {
+      id: '507f1f77bcf86cd799439011',
+      status: DocumentStatus.PENDING,
+    };
+    prismaMock.documents.findFirst.mockResolvedValue(doc);
+
+    const res = await service.findOne(
+      '507f1f77bcf86cd799439011',
+      createTokenPayload({
+        sub: 'admin-1',
+        role: UserRole.ADMIN,
+      }),
+    );
+
+    expect(prismaMock.documents.findFirst).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          OR: expect.arrayContaining([{ status: DocumentStatus.PENDING }]),
         }),
       }),
     );

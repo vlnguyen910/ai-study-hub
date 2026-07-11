@@ -127,6 +127,39 @@ export default function DocumentDetailPage(): React.JSX.Element {
       <BackButton fallbackHref="/home" />
       <DocumentHero document={document} />
 
+      {document.status === "PENDING" || document.status === "REJECTED" ? (
+        <Card
+          className={
+            document.status === "REJECTED"
+              ? "border-error/20 bg-error/5 p-5"
+              : "border-warning/25 bg-warning/10 p-5"
+          }
+        >
+          <div className="flex items-start gap-3">
+            <span
+              className={`material-symbols-outlined mt-0.5 text-[22px] ${
+                document.status === "REJECTED" ? "text-error" : "text-warning"
+              }`}
+            >
+              {document.status === "REJECTED" ? "cancel" : "schedule"}
+            </span>
+            <div className="min-w-0">
+              <h2 className="font-semibold text-on-surface">
+                {document.status === "REJECTED"
+                  ? "Tài liệu đã bị từ chối"
+                  : "Tài liệu đang chờ duyệt"}
+              </h2>
+              <p className="mt-1 whitespace-pre-line text-sm leading-6 text-on-surface-variant">
+                {document.status === "REJECTED"
+                  ? document.rejectionReason?.trim() ||
+                    "Moderator chưa cung cấp lý do từ chối."
+                  : "Bạn vẫn có thể xem trước nội dung trong khi chờ moderator kiểm duyệt."}
+              </p>
+            </div>
+          </div>
+        </Card>
+      ) : null}
+
       <div className="grid grid-cols-1 items-start gap-6 xl:grid-cols-[minmax(0,1fr)_380px]">
         <div className="min-w-0 space-y-6 xl:pr-2">
           <DocumentPreview preview={preview ?? { type: "unsupported" }} />
