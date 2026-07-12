@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { Icon } from "@/components/nativewindui/Icon";
 import { router } from "expo-router";
 import {
+  Alert,
   Image,
   KeyboardAvoidingView,
   Platform,
@@ -13,6 +14,7 @@ import {
 } from "react-native";
 import { Button, Card, PageShell } from "@/components";
 import { ROUTES } from "@/constants/routes";
+import { useSession } from "@/features/auth";
 import { useColorScheme } from "@/lib/useColorScheme";
 import { fetchMyProfile, updateProfile } from "../services/profile.service";
 import type {
@@ -195,11 +197,13 @@ export function ProfileScreen({
   readonly showBackButton?: boolean;
 } = {}) {
   const { colorScheme, setColorScheme } = useColorScheme();
+  const { signOut, user } = useSession();
   const [profile, setProfile] = useState<ProfileState>(INITIAL_PROFILE);
   const [draft, setDraft] = useState<ProfileState>(INITIAL_PROFILE);
   const [isEditing, setIsEditing] = useState(false);
   const [isLoadingProfile, setIsLoadingProfile] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const [isSigningOut, setIsSigningOut] = useState(false);
   const [statusMessage, setStatusMessage] = useState("Đang tải hồ sơ cá nhân.");
   const [fieldErrors, setFieldErrors] = useState<
     Partial<Record<ProfileFieldKey, string>>
@@ -308,6 +312,26 @@ export function ProfileScreen({
 
   const changeTheme = (nextTheme: ThemeOptionValue) => {
     setColorScheme(nextTheme);
+  };
+
+  const confirmSignOut = () => {
+    Alert.alert(
+      "Đăng xuất",
+      `Bạn có chắc chắn muốn đăng xuất${user?.name ? ` khỏi tài khoản ${user.name}` : ""}?`,
+      [
+        { text: "Hủy", style: "cancel" },
+        {
+          text: "Đăng xuất",
+          style: "destructive",
+          onPress: () => {
+            setIsSigningOut(true);
+            void signOut().then(() => {
+              router.replace(ROUTES.HOME as never);
+            });
+          },
+        },
+      ],
+    );
   };
 
   return (
@@ -537,6 +561,25 @@ export function ProfileScreen({
               </View>
             ) : null}
           </Card>
+
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Đăng xuất"
+            className={`mb-4 mt-6 flex-row items-center justify-center gap-2 rounded-full border border-red-600 bg-surface-container-lowest px-5 py-4 ${
+              isSigningOut ? "opacity-60" : "opacity-100"
+            }`}
+            disabled={isSigningOut}
+            onPress={confirmSignOut}
+          >
+            <Icon
+              name="rectangle.portrait.and.arrow.right"
+              size={20}
+              color="#ba1a1a"
+            />
+            <Text className="text-base font-semibold text-red-600">
+              {isSigningOut ? "Đang đăng xuất..." : "Đăng xuất"}
+            </Text>
+          </Pressable>
         </ScrollView>
       </KeyboardAvoidingView>
     </PageShell>

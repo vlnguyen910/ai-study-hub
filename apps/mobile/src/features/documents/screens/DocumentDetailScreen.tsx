@@ -15,6 +15,7 @@ import {
 import { Button, Card, PageShell } from "@/components";
 import { ROUTES } from "@/constants/routes";
 import { useSession } from "@/features/auth/context/SessionContext";
+import { DocumentChatBubble } from "@/features/chat/components/DocumentChatBubble";
 import { SaveToCollectionModal } from "@/features/collections/components/SaveToCollectionModal";
 import { DocumentBottomActionBar } from "../components/DocumentBottomActionBar";
 import { DocumentPreview } from "../components/DocumentPreview";
@@ -311,19 +312,25 @@ export function DocumentDetailScreen() {
                 </Card>
 
                 <Card title="Mô tả tài liệu">
-                  <Text className="mt-3 text-base leading-7 text-on-surface-variant">
-                    {document.description || "Tài liệu chưa có mô tả."}
-                  </Text>
-                  {document.subject ? (
-                    <View className="mt-4 flex-row flex-wrap gap-2">
-                      <Text className="rounded-full border border-outline-variant bg-surface-container-low px-3 py-1 text-sm text-on-surface-variant">
-                        {document.subject.name}
-                      </Text>
-                      <Text className="rounded-full border border-outline-variant bg-surface-container-low px-3 py-1 text-sm text-on-surface-variant">
-                        {document.subject.code}
-                      </Text>
-                    </View>
-                  ) : null}
+                  <View style={{ paddingBottom: 12 }}>
+                    <Text className="mt-3 text-base leading-7 text-on-surface-variant">
+                      {document.description || "Tài liệu chưa có mô tả."}
+                    </Text>
+                    {document.subject ? (
+                      <View className="mt-4 flex-row flex-wrap gap-2">
+                        <View className="self-start rounded-full border border-outline-variant bg-surface-container-low px-3 py-1.5">
+                          <Text className="text-sm leading-5 text-on-surface-variant">
+                            {document.subject.name}
+                          </Text>
+                        </View>
+                        <View className="self-start rounded-full border border-outline-variant bg-surface-container-low px-3 py-1.5">
+                          <Text className="text-sm leading-5 text-on-surface-variant">
+                            {document.subject.code}
+                          </Text>
+                        </View>
+                      </View>
+                    ) : null}
+                  </View>
                 </Card>
 
                 <DocumentSummaryCard
@@ -350,6 +357,24 @@ export function DocumentDetailScreen() {
               documentId={document.id}
               onClose={() => setIsCollectionModalOpen(false)}
             />
+
+            <View
+              style={{
+                position: "absolute",
+                right: 20,
+                bottom: 108,
+                width: 60,
+                height: 60,
+                zIndex: 100,
+                elevation: 20,
+              }}
+            >
+              <DocumentChatBubble
+                documentId={document.id}
+                documentTitle={document.title}
+                isAuthenticated={isAuthenticated}
+              />
+            </View>
           </>
         )}
       </View>
