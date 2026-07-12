@@ -786,11 +786,7 @@ export class AuthService {
   }
 
   private getSafeRedirectPath(redirectPath?: string) {
-    if (
-      !redirectPath ||
-      !redirectPath.startsWith('/') ||
-      redirectPath.startsWith('//')
-    ) {
+    if (!redirectPath || !redirectPath.startsWith('/')) {
       return undefined;
     }
 

@@ -24,6 +24,15 @@ describe("google-auth", () => {
     );
   });
 
+  it("does not duplicate slashes when API base URL ends with a slash", () => {
+    expect(
+      buildGoogleLoginUrl({
+        apiBaseUrl: "http://localhost:8080/",
+        deviceId: "device-1",
+      }),
+    ).toBe("http://localhost:8080/api/v1/auth/google?deviceId=device-1");
+  });
+
   it("consumes access token only when hash state matches pending OAuth state", () => {
     const state = markGoogleOauthPending();
 

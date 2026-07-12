@@ -12,13 +12,16 @@ interface BuildGoogleLoginUrlOptions {
   oauthState?: string;
 }
 
+const joinUrl = (baseUrl: string, path: string): string =>
+  `${baseUrl.replace(/\/+$/, "")}/${path.replace(/^\/+/, "")}`;
+
 export const buildGoogleLoginUrl = ({
   apiBaseUrl = APP_CONFIG.api.baseUrl,
   deviceId,
   redirectPath,
   oauthState,
 }: BuildGoogleLoginUrlOptions): string => {
-  const baseUrl = `${apiBaseUrl}${API_ENDPOINTS.AUTH.GOOGLE}`;
+  const baseUrl = joinUrl(apiBaseUrl, API_ENDPOINTS.AUTH.GOOGLE);
   const params = new URLSearchParams({ deviceId });
 
   if (redirectPath) {

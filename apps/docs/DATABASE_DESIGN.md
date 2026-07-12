@@ -1,5 +1,7 @@
 # AI Study Hub - Database Design
 
+DBDiagram/DBML version: [`DATABASE_DESIGN.dbml`](./DATABASE_DESIGN.dbml).
+
 ## 1. Data Model Goals
 
 The database model supports a parallel Web + Mobile MVP, queue-driven AI processing, Cloudinary-backed file storage, and AI-assisted moderation without introducing realtime collaboration or OCR.

@@ -1,0 +1,326 @@
+Project "AI Study Hub" {
+  database_type: "MongoDB"
+  Note: 'DBML projection of apps/api/prisma/schema.prisma for dbdiagram.io. ObjectId columns map to MongoDB ObjectId values; id columns map to _id in Prisma.'
+}
+
+Enum UserRole {
+  USER
+  ADMIN
+  MODERATOR
+}
+
+Enum UserStatus {
+  ACTIVE
+  BANNED
+  UNVERIFIED
+  DELETED
+}
+
+Enum DeviceType {
+  WEB
+  MOBILE
+}
+
+Enum AuthProvider {
+  GOOGLE
+}
+
+Enum DocumentStatus {
+  PENDING
+  ACTIVE
+  REJECTED
+  DELETED
+}
+
+Enum WarningFlag {
+  SPAM
+  TOXIC
+  ACADEMIC_INTEGRITY_RISK
+}
+
+Enum AuditTargetType {
+  USER
+  DOCUMENT
+  SYSTEM_SETTING
+  SUBJECT
+}
+
+Enum AuditAction {
+  BAN_USER
+  UNBAN_USER
+  APPROVE_DOCUMENT
+  REJECT_DOCUMENT
+  DELETE_DOCUMENT
+  UPDATE_SYSTEM_SETTINGS
+  UPDATE_DOCUMENT_VISIBILITY
+  CREATE_SUBJECT
+  UPDATE_SUBJECT
+  DELETE_SUBJECT
+}
+
+Table accounts {
+  id ObjectId [pk, note: 'Prisma @map("_id")']
+  email string [not null, unique]
+  name string [not null]
+  password string [not null]
+  avatarUrl string [not null]
+  role UserRole [not null]
+  status UserStatus [not null, default: 'UNVERIFIED']
+  createdAt datetime [not null, default: `now()`]
+  updatedAt datetime [not null, note: 'Prisma @updatedAt']
+  deletedAt datetime
+}
+
+Table auth_providers {
+  id ObjectId [pk, note: 'Prisma @map("_id")']
+  provider AuthProvider [not null]
+  providerAccountId string [not null]
+  accountId ObjectId [not null]
+  email string [not null]
+  createdAt datetime [not null, default: `now()`]
+  updatedAt datetime [not null, note: 'Prisma @updatedAt']
+
+  Indexes {
+    (provider, providerAccountId) [unique]
+    (provider, accountId) [unique]
+  }
+}
+
+Table sessions {
+  id ObjectId [pk, note: 'Prisma @map("_id")']
+  userId ObjectId [not null]
+  refreshToken string [not null]
+  deviceId string [not null]
+  deviceType DeviceType [not null]
+  isRevoked boolean [not null, default: false]
+  createdAt datetime [not null, default: `now()`]
+  expiresAt datetime [not null]
+
+  Indexes {
+    (userId, deviceId) [unique]
+  }
+}
+
+Table schools {
+  id ObjectId [pk, note: 'Prisma @map("_id")']
+  name string [not null]
+  code string [not null, unique]
+  createdAt datetime [not null, default: `now()`]
+}
+
+Table subjects {
+  id ObjectId [pk, note: 'Prisma @map("_id")']
+  name string [not null]
+  code string [not null, unique]
+  schoolId ObjectId [not null]
+  createdAt datetime [not null, default: `now()`]
+}
+
+Table documents {
+  id ObjectId [pk, note: 'Prisma @map("_id")']
+  title string [not null]
+  description string
+  fileUrl string [not null]
+  pdfPreviewUrl string
+  publicId string [not null]
+  sizeInBytes int [not null]
+  format string [not null]
+  resourceType string [not null]
+  subjectId ObjectId
+  status DocumentStatus [not null, default: 'PENDING']
+  authorId ObjectId [not null]
+  isPublic boolean [not null, default: false]
+  reviewedById ObjectId
+  reviewedAt datetime
+  rejectionReason string
+  createdAt datetime [not null, default: `now()`]
+  updatedAt datetime [not null, note: 'Prisma @updatedAt']
+  deletedAt datetime
+  aiSummary string
+  aiKeywords string[] [not null, default: `[]`]
+  duplicateScore float
+  isAiFlagged boolean [default: false]
+  downloadCount int [not null, default: 0]
+  viewCount int [not null, default: 0]
+}
+
+Table collections {
+  id ObjectId [pk, note: 'Prisma @map("_id")']
+  name string [not null]
+  description string
+  isPublic boolean [not null, default: false]
+  authorId ObjectId [not null]
+  createdAt datetime [not null, default: `now()`]
+  updatedAt datetime [not null, note: 'Prisma @updatedAt']
+
+  Indexes {
+    authorId
+    isPublic
+  }
+}
+
+Table collection_documents {
+  id ObjectId [pk, note: 'Prisma @map("_id")']
+  collectionId ObjectId [not null]
+  documentId ObjectId [not null]
+  addedAt datetime [not null, default: `now()`]
+
+  Indexes {
+    (collectionId, documentId) [unique]
+    documentId
+  }
+}
+
+Table document_chunks {
+  id ObjectId [pk, note: 'Prisma @map("_id")']
+  documentId ObjectId [not null]
+  chunkIndex int [not null]
+  chunkText string [not null]
+  tokenCount int [not null]
+  embedding float[] [not null, note: 'Atlas Vector Search index']
+  pageStart int
+  pageEnd int
+  createdAt datetime [not null, default: `now()`]
+
+  Indexes {
+    (documentId, chunkIndex) [unique]
+  }
+}
+
+Table ai_reviews {
+  id ObjectId [pk, note: 'Prisma @map("_id")']
+  documentId ObjectId [not null, unique]
+  summary string
+  warningFlags WarningFlag[] [not null, default: `[]`]
+  moderationSuggestion string
+  moderationReason string
+  generatedDescription string
+  createdAt datetime [not null, default: `now()`]
+  updatedAt datetime [not null, note: 'Prisma @updatedAt']
+}
+
+Table quiz_sessions {
+  id ObjectId [pk, note: 'Prisma @map("_id")']
+  documentId ObjectId [not null]
+  userId ObjectId [not null]
+  status string [not null]
+  questionCount int [not null]
+  quizPayload json [not null]
+  score int
+  createdAt datetime [not null, default: `now()`]
+  updatedAt datetime [not null, note: 'Prisma @updatedAt']
+}
+
+Table chat_sessions {
+  id ObjectId [pk, note: 'Prisma @map("_id")']
+  documentId ObjectId [not null]
+  userId ObjectId [not null]
+  title string [not null]
+  status string [not null]
+  model string [not null]
+  lastMessageAt datetime [not null, default: `now()`]
+  createdAt datetime [not null, default: `now()`]
+  updatedAt datetime [not null, note: 'Prisma @updatedAt']
+
+  Indexes {
+    (userId, documentId)
+    lastMessageAt
+  }
+}
+
+Table chat_messages {
+  id ObjectId [pk, note: 'Prisma @map("_id")']
+  sessionId ObjectId [not null]
+  role string [not null]
+  content string [not null]
+  citations json
+  tokensUsed int
+  status string
+  createdAt datetime [not null, default: `now()`]
+
+  Indexes {
+    (sessionId, createdAt)
+  }
+}
+
+Table system_settings {
+  id ObjectId [pk, note: 'Prisma @map("_id")']
+  key string [not null, unique, default: 'GLOBAL']
+  systemName string [not null, default: 'AI Study Hub']
+  maintenanceMode boolean [not null, default: false]
+  defaultSchoolCode string [not null, default: 'FPTU']
+  supportEmail string [not null, default: 'support@aistudyhub.local']
+  maxFileSizeMb int [not null, default: 100]
+  allowMobileUpload boolean [not null, default: true]
+  requireModerationForPublicDocuments boolean [not null, default: true]
+  allowPrivateDocuments boolean [not null, default: true]
+  allowSharedLink boolean [not null, default: true]
+  privateToPublicRequiresReview boolean [not null, default: true]
+  replaceFileRequiresReview boolean [not null, default: true]
+  enableAiFeatures boolean [not null, default: true]
+  enableAiSummary boolean [not null, default: true]
+  enableAiQuiz boolean [not null, default: true]
+  enableAiSearch boolean [not null, default: true]
+  enableAiChat boolean [not null, default: true]
+  enableAiModeratorAssistant boolean [not null, default: true]
+  maxAiRequestsPerUserPerDay int [not null, default: 20]
+  maxQuizQuestions int [not null, default: 20]
+  defaultQuizQuestions int [not null, default: 10]
+  autoFlagDuplicateDocuments boolean [not null, default: true]
+  duplicateSimilarityThreshold int [not null, default: 85]
+  requireRejectionReason boolean [not null, default: true]
+  allowModeratorToApproveAiFlaggedDocument boolean [not null, default: true]
+  allowGmailRegistration boolean [not null, default: true]
+  requireEmailVerification boolean [not null, default: true]
+  allowUnverifiedLoginWithLimitedAccess boolean [not null, default: true]
+  defaultRoleAfterSignup UserRole [not null, default: 'USER']
+  enableMobileAppAccess boolean [not null, default: true]
+  enableMobileUpload boolean [not null, default: true]
+  enableMobileAiFeatures boolean [not null, default: true]
+  version int [not null, default: 1]
+  createdAt datetime [not null, default: `now()`]
+  updatedAt datetime [not null, note: 'Prisma @updatedAt']
+}
+
+Table upload_file_types {
+  id ObjectId [pk, note: 'Prisma @map("_id")']
+  extension string [not null, unique]
+  enabled boolean [not null, default: true]
+  createdAt datetime [not null, default: `now()`]
+  updatedAt datetime [not null, note: 'Prisma @updatedAt']
+}
+
+Table audit_logs {
+  id ObjectId [pk, note: 'Prisma @map("_id")']
+  actorId ObjectId
+  actorRole UserRole
+  action AuditAction [not null]
+  targetType AuditTargetType
+  targetId string
+  createdAt datetime [not null, default: `now()`]
+
+  Indexes {
+    actorId
+    action
+    targetType
+    createdAt
+  }
+}
+
+Ref: auth_providers.accountId > accounts.id
+Ref: sessions.userId > accounts.id
+Ref: subjects.schoolId > schools.id
+Ref: documents.subjectId > subjects.id
+Ref: documents.authorId > accounts.id
+Ref: documents.reviewedById > accounts.id
+Ref: collections.authorId > accounts.id [delete: cascade]
+Ref: collection_documents.collectionId > collections.id [delete: cascade]
+Ref: collection_documents.documentId > documents.id [delete: cascade]
+Ref: document_chunks.documentId > documents.id [delete: cascade]
+Ref: ai_reviews.documentId - documents.id [delete: cascade]
+Ref: quiz_sessions.documentId > documents.id [delete: cascade]
+Ref: quiz_sessions.userId > accounts.id [delete: cascade]
+Ref: chat_sessions.documentId > documents.id [delete: cascade]
+Ref: chat_sessions.userId > accounts.id [delete: cascade]
+Ref: chat_messages.sessionId > chat_sessions.id [delete: cascade]
+Ref: audit_logs.actorId > accounts.id
