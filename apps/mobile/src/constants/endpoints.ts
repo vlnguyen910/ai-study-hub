@@ -23,6 +23,12 @@ export const API_ENDPOINTS = {
     MODERATOR_ANALYSIS: (id: string) =>
       `/api/v1/documents/${id}/moderator-analysis`,
   },
+  CHAT: {
+    DOCUMENT_SESSIONS: (documentId: string) =>
+      `/api/v1/documents/${documentId}/chat/sessions`,
+    SESSION_MESSAGES: (sessionId: string) =>
+      `/api/v1/chat/sessions/${sessionId}/messages`,
+  },
   COLLECTIONS: {
     BASE: "/api/v1/collections",
     DETAIL: (id: string) => `/api/v1/collections/${id}`,

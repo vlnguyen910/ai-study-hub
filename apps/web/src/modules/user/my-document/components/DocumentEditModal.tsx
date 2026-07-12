@@ -102,11 +102,14 @@ export function DocumentEditModal({
             </select>
           </label>
 
-          <Checkbox
-            checked={isPublic}
-            label="Công khai tài liệu"
-            onChange={setIsPublic}
-          />
+          <label className="flex items-center gap-3 text-sm text-on-surface">
+            <Checkbox
+              checked={isPublic}
+              onCheckedChange={setIsPublic}
+              disabled={isSaving}
+            />
+            <span>Công khai tài liệu</span>
+          </label>
 
           {isPublic && !document.isPublic ? (
             <p className="rounded-xl border border-warning/30 bg-warning-container/40 p-3 text-sm text-on-surface-variant">

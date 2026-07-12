@@ -1,154 +1,178 @@
+"use client";
+
 import Link from "next/link";
+import { useCallback, useEffect, useState } from "react";
+
+import { fetchDocuments } from "@/apis/document.api";
+import { usePendingDocumentsStore } from "@/stores/pendingDocuments/store";
+import type { LibraryDocument } from "@/types/document.type";
+import { formatDate } from "@/utils";
+
 import {
-  dashboardStats,
-  recentActivities,
-  weeklyDocumentFlow,
-} from "../mockData";
+  EmptyState,
+  IconButton,
+  MaterialIcon,
+  ModeratorBadge,
+  ModeratorCard,
+} from "../components/ModeratorPrimitives";
 
-import { MaterialIcon, ModeratorCard } from "../components/ModeratorPrimitives";
+const PENDING_PREVIEW_LIMIT = 6;
 
-const statToneClasses = {
-  primary: "bg-primary-fixed text-on-primary-fixed-variant",
-  secondary: "bg-secondary-fixed text-on-secondary-fixed-variant",
-  tertiary: "bg-tertiary-fixed text-on-tertiary-fixed-variant",
-  error: "bg-error-container text-on-error-container",
-  neutral: "bg-surface-container-high text-on-surface-variant",
-} as const;
+const formatCount = (value: number) => value.toLocaleString("vi-VN");
 
-const activityToneClasses = {
-  primary: "bg-primary",
-  secondary: "bg-secondary",
-  error: "bg-error",
-  tertiary: "bg-tertiary",
-} as const;
+function PendingDocumentSkeleton(): React.JSX.Element {
+  return (
+    <div className="space-y-3">
+      {Array.from({ length: 4 }).map((_, index) => (
+        <div
+          className="flex animate-pulse items-center gap-4 border-b border-outline-variant px-1 py-4 last:border-0"
+          key={index}
+        >
+          <div className="h-11 w-11 rounded bg-surface-container-high" />
+          <div className="flex-1 space-y-2">
+            <div className="h-3.5 w-2/3 rounded bg-surface-container-high" />
+            <div className="h-3 w-1/3 rounded bg-surface-container-high" />
+          </div>
+          <div className="h-8 w-8 rounded bg-surface-container-high" />
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function PendingDocumentRow({
+  document,
+}: {
+  readonly document: LibraryDocument;
+}): React.JSX.Element {
+  return (
+    <div className="flex flex-col gap-3 border-b border-outline-variant px-1 py-4 last:border-0 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex min-w-0 items-start gap-3">
+        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded bg-primary-fixed text-primary">
+          <MaterialIcon name="article" />
+        </div>
+        <div className="min-w-0">
+          <p className="line-clamp-1 font-label-md text-label-md text-on-surface">
+            {document.title}
+          </p>
+          <div className="mt-1 flex flex-wrap items-center gap-2 font-label-sm text-label-sm text-on-surface-variant">
+            <span>{document.author.name}</span>
+            <span aria-hidden="true">•</span>
+            <span>{formatDate(document.createdAt)}</span>
+            {document.subject ? (
+              <>
+                <span aria-hidden="true">•</span>
+                <ModeratorBadge tone="secondary">
+                  {document.subject.name}
+                </ModeratorBadge>
+              </>
+            ) : null}
+          </div>
+        </div>
+      </div>
+      <div className="flex shrink-0 items-center gap-2 self-end sm:self-center">
+        <ModeratorBadge tone="tertiary">Chờ duyệt</ModeratorBadge>
+        <IconButton
+          href={`/moderator/documents/${document.id}`}
+          icon="visibility"
+          label={`Xem chi tiết ${document.title}`}
+        />
+      </div>
+    </div>
+  );
+}
 
 export default function ModeratorDashboardPage(): React.JSX.Element {
+  const [pendingDocuments, setPendingDocuments] = useState<LibraryDocument[]>(
+    [],
+  );
+  const [pendingTotal, setPendingTotal] = useState(0);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const { setCount } = usePendingDocumentsStore();
+
+  const loadDashboard = useCallback(async () => {
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      const response = await fetchDocuments({
+        page: 1,
+        limit: PENDING_PREVIEW_LIMIT,
+        status: "PENDING",
+      });
+
+      setPendingDocuments(response.documents);
+      setPendingTotal(response.pagination.total);
+      setCount(response.pagination.total);
+    } catch {
+      setPendingDocuments([]);
+      setPendingTotal(0);
+      setError("Không thể tải số liệu kiểm duyệt từ API.");
+    } finally {
+      setIsLoading(false);
+    }
+  }, [setCount]);
+
+  useEffect(() => {
+    void loadDashboard();
+  }, [loadDashboard]);
+
   return (
-    <>
-      <div className="mb-10">
-        <h1 className="mb-2 font-headline-lg text-headline-lg text-on-surface">
-          Tổng quan kiểm duyệt
-        </h1>
-        <p className="font-body-md text-body-md text-on-surface-variant">
-          Chào mừng trở lại, hôm nay có{" "}
-          <span className="font-bold text-primary">124</span> mục mới cần bạn
-          xem xét.
-        </p>
+    <div className="space-y-gutter">
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+        <div>
+          <h1 className="mb-2 font-headline-lg text-headline-lg text-on-surface">
+            Tổng quan kiểm duyệt
+          </h1>
+          <p className="font-body-md text-body-md text-on-surface-variant">
+            Dashboard hiện chỉ hiển thị dữ liệu thật từ hàng đợi tài liệu chờ
+            duyệt.
+          </p>
+        </div>
+        <button
+          className="inline-flex items-center justify-center gap-2 border border-outline-variant px-4 py-2 font-label-md text-label-md text-on-surface transition-colors hover:bg-surface-container-high"
+          disabled={isLoading}
+          onClick={() => void loadDashboard()}
+          type="button"
+        >
+          <MaterialIcon
+            className={isLoading ? "animate-spin" : ""}
+            name={isLoading ? "progress_activity" : "refresh"}
+          />
+          Làm mới
+        </button>
       </div>
 
       <div className="grid grid-cols-1 gap-gutter lg:grid-cols-12">
-        {dashboardStats.map((stat) => (
-          <ModeratorCard
-            className="flex min-h-[220px] flex-col justify-between p-6 lg:col-span-4"
-            key={stat.label}
-          >
-            <div>
-              <div className="mb-4 flex items-center justify-between">
-                <span className={`rounded p-2 ${statToneClasses[stat.tone]}`}>
-                  <MaterialIcon name={stat.icon} />
-                </span>
-                {stat.trend ? (
-                  <span className="font-label-sm text-label-sm text-primary">
-                    {stat.trend}
-                  </span>
-                ) : null}
-              </div>
-              <p className="font-label-md text-label-md text-on-surface-variant">
-                {stat.label}
-              </p>
-            </div>
-            <div>
-              <p className="mt-4 font-display text-display text-on-surface">
-                {stat.value}
-              </p>
-              <p className="font-label-sm text-label-sm text-on-surface-variant">
-                {stat.caption}
-              </p>
-            </div>
-          </ModeratorCard>
-        ))}
-
-        <ModeratorCard className="h-[400px] p-6 lg:col-span-8">
-          <div className="mb-8 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <h2 className="font-label-md text-label-md text-on-surface">
-              Lưu lượng tài liệu trong 7 ngày qua
-            </h2>
-            <div className="flex gap-4">
-              <span className="flex items-center gap-1 font-label-sm text-label-sm">
-                <span className="h-3 w-3 bg-primary" />
-                Tải lên
+        <ModeratorCard className="flex min-h-[220px] flex-col justify-between p-6 lg:col-span-4">
+          <div>
+            <div className="mb-4 flex items-center justify-between">
+              <span className="rounded bg-primary-fixed p-2 text-on-primary-fixed-variant">
+                <MaterialIcon name="pending_actions" />
               </span>
-              <span className="flex items-center gap-1 font-label-sm text-label-sm">
-                <span className="h-3 w-3 bg-secondary" />
-                Đã duyệt
-              </span>
+              <ModeratorBadge tone="primary">Chờ xử lí</ModeratorBadge>
             </div>
+            <p className="font-label-md text-label-md text-on-surface-variant">
+              Tài liệu chờ duyệt
+            </p>
           </div>
-          <div className="flex h-64 items-end gap-4 px-2">
-            {weeklyDocumentFlow.map((day) => (
-              <div
-                className="relative flex h-full flex-1 items-end rounded-t bg-primary-container/20"
-                key={day.label}
-              >
-                <div
-                  aria-label={`${day.label}: ${day.uploaded} tải lên, ${day.approved} đã duyệt`}
-                  className="w-full rounded-t bg-primary transition-opacity hover:opacity-80"
-                  role="img"
-                  style={{ height: `${day.uploaded}%` }}
-                />
-                <span className="absolute -bottom-6 left-1/2 -translate-x-1/2 font-label-sm text-label-sm text-on-surface-variant">
-                  {day.label}
-                </span>
-              </div>
-            ))}
+          <div>
+            <p className="mt-4 font-display text-display text-on-surface">
+              {isLoading ? "..." : formatCount(pendingTotal)}
+            </p>
           </div>
         </ModeratorCard>
 
-        <ModeratorCard className="p-6 lg:col-span-4">
-          <div className="mb-6 flex items-center justify-between">
-            <h2 className="font-label-md text-label-md text-on-surface">
-              Hoạt động gần đây
-            </h2>
-            <MaterialIcon className="text-on-surface-variant" name="history" />
-          </div>
-          <div className="max-h-[300px] space-y-6 overflow-y-auto pr-2">
-            {recentActivities.map((activity) => (
-              <div className="flex gap-4" key={activity.id}>
-                <div
-                  className={`h-10 w-1 shrink-0 rounded-full ${
-                    activityToneClasses[activity.tone]
-                  }`}
-                />
-                <div>
-                  <p className="font-label-md text-label-md">
-                    {activity.title}
-                  </p>
-                  <p className="font-label-sm text-label-sm text-on-surface-variant">
-                    {activity.description}
-                  </p>
-                  <span className="text-[10px] font-bold uppercase text-outline">
-                    {activity.time}
-                  </span>
-                </div>
-              </div>
-            ))}
-          </div>
-          <button
-            className="mt-6 w-full border border-outline-variant py-2 font-label-sm text-label-sm transition-colors hover:bg-surface-container"
-            type="button"
-          >
-            Xem tất cả hoạt động
-          </button>
-        </ModeratorCard>
-
-        <section className="relative flex min-h-[260px] flex-col justify-between overflow-hidden bg-primary-container p-8 text-on-primary-container lg:col-span-6">
+        <section className="relative flex min-h-[220px] flex-col justify-between overflow-hidden bg-primary-container p-8 text-on-primary-container lg:col-span-8">
           <div className="relative z-10">
             <h2 className="mb-2 font-headline-md text-headline-md">
-              Hàng đợi kiểm duyệt ưu tiên
+              Hàng đợi kiểm duyệt tài liệu
             </h2>
-            <p className="max-w-sm font-body-md text-body-md opacity-90">
-              Có 14 tài liệu từ giảng viên cần được xác minh khẩn cấp để kịp
-              thời hạn đăng ký khóa học.
+            <p className="max-w-2xl font-body-md text-body-md opacity-90">
+              Có {isLoading ? "..." : formatCount(pendingTotal)} tài liệu đang
+              chờ moderator xem xét. Mở hàng đợi để duyệt, từ chối hoặc chạy hỗ
+              trợ phân tích bằng AI.
             </p>
           </div>
           <div className="relative z-10 mt-8">
@@ -156,42 +180,49 @@ export default function ModeratorDashboardPage(): React.JSX.Element {
               className="inline-flex bg-surface px-8 py-3 font-label-md text-label-md text-primary transition-opacity hover:opacity-90"
               href="/moderator/documents"
             >
-              Xử lý ngay
+              Đi tới hàng đợi
             </Link>
           </div>
         </section>
 
-        <ModeratorCard className="flex min-h-[260px] flex-col justify-between bg-surface-container-high p-8 lg:col-span-6">
-          <div className="flex items-start justify-between gap-4">
+        <ModeratorCard className="p-6 lg:col-span-12">
+          <div className="mb-6 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <h2 className="mb-2 font-label-md text-label-md text-on-surface">
-                Chỉ số sức khỏe cộng đồng
+              <h2 className="font-label-md text-label-md text-on-surface">
+                Tài liệu mới chờ duyệt
               </h2>
-              <div className="flex items-center gap-2">
-                <span className="text-3xl font-bold">98.4%</span>
-                <MaterialIcon className="text-primary" name="trending_up" />
-              </div>
-            </div>
-            <div className="flex h-20 w-20 items-center justify-center rounded border border-outline-variant bg-surface text-primary">
-              <MaterialIcon className="text-4xl" name="monitoring" />
-            </div>
-          </div>
-          <div className="mt-6 grid grid-cols-2 gap-4">
-            <div className="border border-outline-variant bg-surface p-4">
-              <p className="font-label-sm text-label-sm text-on-surface-variant">
-                Tốc độ phản hồi
+              <p className="mt-1 font-label-sm text-label-sm text-on-surface-variant">
+                Hiển thị tối đa {PENDING_PREVIEW_LIMIT} tài liệu mới nhất từ
+                API.
               </p>
-              <p className="text-xl font-bold">14 phút</p>
             </div>
-            <div className="border border-outline-variant bg-surface p-4">
-              <p className="font-label-sm text-label-sm text-on-surface-variant">
-                Độ chính xác
-              </p>
-              <p className="text-xl font-bold">99.1%</p>
-            </div>
+            <Link
+              className="inline-flex items-center gap-2 font-label-md text-label-md text-primary hover:underline"
+              href="/moderator/documents"
+            >
+              Xem tất cả
+              <MaterialIcon name="arrow_forward" />
+            </Link>
           </div>
+
+          {isLoading ? (
+            <PendingDocumentSkeleton />
+          ) : error ? (
+            <EmptyState description={error} title="Không thể tải dashboard" />
+          ) : pendingDocuments.length === 0 ? (
+            <EmptyState
+              description="Hiện không có tài liệu nào đang chờ duyệt."
+              title="Hàng đợi đang trống"
+            />
+          ) : (
+            <div>
+              {pendingDocuments.map((document) => (
+                <PendingDocumentRow document={document} key={document.id} />
+              ))}
+            </div>
+          )}
         </ModeratorCard>
       </div>
-    </>
+    </div>
   );
 }

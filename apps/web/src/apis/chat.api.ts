@@ -70,7 +70,11 @@ export const sendChatMessage = async (
   return apiClient.post<
     unknown,
     { session: ChatSession; userMessage: ChatMessage; message: ChatMessage }
-  >(API_ENDPOINTS.CHAT.SESSION_MESSAGES(sessionId), { content });
+  >(
+    API_ENDPOINTS.CHAT.SESSION_MESSAGES(sessionId),
+    { content },
+    { timeout: 120_000 },
+  );
 };
 
 export const deleteChatSession = async (sessionId: string): Promise<void> => {

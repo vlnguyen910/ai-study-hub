@@ -5,9 +5,10 @@ import { VerifiedAccountGuard } from '../../common/guards/verified-account.guard
 import { ChatController } from './chat.controller';
 import { ChatRepository } from './chat.repository';
 import { ChatService } from './chat.service';
+import { DocumentProcessingModule } from '../document-processing/document-processing.module';
 
 @Module({
-  imports: [AuthModule, AIModule],
+  imports: [AuthModule, AIModule, DocumentProcessingModule],
   controllers: [ChatController],
   providers: [ChatService, ChatRepository, VerifiedAccountGuard],
   exports: [ChatService],

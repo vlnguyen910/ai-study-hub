@@ -11,6 +11,7 @@ export const ROUTES = {
   COLLECTIONS: "/collections",
   COLLECTION_DETAIL: (id: string) => `/collections/${id}`,
   DOCUMENT_UPLOAD: "/upload",
+  DOCUMENT_UPLOAD_SUCCESS: "/documents/upload/success",
   MY_DOCUMENTS: "/documents/my-documents",
   DOCUMENT_DETAIL: (id: string) => `/documents/${id}`,
   DOCUMENT_EDIT: (id: string) => `/documents/${id}/edit`,

@@ -259,7 +259,7 @@ export function DocumentUploadScreen({
       const document = await createDocument(payload);
 
       if (document.id) {
-        router.push(ROUTES.DOCUMENT_DETAIL(document.id) as never);
+        router.replace(ROUTES.DOCUMENT_UPLOAD_SUCCESS as never);
       }
     } catch {
       Alert.alert(

@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 
 import { DocumentCard } from "../src/modules/library/components/DocumentCard";
@@ -55,5 +55,29 @@ describe("library document card", () => {
       "src",
       document.fileUrl,
     );
+  });
+
+  it("shows a visible rejection reason action on rejected document cards", () => {
+    const onViewReason = vi.fn();
+
+    render(
+      <MyDocumentCard
+        document={{
+          ...document,
+          status: "REJECTED",
+          rejectionReason: "Nội dung chưa đầy đủ.",
+        }}
+        isMenuOpen={false}
+        isBusy={false}
+        onMenuToggle={vi.fn()}
+        onMenuClose={vi.fn()}
+        onEdit={vi.fn()}
+        onDelete={vi.fn()}
+        onViewReason={onViewReason}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Xem lý do từ chối" }));
+    expect(onViewReason).toHaveBeenCalledTimes(1);
   });
 });

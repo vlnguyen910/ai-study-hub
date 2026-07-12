@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { usePathname, useRouter } from "next/navigation";
 
 import { Button } from "@/components/ui/Button";
@@ -133,6 +134,7 @@ export function DocumentCoachBubble(): React.JSX.Element {
     () => getDocumentIdFromPathname(pathname),
     [pathname],
   );
+  const [isMounted, setIsMounted] = useState(false);
   const [lastDocumentId, setLastDocumentId] = useState<string | null>(null);
   const [isOpen, setIsOpen] = useState(false);
   const [position, setPosition] = useState<BubblePosition | null>(null);
@@ -141,6 +143,7 @@ export function DocumentCoachBubble(): React.JSX.Element {
   const activeDocumentId = currentDocumentId ?? lastDocumentId;
 
   useEffect(() => {
+    setIsMounted(true);
     setPosition(readStoredPosition() ?? getDefaultPosition());
 
     const storedDocumentId = window.localStorage.getItem(
@@ -183,6 +186,8 @@ export function DocumentCoachBubble(): React.JSX.Element {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [isOpen]);
 
+  if (!isMounted) return <></>;
+
   const bubbleStyle = position
     ? {
         left: position.x,
@@ -193,11 +198,14 @@ export function DocumentCoachBubble(): React.JSX.Element {
         bottom: "1.5rem",
       };
 
-  return (
+  return createPortal(
     <>
       {isOpen ? (
-        <div className="fixed inset-x-3 bottom-24 z-[9990] sm:inset-x-auto sm:right-6 sm:w-[420px]">
-          <div className="relative max-h-[calc(100vh-8rem)] overflow-y-auto rounded-3xl shadow-2xl">
+        <aside
+          aria-label="AI Coach"
+          className="fixed bottom-24 right-4 z-[2147483000] w-[calc(100vw-2rem)] max-w-[420px] sm:right-6"
+        >
+          <div className="max-h-[calc(100dvh-7rem)] overflow-hidden rounded-3xl bg-surface-container-lowest shadow-2xl ring-1 ring-black/5">
             {activeDocumentId ? (
               <DocumentCoachCard
                 key={activeDocumentId}
@@ -208,15 +216,16 @@ export function DocumentCoachBubble(): React.JSX.Element {
               <EmptyCoachPanel onClose={() => setIsOpen(false)} />
             )}
           </div>
-        </div>
+        </aside>
       ) : null}
 
       <button
         type="button"
+        aria-expanded={isOpen}
         aria-label={isOpen ? "Đóng AI Coach" : "Mở AI Coach"}
         title="AI Coach - kéo để di chuyển"
         className={cn(
-          "fixed z-[9991] flex size-16 touch-none select-none items-center justify-center rounded-full bg-primary text-on-primary shadow-2xl shadow-primary/30 transition hover:scale-105 active:scale-95",
+          "fixed z-[2147483001] flex size-16 touch-none select-none items-center justify-center rounded-full bg-primary text-on-primary shadow-2xl shadow-primary/30 transition hover:scale-105 active:scale-95",
           isOpen
             ? "ring-4 ring-primary/20"
             : "animate-[pulse_2.5s_ease-in-out_infinite]",
@@ -288,6 +297,7 @@ export function DocumentCoachBubble(): React.JSX.Element {
           <span className="absolute -right-0.5 -top-0.5 size-4 rounded-full border-2 border-background bg-success" />
         ) : null}
       </button>
-    </>
+    </>,
+    document.body,
   );
 }

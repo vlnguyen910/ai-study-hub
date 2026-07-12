@@ -144,6 +144,8 @@ body {
 
 :root {
   --radius: 0.625rem;
+  --auth-panel-from: theme("colors.blue.50");
+  --auth-panel-to: theme("colors.indigo.100");
 
   --background: oklch(1 0 0);
   --foreground: oklch(0.145 0 0);
@@ -224,6 +226,8 @@ body {
 }
 
 .dark {
+  --auth-panel-from: theme("colors.slate.950");
+  --auth-panel-to: theme("colors.slate.900");
   --background: #090a0f; /* Deep, premium dark background */
   --foreground: #f1f5f9;
   --card: #12141c; /* Lighter surface for elevated cards */
